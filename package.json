@@ -1,0 +1,8 @@
+{
+  "name": "site-libkungfu-dev",
+  "private": true,
+  "scripts": {
+    "build": "bash scripts/build-site.sh",
+    "check": "bash scripts/check-site.sh"
+  }
+}

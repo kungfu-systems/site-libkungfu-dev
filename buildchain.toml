@@ -1,0 +1,74 @@
+schema = 1
+
+[project]
+type = "web-surface"
+name = "site-libkungfu-dev"
+site = "libkungfu-dev"
+
+[channels.preview]
+url_pattern = "https://{alias}.preview.libkungfu.dev"
+visibility = "ephemeral"
+requires_auth = false
+noindex = true
+
+[channels.staging]
+url = "https://staging.libkungfu.dev"
+visibility = "protected"
+requires_auth = true
+noindex = true
+promotable = true
+
+[channels.production]
+url = "https://libkungfu.cc/dev"
+visibility = "public"
+canonical = true
+noindex = false
+
+[deploy.preview]
+adapter = "aws-s3-cloudfront"
+bucket = "libkungfu-dev-preview-727884401362-us-east-1"
+cloudfront_distribution = "pending-preview-distribution"
+artifact_path = "dist"
+manifest_prefix = ".buildchain/deployments/preview"
+secret_refs = ["AWS_ROLE_ARN"]
+
+[deploy.staging]
+adapter = "aws-s3-cloudfront"
+bucket = "libkungfu-dev-staging-727884401362-us-east-1"
+cloudfront_distribution = "pending-staging-distribution"
+artifact_path = "dist"
+manifest_prefix = ".buildchain/deployments/staging"
+secret_refs = ["AWS_ROLE_ARN", "STAGING_EDGE_AUTH_SECRET"]
+
+[deploy.production]
+adapter = "aws-s3-cloudfront"
+bucket = "libkungfu-dev-route-pending"
+cloudfront_distribution = "pending-production-route"
+artifact_path = "dist"
+prefix = "dev"
+manifest_prefix = ".buildchain/deployments/production"
+secret_refs = ["AWS_ROLE_ARN"]
+
+[retention.preview]
+pr_days = 14
+sha_days = 90
+
+[retention.staging]
+days = 90
+keep_deploys = 10
+
+[retention.production]
+days = 365
+
+[security.staging]
+requires_auth = true
+noindex = true
+isolated_providers = true
+sandbox_data = true
+secret_refs = ["STAGING_EDGE_AUTH_SECRET"]
+
+[lifecycle.build]
+command = "bash scripts/build-site.sh"
+
+[lifecycle.verify]
+command = "bash scripts/check-site.sh"

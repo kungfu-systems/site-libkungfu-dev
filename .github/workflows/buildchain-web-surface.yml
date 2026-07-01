@@ -1,0 +1,64 @@
+name: Buildchain Web Surface
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      - name: Checkout Buildchain
+        uses: actions/checkout@v4
+        with:
+          repository: kungfu-systems/buildchain
+          ref: dev/v2/v2.0
+          path: buildchain
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build site artifact
+        run: npm run build
+
+      - name: Check site policy
+        run: npm run check
+
+      - name: Validate Buildchain config
+        uses: ./buildchain/actions/validate-config
+        with:
+          config-required: "true"
+          require-lifecycle-stages: build,verify
+
+      - name: Plan preview deploy
+        env:
+          BUILDCHAIN_DIR: ${{ github.workspace }}/buildchain
+          BUILDCHAIN_SOURCE_SHA: ${{ github.sha }}
+          BUILDCHAIN_PULL_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" \
+            --mode deploy-plan \
+            --cwd . \
+            --channel preview \
+            --output buildchain-preview-plan.json
+
+      - name: Plan preview cleanup
+        env:
+          BUILDCHAIN_DIR: ${{ github.workspace }}/buildchain
+        run: |
+          node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" \
+            --mode cleanup-plan \
+            --cwd . \
+            --aliases pr-123,sha-abcdef123456 \
+            --output buildchain-cleanup-plan.json
