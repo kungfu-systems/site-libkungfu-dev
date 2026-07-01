@@ -29,6 +29,12 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install Buildchain dependencies
+        working-directory: buildchain
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
       - name: Build site artifact
         run: npm run build
 
