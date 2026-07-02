@@ -1,0 +1,43 @@
+{
+  "contract": "libkungfu-dev-site-manifest-fixture",
+  "schemaVersion": 1,
+  "status": "fixture",
+  "canonicalHost": "libkungfu.dev",
+  "title": "libkungfu.dev",
+  "tagline": "Open developer and agent substrate hub for Kungfu.",
+  "sourceBoundary": {
+    "truthOwner": "upstream-manifests",
+    "siteRole": "visual routing and rendering",
+    "rule": "The site may render product narrative and navigation, but core specs, CLI parameters, workflow inputs, release state machines, schemas, and evidence facts must come from upstream manifests."
+  },
+  "surfaces": [
+    {
+      "id": "core",
+      "host": "core.libkungfu.dev",
+      "path": "/core/",
+      "label": "Core substrate",
+      "summary": "libkungfu, yijinjing, runtime fact ledger, spec, schema registry, vectors, and stable docs URLs.",
+      "source": "kungfu -> @kungfu-tech/spec -> site-libkungfu-dev"
+    },
+    {
+      "id": "buildchain",
+      "host": "buildchain.libkungfu.dev",
+      "path": "/buildchain/",
+      "label": "Buildchain surface",
+      "summary": "CI/CD, release governance, publish transactions, artifact evidence, web-surface deploys, and CLI/SDK observability.",
+      "source": "buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev"
+    }
+  ],
+  "stableMachineEntries": [
+    {
+      "label": "Agent index",
+      "path": "/llms.txt",
+      "purpose": "Stable text entrypoint for agents."
+    },
+    {
+      "label": "Site manifest",
+      "path": "/manifest.json",
+      "purpose": "Generated site map and source-boundary metadata."
+    }
+  ]
+}

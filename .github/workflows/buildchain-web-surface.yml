@@ -2,69 +2,33 @@ name: Buildchain Web Surface
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      production_approved:
+        description: "Plan the gated production channel"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout site
-        uses: actions/checkout@v4
-
-      - name: Checkout Buildchain
-        uses: actions/checkout@v4
-        with:
-          repository: kungfu-systems/buildchain
-          ref: dev/v2/v2.0
-          path: buildchain
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install Buildchain dependencies
-        working-directory: buildchain
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-
-      - name: Build site artifact
-        run: npm run build
-
-      - name: Check site policy
-        run: npm run check
-
-      - name: Validate Buildchain config
-        uses: ./buildchain/actions/validate-config
-        with:
-          config-required: "true"
-          require-lifecycle-stages: build,verify
-
-      - name: Plan preview deploy
-        env:
-          BUILDCHAIN_DIR: ${{ github.workspace }}/buildchain
-          BUILDCHAIN_SOURCE_SHA: ${{ github.sha }}
-          BUILDCHAIN_PULL_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" \
-            --mode deploy-plan \
-            --cwd . \
-            --channel preview \
-            --output buildchain-preview-plan.json
-
-      - name: Plan preview cleanup
-        env:
-          BUILDCHAIN_DIR: ${{ github.workspace }}/buildchain
-        run: |
-          node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" \
-            --mode cleanup-plan \
-            --cwd . \
-            --aliases pr-123,sha-abcdef123456 \
-            --output buildchain-cleanup-plan.json
+  web-surface:
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2.0-alpha
+    with:
+      buildchain-ref: v2.0-alpha
+      node-version: "24"
+      build-command: npm run build
+      verify-command: npm run check
+      artifact-path: dist
+      production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
+      production-environment: production

@@ -4,12 +4,21 @@ set -eu
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
-test -d public
+test -d src/fixtures
 
 rm -rf dist
 mkdir -p dist
-cp -R public/. dist/
 
-test -f dist/dev/index.html
+if [ -d public ]; then
+  cp -R public/. dist/
+fi
+
+node scripts/render-site.mjs
+
+test -f dist/index.html
+test -f dist/core/index.html
+test -f dist/buildchain/index.html
+test -f dist/manifest.json
+test -f dist/llms.txt
 
 echo "site-libkungfu-dev built dist/"

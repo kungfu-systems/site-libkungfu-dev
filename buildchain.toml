@@ -14,12 +14,14 @@ noindex = true
 [channels.staging]
 url = "https://staging.libkungfu.dev"
 visibility = "protected"
-requires_auth = true
+requires_auth = false
+access_control = "managed-network"
+edge_auth = "none"
 noindex = true
 promotable = true
 
 [channels.production]
-url = "https://libkungfu.cc/dev"
+url = "https://libkungfu.dev"
 visibility = "public"
 canonical = true
 noindex = false
@@ -38,14 +40,13 @@ bucket = "libkungfu-dev-staging-727884401362-us-east-1"
 cloudfront_distribution = "pending-staging-distribution"
 artifact_path = "dist"
 manifest_prefix = ".buildchain/deployments/staging"
-secret_refs = ["AWS_ROLE_ARN", "STAGING_EDGE_AUTH_SECRET"]
+secret_refs = ["AWS_ROLE_ARN"]
 
 [deploy.production]
 adapter = "aws-s3-cloudfront"
-bucket = "libkungfu-dev-route-pending"
-cloudfront_distribution = "pending-production-route"
+bucket = "libkungfu-dev-site-727884401362-us-east-1"
+cloudfront_distribution = "pending-production-distribution"
 artifact_path = "dist"
-prefix = "dev"
 manifest_prefix = ".buildchain/deployments/production"
 secret_refs = ["AWS_ROLE_ARN"]
 
@@ -61,11 +62,12 @@ keep_deploys = 10
 days = 365
 
 [security.staging]
-requires_auth = true
+requires_auth = false
+access_control = "managed-network"
+edge_auth = "none"
 noindex = true
 isolated_providers = true
 sandbox_data = true
-secret_refs = ["STAGING_EDGE_AUTH_SECRET"]
 
 [lifecycle.build]
 command = "bash scripts/build-site.sh"
