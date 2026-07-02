@@ -45,7 +45,8 @@ kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 ```
 
-For now, `src/fixtures/` is the explicit contract fixture until real upstream
-bundles exist.
+For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
+Buildchain already uses the pinned `@kungfu-tech/buildchain@2.3.0` npm package
+and its exported `dist/site` bundle.
 
 Do not store AWS credentials in this repository.

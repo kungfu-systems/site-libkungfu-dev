@@ -1,12 +1,22 @@
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 
 const repoRoot = process.cwd();
 const distDir = path.join(repoRoot, "dist");
 const fixturesDir = path.join(repoRoot, "src", "fixtures");
+const require = createRequire(import.meta.url);
 
-function readJson(name) {
+function readJsonFile(file) {
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function readFixtureJson(name) {
   return JSON.parse(fs.readFileSync(path.join(fixturesDir, name), "utf8"));
+}
+
+function readPackageJson(specifier) {
+  return readJsonFile(require.resolve(specifier));
 }
 
 function ensureDir(dir) {
@@ -321,7 +331,7 @@ function page({ title, description, current, body }) {
     </div>
   </header>
   <main>${body}</main>
-  <footer><div>Fixture source only. This repository renders upstream manifests and is not a product fact source.</div></footer>
+  <footer><div>This repository renders upstream manifests and pinned package artifacts. It is not a product fact source.</div></footer>
 </body>
 </html>
 `;
@@ -354,9 +364,56 @@ function listPanels(items) {
     .join("\n");
 }
 
-const site = readJson("site-manifest.json");
-const core = readJson("core-spec-manifest.json");
-const buildchain = readJson("buildchain-site-bundle.json");
+function factPanels(items, getTitle, getSummary, getMeta = () => []) {
+  return items
+    .map((item) => {
+      const meta = getMeta(item);
+      const metaHtml = meta.length
+        ? `<dl class="meta" style="margin-top: 14px;">${meta
+            .map(
+              ([label, value]) => `<dt>${escapeHtml(label)}</dt>
+                <dd><code>${escapeHtml(value)}</code></dd>`,
+            )
+            .join("")}</dl>`
+        : "";
+      return `<article class="panel">
+        <h3>${escapeHtml(getTitle(item))}</h3>
+        <p>${escapeHtml(getSummary(item))}</p>
+        ${metaHtml}
+      </article>`;
+    })
+    .join("\n");
+}
+
+const site = readFixtureJson("site-manifest.json");
+const core = readFixtureJson("core-spec-manifest.json");
+const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
+const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
+const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
+const buildchainWorkflow = readPackageJson("@kungfu-tech/buildchain/site/workflow-registry.json");
+const buildchainReleaseModel = readPackageJson("@kungfu-tech/buildchain/site/release-model.json");
+const buildchainArtifactSchemas = readPackageJson("@kungfu-tech/buildchain/site/artifact-schemas.json");
+const buildchainProductMechanism = readPackageJson("@kungfu-tech/buildchain/site/product-mechanism.json");
+const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/site/release-provenance.json");
+const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
+const packageLock = readJsonFile(path.join(repoRoot, "package-lock.json"));
+const buildchainLock = packageLock.packages?.["node_modules/@kungfu-tech/buildchain"] ?? {};
+if (buildchainPackage.version !== "2.3.0" || buildchainLock.version !== "2.3.0") {
+  throw new Error("site-libkungfu-dev expects @kungfu-tech/buildchain 2.3.0");
+}
+if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
+  throw new Error("unexpected Buildchain site bundle contract");
+}
+const buildchainMachineArtifacts = Array.from(
+  new Set([
+    ...buildchainSite.entrypoints,
+    ...buildchainAgentIndex.readOrder,
+    buildchainReleaseModel.releasePassport.entrypoint,
+    buildchainReleaseModel.releasePassport.bundle,
+    buildchainArtifactSchemas.contract,
+    buildchainReleaseProvenance.contract,
+  ]),
+);
 const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
 
 writeFile(
@@ -436,30 +493,118 @@ writeFile(
   "buildchain/index.html",
   page({
     title: "buildchain.libkungfu.dev | Buildchain surface",
-    description: buildchain.productPositioning,
+    description: buildchainPackage.description,
     current: "buildchain",
     body: `<section class="hero">
       <p class="eyebrow">Buildchain product surface</p>
-      <h1>${escapeHtml(buildchain.surfaceHost)}</h1>
-      <p class="lead">${escapeHtml(buildchain.productPositioning)}</p>
+      <h1>Buildchain Release Passport</h1>
+      <p class="lead">${escapeHtml(buildchainPackage.description)}</p>
     </section>
 
     <section class="panel">
-      <h2>Current fixture bundle</h2>
+      <h2>Pinned npm package</h2>
       <dl class="meta">
         <dt>Package</dt>
-        <dd><code>${escapeHtml(buildchain.package)}</code></dd>
-        <dt>Source repository</dt>
-        <dd><a href="${escapeAttr(buildchain.sourceRepository)}">${escapeHtml(buildchain.sourceRepository)}</a></dd>
-        <dt>Bundle version</dt>
-        <dd><code>${escapeHtml(buildchain.currentBundle.version)}</code></dd>
-        <dt>Docs URL pattern</dt>
-        <dd><code>${escapeHtml(buildchain.docsUrlPattern)}</code></dd>
+        <dd><code>${escapeHtml(buildchainPackage.name)}</code></dd>
+        <dt>Version</dt>
+        <dd><code>${escapeHtml(buildchainPackage.version)}</code></dd>
+        <dt>Source of truth</dt>
+        <dd><code>${escapeHtml(buildchainSite.sourceOfTruth)}</code></dd>
+        <dt>Repository</dt>
+        <dd><a href="${escapeAttr(buildchainPackage.repository)}">${escapeHtml(buildchainPackage.repository)}</a></dd>
+        <dt>Lock integrity</dt>
+        <dd><code>${escapeHtml(buildchainLock.integrity)}</code></dd>
       </dl>
     </section>
 
+    <section class="grid" style="margin-top: 18px;">
+      <article class="panel">
+        <h2>Release model</h2>
+        <p>${escapeHtml(buildchainReleaseModel.exactTags)}</p>
+        <p style="margin-top: 12px;">${escapeHtml(buildchainReleaseModel.floatingTags)}</p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>Passport entrypoint</dt>
+          <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.entrypoint)}</code></dd>
+          <dt>Passport bundle</dt>
+          <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.bundle)}</code></dd>
+          <dt>Stable dist-tag</dt>
+          <dd><code>${escapeHtml(buildchainReleaseModel.npm.stableDistTag)}</code></dd>
+        </dl>
+      </article>
+      <article class="panel">
+        <h2>Product mechanism</h2>
+        <p>${escapeHtml(buildchainProductMechanism.purpose)}</p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>Category</dt>
+          <dd><code>${escapeHtml(buildchainProductMechanism.category)}</code></dd>
+          <dt>Substrate</dt>
+          <dd><code>${escapeHtml(buildchainProductMechanism.executionSubstrate)}</code></dd>
+          <dt>Human first</dt>
+          <dd><code>${escapeHtml(buildchainSite.humanFirst)}</code></dd>
+          <dt>Agent first</dt>
+          <dd><code>${escapeHtml(buildchainSite.agentFirst)}</code></dd>
+        </dl>
+      </article>
+    </section>
+
+    <section class="grid" style="margin-top: 18px;">
+      <article class="panel">
+        <h2>Not this</h2>
+        <ul>${buildchainProductMechanism.notA.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+      </article>
+      <article class="panel">
+        <h2>Proof cases</h2>
+        <ul>${buildchainProductMechanism.proofCases.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Documentation bundle</h2>
+      <div class="grid three">
+        ${factPanels(
+          buildchainSite.docs,
+          (doc) => doc.title,
+          (doc) => doc.path,
+          (doc) => [["plane", doc.plane], ["exists", doc.exists]],
+        )}
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>CLI command registry</h2>
+      <div class="grid">
+        ${factPanels(
+          buildchainCli.commands,
+          (command) => command.usage,
+          (command) => command.purpose,
+          (command) => [["id", command.id]],
+        )}
+      </div>
+    </section>
+
     <section class="grid three" style="margin-top: 18px;">
-      ${listPanels(buildchain.requiredArtifacts)}
+      ${factPanels(
+        buildchainWorkflow.workflows,
+        (workflow) => workflow.id,
+        (workflow) => workflow.path,
+        (workflow) => [["surface", workflow.surface], ["status", workflow.status]],
+      )}
+    </section>
+
+    <section class="grid three" style="margin-top: 18px;">
+      ${factPanels(
+        buildchainWorkflow.actions,
+        (action) => action.id,
+        (action) => action.path,
+        (action) => [["status", action.status]],
+      )}
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Machine artifacts</h2>
+      <ul>${buildchainMachineArtifacts
+        .map((entry) => `<li><code>${escapeHtml(entry)}</code></li>`)
+        .join("")}</ul>
     </section>`,
   }),
 );
@@ -473,7 +618,11 @@ const manifest = {
   pages: [
     { path: "/", host: "libkungfu.dev", source: "src/fixtures/site-manifest.json" },
     { path: "/core/", host: core.surfaceHost, source: "src/fixtures/core-spec-manifest.json" },
-    { path: "/buildchain/", host: buildchain.surfaceHost, source: "src/fixtures/buildchain-site-bundle.json" },
+    {
+      path: "/buildchain/",
+      host: "buildchain.libkungfu.dev",
+      source: "@kungfu-tech/buildchain@2.3.0/dist/site/buildchain-site.json",
+    },
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
@@ -482,10 +631,15 @@ const manifest = {
       package: core.package,
       docsUrlPattern: core.docsUrlPattern,
     },
+  },
+  upstreamPackages: {
     buildchain: {
-      contract: buildchain.contract,
-      package: buildchain.package,
-      docsUrlPattern: buildchain.docsUrlPattern,
+      contract: buildchainSite.contract,
+      package: buildchainPackage.name,
+      version: buildchainPackage.version,
+      sourceOfTruth: buildchainSite.sourceOfTruth,
+      lockIntegrity: buildchainLock.integrity,
+      exportedEntrypoints: buildchainSite.entrypoints,
     },
   },
 };

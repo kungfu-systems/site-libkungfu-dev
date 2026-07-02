@@ -5,5 +5,8 @@
     "build": "bash scripts/build-site.sh",
     "check": "bash scripts/check-site.sh",
     "render": "node scripts/render-site.mjs"
+  },
+  "dependencies": {
+    "@kungfu-tech/buildchain": "2.3.0"
   }
 }
