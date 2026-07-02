@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "contract": "kungfu-site-infra-outputs",
+  "site": "site-libkungfu-dev",
+  "domain": "libkungfu.dev",
+  "infraRepo": "kungfu-systems/infra-kungfu-sites",
+  "region": "us-east-1",
+  "accountId": "727884401362",
+  "surfaces": {
+    "hub": "https://libkungfu.dev",
+    "core": "https://core.libkungfu.dev",
+    "buildchain": "https://buildchain.libkungfu.dev"
+  },
+  "channels": {
+    "preview": {
+      "urlPattern": "https://{alias}.preview.libkungfu.dev",
+      "bucket": "libkungfu-dev-preview-727884401362-us-east-1",
+      "cloudfrontDistribution": "E23JLOB98N6R7U",
+      "roleArn": "arn:aws:iam::727884401362:role/site-libkungfu-dev-preview-github-actions",
+      "status": "active"
+    },
+    "staging": {
+      "url": "https://staging.libkungfu.dev",
+      "bucket": "libkungfu-dev-staging-727884401362-us-east-1",
+      "cloudfrontDistribution": "E1B23YHEY9RCE0",
+      "roleArn": "arn:aws:iam::727884401362:role/site-libkungfu-dev-staging-github-actions",
+      "status": "active"
+    },
+    "production": {
+      "url": "https://libkungfu.dev",
+      "bucket": "libkungfu-dev-site-727884401362-us-east-1",
+      "cloudfrontDistribution": "EXWVGLVVXGURT",
+      "roleArn": null,
+      "status": "pending"
+    }
+  }
+}

@@ -22,6 +22,12 @@ with future dynamic adapters. Buildchain remains the deployment state machine:
 the release object is source commit plus build artifact plus deploy target plus
 channel plus deployment manifest.
 
+The AWS resource contract is owned by the private
+`kungfu-systems/infra-kungfu-sites` repository and mirrored into this repository
+as `infra/outputs.json`. Site changes may update content, Buildchain wiring, and
+the mirrored outputs after an infra change, but CloudFormation templates and AWS
+resource lifecycle decisions belong in the infra repository.
+
 ## Current State
 
 - The repository builds a static `dist/` artifact.

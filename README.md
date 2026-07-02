@@ -58,6 +58,11 @@ Staging is modeled as managed-network protected, not edge Basic Auth protected.
 The AWS deployment targets are placeholders until the `libkungfu.dev` static
 delivery resources are explicitly provisioned.
 
+The AWS delivery contract is mirrored in `infra/outputs.json` from the private
+`kungfu-systems/infra-kungfu-sites` repository. `npm run check` verifies that
+`buildchain.toml` and the GitHub Actions role assumptions still match that
+contract.
+
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
 npm ci --ignore-scripts --registry=https://registry.npmjs.org/
