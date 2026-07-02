@@ -1,8 +1,12 @@
 # Rollback
 
-Until live `libkungfu.dev` delivery resources are connected, rollback is simply
-reverting this repository or closing the pull request that introduced the
-change.
+For preview and staging, rollback is handled through Buildchain deployment and
+cleanup evidence:
+
+- close the pull request to trigger preview cleanup for the PR alias;
+- revert the repository change and merge to `main` to republish staging;
+- if edge routing breaks before a repository revert can deploy, roll back the
+  `site-libkungfu-dev-web-surface` CloudFormation stack to the previous template.
 
 When production routing is added, each deployment record must include:
 

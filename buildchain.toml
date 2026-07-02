@@ -26,6 +26,24 @@ visibility = "public"
 canonical = true
 noindex = false
 
+[surfaces.hub]
+path = "/"
+production_url = "https://libkungfu.dev"
+staging_url = "https://staging.libkungfu.dev"
+preview_url_pattern = "https://{alias}.preview.libkungfu.dev"
+
+[surfaces.core]
+path = "/core/"
+production_url = "https://core.libkungfu.dev"
+staging_url = "https://core.staging.libkungfu.dev"
+preview_url_pattern = "https://core-{alias}.preview.libkungfu.dev"
+
+[surfaces.buildchain]
+path = "/buildchain/"
+production_url = "https://buildchain.libkungfu.dev"
+staging_url = "https://buildchain.staging.libkungfu.dev"
+preview_url_pattern = "https://buildchain-{alias}.preview.libkungfu.dev"
+
 [deploy.preview]
 adapter = "aws-s3-cloudfront"
 bucket = "libkungfu-dev-preview-727884401362-us-east-1"
