@@ -11,9 +11,10 @@
 
 ## Work In This Repository
 
-- `src/fixtures/` contains temporary contract fixtures.
-- `scripts/render-site.mjs` renders pages from fixture or future upstream
-  manifests.
+- `src/fixtures/` contains temporary contract fixtures for hub/core.
+- `@kungfu-tech/buildchain@2.3.0` supplies the Buildchain `dist/site` bundle.
+- `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
+  package artifacts.
 - `scripts/build-site.sh` writes `dist/`.
 - `scripts/check-site.sh` enforces basic policy and source-boundary checks.
 - `buildchain.toml` declares the web-surface channels and deployment planning
