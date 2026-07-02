@@ -1,24 +1,39 @@
 # Deploy
 
-The intended public URL is `https://libkungfu.cc/dev`.
+The intended public URL is `https://libkungfu.dev`.
 
-Current live-state note:
+Channel model:
 
-- `libkungfu.cc` redirects to `www.libkungfu.cc` and is served by the existing
-  production WordPress/Elastic Beanstalk path.
-- `https://www.libkungfu.cc/dev` currently returns `404`.
-- Existing `libkungfu.cc` DNS and delivery resources are production assets and
-  must not be overwritten by this site repository without a separate routing
-  decision.
+- Preview: `https://{alias}.preview.libkungfu.dev`
+- Staging: `https://staging.libkungfu.dev`
+- Production: `https://libkungfu.dev`
 
-Safe deployment options to evaluate:
+The site artifact is static today, but the channel model must stay compatible
+with future dynamic adapters. Buildchain remains the deployment state machine:
+the release object is source commit plus build artifact plus deploy target plus
+channel plus deployment manifest.
 
-1. Add `/dev` as a WordPress page that links to a static technical release
-   surface.
-2. Put a CDN or reverse proxy in front of `www.libkungfu.cc` and route `/dev/*`
-   to static storage while leaving the existing origin unchanged.
-3. Use a subdomain such as `dev.libkungfu.cc` if path routing on the root domain
-   is too risky.
+## Current State
+
+- The repository builds a static `dist/` artifact.
+- Buildchain validation and deployment planning are enabled through the shared
+  web-surface workflow.
+- Live AWS apply is not enabled here because the `libkungfu.dev` CloudFront and
+  S3 targets are still placeholders in `buildchain.toml`.
+- Staging is modeled as managed-network protected, matching the current Kungfu
+  site policy. Do not add Basic Auth secrets to this repository.
+
+## Source Boundary
+
+Deployment must not turn this repository into a fact source. The artifact should
+render pinned upstream bundles:
+
+```text
+kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
+buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
+```
+
+For now, `src/fixtures/` is the explicit contract fixture until real upstream
+bundles exist.
 
 Do not store AWS credentials in this repository.
-

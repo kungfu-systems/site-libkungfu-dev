@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "bash scripts/build-site.sh",
-    "check": "bash scripts/check-site.sh"
+    "check": "bash scripts/check-site.sh",
+    "render": "node scripts/render-site.mjs"
   }
 }
