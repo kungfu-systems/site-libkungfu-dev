@@ -29,7 +29,7 @@ noindex = false
 [deploy.preview]
 adapter = "aws-s3-cloudfront"
 bucket = "libkungfu-dev-preview-727884401362-us-east-1"
-cloudfront_distribution = "pending-preview-distribution"
+cloudfront_distribution = "E23JLOB98N6R7U"
 artifact_path = "dist"
 manifest_prefix = ".buildchain/deployments/preview"
 secret_refs = ["AWS_ROLE_ARN"]
@@ -37,7 +37,7 @@ secret_refs = ["AWS_ROLE_ARN"]
 [deploy.staging]
 adapter = "aws-s3-cloudfront"
 bucket = "libkungfu-dev-staging-727884401362-us-east-1"
-cloudfront_distribution = "pending-staging-distribution"
+cloudfront_distribution = "E1B23YHEY9RCE0"
 artifact_path = "dist"
 manifest_prefix = ".buildchain/deployments/staging"
 secret_refs = ["AWS_ROLE_ARN"]
@@ -45,7 +45,7 @@ secret_refs = ["AWS_ROLE_ARN"]
 [deploy.production]
 adapter = "aws-s3-cloudfront"
 bucket = "libkungfu-dev-site-727884401362-us-east-1"
-cloudfront_distribution = "pending-production-distribution"
+cloudfront_distribution = "EXWVGLVVXGURT"
 artifact_path = "dist"
 manifest_prefix = ".buildchain/deployments/production"
 secret_refs = ["AWS_ROLE_ARN"]
