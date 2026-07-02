@@ -4,9 +4,18 @@ The intended public URL is `https://libkungfu.dev`.
 
 Channel model:
 
-- Preview: `https://{alias}.preview.libkungfu.dev`
-- Staging: `https://staging.libkungfu.dev`
-- Production: `https://libkungfu.dev`
+- Preview:
+  - `https://{alias}.preview.libkungfu.dev`
+  - `https://core-{alias}.preview.libkungfu.dev`
+  - `https://buildchain-{alias}.preview.libkungfu.dev`
+- Staging:
+  - `https://staging.libkungfu.dev`
+  - `https://core.staging.libkungfu.dev`
+  - `https://buildchain.staging.libkungfu.dev`
+- Production:
+  - `https://libkungfu.dev`
+  - `https://core.libkungfu.dev`
+  - `https://buildchain.libkungfu.dev`
 
 The site artifact is static today, but the channel model must stay compatible
 with future dynamic adapters. Buildchain remains the deployment state machine:
@@ -16,10 +25,13 @@ channel plus deployment manifest.
 ## Current State
 
 - The repository builds a static `dist/` artifact.
-- Buildchain validation and deployment planning are enabled through the shared
-  web-surface workflow.
-- Live AWS apply is not enabled here because the `libkungfu.dev` CloudFront and
-  S3 targets are still placeholders in `buildchain.toml`.
+- Buildchain validation, preview apply, preview cleanup apply, and staging apply
+  are enabled through the shared web-surface workflow.
+- The workflow uses Buildchain v2.3 first-class surface host mappings, so each
+  surface has a host-level preview and staging URL instead of only a path
+  fallback under the hub URL.
+- Production apply remains disabled until production promotion is explicitly
+  approved.
 - Staging is modeled as managed-network protected, matching the current Kungfu
   site policy. Do not add Basic Auth secrets to this repository.
 

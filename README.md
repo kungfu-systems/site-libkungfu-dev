@@ -47,7 +47,7 @@ The build uses only Node.js built-in modules and writes `dist/`.
 ## Buildchain
 
 This site is a Buildchain `web-surface` project. Pull requests use the shared
-Buildchain v2 web-surface workflow for preview plans, PR-close cleanup plans,
+Buildchain v2.3 web-surface workflow for preview plans, PR-close cleanup plans,
 main-merge staging plans, and explicitly gated production plans.
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
