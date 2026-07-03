@@ -25,17 +25,17 @@ permissions:
 
 jobs:
   web-surface:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2.3
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
     with:
-      buildchain-ref: v2.3
+      buildchain-ref: v2.4
       node-version: "24"
       build-command: npm ci --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build
       verify-command: npm run check
       artifact-path: dist
-      preview-apply: true
-      preview-cleanup-apply: true
+      preview-apply: false
+      preview-cleanup-apply: false
       preview-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-preview-github-actions
-      staging-apply: true
+      staging-apply: false
       staging-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-staging-github-actions
       production-apply: false
       production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}

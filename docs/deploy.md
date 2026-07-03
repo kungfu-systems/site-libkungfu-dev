@@ -31,9 +31,12 @@ resource lifecycle decisions belong in the infra repository.
 ## Current State
 
 - The repository builds a static `dist/` artifact.
-- Buildchain validation, preview apply, preview cleanup apply, and staging apply
+- Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- The workflow uses Buildchain v2.3 first-class surface host mappings, so each
+- Preview, preview cleanup, staging, and production apply are disabled in the
+  repository workflow by default. Enabling live apply requires a separate
+  reviewed change and explicit approval.
+- The workflow uses Buildchain v2.4 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
 - Production apply remains disabled until production promotion is explicitly
@@ -52,7 +55,7 @@ buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> 
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
-Buildchain already uses the pinned `@kungfu-tech/buildchain@2.3.0` npm package
+Buildchain already uses the pinned `@kungfu-tech/buildchain@2.4.0` npm package
 and its exported `dist/site` bundle.
 
 Do not store AWS credentials in this repository.
