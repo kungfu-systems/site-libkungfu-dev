@@ -48,20 +48,23 @@ bundle available from `node_modules/`.
 
 ## Buildchain
 
-This site is a Buildchain `web-surface` project. Pull requests use the shared
-Buildchain v2.4 web-surface workflow for mutation-free preview, cleanup,
-staging, and production plans. The workflow runs `npm ci` from the official npm
-registry before building so the generated Buildchain page is based on
-`@kungfu-tech/buildchain@2.4.1`. Live apply remains disabled by default.
+This site is a Buildchain `web-surface` project. Pull requests and manual
+dispatches use the shared Buildchain v2.4 web-surface workflow for
+mutation-free preview, cleanup, staging, and production plans. The workflow
+runs `npm ci` from the official npm registry before building so the generated
+Buildchain page is based on `@kungfu-tech/buildchain@2.4.1`. Live apply remains
+disabled by default.
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
-The AWS deployment targets are placeholders until the `libkungfu.dev` static
-delivery resources are explicitly provisioned.
+The AWS deployment targets are modeled in the private infrastructure contract.
+Production remains `pending` until the public host aliases and DNS for all
+declared surfaces are ready.
 
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `npm run check` verifies that
 `buildchain.toml` and the GitHub Actions role assumptions still match that
-contract, and that the shared workflow keeps apply switches off by default.
+contract, wires all declared role references, and keeps apply switches off by
+default while production is pending.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
@@ -71,5 +74,6 @@ npm run check
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode validate --cwd .
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode deploy-plan --cwd . --channel preview --source-sha "$(git rev-parse HEAD)"
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode deploy-plan --cwd . --channel staging --source-sha "$(git rev-parse HEAD)"
+node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode deploy-plan --cwd . --channel production --source-sha "$(git rev-parse HEAD)"
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode cleanup-plan --cwd . --channel preview --pull-number 123 --source-sha "$(git rev-parse HEAD)"
 ```

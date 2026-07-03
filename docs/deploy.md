@@ -40,7 +40,8 @@ resource lifecycle decisions belong in the infra repository.
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
 - Production apply remains disabled until production promotion is explicitly
-  approved.
+  approved and the production channel status is active in the infrastructure
+  contract.
 - Staging is modeled as managed-network protected, matching the current Kungfu
   site policy. Do not add Basic Auth secrets to this repository.
 
@@ -59,3 +60,20 @@ Buildchain already uses the pinned `@kungfu-tech/buildchain@2.4.1` npm package
 and its exported `dist/site` bundle.
 
 Do not store AWS credentials in this repository.
+
+## Production Readiness
+
+The workflow carries the planned production role reference so Buildchain can
+plan the production channel with the same contract shape as other sites.
+However, `production-apply` stays `false` while the infrastructure contract
+marks production as `pending`.
+
+Before enabling production apply, verify:
+
+- `libkungfu.dev`, `core.libkungfu.dev`, and `buildchain.libkungfu.dev` are
+  configured as production aliases on the serving distribution;
+- DNS for all production surface hosts resolves to the intended distribution;
+- the GitHub OIDC role exists in AWS Global and is scoped to the production
+  bucket and distribution;
+- a Buildchain production plan binds the source SHA, artifact hash, target
+  bucket, CloudFront distribution, actor, run id, and rollback pointer.
