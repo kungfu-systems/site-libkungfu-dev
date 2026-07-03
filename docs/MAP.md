@@ -12,7 +12,7 @@
 ## Work In This Repository
 
 - `src/fixtures/` contains temporary contract fixtures for hub/core.
-- `@kungfu-tech/buildchain@2.4.0` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@2.4.1` supplies the Buildchain `dist/site` bundle.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
   package artifacts.
 - `scripts/build-site.sh` writes `dist/`.

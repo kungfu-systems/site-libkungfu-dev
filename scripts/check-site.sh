@@ -39,6 +39,7 @@ const packageLock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
 const buildchainLock = packageLock.packages["node_modules/@kungfu-tech/buildchain"];
 const buildchainPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/package.json", "utf8"));
 const buildchainSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/buildchain-site.json", "utf8"));
+const expectedBuildchainVersion = "2.4.1";
 
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
@@ -46,11 +47,11 @@ if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
 if (core.contract !== "kungfu-spec-manifest-fixture") {
   throw new Error("core fixture contract mismatch");
 }
-if (packageJson.dependencies["@kungfu-tech/buildchain"] !== "2.4.0") {
-  throw new Error("Buildchain dependency must be pinned to 2.4.0");
+if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVersion) {
+  throw new Error(`Buildchain dependency must be pinned to ${expectedBuildchainVersion}`);
 }
-if (!buildchainLock || buildchainLock.version !== "2.4.0") {
-  throw new Error("Buildchain lockfile entry must resolve to 2.4.0");
+if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
+  throw new Error(`Buildchain lockfile entry must resolve to ${expectedBuildchainVersion}`);
 }
 if (!String(buildchainLock.resolved).startsWith("https://registry.npmjs.org/")) {
   throw new Error("Buildchain lockfile must resolve from the official npm registry");
@@ -60,7 +61,7 @@ for (const [name, entry] of Object.entries(packageLock.packages)) {
     throw new Error(`${name} lockfile entry must resolve from the official npm registry`);
   }
 }
-if (buildchainPackage.version !== "2.4.0") {
+if (buildchainPackage.version !== expectedBuildchainVersion) {
   throw new Error("installed Buildchain package version mismatch");
 }
 if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
@@ -69,8 +70,8 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
 }
-if (manifest.upstreamPackages.buildchain.version !== "2.4.0") {
-  throw new Error("dist manifest does not record Buildchain 2.4.0");
+if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
+  throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
 }
 NODE
 
@@ -81,7 +82,7 @@ grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'Fixture source' dist/index.html
 grep -q 'not a product fact source' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.4.0' dist/buildchain/index.html
+grep -q '2.4.1' dist/buildchain/index.html
 grep -q 'Pinned npm package' dist/buildchain/index.html
 grep -q 'Buildchain Release Passport' dist/buildchain/index.html
 grep -q 'CLI command registry' dist/buildchain/index.html
