@@ -25,9 +25,8 @@ permissions:
 
 jobs:
   web-surface:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2.4
     with:
-      buildchain-ref: v2.4
       node-version: "24"
       build-command: npm ci --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build
       verify-command: npm run check
