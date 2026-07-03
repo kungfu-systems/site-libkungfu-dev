@@ -14,7 +14,7 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 - Run `npm run check` before opening a pull request.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
-  `@kungfu-tech/buildchain@2.3.0`.
+  `@kungfu-tech/buildchain@2.4.0`.
 
 ## Boundary
 

@@ -46,11 +46,11 @@ if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
 if (core.contract !== "kungfu-spec-manifest-fixture") {
   throw new Error("core fixture contract mismatch");
 }
-if (packageJson.dependencies["@kungfu-tech/buildchain"] !== "2.3.0") {
-  throw new Error("Buildchain dependency must be pinned to 2.3.0");
+if (packageJson.dependencies["@kungfu-tech/buildchain"] !== "2.4.0") {
+  throw new Error("Buildchain dependency must be pinned to 2.4.0");
 }
-if (!buildchainLock || buildchainLock.version !== "2.3.0") {
-  throw new Error("Buildchain lockfile entry must resolve to 2.3.0");
+if (!buildchainLock || buildchainLock.version !== "2.4.0") {
+  throw new Error("Buildchain lockfile entry must resolve to 2.4.0");
 }
 if (!String(buildchainLock.resolved).startsWith("https://registry.npmjs.org/")) {
   throw new Error("Buildchain lockfile must resolve from the official npm registry");
@@ -60,7 +60,7 @@ for (const [name, entry] of Object.entries(packageLock.packages)) {
     throw new Error(`${name} lockfile entry must resolve from the official npm registry`);
   }
 }
-if (buildchainPackage.version !== "2.3.0") {
+if (buildchainPackage.version !== "2.4.0") {
   throw new Error("installed Buildchain package version mismatch");
 }
 if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
@@ -69,8 +69,8 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
 }
-if (manifest.upstreamPackages.buildchain.version !== "2.3.0") {
-  throw new Error("dist manifest does not record Buildchain 2.3.0");
+if (manifest.upstreamPackages.buildchain.version !== "2.4.0") {
+  throw new Error("dist manifest does not record Buildchain 2.4.0");
 }
 NODE
 
@@ -81,7 +81,7 @@ grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'Fixture source' dist/index.html
 grep -q 'not a product fact source' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.3.0' dist/buildchain/index.html
+grep -q '2.4.0' dist/buildchain/index.html
 grep -q 'Pinned npm package' dist/buildchain/index.html
 grep -q 'Buildchain Release Passport' dist/buildchain/index.html
 grep -q 'CLI command registry' dist/buildchain/index.html

@@ -4,6 +4,8 @@ import fs from "node:fs";
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync("buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+const expectedBuildchainRef = "v2.4";
+const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
 
 function parseTomlSections(text) {
   const sections = {};
@@ -34,6 +36,17 @@ if (outputs.contract !== "kungfu-site-infra-outputs") {
 }
 if (outputs.site !== "site-libkungfu-dev") {
   throw new Error("infra outputs site mismatch");
+}
+if (
+  !workflow.includes(expectedBuildchainShell) &&
+  !workflow.includes(`buildchain-ref: ${expectedBuildchainRef}`)
+) {
+  throw new Error(`Buildchain web-surface workflow must run ${expectedBuildchainRef}`);
+}
+for (const applySwitch of ["preview-apply", "preview-cleanup-apply", "staging-apply", "production-apply"]) {
+  if (!workflow.includes(`${applySwitch}: false`)) {
+    throw new Error(`Buildchain web-surface workflow must keep ${applySwitch} false by default`);
+  }
 }
 
 const config = parseTomlSections(buildchainToml);

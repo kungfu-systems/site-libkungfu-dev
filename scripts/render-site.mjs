@@ -398,8 +398,8 @@ const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/sit
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
 const packageLock = readJsonFile(path.join(repoRoot, "package-lock.json"));
 const buildchainLock = packageLock.packages?.["node_modules/@kungfu-tech/buildchain"] ?? {};
-if (buildchainPackage.version !== "2.3.0" || buildchainLock.version !== "2.3.0") {
-  throw new Error("site-libkungfu-dev expects @kungfu-tech/buildchain 2.3.0");
+if (buildchainPackage.version !== "2.4.0" || buildchainLock.version !== "2.4.0") {
+  throw new Error("site-libkungfu-dev expects @kungfu-tech/buildchain 2.4.0");
 }
 if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
   throw new Error("unexpected Buildchain site bundle contract");
@@ -621,7 +621,7 @@ const manifest = {
     {
       path: "/buildchain/",
       host: "buildchain.libkungfu.dev",
-      source: "@kungfu-tech/buildchain@2.3.0/dist/site/buildchain-site.json",
+      source: "@kungfu-tech/buildchain@2.4.0/dist/site/buildchain-site.json",
     },
   ],
   machineEntries: site.stableMachineEntries,

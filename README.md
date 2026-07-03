@@ -22,7 +22,7 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.3.0` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.4.0` through its exported `dist/site` bundle.
 
 Expected upstream flow:
 
@@ -49,10 +49,10 @@ bundle available from `node_modules/`.
 ## Buildchain
 
 This site is a Buildchain `web-surface` project. Pull requests use the shared
-Buildchain v2.3 web-surface workflow for preview plans, PR-close cleanup plans,
-main-merge staging plans, and explicitly gated production plans. The workflow
-runs `npm ci` from the official npm registry before building so the generated
-Buildchain page is based on `@kungfu-tech/buildchain@2.3.0`.
+Buildchain v2.4 web-surface workflow for mutation-free preview, cleanup,
+staging, and production plans. The workflow runs `npm ci` from the official npm
+registry before building so the generated Buildchain page is based on
+`@kungfu-tech/buildchain@2.4.0`. Live apply remains disabled by default.
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
 The AWS deployment targets are placeholders until the `libkungfu.dev` static
@@ -61,7 +61,7 @@ delivery resources are explicitly provisioned.
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `npm run check` verifies that
 `buildchain.toml` and the GitHub Actions role assumptions still match that
-contract.
+contract, and that the shared workflow keeps apply switches off by default.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
