@@ -158,6 +158,9 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
 }
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
+if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
+  throw new Error("production artifact must not embed robots noindex metadata");
+}
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
@@ -174,6 +177,9 @@ if (!hubHtml.includes('rel="alternate" type="application/json"') || !hubHtml.inc
   throw new Error("human pages must expose machine entries through head alternate links");
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
+if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
+  throw new Error("KFD production artifact must not embed robots noindex metadata");
+}
 if (
   !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/manifest.json"') ||
   !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/llms.txt"')

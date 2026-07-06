@@ -206,7 +206,6 @@ function page({ title, description, current, body, alternates = "" }) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeAttr(description)}">
-  <meta name="robots" content="noindex">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="/manifest.json">
   <link rel="alternate" type="text/plain" title="Agent entrypoint" href="/llms.txt">
