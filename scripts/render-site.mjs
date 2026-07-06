@@ -332,6 +332,12 @@ ${alternates}
       text-transform: uppercase;
     }
 
+    .eyebrow a {
+      color: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+
     h1 {
       margin: 0;
       max-width: 920px;
@@ -917,7 +923,7 @@ for (const entry of kfdRegistry.entries) {
       current: "kfd",
       alternates: kfdSurfaceAlternates(),
       body: `<section class="hero">
-        <p class="eyebrow">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</p>
+        <p class="eyebrow"><a href="https://kfd.libkungfu.dev/" aria-label="Back to KFD home">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</a></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
       </section>
