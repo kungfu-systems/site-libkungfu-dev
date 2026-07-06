@@ -186,10 +186,10 @@ function renderDecisionMarkdown(source) {
 
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
-    ["hub", "/", "Hub"],
-    ["core", "/core/", "Core"],
-    ["buildchain", "/buildchain/", "Buildchain"],
-    ["kfd", "/kfd/", "KFD"],
+    ["hub", "https://libkungfu.dev/", "Hub"],
+    ["core", "https://core.libkungfu.dev/", "Core"],
+    ["buildchain", "https://buildchain.libkungfu.dev/", "Buildchain"],
+    ["kfd", "https://kfd.libkungfu.dev/", "KFD"],
   ];
 
   const navHtml = nav
@@ -644,12 +644,11 @@ ${alternates}
 `;
 }
 
-function surfaceAlternates(surfacePath) {
-  const path = surfacePath.replace(/\/$/, "");
-  return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="${path}/manifest.json">
-  <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="${path}/llms.txt">
-  <link rel="alternate" type="application/json" title="KFD registry" href="${path}/registry.json">
-  <link rel="alternate" type="application/json" title="KFD standards" href="${path}/standards.json">`;
+function kfdSurfaceAlternates() {
+  return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="https://kfd.libkungfu.dev/manifest.json">
+  <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="https://kfd.libkungfu.dev/llms.txt">
+  <link rel="alternate" type="application/json" title="KFD registry" href="https://kfd.libkungfu.dev/registry.json">
+  <link rel="alternate" type="application/json" title="KFD standards" href="https://kfd.libkungfu.dev/standards.json">`;
 }
 
 function surfaceCard(surface) {
@@ -703,9 +702,10 @@ function factPanels(items, getTitle, getSummary, getMeta = () => []) {
 function decisionPanels(entries) {
   return entries
     .map((entry) => {
-      const path = `/kfd/${entry.number}/`;
+      const path = `/${entry.number}/`;
+      const url = `https://kfd.libkungfu.dev${path}`;
       return `<article class="panel">
-        <h3><a href="${escapeAttr(path)}">${escapeHtml(entry.id)}</a></h3>
+        <h3><a href="${escapeAttr(url)}">${escapeHtml(entry.id)}</a></h3>
         <p>${escapeHtml(entry.title)}</p>
         <dl class="meta" style="margin-top: 14px;">
           <dt>kind</dt>
@@ -713,9 +713,9 @@ function decisionPanels(entries) {
           <dt>status</dt>
           <dd><code>${escapeHtml(entry.status)}</code></dd>
           <dt>path</dt>
-          <dd><a href="${escapeAttr(path)}"><code>${escapeHtml(path)}</code></a></dd>
+          <dd><a href="${escapeAttr(url)}"><code>${escapeHtml(path)}</code></a></dd>
         </dl>
-        <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
+        <a class="card-action" href="${escapeAttr(url)}">Read ${escapeHtml(entry.id)}</a>
       </article>`;
     })
     .join("\n");
@@ -835,7 +835,7 @@ writeFile(
     title: "kfd.libkungfu.dev | Kung Fu Decisions",
     description: kfdPackage.description,
     current: "kfd",
-    alternates: surfaceAlternates("/kfd/"),
+    alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
       <p class="eyebrow">Kung Fu Decisions</p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
@@ -916,7 +916,7 @@ for (const entry of kfdRegistry.entries) {
       title: `${entry.id} | kfd.libkungfu.dev`,
       description: entry.title,
       current: "kfd",
-      alternates: surfaceAlternates("/kfd/"),
+      alternates: kfdSurfaceAlternates(),
       body: `<section class="hero">
         <p class="eyebrow">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</p>
         <h1>${escapeHtml(entry.id)}</h1>
@@ -1080,12 +1080,12 @@ const manifest = {
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
     {
-      path: "/kfd/",
+      path: "/",
       host: "kfd.libkungfu.dev",
       source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
     },
     ...kfdRegistry.entries.map((entry) => ({
-      path: `/kfd/${entry.number}/`,
+      path: `/${entry.number}/`,
       host: "kfd.libkungfu.dev",
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
     })),
@@ -1134,8 +1134,8 @@ const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
   kind: entry.kind,
   status: entry.status,
   title: entry.title,
-  path: `/kfd/${entry.number}/`,
-  url: `https://kfd.libkungfu.dev/kfd/${entry.number}/`,
+  path: `/${entry.number}/`,
+  url: `https://kfd.libkungfu.dev/${entry.number}/`,
   source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
 }));
 
@@ -1146,10 +1146,10 @@ const kfdAgentManifest = {
   canonicalHost: "kfd.libkungfu.dev",
   humanEntry: "https://kfd.libkungfu.dev/",
   agentEntries: {
-    llms: "https://kfd.libkungfu.dev/kfd/llms.txt",
-    manifest: "https://kfd.libkungfu.dev/kfd/manifest.json",
-    registry: "https://kfd.libkungfu.dev/kfd/registry.json",
-    standards: "https://kfd.libkungfu.dev/kfd/standards.json",
+    llms: "https://kfd.libkungfu.dev/llms.txt",
+    manifest: "https://kfd.libkungfu.dev/manifest.json",
+    registry: "https://kfd.libkungfu.dev/registry.json",
+    standards: "https://kfd.libkungfu.dev/standards.json",
   },
   sourceBoundary: {
     truthOwner: "@kungfu-tech/kfd",
@@ -1164,10 +1164,10 @@ const kfdAgentManifest = {
     standardsContract: kfdStandards.contract,
   },
   readOrder: [
-    "https://kfd.libkungfu.dev/kfd/",
+    "https://kfd.libkungfu.dev/",
     ...kfdDecisionEntries.map((entry) => entry.url),
-    "https://kfd.libkungfu.dev/kfd/registry.json",
-    "https://kfd.libkungfu.dev/kfd/standards.json",
+    "https://kfd.libkungfu.dev/registry.json",
+    "https://kfd.libkungfu.dev/standards.json",
   ],
   decisions: kfdDecisionEntries,
   relatedSurfaces: {
@@ -1190,10 +1190,10 @@ Human entry:
 - https://kfd.libkungfu.dev/
 
 Agent-first entries:
-- https://kfd.libkungfu.dev/kfd/manifest.json
-- https://kfd.libkungfu.dev/kfd/registry.json
-- https://kfd.libkungfu.dev/kfd/standards.json
-- https://kfd.libkungfu.dev/kfd/llms.txt
+- https://kfd.libkungfu.dev/manifest.json
+- https://kfd.libkungfu.dev/registry.json
+- https://kfd.libkungfu.dev/standards.json
+- https://kfd.libkungfu.dev/llms.txt
 
 Read order:
 ${kfdAgentManifest.readOrder.map((entry) => `- ${entry}`).join("\n")}

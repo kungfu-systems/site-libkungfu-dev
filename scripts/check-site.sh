@@ -136,8 +136,14 @@ if (manifest.upstreamPackages.kfd.version !== expectedKfdVersion) {
 if (kfdPropagationLock && manifest.upstreamPackages.kfd.releaseLock?.lockSha256 !== kfdPropagationLock.lockSha256) {
   throw new Error("dist manifest does not record the KFD release propagation lock");
 }
-if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === "/kfd/")) {
-  throw new Error("dist manifest does not record kfd.libkungfu.dev");
+if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === "/")) {
+  throw new Error("dist manifest does not record kfd.libkungfu.dev canonical root");
+}
+for (const entry of kfdRegistry.entries) {
+  const path = `/${entry.number}/`;
+  if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === path)) {
+    throw new Error(`dist manifest does not record KFD canonical path: ${path}`);
+  }
 }
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
@@ -168,11 +174,14 @@ if (!hubHtml.includes('rel="alternate" type="application/json"') || !hubHtml.inc
   throw new Error("human pages must expose machine entries through head alternate links");
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
-if (!kfdHomeHtml.includes('href="/kfd/manifest.json"') || !kfdHomeHtml.includes('href="/kfd/llms.txt"')) {
+if (
+  !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/manifest.json"') ||
+  !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/llms.txt"')
+) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
 for (const entry of kfdRegistry.entries) {
-  const href = `href="/kfd/${entry.number}/"`;
+  const href = `href="https://kfd.libkungfu.dev/${entry.number}/"`;
   if (!kfdHomeHtml.includes(href)) {
     throw new Error(`KFD home page is missing decision link: ${href}`);
   }
