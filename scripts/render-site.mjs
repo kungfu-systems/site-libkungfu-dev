@@ -359,6 +359,14 @@ function page({ title, description, current, body }) {
       font-size: 13px;
     }
 
+    .card-action {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      margin-top: 16px;
+      font-weight: 700;
+    }
+
     .warning {
       border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
     }
@@ -468,6 +476,27 @@ function factPanels(items, getTitle, getSummary, getMeta = () => []) {
         <h3>${escapeHtml(getTitle(item))}</h3>
         <p>${escapeHtml(getSummary(item))}</p>
         ${metaHtml}
+      </article>`;
+    })
+    .join("\n");
+}
+
+function decisionPanels(entries) {
+  return entries
+    .map((entry) => {
+      const path = `/kfd/${entry.number}/`;
+      return `<article class="panel">
+        <h3><a href="${escapeAttr(path)}">${escapeHtml(entry.id)}</a></h3>
+        <p>${escapeHtml(entry.title)}</p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>kind</dt>
+          <dd><code>${escapeHtml(entry.kind)}</code></dd>
+          <dt>status</dt>
+          <dd><code>${escapeHtml(entry.status)}</code></dd>
+          <dt>path</dt>
+          <dd><a href="${escapeAttr(path)}"><code>${escapeHtml(path)}</code></a></dd>
+        </dl>
+        <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
       </article>`;
     })
     .join("\n");
@@ -647,12 +676,7 @@ writeFile(
     <section class="panel" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
       <div class="grid three">
-        ${factPanels(
-          kfdRegistry.entries,
-          (entry) => entry.id,
-          (entry) => entry.title,
-          (entry) => [["kind", entry.kind], ["status", entry.status], ["path", `/kfd/${entry.number}/`]],
-        )}
+        ${decisionPanels(kfdRegistry.entries)}
       </div>
     </section>
 
