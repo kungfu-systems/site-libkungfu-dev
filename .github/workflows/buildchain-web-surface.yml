@@ -42,7 +42,7 @@ jobs:
       preview-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-preview-github-actions
       staging-apply: true
       staging-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-staging-github-actions
-      production-apply: false
+      production-apply: true
       production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
       production-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions
       production-environment: production
