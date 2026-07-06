@@ -43,9 +43,15 @@ if (
 ) {
   throw new Error(`Buildchain web-surface workflow must run ${expectedBuildchainRef}`);
 }
-for (const applySwitch of ["preview-apply", "preview-cleanup-apply", "staging-apply", "production-apply"]) {
-  if (!workflow.includes(`${applySwitch}: false`)) {
-    throw new Error(`Buildchain web-surface workflow must keep ${applySwitch} false by default`);
+const expectedApplySwitches = {
+  "preview-apply": true,
+  "preview-cleanup-apply": true,
+  "staging-apply": true,
+  "production-apply": false,
+};
+for (const [applySwitch, expectedEnabled] of Object.entries(expectedApplySwitches)) {
+  if (!workflow.includes(`${applySwitch}: ${expectedEnabled}`)) {
+    throw new Error(`Buildchain web-surface workflow must set ${applySwitch}: ${expectedEnabled}`);
   }
 }
 

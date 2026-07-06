@@ -59,11 +59,13 @@ adds `buildchain.upstreams/kfd.release.json`, run
 
 This site is a Buildchain `web-surface` project. Pull requests and manual
 dispatches use the shared Buildchain v2.4 web-surface workflow for
-mutation-free preview, cleanup, staging, and production plans. The workflow
+preview, cleanup, staging, and production plans. Same-repository pull requests
+apply short-lived preview deployments, pull request closure applies preview
+cleanup, and `main` pushes apply the protected staging deployment. The workflow
 runs `npm ci` from the official npm registry before building so the generated
 Buildchain page is based on `@kungfu-tech/buildchain@2.4.1` and the generated
-KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.3`. Live apply remains
-disabled by default.
+KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.3`. Production apply remains
+disabled.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and
@@ -78,8 +80,8 @@ declared surfaces are ready.
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `npm run check` verifies that
 `buildchain.toml` and the GitHub Actions role assumptions still match that
-contract, wires all declared role references, and keeps apply switches off by
-default while production is pending.
+contract, wires all declared role references, and keeps production apply off
+while production is pending.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
