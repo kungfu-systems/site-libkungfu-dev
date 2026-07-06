@@ -8,14 +8,17 @@ Channel model:
   - `https://{alias}.preview.libkungfu.dev`
   - `https://core-{alias}.preview.libkungfu.dev`
   - `https://buildchain-{alias}.preview.libkungfu.dev`
+  - `https://kfd-{alias}.preview.libkungfu.dev`
 - Staging:
   - `https://staging.libkungfu.dev`
   - `https://core.staging.libkungfu.dev`
   - `https://buildchain.staging.libkungfu.dev`
+  - `https://kfd.staging.libkungfu.dev`
 - Production:
   - `https://libkungfu.dev`
   - `https://core.libkungfu.dev`
   - `https://buildchain.libkungfu.dev`
+  - `https://kfd.libkungfu.dev`
 
 The site artifact is static today, but the channel model must stay compatible
 with future dynamic adapters. Buildchain remains the deployment state machine:
@@ -33,9 +36,10 @@ resource lifecycle decisions belong in the infra repository.
 - The repository builds a static `dist/` artifact.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- Preview, preview cleanup, staging, and production apply are disabled in the
-  repository workflow by default. Enabling live apply requires a separate
-  reviewed change and explicit approval.
+- Preview, preview cleanup, and staging apply are enabled in the repository
+  workflow so same-repository pull requests publish short-lived preview
+  surfaces, closed pull requests clean them up, and `main` pushes publish the
+  protected staging channel.
 - The workflow uses Buildchain v2.4 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
@@ -53,11 +57,13 @@ render pinned upstream bundles:
 ```text
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
+kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
 Buildchain already uses the pinned `@kungfu-tech/buildchain@2.4.1` npm package
-and its exported `dist/site` bundle.
+and its exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd`
+package and its exported site bundle.
 
 Do not store AWS credentials in this repository.
 
@@ -70,8 +76,9 @@ marks production as `pending`.
 
 Before enabling production apply, verify:
 
-- `libkungfu.dev`, `core.libkungfu.dev`, and `buildchain.libkungfu.dev` are
-  configured as production aliases on the serving distribution;
+- `libkungfu.dev`, `core.libkungfu.dev`, `buildchain.libkungfu.dev`, and
+  `kfd.libkungfu.dev` are configured as production aliases on the serving
+  distribution;
 - DNS for all production surface hosts resolves to the intended distribution;
 - the GitHub OIDC role exists in AWS Global and is scoped to the production
   bucket and distribution;
