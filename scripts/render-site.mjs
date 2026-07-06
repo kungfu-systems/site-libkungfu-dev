@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
+import MarkdownIt from "markdown-it";
+import markdownItAnchor from "markdown-it-anchor";
 
 const repoRoot = process.cwd();
 const distDir = path.join(repoRoot, "dist");
@@ -27,6 +29,21 @@ function readPackageText(specifier) {
   return fs.readFileSync(require.resolve(specifier), "utf8");
 }
 
+function readPnpmLockPackage(packageName, version) {
+  const lockText = fs.readFileSync(path.join(repoRoot, "pnpm-lock.yaml"), "utf8");
+  const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^  '${escapedName}@${escapedVersion}':\\n(?:    .+\\n)*?    resolution: \\{integrity: ([^}]+)\\}`, "m");
+  const match = lockText.match(pattern);
+  if (!match) {
+    throw new Error(`pnpm-lock.yaml missing ${packageName}@${version}`);
+  }
+  return {
+    version,
+    integrity: match[1].trim(),
+  };
+}
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -51,91 +68,128 @@ function escapeAttr(value) {
 
 function inlineMarkdown(value) {
   return escapeHtml(value)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/g, '<a href="$2">$1</a>')
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
-function markdownToHtml(markdown) {
-  const lines = String(markdown).split(/\r?\n/);
-  const html = [];
-  let paragraph = [];
-  let list = null;
-  let code = null;
-
-  const flushParagraph = () => {
-    if (paragraph.length > 0) {
-      html.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
-      paragraph = [];
-    }
-  };
-  const flushList = () => {
-    if (list) {
-      html.push(`<${list.type}>${list.items.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</${list.type}>`);
-      list = null;
-    }
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-    if (code) {
-      if (line.startsWith("```")) {
-        html.push(`<pre><code>${escapeHtml(code.lines.join("\n"))}</code></pre>`);
-        code = null;
-      } else {
-        code.lines.push(line);
-      }
-      continue;
-    }
-    if (line.startsWith("```")) {
-      flushParagraph();
-      flushList();
-      code = { lines: [] };
-      continue;
-    }
-    if (!line.trim()) {
-      flushParagraph();
-      flushList();
-      continue;
-    }
-    const heading = line.match(/^(#{1,4})\s+(.+)$/);
-    if (heading) {
-      flushParagraph();
-      flushList();
-      const level = Math.min(heading[1].length + 1, 4);
-      html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
-      continue;
-    }
-    const unordered = line.match(/^\s*-\s+(.+)$/);
-    if (unordered) {
-      flushParagraph();
-      if (!list || list.type !== "ul") list = { type: "ul", items: [] };
-      list.items.push(unordered[1]);
-      continue;
-    }
-    const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
-    if (ordered) {
-      flushParagraph();
-      if (!list || list.type !== "ol") list = { type: "ol", items: [] };
-      list.items.push(ordered[1]);
-      continue;
-    }
-    flushList();
-    paragraph.push(line.trim());
-  }
-  flushParagraph();
-  flushList();
-  if (code) html.push(`<pre><code>${escapeHtml(code.lines.join("\n"))}</code></pre>`);
-  return html.join("\n");
+function splitTableRow(line) {
+  const trimmed = line.trim();
+  const body = trimmed.startsWith("|") && trimmed.endsWith("|")
+    ? trimmed.slice(1, -1)
+    : trimmed;
+  return body.split("|").map((cell) => cell.trim());
 }
 
-function page({ title, description, current, body }) {
+function isTableSeparator(line) {
+  const cells = splitTableRow(line);
+  return cells.length > 1 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function isTableRow(line) {
+  return line.includes("|") && splitTableRow(line).length > 1;
+}
+
+function isMarkdownTableBlock(content) {
+  const lines = String(content).split(/\r?\n/).filter((line) => line.trim());
+  return lines.length >= 2 && isTableRow(lines[0]) && isTableSeparator(lines[1]);
+}
+
+function slugifyHeading(value) {
+  const slug = String(value)
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return encodeURIComponent(slug || "section");
+}
+
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+})
+  .enable("table")
+  .use(markdownItAnchor, {
+    level: [1, 2, 3, 4],
+    slugify: slugifyHeading,
+  });
+
+const defaultFenceRule = markdown.renderer.rules.fence;
+markdown.renderer.rules.fence = (tokens, index, options, env, self) => {
+  const token = tokens[index];
+  const language = token.info.trim().split(/\s+/)[0];
+  if (language === "markdown" && isMarkdownTableBlock(token.content)) {
+    return markdown.render(token.content, env);
+  }
+  return defaultFenceRule(tokens, index, options, env, self);
+};
+
+markdown.renderer.rules.table_open = (tokens, index, options, env, self) =>
+  `<div class="table-wrap">${self.renderToken(tokens, index, options)}`;
+markdown.renderer.rules.table_close = (tokens, index, options, env, self) =>
+  `${self.renderToken(tokens, index, options)}</div>\n`;
+
+function headingText(token) {
+  if (!token?.children) return token?.content || "";
+  return token.children
+    .filter((child) => child.type === "text" || child.type === "code_inline")
+    .map((child) => child.content)
+    .join("");
+}
+
+function renderToc(toc) {
+  if (toc.length === 0) {
+    return `<aside class="doc-toc" aria-label="Decision sections">
+      <h2>Sections</h2>
+      <p>No sections found.</p>
+    </aside>`;
+  }
+  return `<aside class="doc-toc" aria-label="Decision sections">
+    <h2>Sections</h2>
+    <nav>${toc
+      .map(
+        (entry) => `<a class="toc-level-${entry.level}" href="#${escapeAttr(entry.id)}">${escapeHtml(entry.title)}</a>`,
+      )
+      .join("")}</nav>
+  </aside>`;
+}
+
+function renderDecisionMarkdown(source) {
+  const env = {};
+  const tokens = markdown.parse(String(source), env);
+  const toc = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.type !== "heading_open") continue;
+    const sourceLevel = Number(token.tag.slice(1));
+    const renderedLevel = Math.min(sourceLevel + 1, 4);
+    const title = headingText(tokens[index + 1]);
+    const id = token.attrGet("id");
+    token.tag = `h${renderedLevel}`;
+    if (tokens[index + 2]?.type === "heading_close") {
+      tokens[index + 2].tag = `h${renderedLevel}`;
+    }
+    if (id && title) {
+      toc.push({ id, title, level: renderedLevel });
+    }
+  }
+
+  return {
+    html: markdown.renderer.render(tokens, markdown.options, env),
+    tocHtml: renderToc(toc),
+  };
+}
+
+function page({ title, description, current, body, alternates = "" }) {
   const nav = [
     ["hub", "/", "Hub"],
     ["core", "/core/", "Core"],
     ["buildchain", "/buildchain/", "Buildchain"],
     ["kfd", "/kfd/", "KFD"],
-    ["manifest", "/manifest.json", "Manifest"],
-    ["agents", "/llms.txt", "Agents"],
   ];
 
   const navHtml = nav
@@ -154,6 +208,10 @@ function page({ title, description, current, body }) {
   <meta name="description" content="${escapeAttr(description)}">
   <meta name="robots" content="noindex">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="/manifest.json">
+  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="/llms.txt">
+  <link rel="alternate" type="text/plain" title="Full agent index" href="/llms-full.txt">
+${alternates}
   <style>
     :root {
       color-scheme: light dark;
@@ -348,6 +406,139 @@ function page({ title, description, current, body }) {
       min-width: 0;
     }
 
+    .table-wrap {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--fg);
+      background: color-mix(in srgb, var(--code) 70%, transparent);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .doc-toc {
+      position: sticky;
+      top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 16px;
+    }
+
+    .doc-toc h2 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .doc-toc nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-toc a {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+
+    .doc-toc a:hover,
+    .doc-toc a:focus {
+      color: var(--accent-strong);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .toc-level-3 {
+      padding-left: 12px;
+    }
+
+    .toc-level-4 {
+      padding-left: 24px;
+    }
+
+    .doc-content {
+      min-width: 0;
+    }
+
+    .doc-content h2,
+    .doc-content h3,
+    .doc-content h4 {
+      scroll-margin-top: 18px;
+    }
+
+    .doc-content h2:not(:first-child),
+    .doc-content h3:not(:first-child),
+    .doc-content h4:not(:first-child) {
+      margin-top: 28px;
+    }
+
+    .doc-content p,
+    .doc-content li {
+      color: var(--fg);
+    }
+
+    .doc-content p + p,
+    .doc-content p + ul,
+    .doc-content p + ol,
+    .doc-content ul + p,
+    .doc-content ol + p {
+      margin-top: 14px;
+    }
+
+    .doc-content ul,
+    .doc-content ol {
+      margin: 14px 0 0;
+      color: var(--fg);
+    }
+
+    .doc-content pre {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--code);
+      padding: 14px 16px;
+    }
+
+    .doc-content pre code {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
     .tag {
       display: inline-flex;
       align-items: center;
@@ -395,6 +586,12 @@ function page({ title, description, current, body }) {
     footer div {
       width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    footer p {
+      margin: 0;
     }
 
     @media (max-width: 820px) {
@@ -416,6 +613,14 @@ function page({ title, description, current, body }) {
       .meta {
         grid-template-columns: 1fr;
       }
+
+      .doc-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .doc-toc {
+        position: static;
+      }
     }
   </style>
 </head>
@@ -427,10 +632,24 @@ function page({ title, description, current, body }) {
     </div>
   </header>
   <main>${body}</main>
-  <footer><div>This repository renders upstream manifests and pinned package artifacts. It is not a product fact source.</div></footer>
+  <footer>
+    <div>
+      <p>&copy; 2026 Kungfu Origin Technology Limited.</p>
+      <p>Open developer and agent substrate hub. Facts come from upstream packages and pinned release artifacts.</p>
+      <p>Open-source components are governed by their repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">kungfu-systems on GitHub</a>.</p>
+    </div>
+  </footer>
 </body>
 </html>
 `;
+}
+
+function surfaceAlternates(surfacePath) {
+  const path = surfacePath.replace(/\/$/, "");
+  return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="${path}/manifest.json">
+  <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="${path}/llms.txt">
+  <link rel="alternate" type="application/json" title="KFD registry" href="${path}/registry.json">
+  <link rel="alternate" type="application/json" title="KFD standards" href="${path}/standards.json">`;
 }
 
 function surfaceCard(surface) {
@@ -517,12 +736,11 @@ const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
-const packageLock = readJsonFile(path.join(repoRoot, "package-lock.json"));
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const buildchainLock = packageLock.packages?.["node_modules/@kungfu-tech/buildchain"] ?? {};
-const kfdLock = packageLock.packages?.["node_modules/@kungfu-tech/kfd"] ?? {};
-const expectedBuildchainVersion = "2.4.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.3";
+const expectedBuildchainVersion = "2.8.1";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.7";
+const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
+const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
   throw new Error(`site-libkungfu-dev expects @kungfu-tech/buildchain ${expectedBuildchainVersion}`);
 }
@@ -570,18 +788,6 @@ writeFile(
     <section class="panel warning" style="margin-top: 18px;">
       <h2>Source boundary</h2>
       <p><strong>Fixture source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
-    </section>
-
-    <section class="grid" style="margin-top: 18px;">
-      ${site.stableMachineEntries
-        .map(
-          (entry) => `<article class="panel">
-            <h3>${escapeHtml(entry.label)}</h3>
-            <p>${escapeHtml(entry.purpose)}</p>
-            <p style="margin-top: 12px;"><a href="${escapeAttr(entry.path)}"><code>${escapeHtml(entry.path)}</code></a></p>
-          </article>`,
-        )
-        .join("\n")}
     </section>`,
   }),
 );
@@ -629,6 +835,7 @@ writeFile(
     title: "kfd.libkungfu.dev | Kung Fu Decisions",
     description: kfdPackage.description,
     current: "kfd",
+    alternates: surfaceAlternates("/kfd/"),
     body: `<section class="hero">
       <p class="eyebrow">Kung Fu Decisions</p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
@@ -702,12 +909,14 @@ writeFile(
 
 for (const entry of kfdRegistry.entries) {
   const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
+  const renderedDecision = renderDecisionMarkdown(decisionMarkdown);
   writeFile(
     `kfd/${entry.number}/index.html`,
     page({
       title: `${entry.id} | kfd.libkungfu.dev`,
       description: entry.title,
       current: "kfd",
+      alternates: surfaceAlternates("/kfd/"),
       body: `<section class="hero">
         <p class="eyebrow">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</p>
         <h1>${escapeHtml(entry.id)}</h1>
@@ -726,8 +935,11 @@ for (const entry of kfdRegistry.entries) {
         </dl>
       </section>
 
-      <section class="panel" style="margin-top: 18px;">
-        ${markdownToHtml(decisionMarkdown)}
+      <section class="doc-layout">
+        ${renderedDecision.tocHtml}
+        <article class="panel doc-content">
+          ${renderedDecision.html}
+        </article>
       </section>`,
     }),
   );
@@ -915,6 +1127,83 @@ const manifest = {
 };
 
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
+
+const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
+  id: entry.id,
+  number: entry.number,
+  kind: entry.kind,
+  status: entry.status,
+  title: entry.title,
+  path: `/kfd/${entry.number}/`,
+  url: `https://kfd.libkungfu.dev/kfd/${entry.number}/`,
+  source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
+}));
+
+const kfdAgentManifest = {
+  schemaVersion: 1,
+  contract: "kfd-agent-surface",
+  generatedAt,
+  canonicalHost: "kfd.libkungfu.dev",
+  humanEntry: "https://kfd.libkungfu.dev/",
+  agentEntries: {
+    llms: "https://kfd.libkungfu.dev/kfd/llms.txt",
+    manifest: "https://kfd.libkungfu.dev/kfd/manifest.json",
+    registry: "https://kfd.libkungfu.dev/kfd/registry.json",
+    standards: "https://kfd.libkungfu.dev/kfd/standards.json",
+  },
+  sourceBoundary: {
+    truthOwner: "@kungfu-tech/kfd",
+    siteRole: "rendering, routing, and agent discovery",
+    rule: "KFD facts, registry entries, standards metadata, and decision text come from the pinned @kungfu-tech/kfd package. This site may expose and render them, but must not fork their meaning.",
+  },
+  package: {
+    name: kfdPackage.name,
+    version: kfdPackage.version,
+    integrity: kfdLock.integrity,
+    registryContract: kfdRegistry.contract,
+    standardsContract: kfdStandards.contract,
+  },
+  readOrder: [
+    "https://kfd.libkungfu.dev/kfd/",
+    ...kfdDecisionEntries.map((entry) => entry.url),
+    "https://kfd.libkungfu.dev/kfd/registry.json",
+    "https://kfd.libkungfu.dev/kfd/standards.json",
+  ],
+  decisions: kfdDecisionEntries,
+  relatedSurfaces: {
+    buildchain: "https://buildchain.libkungfu.dev/",
+    kungfu: "https://kungfu.tech/",
+    hub: "https://libkungfu.dev/",
+  },
+};
+
+writeFile("kfd/manifest.json", `${JSON.stringify(kfdAgentManifest, null, 2)}\n`);
+writeFile("kfd/registry.json", `${JSON.stringify(kfdRegistry, null, 2)}\n`);
+writeFile("kfd/standards.json", `${JSON.stringify(kfdStandards, null, 2)}\n`);
+writeFile(
+  "kfd/llms.txt",
+  `# kfd.libkungfu.dev
+
+Kung Fu Decisions (KFD) is the kungfu-systems decision registry surface.
+
+Human entry:
+- https://kfd.libkungfu.dev/
+
+Agent-first entries:
+- https://kfd.libkungfu.dev/kfd/manifest.json
+- https://kfd.libkungfu.dev/kfd/registry.json
+- https://kfd.libkungfu.dev/kfd/standards.json
+- https://kfd.libkungfu.dev/kfd/llms.txt
+
+Read order:
+${kfdAgentManifest.readOrder.map((entry) => `- ${entry}`).join("\n")}
+
+Source boundary:
+KFD facts, registry entries, standards metadata, and decision text come from
+@kungfu-tech/kfd@${kfdPackage.version}. site-libkungfu-dev renders and exposes
+them, but does not own or fork their meaning.
+`,
+);
 
 writeFile(
   "llms.txt",

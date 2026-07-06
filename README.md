@@ -24,9 +24,9 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.4.1` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.8.1` through its exported `dist/site` bundle.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.3` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.7` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 
 Expected upstream flow:
@@ -44,16 +44,19 @@ pinned package artifacts.
 ## Local Check
 
 ```bash
-npm ci --ignore-scripts --registry=https://registry.npmjs.org/
-npm run build
-npm run check
+pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/
+pnpm run build
+pnpm run check
 ```
 
-The build writes `dist/`. The `npm ci` step makes the pinned Buildchain site
+The build writes `dist/`. The `pnpm install` step makes the pinned Buildchain site
 bundle available from `node_modules/`. When a Buildchain release propagation PR
 adds `buildchain.upstreams/kfd.release.json`, run
-`node scripts/prepare-kfd-upstream.mjs` before `npm ci`; it pins
-`@kungfu-tech/kfd` to the exact upstream release version from the lock.
+`node scripts/prepare-kfd-upstream.mjs` before `pnpm install --lockfile-only`;
+it pins `@kungfu-tech/kfd` to the exact upstream release version from the lock.
+The same preparation step refreshes the exact `minimumReleaseAgeExclude` entry
+in `pnpm-workspace.yaml`, so newly published KFD alpha packages can be rendered
+without disabling the age policy for unrelated dependencies.
 
 ## Buildchain
 
@@ -62,14 +65,14 @@ dispatches use the shared Buildchain v2.4 web-surface workflow for
 preview, cleanup, staging, and production plans. Same-repository pull requests
 apply short-lived preview deployments, pull request closure applies preview
 cleanup, and `main` pushes apply the protected staging deployment. The workflow
-runs `npm ci` from the official npm registry before building so the generated
-Buildchain page is based on `@kungfu-tech/buildchain@2.4.1` and the generated
-KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.3`. Production apply remains
+runs `pnpm install` from the official npm registry before building so the generated
+Buildchain page is based on `@kungfu-tech/buildchain@2.8.1` and the generated
+KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.7`. Production apply remains
 disabled.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and
-lockfile inside the build workspace, and verifies that the rendered
+pnpm lockfile inside the build workspace, and verifies that the rendered
 `kfd.libkungfu.dev` pages match the exact KFD release version and integrity.
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
@@ -78,16 +81,16 @@ Production remains `pending` until the public host aliases and DNS for all
 declared surfaces are ready.
 
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
-`kungfu-systems/infra-kungfu-sites` repository. `npm run check` verifies that
+`kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
 `buildchain.toml` and the GitHub Actions role assumptions still match that
 contract, wires all declared role references, and keeps production apply off
 while production is pending.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
-npm ci --ignore-scripts --registry=https://registry.npmjs.org/
-npm run build
-npm run check
+pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/
+pnpm run build
+pnpm run check
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode validate --cwd .
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode deploy-plan --cwd . --channel preview --source-sha "$(git rev-parse HEAD)"
 node "$BUILDCHAIN_DIR/scripts/web-surface.mjs" --mode deploy-plan --cwd . --channel staging --source-sha "$(git rev-parse HEAD)"
