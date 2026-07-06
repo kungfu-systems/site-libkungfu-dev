@@ -6,6 +6,12 @@ const buildchainToml = fs.readFileSync("buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
 const expectedBuildchainRef = "v2.4";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
+const requiredSurfaces = {
+  hub: "https://libkungfu.dev",
+  core: "https://core.libkungfu.dev",
+  buildchain: "https://buildchain.libkungfu.dev",
+  kfd: "https://kfd.libkungfu.dev",
+};
 
 function parseTomlSections(text) {
   const sections = {};
@@ -47,7 +53,7 @@ const expectedApplySwitches = {
   "preview-apply": true,
   "preview-cleanup-apply": true,
   "staging-apply": true,
-  "production-apply": false,
+  "production-apply": outputs.channels?.production?.status === "active",
 };
 for (const [applySwitch, expectedEnabled] of Object.entries(expectedApplySwitches)) {
   if (!workflow.includes(`${applySwitch}: ${expectedEnabled}`)) {
@@ -56,6 +62,14 @@ for (const [applySwitch, expectedEnabled] of Object.entries(expectedApplySwitche
 }
 
 const config = parseTomlSections(buildchainToml);
+for (const [surface, expectedUrl] of Object.entries(requiredSurfaces)) {
+  if (outputs.surfaces?.[surface] !== expectedUrl) {
+    throw new Error(`infra outputs surface ${surface} must be ${expectedUrl}`);
+  }
+  const surfaceConfig = config[`surfaces.${surface}`];
+  if (!surfaceConfig) throw new Error(`missing buildchain surface ${surface}`);
+  expectEqual(surfaceConfig.production_url, expectedUrl, `${surface} production URL`);
+}
 for (const channel of ["preview", "staging", "production"]) {
   const deploy = config[`deploy.${channel}`];
   const expected = outputs.channels[channel];
