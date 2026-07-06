@@ -61,14 +61,17 @@ without disabling the age policy for unrelated dependencies.
 ## Buildchain
 
 This site is a Buildchain `web-surface` project. Pull requests and manual
-dispatches use the shared Buildchain v2.4 web-surface workflow for
+dispatches use the shared Buildchain v2 web-surface workflow for
 preview, cleanup, staging, and production plans. Same-repository pull requests
 apply short-lived preview deployments, pull request closure applies preview
-cleanup, and `main` pushes apply the protected staging deployment. The workflow
-runs `pnpm install` from the official npm registry before building so the generated
-Buildchain page is based on `@kungfu-tech/buildchain@2.8.1` and the generated
-KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.7`. Production apply remains
-disabled.
+cleanup, ordinary `main` pushes apply the protected staging deployment, and
+merged release pull requests can apply the public production deployment. The
+release-PR gate requires the `buildchain-release` label and a `release/` source
+branch so production cannot drift from a reviewed release intent. Trusted manual
+dispatch can still apply production with `production_approved=true`. The workflow
+runs `pnpm install` from the official npm registry before building so the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.1` and the
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.7`.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and
@@ -77,14 +80,14 @@ pnpm lockfile inside the build workspace, and verifies that the rendered
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
 The AWS deployment targets are modeled in the private infrastructure contract.
-Production remains `pending` until the public host aliases and DNS for all
-declared surfaces are ready.
+Production is active and remains gated by Buildchain release intent or trusted
+manual approval.
 
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
 `buildchain.toml` and the GitHub Actions role assumptions still match that
-contract, wires all declared role references, and keeps production apply off
-while production is pending.
+contract, wires all declared role references, keeps the workflow shell on
+Buildchain `@v2`, and fails closed if the production release gate drifts.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
