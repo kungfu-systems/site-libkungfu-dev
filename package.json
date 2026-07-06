@@ -7,6 +7,7 @@
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
-    "@kungfu-tech/buildchain": "2.4.1"
+    "@kungfu-tech/buildchain": "2.4.1",
+    "@kungfu-tech/kfd": "1.0.0-alpha.3"
   }
 }

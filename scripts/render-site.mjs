@@ -15,8 +15,16 @@ function readFixtureJson(name) {
   return JSON.parse(fs.readFileSync(path.join(fixturesDir, name), "utf8"));
 }
 
+function readOptionalJsonFile(file) {
+  return fs.existsSync(file) ? readJsonFile(file) : undefined;
+}
+
 function readPackageJson(specifier) {
   return readJsonFile(require.resolve(specifier));
+}
+
+function readPackageText(specifier) {
+  return fs.readFileSync(require.resolve(specifier), "utf8");
 }
 
 function ensureDir(dir) {
@@ -41,11 +49,91 @@ function escapeAttr(value) {
   return escapeHtml(value);
 }
 
+function inlineMarkdown(value) {
+  return escapeHtml(value)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+function markdownToHtml(markdown) {
+  const lines = String(markdown).split(/\r?\n/);
+  const html = [];
+  let paragraph = [];
+  let list = null;
+  let code = null;
+
+  const flushParagraph = () => {
+    if (paragraph.length > 0) {
+      html.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
+      paragraph = [];
+    }
+  };
+  const flushList = () => {
+    if (list) {
+      html.push(`<${list.type}>${list.items.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</${list.type}>`);
+      list = null;
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (code) {
+      if (line.startsWith("```")) {
+        html.push(`<pre><code>${escapeHtml(code.lines.join("\n"))}</code></pre>`);
+        code = null;
+      } else {
+        code.lines.push(line);
+      }
+      continue;
+    }
+    if (line.startsWith("```")) {
+      flushParagraph();
+      flushList();
+      code = { lines: [] };
+      continue;
+    }
+    if (!line.trim()) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+    const unordered = line.match(/^\s*-\s+(.+)$/);
+    if (unordered) {
+      flushParagraph();
+      if (!list || list.type !== "ul") list = { type: "ul", items: [] };
+      list.items.push(unordered[1]);
+      continue;
+    }
+    const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (ordered) {
+      flushParagraph();
+      if (!list || list.type !== "ol") list = { type: "ol", items: [] };
+      list.items.push(ordered[1]);
+      continue;
+    }
+    flushList();
+    paragraph.push(line.trim());
+  }
+  flushParagraph();
+  flushList();
+  if (code) html.push(`<pre><code>${escapeHtml(code.lines.join("\n"))}</code></pre>`);
+  return html.join("\n");
+}
+
 function page({ title, description, current, body }) {
   const nav = [
     ["hub", "/", "Hub"],
     ["core", "/core/", "Core"],
     ["buildchain", "/buildchain/", "Buildchain"],
+    ["kfd", "/kfd/", "KFD"],
     ["manifest", "/manifest.json", "Manifest"],
     ["agents", "/llms.txt", "Agents"],
   ];
@@ -396,14 +484,30 @@ const buildchainArtifactSchemas = readPackageJson("@kungfu-tech/buildchain/site/
 const buildchainProductMechanism = readPackageJson("@kungfu-tech/buildchain/site/product-mechanism.json");
 const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/site/release-provenance.json");
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
+const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
+const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
+const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
+const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const packageLock = readJsonFile(path.join(repoRoot, "package-lock.json"));
+const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
 const buildchainLock = packageLock.packages?.["node_modules/@kungfu-tech/buildchain"] ?? {};
+const kfdLock = packageLock.packages?.["node_modules/@kungfu-tech/kfd"] ?? {};
 const expectedBuildchainVersion = "2.4.1";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.3";
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
   throw new Error(`site-libkungfu-dev expects @kungfu-tech/buildchain ${expectedBuildchainVersion}`);
 }
+if (kfdPackage.version !== expectedKfdVersion || kfdLock.version !== expectedKfdVersion) {
+  throw new Error(`site-libkungfu-dev expects @kungfu-tech/kfd ${expectedKfdVersion}`);
+}
+if (kfdPropagationLock && kfdLock.integrity !== kfdPropagationLock.upstream?.package?.integrity) {
+  throw new Error("installed KFD package integrity does not match Buildchain release propagation lock");
+}
 if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
   throw new Error("unexpected Buildchain site bundle contract");
+}
+if (kfdSite.contract !== "kfd-site-bundle") {
+  throw new Error("unexpected KFD site bundle contract");
 }
 const buildchainMachineArtifacts = Array.from(
   new Set([
@@ -489,6 +593,121 @@ writeFile(
     </section>`,
   }),
 );
+
+writeFile(
+  "kfd/index.html",
+  page({
+    title: "kfd.libkungfu.dev | Kung Fu Decisions",
+    description: kfdPackage.description,
+    current: "kfd",
+    body: `<section class="hero">
+      <p class="eyebrow">Kung Fu Decisions</p>
+      <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
+      <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
+    </section>
+
+    <section class="panel">
+      <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.foundationTriad.intro)}</p>
+      <div class="grid three" style="margin-top: 18px;">
+        ${kfdSite.homepage.foundationTriad.commitments
+          .map(
+            (entry) => `<article class="panel">
+              <h3>${escapeHtml(entry.id)}</h3>
+              <p>${inlineMarkdown(entry.text)}</p>
+            </article>`,
+          )
+          .join("\n")}
+      </div>
+      <p style="margin-top: 18px;">${inlineMarkdown(kfdSite.homepage.foundationTriad.summary)}</p>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.foundationModel.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.foundationModel.intro)}</p>
+      <div class="grid three" style="margin-top: 18px;">
+        ${factPanels(
+          kfdSite.homepage.foundationModel.layers,
+          (layer) => layer.layer,
+          (layer) => layer.commitment,
+          (layer) => [["decision", layer.decision], ["question", layer.readerQuestion]],
+        )}
+      </div>
+      <p style="margin-top: 18px;"><code>${escapeHtml(kfdSite.homepage.foundationModel.chain)}</code></p>
+      <div class="stack" style="margin-top: 18px;">
+        ${kfdSite.homepage.foundationModel.explanation.map((text) => `<p>${inlineMarkdown(text)}</p>`).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
+      <div class="grid three">
+        ${factPanels(
+          kfdRegistry.entries,
+          (entry) => entry.id,
+          (entry) => entry.title,
+          (entry) => [["kind", entry.kind], ["status", entry.status], ["path", `/kfd/${entry.number}/`]],
+        )}
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Machine facts</h2>
+      <dl class="meta">
+        <dt>Package</dt>
+        <dd><code>${escapeHtml(kfdPackage.name)}</code></dd>
+        <dt>Version</dt>
+        <dd><code>${escapeHtml(kfdPackage.version)}</code></dd>
+        <dt>Site bundle</dt>
+        <dd><code>${escapeHtml(kfdSite.contract)}</code></dd>
+        <dt>Registry</dt>
+        <dd><code>${escapeHtml(kfdSite.decisionPages.source)}</code></dd>
+        <dt>Standards</dt>
+        <dd><code>${escapeHtml(kfdStandards.contract)}</code></dd>
+        <dt>Lock integrity</dt>
+        <dd><code>${escapeHtml(kfdLock.integrity)}</code></dd>
+      </dl>
+    </section>`,
+  }),
+);
+
+for (const entry of kfdRegistry.entries) {
+  const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
+  writeFile(
+    `kfd/${entry.number}/index.html`,
+    page({
+      title: `${entry.id} | kfd.libkungfu.dev`,
+      description: entry.title,
+      current: "kfd",
+      body: `<section class="hero">
+        <p class="eyebrow">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</p>
+        <h1>${escapeHtml(entry.id)}</h1>
+        <p class="lead">${escapeHtml(entry.title)}</p>
+      </section>
+
+      <section class="panel">
+        <h2>Decision metadata</h2>
+        <dl class="meta">
+          <dt>Number</dt>
+          <dd><code>${escapeHtml(entry.number)}</code></dd>
+          <dt>Stable URL</dt>
+          <dd><code>${escapeHtml(entry.url)}</code></dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(entry.path)}</code></dd>
+        </dl>
+      </section>
+
+      <section class="panel" style="margin-top: 18px;">
+        ${markdownToHtml(decisionMarkdown)}
+      </section>`,
+    }),
+  );
+}
 
 writeFile(
   "buildchain/index.html",
@@ -624,6 +843,16 @@ const manifest = {
       host: "buildchain.libkungfu.dev",
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
+    {
+      path: "/kfd/",
+      host: "kfd.libkungfu.dev",
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
+    },
+    ...kfdRegistry.entries.map((entry) => ({
+      path: `/kfd/${entry.number}/`,
+      host: "kfd.libkungfu.dev",
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
+    })),
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
@@ -642,6 +871,22 @@ const manifest = {
       lockIntegrity: buildchainLock.integrity,
       exportedEntrypoints: buildchainSite.entrypoints,
     },
+    kfd: {
+      contract: kfdSite.contract,
+      package: kfdPackage.name,
+      version: kfdPackage.version,
+      lockIntegrity: kfdLock.integrity,
+      releaseLock: kfdPropagationLock
+        ? {
+            path: "buildchain.upstreams/kfd.release.json",
+            tag: kfdPropagationLock.upstream?.tag,
+            lockSha256: kfdPropagationLock.lockSha256,
+          }
+        : undefined,
+      registryContract: kfdRegistry.contract,
+      standardsContract: kfdStandards.contract,
+      decisionCount: kfdRegistry.entries.length,
+    },
   },
 };
 
@@ -657,6 +902,7 @@ Primary pages:
 - https://libkungfu.dev/
 - https://core.libkungfu.dev/
 - https://buildchain.libkungfu.dev/
+- https://kfd.libkungfu.dev/
 
 Machine entries:
 - https://libkungfu.dev/manifest.json
@@ -666,7 +912,8 @@ Machine entries:
 Source boundary:
 This repository renders upstream manifests. It is not a product fact source.
 Core facts must come from @kungfu-tech/spec. Buildchain facts must come from
-the @kungfu-tech/buildchain docs/site bundle.
+the @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
+@kungfu-tech/kfd site bundle, registry, and decision documents.
 `,
 );
 

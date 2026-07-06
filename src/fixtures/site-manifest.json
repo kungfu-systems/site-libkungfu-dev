@@ -26,6 +26,14 @@
       "label": "Buildchain surface",
       "summary": "CI/CD, release governance, publish transactions, artifact evidence, web-surface deploys, and CLI/SDK observability.",
       "source": "buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev"
+    },
+    {
+      "id": "kfd",
+      "host": "kfd.libkungfu.dev",
+      "path": "/kfd/",
+      "label": "Kung Fu Decisions",
+      "summary": "Organization-wide decision registry, standard metadata, schemas, and decision pages.",
+      "source": "kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev"
     }
   ],
   "stableMachineEntries": [
