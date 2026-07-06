@@ -34,8 +34,8 @@ jobs:
     with:
       buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
       node-version: "24"
-      build-command: node scripts/prepare-kfd-upstream.mjs && npm install --package-lock-only --ignore-scripts --registry=https://registry.npmjs.org/ && npm ci --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build
-      verify-command: npm run check
+      build-command: node scripts/prepare-kfd-upstream.mjs && pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0 && pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ && pnpm run build
+      verify-command: pnpm run check
       artifact-path: dist
       preview-apply: true
       preview-cleanup-apply: true

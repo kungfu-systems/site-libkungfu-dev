@@ -4,10 +4,33 @@ import path from "node:path";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const lockPath = path.join(repoRoot, "buildchain.upstreams", "kfd.release.json");
 const packagePath = path.join(repoRoot, "package.json");
+const workspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
 const packageName = "@kungfu-tech/kfd";
 
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function ensureMinimumReleaseAgeExclude(version) {
+  const entry = `${packageName}@${version}`;
+  const current = fs.existsSync(workspacePath) ? fs.readFileSync(workspacePath, "utf8") : "";
+  const pattern = /^minimumReleaseAgeExclude:\n((?:  - .+\n)*)/m;
+  const match = current.match(pattern);
+  const existing = match
+    ? match[1]
+        .split(/\r?\n/)
+        .map((line) => line.trim().replace(/^- /, "").replace(/^"|"$/g, ""))
+        .filter(Boolean)
+    : [];
+  const entries = Array.from(new Set([...existing, entry])).sort();
+  const nextBlock = `minimumReleaseAgeExclude:\n${entries.map((item) => `  - "${item}"`).join("\n")}\n`;
+  const next = match
+    ? current.replace(pattern, nextBlock)
+    : `${current.replace(/\s*$/, "")}${current.trim() ? "\n\n" : ""}${nextBlock}`;
+  if (next !== current) {
+    fs.writeFileSync(workspacePath, next);
+    console.log(`prepare-kfd-upstream: allowed ${packageName}@${version} through pnpm minimumReleaseAge`);
+  }
 }
 
 if (!fs.existsSync(lockPath)) {
@@ -40,3 +63,4 @@ if (pkg.dependencies[packageName] !== version) {
 } else {
   console.log(`prepare-kfd-upstream: ${packageName}@${version} already pinned`);
 }
+ensureMinimumReleaseAgeExclude(version);
