@@ -32,7 +32,7 @@
       "bucket": "libkungfu-dev-site-727884401362-us-east-1",
       "cloudfrontDistribution": "EXWVGLVVXGURT",
       "roleArn": "arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions",
-      "status": "pending"
+      "status": "active"
     }
   }
 }
