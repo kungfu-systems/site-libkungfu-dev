@@ -34,7 +34,7 @@ jobs:
     with:
       buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
       node-version: "24"
-      build-command: npm ci --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build
+      build-command: node scripts/prepare-kfd-upstream.mjs && npm install --package-lock-only --ignore-scripts --registry=https://registry.npmjs.org/ && npm ci --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build
       verify-command: npm run check
       artifact-path: dist
       preview-apply: false

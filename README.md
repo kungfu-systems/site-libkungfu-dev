@@ -15,6 +15,8 @@ machines, artifact schemas, or provenance facts.
   ledger, spec, schema registry, vectors, and stable docs URLs.
 - `https://buildchain.libkungfu.dev` presents Buildchain as the Kungfu CI/CD and
   release-governance product surface.
+- `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
+  decision registry, standards metadata, schemas, and stable decision pages.
 - `https://kungfu.tech` remains the end-user, buyer, and Kungfu Rewind product
   home.
 
@@ -23,12 +25,16 @@ machines, artifact schemas, or provenance facts.
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
 `@kungfu-tech/buildchain@2.4.1` through its exported `dist/site` bundle.
+The KFD page consumes the pinned npm package artifact
+`@kungfu-tech/kfd@1.0.0-alpha.3` through `site/kfd-site.json`,
+`registry.json`, `standards.json`, and decision markdown exports.
 
 Expected upstream flow:
 
 ```text
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
+kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
 Do not hand-write upstream facts in this repository. When more upstream
@@ -44,7 +50,10 @@ npm run check
 ```
 
 The build writes `dist/`. The `npm ci` step makes the pinned Buildchain site
-bundle available from `node_modules/`.
+bundle available from `node_modules/`. When a Buildchain release propagation PR
+adds `buildchain.upstreams/kfd.release.json`, run
+`node scripts/prepare-kfd-upstream.mjs` before `npm ci`; it pins
+`@kungfu-tech/kfd` to the exact upstream release version from the lock.
 
 ## Buildchain
 
@@ -52,8 +61,14 @@ This site is a Buildchain `web-surface` project. Pull requests and manual
 dispatches use the shared Buildchain v2.4 web-surface workflow for
 mutation-free preview, cleanup, staging, and production plans. The workflow
 runs `npm ci` from the official npm registry before building so the generated
-Buildchain page is based on `@kungfu-tech/buildchain@2.4.1`. Live apply remains
+Buildchain page is based on `@kungfu-tech/buildchain@2.4.1` and the generated
+KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.3`. Live apply remains
 disabled by default.
+
+KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
+workflow consumes that lock before install, updates the local package pin and
+lockfile inside the build workspace, and verifies that the rendered
+`kfd.libkungfu.dev` pages match the exact KFD release version and integrity.
 
 Staging is modeled as managed-network protected, not edge Basic Auth protected.
 The AWS deployment targets are modeled in the private infrastructure contract.

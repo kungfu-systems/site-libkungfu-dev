@@ -18,6 +18,8 @@ node scripts/render-site.mjs
 test -f dist/index.html
 test -f dist/core/index.html
 test -f dist/buildchain/index.html
+test -f dist/kfd/index.html
+test -f dist/kfd/1/index.html
 test -f dist/manifest.json
 test -f dist/llms.txt
 
