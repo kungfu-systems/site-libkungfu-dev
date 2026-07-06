@@ -40,12 +40,13 @@ resource lifecycle decisions belong in the infra repository.
   workflow so same-repository pull requests publish short-lived preview
   surfaces, closed pull requests clean them up, and `main` pushes publish the
   protected staging channel.
-- The workflow uses Buildchain v2.4 first-class surface host mappings, so each
+- The workflow uses the Buildchain v2 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
-- Production apply remains disabled until production promotion is explicitly
-  approved and the production channel status is active in the infrastructure
-  contract.
+- Production apply is enabled because the production channel status is active in
+  the infrastructure contract. Buildchain still gates production on trusted
+  manual approval or a merged release pull request with the `buildchain-release`
+  label and a `release/` source branch.
 - Staging is modeled as managed-network protected, matching the current Kungfu
   site policy. Do not add Basic Auth secrets to this repository.
 
@@ -61,7 +62,7 @@ kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
-Buildchain already uses the pinned `@kungfu-tech/buildchain@2.4.1` npm package
+Buildchain already uses the pinned `@kungfu-tech/buildchain@2.8.1` npm package
 and its exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd`
 package and its exported site bundle.
 
@@ -71,10 +72,11 @@ Do not store AWS credentials in this repository.
 
 The workflow carries the planned production role reference so Buildchain can
 plan the production channel with the same contract shape as other sites.
-However, `production-apply` stays `false` while the infrastructure contract
-marks production as `pending`.
+`production-apply` stays wired to the mirrored infrastructure contract: when the
+production channel is active, `pnpm run check` requires production apply and the
+release-PR gate to stay enabled.
 
-Before enabling production apply, verify:
+Production readiness must remain true:
 
 - `libkungfu.dev`, `core.libkungfu.dev`, `buildchain.libkungfu.dev`, and
   `kfd.libkungfu.dev` are configured as production aliases on the serving

@@ -14,8 +14,8 @@
 ## Work In This Repository
 
 - `src/fixtures/` contains temporary contract fixtures for hub/core.
-- `@kungfu-tech/buildchain@2.4.1` supplies the Buildchain `dist/site` bundle.
-- `@kungfu-tech/kfd@1.0.0-alpha.3` supplies the KFD site bundle, registry,
+- `@kungfu-tech/buildchain@2.8.1` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/kfd@1.0.0-alpha.7` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
   package artifacts.

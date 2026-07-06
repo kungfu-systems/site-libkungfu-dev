@@ -4,7 +4,7 @@ import fs from "node:fs";
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync("buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
-const expectedBuildchainRef = "v2.4";
+const expectedBuildchainRef = "v2";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
@@ -54,10 +54,20 @@ const expectedApplySwitches = {
   "preview-cleanup-apply": true,
   "staging-apply": true,
   "production-apply": outputs.channels?.production?.status === "active",
+  "production-release-on-main": outputs.channels?.production?.status === "active",
 };
 for (const [applySwitch, expectedEnabled] of Object.entries(expectedApplySwitches)) {
   if (!workflow.includes(`${applySwitch}: ${expectedEnabled}`)) {
     throw new Error(`Buildchain web-surface workflow must set ${applySwitch}: ${expectedEnabled}`);
+  }
+}
+const releaseGateSnippets = {
+  "production-release-label": "buildchain-release",
+  "production-release-head-prefix": "release/",
+};
+for (const [key, expected] of Object.entries(releaseGateSnippets)) {
+  if (!workflow.includes(`${key}: ${expected}`)) {
+    throw new Error(`Buildchain web-surface workflow must set ${key}: ${expected}`);
   }
 }
 

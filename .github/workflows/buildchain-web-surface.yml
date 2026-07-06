@@ -18,7 +18,7 @@ on:
         required: false
         default: ""
       production_approved:
-        description: "Plan the gated production channel"
+        description: "Apply the gated production channel for trusted manual dispatch"
         type: boolean
         required: false
         default: false
@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   web-surface:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2.4
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
     with:
       buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
       node-version: "24"
@@ -44,5 +44,8 @@ jobs:
       staging-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-staging-github-actions
       production-apply: true
       production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
+      production-release-on-main: true
+      production-release-label: buildchain-release
+      production-release-head-prefix: release/
       production-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions
       production-environment: production
