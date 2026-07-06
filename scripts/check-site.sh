@@ -23,6 +23,8 @@ const requiredFiles = [
   "dist/buildchain/index.html",
   "dist/kfd/index.html",
   "dist/kfd/1/index.html",
+  "dist/kfd/2/index.html",
+  "dist/kfd/3/index.html",
   "dist/manifest.json",
   "dist/llms.txt",
 ];
@@ -124,6 +126,13 @@ if (kfdPropagationLock && manifest.upstreamPackages.kfd.releaseLock?.lockSha256 
 }
 if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === "/kfd/")) {
   throw new Error("dist manifest does not record kfd.libkungfu.dev");
+}
+const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
+for (const entry of kfdRegistry.entries) {
+  const href = `href="/kfd/${entry.number}/"`;
+  if (!kfdHomeHtml.includes(href)) {
+    throw new Error(`KFD home page is missing decision link: ${href}`);
+  }
 }
 NODE
 
