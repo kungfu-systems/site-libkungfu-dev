@@ -199,6 +199,9 @@ for (const [label, html] of [["KFD-1", kfdOneHtml], ["KFD-2", kfdTwoHtml], ["KFD
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
+  if (!html.includes('<p class="eyebrow"><a href="https://kfd.libkungfu.dev/" aria-label="Back to KFD home">')) {
+    throw new Error(`${label} page is missing the KFD home breadcrumb link`);
+  }
   if (!html.includes('class="panel doc-content"') || !html.includes('tabindex="-1"')) {
     throw new Error(`${label} markdown content is missing anchored headings`);
   }
