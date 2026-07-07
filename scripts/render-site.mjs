@@ -197,9 +197,9 @@ function renderMarkdownBody(source) {
 
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
-    ["core", "/core/", "Core"],
-    ["buildchain", "/buildchain/", "Buildchain"],
-    ["kfd", "/kfd/", "KFD"],
+    ["core", "https://core.libkungfu.dev/", "Core"],
+    ["buildchain", "https://buildchain.libkungfu.dev/", "Buildchain"],
+    ["kfd", "https://kfd.libkungfu.dev/", "KFD"],
   ];
 
   const navHtml = nav
@@ -899,7 +899,7 @@ ${alternates}
 <body>
   <header>
     <div class="bar">
-      <a class="brand" href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
+      <a class="brand" href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
       <nav aria-label="Primary">${navHtml}</nav>
     </div>
   </header>
@@ -947,8 +947,13 @@ function surfaceById(id) {
   return surface;
 }
 
+function surfaceCanonicalUrl(surface) {
+  return `https://${surface.host}/`;
+}
+
 function mechanismStepCard(step) {
   const surface = surfaceById(step.surface);
+  const href = surfaceCanonicalUrl(surface);
   const actionLabel =
     surface.id === "kfd"
       ? "Open KFD"
@@ -960,11 +965,11 @@ function mechanismStepCard(step) {
   return `<article class="panel mechanism-step">
     <div class="tag">${escapeHtml(surface.host)}</div>
     <div>
-      <h3><a href="${escapeAttr(surface.path)}">${escapeHtml(surface.label)}</a></h3>
+      <h3><a href="${escapeAttr(href)}">${escapeHtml(surface.label)}</a></h3>
       <p class="mechanism-role">${escapeHtml(step.role)}</p>
     </div>
     <p>${escapeHtml(step.summary)}</p>
-    <a class="card-action" href="${escapeAttr(surface.path)}">${escapeHtml(actionLabel)}</a>
+    <a class="card-action" href="${escapeAttr(href)}">${escapeHtml(actionLabel)}</a>
   </article>`;
 }
 
@@ -1006,10 +1011,10 @@ function foundationModelPanels(layers) {
       (layer) => {
         const match = /^KFD-(\d+)\b/.exec(layer.decision);
         const title = match
-          ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(layer.layer)}</a>`
+          ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(layer.layer)}</a>`
           : escapeHtml(layer.layer);
         const decision = match
-          ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(layer.decision)}</a>`
+          ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(layer.decision)}</a>`
           : inlineMarkdown(layer.decision);
         return `<article class="panel foundation-layer">
         <h3>${title}</h3>
@@ -1033,7 +1038,7 @@ function foundationModelPanels(layers) {
 function decisionPanels(entries) {
   return entries
     .map((entry) => {
-      const path = `${entry.number}/`;
+      const path = `/${entry.number}/`;
       return `<article class="panel decision-card">
         <h3><a href="${escapeAttr(path)}">${escapeHtml(entry.id)}</a></h3>
         <p class="decision-summary">${escapeHtml(entry.title)}</p>
@@ -1129,9 +1134,9 @@ writeFile(
       <p class="lead">${escapeHtml(site.homepage.lead)}</p>
       <div class="visual substrate-map" aria-label="Product generation map">
         <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and kungfu.tech carries future products.">
-        <a class="map-hotspot kfd" href="/kfd/" aria-label="Open KFD"></a>
-        <a class="map-hotspot buildchain" href="/buildchain/" aria-label="Open Buildchain"></a>
-        <a class="map-hotspot core" href="/core/" aria-label="Open Core"></a>
+        <a class="map-hotspot kfd" href="https://kfd.libkungfu.dev/" aria-label="Open KFD"></a>
+        <a class="map-hotspot buildchain" href="https://buildchain.libkungfu.dev/" aria-label="Open Buildchain"></a>
+        <a class="map-hotspot core" href="https://core.libkungfu.dev/" aria-label="Open Core"></a>
         <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open kungfu.tech"></a>
       </div>
     </section>
@@ -1160,7 +1165,7 @@ writeFile(
     description: "libkungfu, yijinjing, runtime fact ledger, specs, schemas, and conformance vectors.",
     current: "core",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
+      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
       <h1>${escapeHtml(core.surfaceHost)}</h1>
       <p class="lead">Generated surface for libkungfu, yijinjing, runtime fact ledger specs, schema registry, and conformance vectors.</p>
     </section>
@@ -1198,7 +1203,7 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
+      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
       <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
     </section>
@@ -1212,7 +1217,7 @@ writeFile(
             (entry) => {
               const match = /^KFD-(\d+)\b/.exec(entry.id);
               const title = match
-                ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(entry.id)}</a>`
+                ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(entry.id)}</a>`
                 : escapeHtml(entry.id);
               return `<article class="panel foundation-triad-card">
               <h3>${title}</h3>
@@ -1296,7 +1301,7 @@ for (const entry of kfdRegistry.entries) {
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-        <p class="eyebrow page-kicker"><a href="../" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
       </section>
@@ -1331,7 +1336,7 @@ writeFile(
     description: buildchainPackage.description,
     current: "buildchain",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
+      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
       <h1>Buildchain Release Passport</h1>
       <p class="lead">${escapeHtml(buildchainPackage.description)}</p>
     </section>
