@@ -4,13 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@kungfu-tech/buildchain>@kungfu-tech/kfd': 1.0.0-alpha.16
+
 importers:
 
   .:
     dependencies:
       '@kungfu-tech/buildchain':
-        specifier: 2.8.1
-        version: 2.8.1
+        specifier: 2.8.7-alpha.1
+        version: 2.8.7-alpha.1
       '@kungfu-tech/kfd':
         specifier: 1.0.0-alpha.16
         version: 1.0.0-alpha.16
@@ -23,16 +26,13 @@ importers:
 
 packages:
 
-  '@kungfu-tech/buildchain@2.8.1':
-    resolution: {integrity: sha512-gAbjhqQiVwCwEh65HSuAQY72DUg0SmLC6DdieMuo2aMiaDBoW5JPfzmQ0WBq0rXwtQ6IeiUzF4/UvkcRU51JTQ==}
+  '@kungfu-tech/buildchain@2.8.7-alpha.1':
+    resolution: {integrity: sha512-gDbdxJIaFYUvbGVcTHAGeKK8Ksg+91ynCS4Ou+h2zfOWGc+mczvvs6ul6+dzWNS4uKeTFkGB6ikgkAmUrzpxvQ==}
     engines: {node: '>=22.14.0'}
     hasBin: true
 
   '@kungfu-tech/kfd@1.0.0-alpha.16':
     resolution: {integrity: sha512-u2tHV9YRTr3U3hvB979SGX5WXoIPSjAWYk5li/5bOPvDyl3w4JZrf1b8c/CEIJi/vNXlylBUJQ1eLZEpWQlqUw==}
-
-  '@kungfu-tech/kfd@1.0.0-alpha.3':
-    resolution: {integrity: sha512-BZ6nDWCUMa46w/xkpFpwm79ejMIAAB8jXllhbvj5MldkysWnMFsXRi9COjEBGCoioJbHR7QBE8a1ik0IUBfurA==}
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -79,14 +79,12 @@ packages:
 
 snapshots:
 
-  '@kungfu-tech/buildchain@2.8.1':
+  '@kungfu-tech/buildchain@2.8.7-alpha.1':
     dependencies:
-      '@kungfu-tech/kfd': 1.0.0-alpha.3
+      '@kungfu-tech/kfd': 1.0.0-alpha.16
       smol-toml: 1.7.0
 
   '@kungfu-tech/kfd@1.0.0-alpha.16': {}
-
-  '@kungfu-tech/kfd@1.0.0-alpha.3': {}
 
   '@types/linkify-it@5.0.0': {}
 
