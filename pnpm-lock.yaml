@@ -12,8 +12,8 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.15
-        version: 1.0.0-alpha.15
+        specifier: 1.0.0-alpha.16
+        version: 1.0.0-alpha.16
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -28,8 +28,8 @@ packages:
     engines: {node: '>=22.14.0'}
     hasBin: true
 
-  '@kungfu-tech/kfd@1.0.0-alpha.15':
-    resolution: {integrity: sha512-0hoC9ezz/W5vLr6T06ZegVAAl6VL1yQtUH0phiMNYGRci+mkcF8lhGPZbIMmZR4haIUTGBMFg1CKC6wjMFCkkw==}
+  '@kungfu-tech/kfd@1.0.0-alpha.16':
+    resolution: {integrity: sha512-u2tHV9YRTr3U3hvB979SGX5WXoIPSjAWYk5li/5bOPvDyl3w4JZrf1b8c/CEIJi/vNXlylBUJQ1eLZEpWQlqUw==}
 
   '@kungfu-tech/kfd@1.0.0-alpha.3':
     resolution: {integrity: sha512-BZ6nDWCUMa46w/xkpFpwm79ejMIAAB8jXllhbvj5MldkysWnMFsXRi9COjEBGCoioJbHR7QBE8a1ik0IUBfurA==}
@@ -84,7 +84,7 @@ snapshots:
       '@kungfu-tech/kfd': 1.0.0-alpha.3
       smol-toml: 1.7.0
 
-  '@kungfu-tech/kfd@1.0.0-alpha.15': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.16': {}
 
   '@kungfu-tech/kfd@1.0.0-alpha.3': {}
 

@@ -1068,7 +1068,7 @@ const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.15";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1098,7 +1098,7 @@ const buildchainMachineArtifacts = Array.from(
 );
 const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
 const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
-const kfdRendererContractSectionIds = kfdSite.homepage.displayPlan?.rendererContract || [];
+const kfdRendererContract = kfdSite.homepage.rendererContract;
 
 function kfdHomepageSection(id) {
   return kfdSite.homepage.sections?.find((section) => section.id === id);
@@ -1257,14 +1257,6 @@ writeFile(
         : ""
     }
 
-    ${
-      kfdRendererContractSectionIds.length > 0
-        ? `<div class="stack" style="margin-top: 18px;">
-        ${kfdHomepageSectionPanels(kfdRendererContractSectionIds, "kfd-renderer-contract-section")}
-      </div>`
-        : ""
-    }
-
     <section class="panel" style="margin-top: 18px;">
       <h2>Machine facts</h2>
       <dl class="meta">
@@ -1278,6 +1270,16 @@ writeFile(
         <dd><code>${escapeHtml(kfdSite.decisionPages.source)}</code></dd>
         <dt>Standards</dt>
         <dd><code>${escapeHtml(kfdStandards.contract)}</code></dd>
+        ${
+          kfdRendererContract
+            ? `<dt>Renderer contract</dt>
+        <dd><code>${escapeHtml(kfdRendererContract.id)}</code></dd>
+        <dt>Renderer contract display</dt>
+        <dd><code>renderAsHomepageContent: ${escapeHtml(String(kfdRendererContract.renderAsHomepageContent))}</code></dd>
+        <dt>Renderer contract note</dt>
+        <dd>${escapeHtml(kfdRendererContract.note)}</dd>`
+            : ""
+        }
         <dt>Lock integrity</dt>
         <dd><code>${escapeHtml(kfdLock.integrity)}</code></dd>
       </dl>

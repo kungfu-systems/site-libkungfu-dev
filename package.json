@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@kungfu-tech/buildchain": "2.8.1",
-    "@kungfu-tech/kfd": "1.0.0-alpha.15",
+    "@kungfu-tech/kfd": "1.0.0-alpha.16",
     "markdown-it": "14.1.0",
     "markdown-it-anchor": "9.2.0"
   }

@@ -58,7 +58,7 @@ const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/k
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.15";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -130,10 +130,13 @@ if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("KFD site bundle contract mismatch");
 }
 if (!Array.isArray(kfdSite.homepage.sections) || kfdSite.homepage.sections.length === 0) {
-  throw new Error("KFD alpha.15 site bundle must expose homepage.sections");
+  throw new Error("KFD alpha.16 site bundle must expose homepage.sections");
 }
 if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !Array.isArray(kfdSite.homepage.displayPlan?.rendererContract)) {
-  throw new Error("KFD alpha.15 site bundle must expose homepage.displayPlan support and rendererContract groups");
+  throw new Error("KFD alpha.16 site bundle must expose homepage.displayPlan support and rendererContract groups");
+}
+if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
+  throw new Error("KFD alpha.16 rendererContract must declare renderAsHomepageContent=false");
 }
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
   throw new Error("KFD registry must expose decision entries");
@@ -264,17 +267,24 @@ if (
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
-for (const sectionId of [...kfdSite.homepage.displayPlan.support, ...kfdSite.homepage.displayPlan.rendererContract]) {
+for (const sectionId of kfdSite.homepage.displayPlan.support) {
   const section = kfdSite.homepage.sections.find((entry) => entry.id === sectionId);
   if (!section) {
     throw new Error(`KFD displayPlan references missing homepage section: ${sectionId}`);
   }
   if (!kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdHomeHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
-    throw new Error(`KFD homepage did not render alpha.15 section: ${sectionId}`);
+    throw new Error(`KFD homepage did not render alpha.16 support section: ${sectionId}`);
   }
 }
-if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata") || !kfdHomeHtml.includes("Homepage content contract")) {
-  throw new Error("KFD homepage must render alpha.15 support and renderer-contract sections");
+if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
+  throw new Error("KFD homepage must render alpha.16 support sections");
+}
+const rendererContract = kfdSite.homepage.rendererContract;
+if (!rendererContract || !kfdHomeHtml.includes(`<dd><code>${escapeHtml(rendererContract.id)}</code></dd>`)) {
+  throw new Error("KFD homepage must expose the alpha.16 renderer contract in machine facts");
+}
+if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`)) {
+  throw new Error("KFD alpha.16 renderer contract must not render as ordinary homepage content");
 }
 if (kfdHomeHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
