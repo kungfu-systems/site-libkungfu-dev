@@ -184,12 +184,22 @@ function renderDecisionMarkdown(source) {
   };
 }
 
+function rewriteKfdPackageLinks(source) {
+  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s]+\.md)(#[^)]+)?\)/g, (_match, target, hash = "") => {
+    const cleanTarget = target.replace(/^\.\//, "");
+    return `](https://github.com/kungfu-systems/kfd/blob/main/${cleanTarget}${hash})`;
+  });
+}
+
+function renderMarkdownBody(source) {
+  return markdown.render(rewriteKfdPackageLinks(source));
+}
+
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
-    ["hub", "https://libkungfu.dev/", "Hub"],
-    ["core", "https://core.libkungfu.dev/", "Core"],
-    ["buildchain", "https://buildchain.libkungfu.dev/", "Buildchain"],
-    ["kfd", "https://kfd.libkungfu.dev/", "KFD"],
+    ["core", "/core/", "Core"],
+    ["buildchain", "/buildchain/", "Buildchain"],
+    ["kfd", "/kfd/", "KFD"],
   ];
 
   const navHtml = nav
@@ -279,8 +289,14 @@ ${alternates}
     }
 
     .brand {
+      color: var(--fg);
       font-weight: 700;
       letter-spacing: 0;
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      color: var(--accent-strong);
     }
 
     nav {
@@ -323,6 +339,58 @@ ${alternates}
       background: var(--soft);
     }
 
+    .substrate-map {
+      position: relative;
+      aspect-ratio: 960 / 360;
+      overflow: hidden;
+    }
+
+    .substrate-map img {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-hotspot {
+      position: absolute;
+      border-radius: 8px;
+    }
+
+    .map-hotspot:hover,
+    .map-hotspot:focus-visible {
+      background: rgb(15 118 110 / 0.08);
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .map-hotspot.kfd {
+      left: 4.375%;
+      top: 26.667%;
+      width: 17.917%;
+      height: 35%;
+    }
+
+    .map-hotspot.buildchain {
+      left: 28.333%;
+      top: 26.667%;
+      width: 19.583%;
+      height: 35%;
+    }
+
+    .map-hotspot.core {
+      left: 53.958%;
+      top: 26.667%;
+      width: 17.917%;
+      height: 35%;
+    }
+
+    .map-hotspot.products {
+      left: 77.917%;
+      top: 26.667%;
+      width: 17.708%;
+      height: 35%;
+    }
+
     .eyebrow {
       margin: 0;
       color: var(--accent-strong);
@@ -336,6 +404,21 @@ ${alternates}
       color: inherit;
       text-decoration-thickness: 1px;
       text-underline-offset: 4px;
+    }
+
+    .page-kicker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+      width: 100%;
+    }
+
+    .page-kicker-state {
+      color: var(--muted);
+      margin-left: auto;
+      text-align: right;
     }
 
     h1 {
@@ -393,6 +476,159 @@ ${alternates}
     .stack {
       display: grid;
       gap: 18px;
+    }
+
+    .mechanism-chain {
+      counter-reset: mechanism-step;
+    }
+
+    .mechanism-step {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .mechanism-step::before {
+      counter-increment: mechanism-step;
+      content: counter(mechanism-step, decimal-leading-zero);
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .mechanism-step h3 {
+      margin-bottom: 0;
+      min-height: 2.6em;
+    }
+
+    .mechanism-step h3 a {
+      color: inherit;
+      text-decoration-color: var(--muted);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+    }
+
+    .mechanism-step h3 a:hover {
+      color: var(--accent);
+      text-decoration-color: currentColor;
+    }
+
+    .mechanism-role {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .future-products {
+      margin-top: 18px;
+    }
+
+    .future-products h2 {
+      margin-bottom: 10px;
+    }
+
+    .foundation-model-list {
+      margin-top: 18px;
+    }
+
+    .foundation-layer {
+      display: grid;
+      grid-template-rows: 3.2em 7.2em auto;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .foundation-layer h3 {
+      margin-bottom: 0;
+    }
+
+    .foundation-triad-card h3 a,
+    .foundation-layer h3 a {
+      color: inherit;
+      text-decoration-color: var(--muted);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+    }
+
+    .foundation-triad-card h3 a:hover,
+    .foundation-layer h3 a:hover {
+      color: var(--accent);
+      text-decoration-color: currentColor;
+    }
+
+    .foundation-commitment {
+      align-self: start;
+    }
+
+    .foundation-fields {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+    }
+
+    .foundation-fields div {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 10px 12px;
+      align-items: start;
+    }
+
+    .foundation-fields dt {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .foundation-fields dd {
+      margin: 0;
+      min-width: 0;
+    }
+
+    .foundation-fields p {
+      color: var(--fg);
+    }
+
+    .decision-card {
+      display: grid;
+      grid-template-rows: auto 6.5em auto auto;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .decision-card h3 {
+      margin-bottom: 0;
+    }
+
+    .decision-summary {
+      align-self: start;
+    }
+
+    .decision-meta {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 10px 12px;
+      margin: 0;
+    }
+
+    .decision-meta dt {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .decision-meta dd {
+      margin: 0;
+      min-width: 0;
     }
 
     .meta {
@@ -619,6 +855,18 @@ ${alternates}
         grid-template-columns: 1fr;
       }
 
+      .foundation-layer h3,
+      .mechanism-step h3,
+      .foundation-commitment,
+      .decision-summary {
+        min-height: 0;
+      }
+
+      .foundation-layer,
+      .decision-card {
+        grid-template-rows: none;
+      }
+
       .doc-layout {
         grid-template-columns: 1fr;
       }
@@ -627,12 +875,31 @@ ${alternates}
         position: static;
       }
     }
+
+    @media (max-width: 480px) {
+      .foundation-fields div,
+      .decision-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .foundation-fields div {
+        gap: 4px;
+      }
+
+      .decision-meta {
+        gap: 4px 0;
+      }
+
+      .decision-meta dd + dt {
+        margin-top: 8px;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="bar">
-      <div class="brand">libkungfu.dev</div>
+      <a class="brand" href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
       <nav aria-label="Primary">${navHtml}</nav>
     </div>
   </header>
@@ -672,6 +939,35 @@ function surfaceCard(surface) {
   </article>`;
 }
 
+function surfaceById(id) {
+  const surface = site.surfaces.find((entry) => entry.id === id);
+  if (!surface) {
+    throw new Error(`site surface not found: ${id}`);
+  }
+  return surface;
+}
+
+function mechanismStepCard(step) {
+  const surface = surfaceById(step.surface);
+  const actionLabel =
+    surface.id === "kfd"
+      ? "Open KFD"
+      : surface.id === "buildchain"
+        ? "Open Buildchain"
+        : surface.id === "core"
+          ? "Open Core"
+          : `Open ${surface.label}`;
+  return `<article class="panel mechanism-step">
+    <div class="tag">${escapeHtml(surface.host)}</div>
+    <div>
+      <h3><a href="${escapeAttr(surface.path)}">${escapeHtml(surface.label)}</a></h3>
+      <p class="mechanism-role">${escapeHtml(step.role)}</p>
+    </div>
+    <p>${escapeHtml(step.summary)}</p>
+    <a class="card-action" href="${escapeAttr(surface.path)}">${escapeHtml(actionLabel)}</a>
+  </article>`;
+}
+
 function listPanels(items) {
   return items
     .map(
@@ -704,23 +1000,52 @@ function factPanels(items, getTitle, getSummary, getMeta = () => []) {
     .join("\n");
 }
 
+function foundationModelPanels(layers) {
+  return layers
+    .map(
+      (layer) => {
+        const match = /^KFD-(\d+)\b/.exec(layer.decision);
+        const title = match
+          ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(layer.layer)}</a>`
+          : escapeHtml(layer.layer);
+        const decision = match
+          ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(layer.decision)}</a>`
+          : inlineMarkdown(layer.decision);
+        return `<article class="panel foundation-layer">
+        <h3>${title}</h3>
+        <p class="foundation-commitment">${inlineMarkdown(layer.commitment)}</p>
+        <dl class="foundation-fields">
+          <div>
+            <dt>decision</dt>
+            <dd><p>${decision}</p></dd>
+          </div>
+          <div>
+            <dt>question</dt>
+            <dd><p>${inlineMarkdown(layer.readerQuestion)}</p></dd>
+          </div>
+        </dl>
+      </article>`;
+      },
+    )
+    .join("\n");
+}
+
 function decisionPanels(entries) {
   return entries
     .map((entry) => {
-      const path = `/${entry.number}/`;
-      const url = `https://kfd.libkungfu.dev${path}`;
-      return `<article class="panel">
-        <h3><a href="${escapeAttr(url)}">${escapeHtml(entry.id)}</a></h3>
-        <p>${escapeHtml(entry.title)}</p>
-        <dl class="meta" style="margin-top: 14px;">
+      const path = `${entry.number}/`;
+      return `<article class="panel decision-card">
+        <h3><a href="${escapeAttr(path)}">${escapeHtml(entry.id)}</a></h3>
+        <p class="decision-summary">${escapeHtml(entry.title)}</p>
+        <dl class="decision-meta">
           <dt>kind</dt>
           <dd><code>${escapeHtml(entry.kind)}</code></dd>
           <dt>status</dt>
           <dd><code>${escapeHtml(entry.status)}</code></dd>
           <dt>path</dt>
-          <dd><a href="${escapeAttr(url)}"><code>${escapeHtml(path)}</code></a></dd>
+          <dd><a href="${escapeAttr(path)}"><code>${escapeHtml(`/${entry.number}/`)}</code></a></dd>
         </dl>
-        <a class="card-action" href="${escapeAttr(url)}">Read ${escapeHtml(entry.id)}</a>
+        <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
       </article>`;
     })
     .join("\n");
@@ -743,7 +1068,7 @@ const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.7";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -772,6 +1097,26 @@ const buildchainMachineArtifacts = Array.from(
   ]),
 );
 const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
+const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
+const kfdRendererContract = kfdSite.homepage.rendererContract;
+
+function kfdHomepageSection(id) {
+  return kfdSite.homepage.sections?.find((section) => section.id === id);
+}
+
+function kfdHomepageSectionPanels(ids, className = "") {
+  return ids
+    .map((id) => kfdHomepageSection(id))
+    .filter(Boolean)
+    .map(
+      (section) => `<section class="panel doc-content ${className}" data-kfd-section="${escapeAttr(section.id)}">
+        <p class="eyebrow">${escapeHtml(section.renderRole)}</p>
+        <h2>${escapeHtml(section.title)}</h2>
+        ${renderMarkdownBody(section.markdown)}
+      </section>`,
+    )
+    .join("\n");
+}
 
 writeFile(
   "index.html",
@@ -780,14 +1125,25 @@ writeFile(
     description: site.tagline,
     current: "hub",
     body: `<section class="hero">
-      <p class="eyebrow">Open substrate hub</p>
-      <h1>${escapeHtml(site.title)}</h1>
-      <p class="lead">${escapeHtml(site.tagline)}</p>
-      <img class="visual" src="/assets/substrate-flow.svg" alt="Manifest flow from upstream packages through site-libkungfu-dev to core and Buildchain subdomains.">
+      <h1>${escapeHtml(site.homepage.headline)}</h1>
+      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
+      <div class="visual substrate-map" aria-label="Product generation map">
+        <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and kungfu.tech carries future products.">
+        <a class="map-hotspot kfd" href="/kfd/" aria-label="Open KFD"></a>
+        <a class="map-hotspot buildchain" href="/buildchain/" aria-label="Open Buildchain"></a>
+        <a class="map-hotspot core" href="/core/" aria-label="Open Core"></a>
+        <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open kungfu.tech"></a>
+      </div>
     </section>
 
-    <section class="grid">
-      ${site.surfaces.map(surfaceCard).join("\n")}
+    <section class="grid three mechanism-chain">
+      ${site.homepage.chain.map(mechanismStepCard).join("\n")}
+    </section>
+
+    <section class="panel future-products">
+      <p class="eyebrow">${escapeHtml(site.homepage.futureProducts.label)}</p>
+      <h2><a href="${escapeAttr(site.homepage.futureProducts.url)}">kungfu.tech</a></h2>
+      <p>${escapeHtml(site.homepage.futureProducts.summary)}</p>
     </section>
 
     <section class="panel warning" style="margin-top: 18px;">
@@ -804,7 +1160,7 @@ writeFile(
     description: "libkungfu, yijinjing, runtime fact ledger, specs, schemas, and conformance vectors.",
     current: "core",
     body: `<section class="hero">
-      <p class="eyebrow">Core substrate</p>
+      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
       <h1>${escapeHtml(core.surfaceHost)}</h1>
       <p class="lead">Generated surface for libkungfu, yijinjing, runtime fact ledger specs, schema registry, and conformance vectors.</p>
     </section>
@@ -842,7 +1198,7 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow">Kung Fu Decisions</p>
+      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
       <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
     </section>
@@ -853,10 +1209,16 @@ writeFile(
       <div class="grid three" style="margin-top: 18px;">
         ${kfdSite.homepage.foundationTriad.commitments
           .map(
-            (entry) => `<article class="panel">
-              <h3>${escapeHtml(entry.id)}</h3>
+            (entry) => {
+              const match = /^KFD-(\d+)\b/.exec(entry.id);
+              const title = match
+                ? `<a href="${escapeHtml(match[1])}/">${escapeHtml(entry.id)}</a>`
+                : escapeHtml(entry.id);
+              return `<article class="panel foundation-triad-card">
+              <h3>${title}</h3>
               <p>${inlineMarkdown(entry.text)}</p>
-            </article>`,
+            </article>`;
+            },
           )
           .join("\n")}
       </div>
@@ -866,13 +1228,8 @@ writeFile(
     <section class="panel" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.foundationModel.heading)}</h2>
       <p>${inlineMarkdown(kfdSite.homepage.foundationModel.intro)}</p>
-      <div class="grid three" style="margin-top: 18px;">
-        ${factPanels(
-          kfdSite.homepage.foundationModel.layers,
-          (layer) => layer.layer,
-          (layer) => layer.commitment,
-          (layer) => [["decision", layer.decision], ["question", layer.readerQuestion]],
-        )}
+      <div class="grid three foundation-model-list">
+        ${foundationModelPanels(kfdSite.homepage.foundationModel.layers)}
       </div>
       <p style="margin-top: 18px;"><code>${escapeHtml(kfdSite.homepage.foundationModel.chain)}</code></p>
       <div class="stack" style="margin-top: 18px;">
@@ -892,6 +1249,14 @@ writeFile(
       </div>
     </section>
 
+    ${
+      kfdSupportSectionIds.length > 0
+        ? `<div class="stack" style="margin-top: 18px;">
+        ${kfdHomepageSectionPanels(kfdSupportSectionIds, "kfd-support-section")}
+      </div>`
+        : ""
+    }
+
     <section class="panel" style="margin-top: 18px;">
       <h2>Machine facts</h2>
       <dl class="meta">
@@ -905,6 +1270,16 @@ writeFile(
         <dd><code>${escapeHtml(kfdSite.decisionPages.source)}</code></dd>
         <dt>Standards</dt>
         <dd><code>${escapeHtml(kfdStandards.contract)}</code></dd>
+        ${
+          kfdRendererContract
+            ? `<dt>Renderer contract</dt>
+        <dd><code>${escapeHtml(kfdRendererContract.id)}</code></dd>
+        <dt>Renderer contract display</dt>
+        <dd><code>renderAsHomepageContent: ${escapeHtml(String(kfdRendererContract.renderAsHomepageContent))}</code></dd>
+        <dt>Renderer contract note</dt>
+        <dd>${escapeHtml(kfdRendererContract.note)}</dd>`
+            : ""
+        }
         <dt>Lock integrity</dt>
         <dd><code>${escapeHtml(kfdLock.integrity)}</code></dd>
       </dl>
@@ -923,7 +1298,7 @@ for (const entry of kfdRegistry.entries) {
       current: "kfd",
       alternates: kfdSurfaceAlternates(),
       body: `<section class="hero">
-        <p class="eyebrow"><a href="https://kfd.libkungfu.dev/" aria-label="Back to KFD home">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</a></p>
+        <p class="eyebrow page-kicker"><a href="../" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
       </section>
@@ -957,7 +1332,7 @@ writeFile(
     description: buildchainPackage.description,
     current: "buildchain",
     body: `<section class="hero">
-      <p class="eyebrow">Buildchain product surface</p>
+      <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
       <h1>Buildchain Release Passport</h1>
       <p class="lead">${escapeHtml(buildchainPackage.description)}</p>
     </section>
