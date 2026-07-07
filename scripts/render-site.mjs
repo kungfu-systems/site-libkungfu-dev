@@ -252,17 +252,34 @@ function surfaceSitePath(id) {
   return paths[id];
 }
 
+function surfaceCanonicalHref(id) {
+  const hrefs = {
+    hub: "https://libkungfu.dev/",
+    core: "https://core.libkungfu.dev/",
+    buildchain: "https://buildchain.libkungfu.dev/",
+    kfd: "https://kfd.libkungfu.dev/",
+  };
+  if (!hrefs[id]) {
+    throw new Error(`unknown site surface id: ${id}`);
+  }
+  return hrefs[id];
+}
+
+function surfaceLinkAttrs(id) {
+  return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
+}
+
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
-    ["core", surfaceSitePath("core"), "Core"],
-    ["buildchain", surfaceSitePath("buildchain"), "Buildchain"],
-    ["kfd", surfaceSitePath("kfd"), "KFD"],
+    ["core", "Core"],
+    ["buildchain", "Buildchain"],
+    ["kfd", "KFD"],
   ];
 
   const navHtml = nav
-    .map(([id, href, label]) => {
+    .map(([id, label]) => {
       const active = id === current ? ' aria-current="page"' : "";
-      return `<a href="${href}"${active}>${escapeHtml(label)}</a>`;
+      return `<a ${surfaceLinkAttrs(id)}${active}>${escapeHtml(label)}</a>`;
     })
     .join("");
 
@@ -1034,7 +1051,7 @@ ${alternates}
 <body>
   <header>
     <div class="bar">
-      <a class="brand" href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
+      <a class="brand" ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
       <nav aria-label="Primary">${navHtml}</nav>
     </div>
   </header>
@@ -1046,6 +1063,15 @@ ${alternates}
       <p>Open-source components are governed by their repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">kungfu-systems on GitHub</a>.</p>
     </div>
   </footer>
+  <script>
+    (() => {
+      const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+      if (!localHosts.has(window.location.hostname)) return;
+      for (const link of document.querySelectorAll("[data-local-href]")) {
+        link.setAttribute("href", link.getAttribute("data-local-href"));
+      }
+    })();
+  </script>
 </body>
 </html>
 `;
@@ -1084,7 +1110,6 @@ function surfaceById(id) {
 
 function mechanismStepCard(step) {
   const surface = surfaceById(step.surface);
-  const href = surfaceSitePath(surface.id);
   const actionLabel =
     surface.id === "kfd"
       ? "Open KFD"
@@ -1096,11 +1121,11 @@ function mechanismStepCard(step) {
   return `<article class="panel mechanism-step">
     <div class="tag">${escapeHtml(surface.host)}</div>
     <div>
-      <h3><a href="${escapeAttr(href)}">${escapeHtml(surface.label)}</a></h3>
+      <h3><a ${surfaceLinkAttrs(surface.id)}>${escapeHtml(surface.label)}</a></h3>
       <p class="mechanism-role">${escapeHtml(step.role)}</p>
     </div>
     <p>${escapeHtml(step.summary)}</p>
-    <a class="card-action" href="${escapeAttr(href)}">${escapeHtml(actionLabel)}</a>
+    <a class="card-action" ${surfaceLinkAttrs(surface.id)}>${escapeHtml(actionLabel)}</a>
   </article>`;
 }
 
@@ -1424,9 +1449,9 @@ writeFile(
       <p class="lead">${escapeHtml(site.homepage.lead)}</p>
       <div class="visual substrate-map" aria-label="Product generation map">
         <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and Kungfu Tech carries future products.">
-        <a class="map-hotspot kfd" href="${surfaceSitePath("kfd")}" aria-label="Open KFD"></a>
-        <a class="map-hotspot buildchain" href="${surfaceSitePath("buildchain")}" aria-label="Open Buildchain"></a>
-        <a class="map-hotspot core" href="${surfaceSitePath("core")}" aria-label="Open Core"></a>
+        <a class="map-hotspot kfd" ${surfaceLinkAttrs("kfd")} aria-label="Open KFD"></a>
+        <a class="map-hotspot buildchain" ${surfaceLinkAttrs("buildchain")} aria-label="Open Buildchain"></a>
+        <a class="map-hotspot core" ${surfaceLinkAttrs("core")} aria-label="Open Core"></a>
         <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open ${escapeAttr(site.homepage.futureProducts.displayName)}"></a>
       </div>
     </section>
@@ -1455,7 +1480,7 @@ writeFile(
     description: "libkungfu, yijinjing, runtime fact ledger, specs, schemas, and conformance vectors.",
     current: "core",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
       <h1>${escapeHtml(core.surfaceHost)}</h1>
       <p class="lead">Generated surface for libkungfu, yijinjing, runtime fact ledger specs, schema registry, and conformance vectors.</p>
     </section>
@@ -1493,7 +1518,7 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
       <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
     </section>
@@ -1626,7 +1651,7 @@ writeFile(
     description: buildchainSite.homepage.lead,
     current: "buildchain",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
       <h1>${escapeHtml(buildchainSite.homepage.title)}</h1>
       <p class="lead">${escapeHtml(buildchainSite.homepage.lead)}</p>
       <div class="stack">
