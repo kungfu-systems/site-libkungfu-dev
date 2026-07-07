@@ -14,8 +14,8 @@
 ## Work In This Repository
 
 - `src/fixtures/` contains temporary contract fixtures for hub/core.
-- `@kungfu-tech/buildchain@2.8.1` supplies the Buildchain `dist/site` bundle.
-- `@kungfu-tech/kfd@1.0.0-alpha.7` supplies the KFD site bundle, registry,
+- `@kungfu-tech/buildchain@2.8.7` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/kfd@1.0.0-alpha.17` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
   package artifacts.
@@ -23,6 +23,20 @@
 - `scripts/check-site.sh` enforces basic policy and source-boundary checks.
 - `buildchain.toml` declares the web-surface channels and deployment planning
   targets.
+
+## KFD Compliance
+
+This repository is also a KFD-governed product surface:
+
+- KFD-1 source boundary: product facts come from pinned upstream bundles or
+  explicit fixtures, never from copied downstream prose.
+- KFD-2 auditability: generated surfaces expose package versions, integrity,
+  renderer contracts, manifests, and release-propagation locks.
+- KFD-3 consumption: human pages and agent entries must lead to the same stable
+  mechanism, pages, and machine-readable facts.
+
+Future `site-libkungfu-dev` npm package exports should preserve these rules so
+any Kungfu-standard site bundle can be rendered by the same governed renderer.
 
 ## Source Boundary
 

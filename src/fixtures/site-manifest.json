@@ -27,6 +27,7 @@
     ],
     "futureProducts": {
       "label": "Future products",
+      "displayName": "Kungfu Tech",
       "url": "https://kungfu.tech",
       "summary": "Future Kungfu products belong on kungfu.tech as the user-facing product home. libkungfu.dev explains the generation mechanism those products should be able to trace back to: declared facts, Buildchain release evidence, and inspectable KFD decisions."
     }

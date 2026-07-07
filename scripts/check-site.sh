@@ -14,6 +14,7 @@ fi
 
 node - <<'NODE'
 const fs = require("fs");
+const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
@@ -60,8 +61,8 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.7-alpha.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
+const expectedBuildchainVersion = "2.8.7";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -83,6 +84,34 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function normalizeBuildchainRoute(route) {
+  const normalized = `/${String(route || "/").replace(/^\/+/, "")}`.replace(/\/+$/, "");
+  return normalized === "" ? "/" : normalized;
+}
+
+function buildchainRouteFile(route) {
+  const normalized = normalizeBuildchainRoute(route);
+  const segments = normalized === "/" ? [] : normalized.slice(1).split("/");
+  return ["dist", "buildchain", ...segments, "index.html"].join("/");
+}
+
+function buildchainCanonicalPath(route) {
+  const normalized = normalizeBuildchainRoute(route);
+  return normalized === "/" ? "/" : `${normalized}/`;
+}
+
+const buildchainHomeWrites = renderSiteSource.match(/writeFile\(\s*"buildchain\/index\.html"/g) || [];
+if (buildchainHomeWrites.length !== 1) {
+  throw new Error(`render-site.mjs must have exactly one Buildchain homepage write path, found ${buildchainHomeWrites.length}`);
+}
+if (
+  renderSiteSource.includes("grid-template-rows: 3.2em 7.2em auto") ||
+  !renderSiteSource.includes(".foundation-layer") ||
+  !renderSiteSource.includes("grid-template-rows: subgrid")
+) {
+  throw new Error("KFD foundation model cards must use subgrid rows so long commitments cannot overlap decision fields");
 }
 
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -132,14 +161,23 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("KFD site bundle contract mismatch");
 }
-if (!Array.isArray(kfdSite.homepage.sections) || kfdSite.homepage.sections.length === 0) {
-  throw new Error("KFD alpha.16 site bundle must expose homepage.sections");
+if (!Array.isArray(buildchainSite.homepage.sections) || buildchainSite.homepage.sections.length === 0) {
+  throw new Error("Buildchain site bundle must expose homepage.sections");
 }
-if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !Array.isArray(kfdSite.homepage.displayPlan?.rendererContract)) {
-  throw new Error("KFD alpha.16 site bundle must expose homepage.displayPlan support and rendererContract groups");
+if (!Array.isArray(buildchainSite.homepage.displayPlan?.support) || !buildchainSite.homepage.rendererContract) {
+  throw new Error("Buildchain site bundle must expose homepage.displayPlan support and homepage.rendererContract");
+}
+if (!Array.isArray(buildchainSite.pages) || buildchainSite.pages.length < 30) {
+  throw new Error("Buildchain site bundle must expose the full page registry");
+}
+if (!Array.isArray(kfdSite.homepage.sections) || kfdSite.homepage.sections.length === 0) {
+  throw new Error("KFD site bundle must expose homepage.sections");
+}
+if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.rendererContract) {
+  throw new Error("KFD site bundle must expose homepage.displayPlan support and homepage.rendererContract");
 }
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
-  throw new Error("KFD alpha.16 rendererContract must declare renderAsHomepageContent=false");
+  throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
 }
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
   throw new Error("KFD registry must expose decision entries");
@@ -152,6 +190,43 @@ if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) 
 }
 if (manifest.upstreamPackages.kfd.version !== expectedKfdVersion) {
   throw new Error(`dist manifest does not record KFD ${expectedKfdVersion}`);
+}
+for (const pageEntry of buildchainSite.pages) {
+  const route = normalizeBuildchainRoute(pageEntry.route);
+  if (route === "/") continue;
+  const file = buildchainRouteFile(route);
+  if (!fs.existsSync(file)) {
+    throw new Error(`missing generated Buildchain page: ${file}`);
+  }
+  const canonicalPath = buildchainCanonicalPath(route);
+  if (!manifest.pages.some((page) => page.host === "buildchain.libkungfu.dev" && page.path === canonicalPath)) {
+    throw new Error(`dist manifest does not record Buildchain canonical path: ${canonicalPath}`);
+  }
+  const html = fs.readFileSync(file, "utf8");
+  if (
+    !html.includes('class="panel doc-content"') ||
+    !html.includes("<h2>Page metadata</h2>") ||
+    !html.includes(`<dd><code>${escapeHtml(pageEntry.sourcePath)}</code></dd>`) ||
+    !html.includes(`<dd><code>${escapeHtml(buildchainPackage.name)}@${escapeHtml(buildchainPackage.version)}</code></dd>`)
+  ) {
+    throw new Error(`Buildchain page did not render from bundle markdown: ${file}`);
+  }
+}
+const infraContractHtml = fs.readFileSync("dist/buildchain/docs/infra-contract/index.html", "utf8");
+if (
+  !infraContractHtml.includes('class="doc-global-nav"') ||
+  !infraContractHtml.includes('class="doc-page-sections"') ||
+  infraContractHtml.includes('class="doc-toc" aria-label="Page sections"') ||
+  !infraContractHtml.includes('href="../../"') ||
+  !infraContractHtml.includes(">Overview</a>") ||
+  !infraContractHtml.includes('href="../release-passport/"') ||
+  !infraContractHtml.includes(">Release Passport</a>") ||
+  !infraContractHtml.includes('href="../consumer-issue-reporting/"') ||
+  !infraContractHtml.includes(">Consumer Issue Reporting</a>") ||
+  !infraContractHtml.includes('href="#configuration"') ||
+  !infraContractHtml.includes(">Configuration</a>")
+) {
+  throw new Error("Buildchain child pages must merge cross-page and in-page navigation in the left sidebar");
 }
 if (kfdPropagationLock && manifest.upstreamPackages.kfd.releaseLock?.lockSha256 !== kfdPropagationLock.lockSha256) {
   throw new Error("dist manifest does not record the KFD release propagation lock");
@@ -184,13 +259,13 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
-if (!hubHtml.includes('<a class="brand" href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
+if (!hubHtml.includes('<a class="brand" href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
   throw new Error("human header brand must link back to the libkungfu.dev home page");
 }
 if (
-  !hubHtml.includes('<nav aria-label="Primary"><a href="https://core.libkungfu.dev/">Core</a><a href="https://buildchain.libkungfu.dev/">Buildchain</a><a href="https://kfd.libkungfu.dev/">KFD</a></nav>')
+  !hubHtml.includes('<nav aria-label="Primary"><a href="/core/">Core</a><a href="/buildchain/">Buildchain</a><a href="/kfd/">KFD</a></nav>')
 ) {
-  throw new Error("human header navigation must use canonical surface hosts");
+  throw new Error("human header navigation must use site-relative surface paths");
 }
 if (hubHtml.includes(">Hub</a>")) {
   throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
@@ -209,6 +284,7 @@ if (
   !hubHtml.includes(">Principles</p>") ||
   !hubHtml.includes(">First load-bearing layer</p>") ||
   !hubHtml.includes(">First complex product proof</p>") ||
+  !hubHtml.includes(">Kungfu Tech</a>") ||
   !hubHtml.includes('href="https://kungfu.tech"')
 ) {
   throw new Error("human homepage must expose the KFD -> Buildchain -> Core generation chain and future product home");
@@ -225,7 +301,8 @@ for (const [surfaceId, actionLabel] of [
   if (!surface) {
     throw new Error(`missing homepage surface fixture: ${surfaceId}`);
   }
-  const href = `https://${surface.host}/`;
+  const surfacePaths = { kfd: "/kfd/", buildchain: "/buildchain/", core: "/core/" };
+  const href = surfacePaths[surfaceId];
   const titleLink = `<h3><a href="${escapeHtml(href)}">${escapeHtml(surface.label)}</a></h3>`;
   const actionLink = `<a class="card-action" href="${escapeHtml(href)}">${escapeHtml(actionLabel)}</a>`;
   if (!hubHtml.includes(titleLink) || !hubHtml.includes(actionLink)) {
@@ -233,10 +310,10 @@ for (const [surfaceId, actionLabel] of [
   }
 }
 for (const [className, href, label] of [
-  ["kfd", "https://kfd.libkungfu.dev/", "Open KFD"],
-  ["buildchain", "https://buildchain.libkungfu.dev/", "Open Buildchain"],
-  ["core", "https://core.libkungfu.dev/", "Open Core"],
-  ["products", site.homepage.futureProducts.url, "Open kungfu.tech"],
+  ["kfd", "/kfd/", "Open KFD"],
+  ["buildchain", "/buildchain/", "Open Buildchain"],
+  ["core", "/core/", "Open Core"],
+  ["products", site.homepage.futureProducts.url, `Open ${site.homepage.futureProducts.displayName}`],
 ]) {
   const hotspot = `<a class="map-hotspot ${className}" href="${escapeHtml(href)}" aria-label="${escapeHtml(label)}"></a>`;
   if (!hubHtml.includes(hotspot)) {
@@ -251,7 +328,7 @@ for (const [label, html, state] of [
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
     throw new Error(`${label} page is missing the parent back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(state)}</span>`;
@@ -372,8 +449,13 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.7-alpha.1' dist/buildchain/index.html
-grep -q 'Pinned npm package' dist/buildchain/index.html
+grep -q '2.8.7' dist/buildchain/index.html
+grep -q 'Bundle facts' dist/buildchain/index.html
+grep -q 'Install and Verify' dist/buildchain/index.html
+grep -q 'Use Buildchain' dist/buildchain/index.html
+grep -q 'Site Fact Source' dist/buildchain/index.html
+grep -q 'class="doc-global-nav"' dist/buildchain/index.html
+grep -q 'homepage-content-contract' dist/buildchain/index.html
 grep -q 'Buildchain Release Passport' dist/buildchain/index.html
 grep -q 'CLI command registry' dist/buildchain/index.html
 grep -q 'workflow-registry.json' dist/buildchain/index.html
@@ -384,6 +466,10 @@ grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
 if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
+  exit 1
+fi
+if grep -q 'Documentation pages\|Explore all Buildchain pages' dist/buildchain/index.html; then
+  echo "error: Buildchain homepage should use the sidebar navigation instead of child-page card sections" >&2
   exit 1
 fi
 grep -q 'docs_url' dist/core/index.html

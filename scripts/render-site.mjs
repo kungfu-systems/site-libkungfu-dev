@@ -140,14 +140,14 @@ function headingText(token) {
     .join("");
 }
 
-function renderToc(toc) {
+function renderToc(toc, ariaLabel = "Page sections") {
   if (toc.length === 0) {
-    return `<aside class="doc-toc" aria-label="Decision sections">
+    return `<aside class="doc-toc" aria-label="${escapeAttr(ariaLabel)}">
       <h2>Sections</h2>
       <p>No sections found.</p>
     </aside>`;
   }
-  return `<aside class="doc-toc" aria-label="Decision sections">
+  return `<aside class="doc-toc" aria-label="${escapeAttr(ariaLabel)}">
     <h2>Sections</h2>
     <nav>${toc
       .map(
@@ -180,26 +180,83 @@ function renderDecisionMarkdown(source) {
 
   return {
     html: markdown.renderer.render(tokens, markdown.options, env),
-    tocHtml: renderToc(toc),
+    tocHtml: renderToc(toc, "Decision sections"),
   };
 }
 
-function rewriteKfdPackageLinks(source) {
-  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s]+\.md)(#[^)]+)?\)/g, (_match, target, hash = "") => {
+function rewritePackageMarkdownLinks(source, repositoryPath, options = {}) {
+  const filePattern = options.filePattern || /.+/;
+  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s)]+)(#[^)]+)?\)/g, (_match, target, hash = "") => {
     const cleanTarget = target.replace(/^\.\//, "");
-    return `](https://github.com/kungfu-systems/kfd/blob/main/${cleanTarget}${hash})`;
+    if (!filePattern.test(cleanTarget)) {
+      return `](${target}${hash})`;
+    }
+    return `](https://github.com/${repositoryPath}/blob/main/${cleanTarget}${hash})`;
   });
 }
 
 function renderMarkdownBody(source) {
-  return markdown.render(rewriteKfdPackageLinks(source));
+  return markdown.render(rewritePackageMarkdownLinks(source, "kungfu-systems/kfd", { filePattern: /\.md$/ }));
+}
+
+function renderBuildchainMarkdownBody(source) {
+  return markdown.render(rewritePackageMarkdownLinks(source, "kungfu-systems/buildchain"));
+}
+
+function normalizeBuildchainRoute(route) {
+  const normalized = `/${String(route || "/").replace(/^\/+/, "")}`.replace(/\/+$/, "");
+  return normalized === "" ? "/" : normalized;
+}
+
+function buildchainRouteSegments(route) {
+  const normalized = normalizeBuildchainRoute(route);
+  return normalized === "/" ? [] : normalized.slice(1).split("/");
+}
+
+function buildchainRouteOutputPath(route) {
+  const segments = buildchainRouteSegments(route);
+  return path.posix.join("buildchain", ...segments, "index.html");
+}
+
+function buildchainRouteHrefFrom(currentRoute, targetRoute, hash = "") {
+  const currentDir = buildchainRouteSegments(currentRoute).join("/");
+  const targetDir = buildchainRouteSegments(targetRoute).join("/");
+  let relative = path.posix.relative(currentDir || ".", targetDir || ".");
+  if (!relative || relative === ".") {
+    relative = ".";
+  }
+  if (relative !== "." && !relative.endsWith("/")) {
+    relative += "/";
+  }
+  if (relative === ".") {
+    relative = "./";
+  }
+  return `${relative}${hash}`;
+}
+
+function buildchainCanonicalPath(route) {
+  const normalized = normalizeBuildchainRoute(route);
+  return normalized === "/" ? "/" : `${normalized}/`;
+}
+
+function surfaceSitePath(id) {
+  const paths = {
+    hub: "/",
+    core: "/core/",
+    buildchain: "/buildchain/",
+    kfd: "/kfd/",
+  };
+  if (!paths[id]) {
+    throw new Error(`unknown site surface id: ${id}`);
+  }
+  return paths[id];
 }
 
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
-    ["core", "https://core.libkungfu.dev/", "Core"],
-    ["buildchain", "https://buildchain.libkungfu.dev/", "Buildchain"],
-    ["kfd", "https://kfd.libkungfu.dev/", "KFD"],
+    ["core", surfaceSitePath("core"), "Core"],
+    ["buildchain", surfaceSitePath("buildchain"), "Buildchain"],
+    ["kfd", surfaceSitePath("kfd"), "KFD"],
   ];
 
   const navHtml = nav
@@ -480,12 +537,15 @@ ${alternates}
 
     .mechanism-chain {
       counter-reset: mechanism-step;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     }
 
     .mechanism-step {
       display: grid;
+      grid-row: span 5;
+      grid-template-rows: subgrid;
       gap: 14px;
-      align-content: start;
+      align-content: stretch;
     }
 
     .mechanism-step::before {
@@ -525,6 +585,11 @@ ${alternates}
       font-weight: 700;
     }
 
+    .mechanism-step .card-action {
+      align-self: end;
+      margin-top: 0;
+    }
+
     .future-products {
       margin-top: 18px;
     }
@@ -535,13 +600,15 @@ ${alternates}
 
     .foundation-model-list {
       margin-top: 18px;
+      grid-template-rows: auto auto auto;
     }
 
     .foundation-layer {
       display: grid;
-      grid-template-rows: 3.2em 7.2em auto;
+      grid-row: span 3;
+      grid-template-rows: subgrid;
       gap: 14px;
-      align-content: start;
+      align-content: stretch;
     }
 
     .foundation-layer h3 {
@@ -687,27 +754,68 @@ ${alternates}
       margin-top: 18px;
     }
 
-    .doc-toc {
+    .doc-sidebar {
       position: sticky;
       top: 18px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+
+    .doc-toc,
+    .doc-global-nav {
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--soft);
       padding: 16px;
     }
 
-    .doc-toc h2 {
+    .doc-global-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-toc {
+      position: sticky;
+      top: 18px;
+    }
+
+    .doc-sidebar .doc-toc {
+      position: static;
+      top: auto;
+    }
+
+    .doc-toc h2,
+    .doc-global-nav h2 {
       margin: 0 0 12px;
       font-size: 14px;
       line-height: 1.2;
     }
 
-    .doc-toc nav {
+    .doc-toc nav,
+    .doc-nav-group {
       display: grid;
       gap: 8px;
     }
 
-    .doc-toc a {
+    .doc-nav-group + .doc-nav-group {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .doc-nav-heading {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .doc-toc a,
+    .doc-global-nav a {
       color: var(--muted);
       font-size: 14px;
       line-height: 1.35;
@@ -715,10 +823,25 @@ ${alternates}
     }
 
     .doc-toc a:hover,
-    .doc-toc a:focus {
+    .doc-toc a:focus,
+    .doc-global-nav a:hover,
+    .doc-global-nav a:focus,
+    .doc-global-nav a[aria-current="page"] {
       color: var(--accent-strong);
       text-decoration: underline;
       text-underline-offset: 4px;
+    }
+
+    .doc-page-sections {
+      display: grid;
+      gap: 6px;
+      margin: 2px 0 2px 10px;
+      padding-left: 10px;
+      border-left: 1px solid var(--line);
+    }
+
+    .doc-page-sections a {
+      font-size: 13px;
     }
 
     .toc-level-3 {
@@ -863,12 +986,24 @@ ${alternates}
       }
 
       .foundation-layer,
-      .decision-card {
+      .decision-card,
+      .mechanism-step {
+        grid-row: auto;
+        grid-template-rows: none;
+      }
+
+      .mechanism-chain {
         grid-template-rows: none;
       }
 
       .doc-layout {
         grid-template-columns: 1fr;
+      }
+
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+        overflow: visible;
       }
 
       .doc-toc {
@@ -899,7 +1034,7 @@ ${alternates}
 <body>
   <header>
     <div class="bar">
-      <a class="brand" href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
+      <a class="brand" href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
       <nav aria-label="Primary">${navHtml}</nav>
     </div>
   </header>
@@ -947,13 +1082,9 @@ function surfaceById(id) {
   return surface;
 }
 
-function surfaceCanonicalUrl(surface) {
-  return `https://${surface.host}/`;
-}
-
 function mechanismStepCard(step) {
   const surface = surfaceById(step.surface);
-  const href = surfaceCanonicalUrl(surface);
+  const href = surfaceSitePath(surface.id);
   const actionLabel =
     surface.id === "kfd"
       ? "Open KFD"
@@ -1072,8 +1203,8 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.8.7-alpha.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
+const expectedBuildchainVersion = "2.8.7";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1102,8 +1233,167 @@ const buildchainMachineArtifacts = Array.from(
   ]),
 );
 const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
+const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
+const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
+const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])
+  .filter((id) => buildchainSite.homepage.sections?.some((section) => section.id === id));
+const buildchainRendererContract = buildchainSite.homepage.rendererContract;
 const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
 const kfdRendererContract = kfdSite.homepage.rendererContract;
+const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
+const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
+
+function rewriteBuildchainPageLinks(source, pageEntry) {
+  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s)]+)(#[^)]+)?\)/g, (_match, target, hash = "") => {
+    const baseDir = path.posix.dirname(pageEntry.sourcePath);
+    const cleanTarget = target.replace(/^\.\//, "");
+    const resolvedSource = path.posix.normalize(path.posix.join(baseDir === "." ? "" : baseDir, cleanTarget));
+    const linkedPage = buildchainPageBySourcePath.get(resolvedSource);
+    if (linkedPage) {
+      return `](${buildchainRouteHrefFrom(pageEntry.route, linkedPage.route, hash)})`;
+    }
+    return `](https://github.com/kungfu-systems/buildchain/blob/main/${resolvedSource}${hash})`;
+  });
+}
+
+function renderBuildchainPageMarkdown(pageEntry) {
+  const env = {};
+  const tokens = markdown.parse(rewriteBuildchainPageLinks(pageEntry.markdown, pageEntry), env);
+  const toc = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.type !== "heading_open") continue;
+    const sourceLevel = Number(token.tag.slice(1));
+    const renderedLevel = Math.min(sourceLevel + 1, 4);
+    const title = headingText(tokens[index + 1]);
+    const id = token.attrGet("id");
+    token.tag = `h${renderedLevel}`;
+    if (tokens[index + 2]?.type === "heading_close") {
+      tokens[index + 2].tag = `h${renderedLevel}`;
+    }
+    if (id && title) {
+      toc.push({ id, title, level: renderedLevel });
+    }
+  }
+
+  return {
+    html: markdown.renderer.render(tokens, markdown.options, env),
+    tocHtml: renderToc(toc, "Page sections"),
+    toc,
+  };
+}
+
+function buildchainPageIndex() {
+  const labels = {
+    overview: "Overview",
+    manual: "Manuals",
+    action: "GitHub Actions",
+    api: "Node API",
+    fixture: "Fixtures",
+  };
+  return Object.entries(labels)
+    .map(([category, label]) => {
+      const pages = buildchainSite.pages.filter((pageEntry) => pageEntry.category === category);
+      if (pages.length === 0) return "";
+      return `<section class="panel">
+        <h2>${escapeHtml(label)}</h2>
+        <ul>${pages
+          .map(
+            (pageEntry) =>
+              `<li><a href="${escapeAttr(buildchainRouteHrefFrom("/", pageEntry.route))}">${escapeHtml(pageEntry.title)}</a> <code>${escapeHtml(pageEntry.route)}</code></li>`,
+          )
+          .join("")}</ul>
+      </section>`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildchainGlobalNav(currentRoute, currentPageToc = []) {
+  const labels = {
+    overview: "Overview",
+    manual: "Manuals",
+    action: "GitHub Actions",
+    api: "Node API",
+  };
+  const currentIsHome = normalizeBuildchainRoute(currentRoute) === "/";
+  return `<nav class="doc-global-nav" aria-label="Buildchain pages">
+    <a href="${escapeAttr(buildchainRouteHrefFrom(currentRoute, "/"))}"${currentIsHome ? ' aria-current="page"' : ""}>Overview</a>
+    ${Object.entries(labels)
+      .map(([category, label]) => {
+        const pages = buildchainSite.pages.filter(
+          (pageEntry) => pageEntry.category === category && normalizeBuildchainRoute(pageEntry.route) !== "/",
+        );
+        if (pages.length === 0) return "";
+        return `<section class="doc-nav-group">
+          <p class="doc-nav-heading">${escapeHtml(label)}</p>
+          ${pages
+            .map((pageEntry) => {
+              const current = normalizeBuildchainRoute(pageEntry.route) === normalizeBuildchainRoute(currentRoute);
+              const pageLink = `<a href="${escapeAttr(buildchainRouteHrefFrom(currentRoute, pageEntry.route))}"${current ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.title)}</a>`;
+              const sectionLinks =
+                current && currentPageToc.length > 0
+                  ? `<div class="doc-page-sections" aria-label="Current page sections">
+                    ${currentPageToc
+                      .map(
+                        (entry) =>
+                          `<a class="toc-level-${entry.level}" href="#${escapeAttr(entry.id)}">${escapeHtml(entry.title)}</a>`,
+                      )
+                      .join("")}
+                  </div>`
+                  : "";
+              return `${pageLink}${sectionLinks}`;
+            })
+            .join("")}
+        </section>`;
+      })
+      .filter(Boolean)
+      .join("")}
+  </nav>`;
+}
+
+function buildchainDocPanels(items) {
+  return items
+    .map((doc) => {
+      const linkedPage = buildchainPageBySourcePath.get(doc.path);
+      const href = linkedPage ? buildchainRouteHrefFrom("/", linkedPage.route) : "";
+      const title = href
+        ? `<a href="${escapeAttr(href)}">${escapeHtml(doc.title)}</a>`
+        : escapeHtml(doc.title);
+      const action = href ? `<a class="card-action" href="${escapeAttr(href)}">Open page</a>` : "";
+      return `<article class="panel">
+        <h3>${title}</h3>
+        <p><code>${escapeHtml(doc.path)}</code></p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>plane</dt>
+          <dd><code>${escapeHtml(doc.plane)}</code></dd>
+          <dt>exists</dt>
+          <dd><code>${escapeHtml(doc.exists)}</code></dd>
+        </dl>
+        ${action}
+      </article>`;
+    })
+    .join("\n");
+}
+
+function buildchainHomepageSection(id) {
+  return buildchainSite.homepage.sections?.find((section) => section.id === id);
+}
+
+function buildchainHomepageSectionPanels(ids, className = "") {
+  return ids
+    .map((id) => buildchainHomepageSection(id))
+    .filter(Boolean)
+    .map(
+      (section) => `<section class="panel doc-content ${className}" data-buildchain-section="${escapeAttr(section.id)}">
+        <p class="eyebrow">${escapeHtml(section.renderRole)}</p>
+        <h2>${escapeHtml(section.title)}</h2>
+        ${renderBuildchainMarkdownBody(section.markdown)}
+      </section>`,
+    )
+    .join("\n");
+}
 
 function kfdHomepageSection(id) {
   return kfdSite.homepage.sections?.find((section) => section.id === id);
@@ -1133,11 +1423,11 @@ writeFile(
       <h1>${escapeHtml(site.homepage.headline)}</h1>
       <p class="lead">${escapeHtml(site.homepage.lead)}</p>
       <div class="visual substrate-map" aria-label="Product generation map">
-        <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and kungfu.tech carries future products.">
-        <a class="map-hotspot kfd" href="https://kfd.libkungfu.dev/" aria-label="Open KFD"></a>
-        <a class="map-hotspot buildchain" href="https://buildchain.libkungfu.dev/" aria-label="Open Buildchain"></a>
-        <a class="map-hotspot core" href="https://core.libkungfu.dev/" aria-label="Open Core"></a>
-        <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open kungfu.tech"></a>
+        <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and Kungfu Tech carries future products.">
+        <a class="map-hotspot kfd" href="${surfaceSitePath("kfd")}" aria-label="Open KFD"></a>
+        <a class="map-hotspot buildchain" href="${surfaceSitePath("buildchain")}" aria-label="Open Buildchain"></a>
+        <a class="map-hotspot core" href="${surfaceSitePath("core")}" aria-label="Open Core"></a>
+        <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open ${escapeAttr(site.homepage.futureProducts.displayName)}"></a>
       </div>
     </section>
 
@@ -1147,7 +1437,7 @@ writeFile(
 
     <section class="panel future-products">
       <p class="eyebrow">${escapeHtml(site.homepage.futureProducts.label)}</p>
-      <h2><a href="${escapeAttr(site.homepage.futureProducts.url)}">kungfu.tech</a></h2>
+      <h2><a href="${escapeAttr(site.homepage.futureProducts.url)}">${escapeHtml(site.homepage.futureProducts.displayName)}</a></h2>
       <p>${escapeHtml(site.homepage.futureProducts.summary)}</p>
     </section>
 
@@ -1165,7 +1455,7 @@ writeFile(
     description: "libkungfu, yijinjing, runtime fact ledger, specs, schemas, and conformance vectors.",
     current: "core",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
+      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
       <h1>${escapeHtml(core.surfaceHost)}</h1>
       <p class="lead">Generated surface for libkungfu, yijinjing, runtime fact ledger specs, schema registry, and conformance vectors.</p>
     </section>
@@ -1203,7 +1493,7 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
+      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
       <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
     </section>
@@ -1333,121 +1623,181 @@ writeFile(
   "buildchain/index.html",
   page({
     title: "buildchain.libkungfu.dev | Buildchain surface",
-    description: buildchainPackage.description,
+    description: buildchainSite.homepage.lead,
     current: "buildchain",
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
-      <h1>Buildchain Release Passport</h1>
-      <p class="lead">${escapeHtml(buildchainPackage.description)}</p>
-    </section>
-
-    <section class="panel">
-      <h2>Pinned npm package</h2>
-      <dl class="meta">
-        <dt>Package</dt>
-        <dd><code>${escapeHtml(buildchainPackage.name)}</code></dd>
-        <dt>Version</dt>
-        <dd><code>${escapeHtml(buildchainPackage.version)}</code></dd>
-        <dt>Source of truth</dt>
-        <dd><code>${escapeHtml(buildchainSite.sourceOfTruth)}</code></dd>
-        <dt>Repository</dt>
-        <dd><a href="${escapeAttr(buildchainPackage.repository)}">${escapeHtml(buildchainPackage.repository)}</a></dd>
-        <dt>Lock integrity</dt>
-        <dd><code>${escapeHtml(buildchainLock.integrity)}</code></dd>
-      </dl>
-    </section>
-
-    <section class="grid" style="margin-top: 18px;">
-      <article class="panel">
-        <h2>Release model</h2>
-        <p>${escapeHtml(buildchainReleaseModel.exactTags)}</p>
-        <p style="margin-top: 12px;">${escapeHtml(buildchainReleaseModel.floatingTags)}</p>
-        <dl class="meta" style="margin-top: 14px;">
-          <dt>Passport entrypoint</dt>
-          <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.entrypoint)}</code></dd>
-          <dt>Passport bundle</dt>
-          <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.bundle)}</code></dd>
-          <dt>Stable dist-tag</dt>
-          <dd><code>${escapeHtml(buildchainReleaseModel.npm.stableDistTag)}</code></dd>
-        </dl>
-      </article>
-      <article class="panel">
-        <h2>Product mechanism</h2>
-        <p>${escapeHtml(buildchainProductMechanism.purpose)}</p>
-        <dl class="meta" style="margin-top: 14px;">
-          <dt>Category</dt>
-          <dd><code>${escapeHtml(buildchainProductMechanism.category)}</code></dd>
-          <dt>Substrate</dt>
-          <dd><code>${escapeHtml(buildchainProductMechanism.executionSubstrate)}</code></dd>
-          <dt>Human first</dt>
-          <dd><code>${escapeHtml(buildchainSite.humanFirst)}</code></dd>
-          <dt>Agent first</dt>
-          <dd><code>${escapeHtml(buildchainSite.agentFirst)}</code></dd>
-        </dl>
-      </article>
-    </section>
-
-    <section class="grid" style="margin-top: 18px;">
-      <article class="panel">
-        <h2>Not this</h2>
-        <ul>${buildchainProductMechanism.notA.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
-      </article>
-      <article class="panel">
-        <h2>Proof cases</h2>
-        <ul>${buildchainProductMechanism.proofCases.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
-      </article>
-    </section>
-
-    <section class="panel" style="margin-top: 18px;">
-      <h2>Documentation bundle</h2>
-      <div class="grid three">
-        ${factPanels(
-          buildchainSite.docs,
-          (doc) => doc.title,
-          (doc) => doc.path,
-          (doc) => [["plane", doc.plane], ["exists", doc.exists]],
-        )}
+      <p class="eyebrow page-kicker"><a href="${surfaceSitePath("hub")}" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
+      <h1>${escapeHtml(buildchainSite.homepage.title)}</h1>
+      <p class="lead">${escapeHtml(buildchainSite.homepage.lead)}</p>
+      <div class="stack">
+        ${buildchainSite.homepage.mechanismSummary.map((entry) => `<p>${escapeHtml(entry)}</p>`).join("\n")}
       </div>
     </section>
 
-    <section class="panel" style="margin-top: 18px;">
-      <h2>CLI command registry</h2>
-      <div class="grid">
-        ${factPanels(
-          buildchainCli.commands,
-          (command) => command.usage,
-          (command) => command.purpose,
-          (command) => [["id", command.id]],
+    <section class="doc-layout">
+      <aside class="doc-sidebar">
+        ${buildchainGlobalNav("/")}
+      </aside>
+      <div class="stack">
+        ${buildchainHomepageSectionPanels(buildchainFirstScreenSectionIds, "buildchain-first-screen-section")}
+        ${buildchainHomepageSectionPanels(
+          buildchainPrimarySectionIds.filter((id) => !buildchainFirstScreenSectionIds.includes(id)),
+          "buildchain-primary-section",
         )}
+        ${buildchainHomepageSectionPanels(buildchainSupportSectionIds, "buildchain-support-section")}
+
+        <section class="panel">
+          <h2>Bundle facts</h2>
+          <dl class="meta">
+            <dt>Package</dt>
+            <dd><code>${escapeHtml(buildchainPackage.name)}</code></dd>
+            <dt>Version</dt>
+            <dd><code>${escapeHtml(buildchainPackage.version)}</code></dd>
+            <dt>Site bundle</dt>
+            <dd><code>${escapeHtml(buildchainSite.contract)}</code></dd>
+            <dt>Source of truth</dt>
+            <dd><code>${escapeHtml(buildchainSite.sourceOfTruth)}</code></dd>
+            <dt>Repository</dt>
+            <dd><a href="${escapeAttr(buildchainPackage.repository)}">${escapeHtml(buildchainPackage.repository)}</a></dd>
+            <dt>Homepage sections</dt>
+            <dd><code>${escapeHtml(String(buildchainSite.homepage.sections.length))}</code></dd>
+            <dt>Page registry entries</dt>
+            <dd><code>${escapeHtml(String(buildchainSite.pages.length))}</code></dd>
+            ${
+              buildchainRendererContract
+                ? `<dt>Renderer contract</dt>
+            <dd><code>${escapeHtml(buildchainRendererContract.id)}</code></dd>
+            <dt>Renderer contract display</dt>
+            <dd><code>renderAsHomepageContent: ${escapeHtml(String(buildchainRendererContract.renderAsHomepageContent))}</code></dd>
+            <dt>Renderer contract note</dt>
+            <dd>${escapeHtml(buildchainRendererContract.note)}</dd>`
+                : ""
+            }
+            <dt>Lock integrity</dt>
+            <dd><code>${escapeHtml(buildchainLock.integrity)}</code></dd>
+          </dl>
+        </section>
+
+        <section class="grid" style="margin-top: 18px;">
+          <article class="panel">
+            <h2>Product mechanism facts</h2>
+            <p>${escapeHtml(buildchainProductMechanism.purpose)}</p>
+            <dl class="meta" style="margin-top: 14px;">
+              <dt>Category</dt>
+              <dd><code>${escapeHtml(buildchainProductMechanism.category)}</code></dd>
+              <dt>Substrate</dt>
+              <dd><code>${escapeHtml(buildchainProductMechanism.executionSubstrate)}</code></dd>
+              <dt>Human first</dt>
+              <dd><code>${escapeHtml(buildchainSite.humanFirst)}</code></dd>
+              <dt>Agent first</dt>
+              <dd><code>${escapeHtml(buildchainSite.agentFirst)}</code></dd>
+            </dl>
+          </article>
+          <article class="panel">
+            <h2>Not this</h2>
+            <ul>${buildchainProductMechanism.notA.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+          </article>
+        </section>
+
+        <section class="panel" style="margin-top: 18px;">
+          <h2>Proof cases</h2>
+          <ul>${buildchainProductMechanism.proofCases.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+        </section>
+
+        <section class="panel" style="margin-top: 18px;">
+          <h2>Release passport facts</h2>
+          <dl class="meta">
+            <dt>Passport entrypoint</dt>
+            <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.entrypoint)}</code></dd>
+            <dt>Passport bundle</dt>
+            <dd><code>${escapeHtml(buildchainReleaseModel.releasePassport.bundle)}</code></dd>
+            <dt>Stable dist-tag</dt>
+            <dd><code>${escapeHtml(buildchainReleaseModel.npm.stableDistTag)}</code></dd>
+          </dl>
+        </section>
+
+        <section class="panel" style="margin-top: 18px;">
+          <h2>CLI command registry</h2>
+          <div class="grid">
+            ${factPanels(
+              buildchainCli.commands,
+              (command) => command.usage,
+              (command) => command.purpose,
+              (command) => [["id", command.id]],
+            )}
+          </div>
+        </section>
+
+        <section class="grid three" style="margin-top: 18px;">
+          ${factPanels(
+            buildchainWorkflow.workflows,
+            (workflow) => workflow.id,
+            (workflow) => workflow.path,
+            (workflow) => [["surface", workflow.surface], ["status", workflow.status]],
+          )}
+        </section>
+
+        <section class="grid three" style="margin-top: 18px;">
+          ${factPanels(
+            buildchainWorkflow.actions,
+            (action) => action.id,
+            (action) => action.path,
+            (action) => [["status", action.status]],
+          )}
+        </section>
+
+        <section class="panel" style="margin-top: 18px;">
+          <h2>Machine artifacts</h2>
+          <ul>${buildchainMachineArtifacts
+            .map((entry) => `<li><code>${escapeHtml(entry)}</code></li>`)
+            .join("")}</ul>
+        </section>
       </div>
-    </section>
-
-    <section class="grid three" style="margin-top: 18px;">
-      ${factPanels(
-        buildchainWorkflow.workflows,
-        (workflow) => workflow.id,
-        (workflow) => workflow.path,
-        (workflow) => [["surface", workflow.surface], ["status", workflow.status]],
-      )}
-    </section>
-
-    <section class="grid three" style="margin-top: 18px;">
-      ${factPanels(
-        buildchainWorkflow.actions,
-        (action) => action.id,
-        (action) => action.path,
-        (action) => [["status", action.status]],
-      )}
-    </section>
-
-    <section class="panel" style="margin-top: 18px;">
-      <h2>Machine artifacts</h2>
-      <ul>${buildchainMachineArtifacts
-        .map((entry) => `<li><code>${escapeHtml(entry)}</code></li>`)
-        .join("")}</ul>
     </section>`,
   }),
 );
+
+for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normalizeBuildchainRoute(pageEntry.route) !== "/")) {
+  const renderedPage = renderBuildchainPageMarkdown(buildchainPage);
+  writeFile(
+    buildchainRouteOutputPath(buildchainPage.route),
+    page({
+      title: `${buildchainPage.title} | buildchain.libkungfu.dev`,
+      description: `${buildchainPage.category} page from ${buildchainPage.sourcePath}`,
+      current: "buildchain",
+      body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a href="${escapeAttr(buildchainRouteHrefFrom(buildchainPage.route, "/"))}" aria-label="Back to Buildchain home">Back to Buildchain home</a><span class="page-kicker-state">${escapeHtml(buildchainPage.category)} / ${escapeHtml(buildchainPage.id)}</span></p>
+        <h1>${escapeHtml(buildchainPage.title)}</h1>
+        <p class="lead">Buildchain ${escapeHtml(buildchainPage.category)} page.</p>
+      </section>
+
+      <section class="doc-layout">
+        <aside class="doc-sidebar">
+          ${buildchainGlobalNav(buildchainPage.route, renderedPage.toc)}
+        </aside>
+        <article class="panel doc-content">
+          ${renderedPage.html}
+        </article>
+      </section>
+
+      <section class="panel" style="margin-top: 18px;">
+        <h2>Page metadata</h2>
+        <dl class="meta">
+          <dt>Route</dt>
+          <dd><code>${escapeHtml(buildchainCanonicalPath(buildchainPage.route))}</code></dd>
+          <dt>Category</dt>
+          <dd><code>${escapeHtml(buildchainPage.category)}</code></dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(buildchainPage.sourcePath)}</code></dd>
+          <dt>Package</dt>
+          <dd><code>${escapeHtml(buildchainPackage.name)}@${escapeHtml(buildchainPackage.version)}</code></dd>
+          <dt>Digest</dt>
+          <dd><code>${escapeHtml(buildchainPage.digest)}</code></dd>
+        </dl>
+      </section>`,
+    }),
+  );
+}
 
 const manifest = {
   schemaVersion: 1,
@@ -1463,6 +1813,13 @@ const manifest = {
       host: "buildchain.libkungfu.dev",
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
+    ...buildchainSite.pages
+      .filter((pageEntry) => normalizeBuildchainRoute(pageEntry.route) !== "/")
+      .map((pageEntry) => ({
+        path: buildchainCanonicalPath(pageEntry.route),
+        host: "buildchain.libkungfu.dev",
+        source: `@kungfu-tech/buildchain@${buildchainPackage.version}/${pageEntry.sourcePath}`,
+      })),
     {
       path: "/",
       host: "kfd.libkungfu.dev",

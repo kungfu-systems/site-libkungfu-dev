@@ -1,6 +1,3 @@
-overrides:
-  "@kungfu-tech/buildchain>@kungfu-tech/kfd": "1.0.0-alpha.16"
-
 minimumReleaseAgeExclude:
-  - "@kungfu-tech/buildchain@2.8.7-alpha.1"
-  - '@kungfu-tech/kfd@1.0.0-alpha.3 || 1.0.0-alpha.16'
+  - "@kungfu-tech/buildchain@2.8.7"
+  - '@kungfu-tech/kfd@1.0.0-alpha.3 || 1.0.0-alpha.16 || 1.0.0-alpha.17'

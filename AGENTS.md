@@ -14,10 +14,17 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 - Run `npm run check` before opening a pull request.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
-  `@kungfu-tech/buildchain@2.8.1`.
+  `@kungfu-tech/buildchain@2.8.7`; KFD facts currently come from
+  `@kungfu-tech/kfd@1.0.0-alpha.17`.
 
 ## Boundary
 
 This repository may own rendering, navigation, and page structure. It must not
 hand-write core spec facts, Buildchain CLI facts, workflow inputs, release state
 machines, artifact schemas, or provenance facts.
+
+The repository itself is a Kungfu product surface. Treat changes here as
+KFD-1/KFD-2/KFD-3 work: keep source boundaries explicit, expose audit and
+integrity facts for generated pages, and preserve matching human and agent
+entrypoints. A future renderer npm package from this repository must carry the
+same standard for any Kungfu-compliant site bundle it renders.
