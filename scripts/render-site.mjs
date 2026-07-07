@@ -1290,14 +1290,12 @@ writeFile(
 for (const entry of kfdRegistry.entries) {
   const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
   const renderedDecision = renderDecisionMarkdown(decisionMarkdown);
-  writeFile(
-    `kfd/${entry.number}/index.html`,
-    page({
-      title: `${entry.id} | kfd.libkungfu.dev`,
-      description: entry.title,
-      current: "kfd",
-      alternates: kfdSurfaceAlternates(),
-      body: `<section class="hero">
+  const decisionPageHtml = page({
+    title: `${entry.id} | kfd.libkungfu.dev`,
+    description: entry.title,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero">
         <p class="eyebrow page-kicker"><a href="../" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
@@ -1321,8 +1319,9 @@ for (const entry of kfdRegistry.entries) {
           ${renderedDecision.html}
         </article>
       </section>`,
-    }),
-  );
+  });
+  writeFile(`kfd/${entry.number}/index.html`, decisionPageHtml);
+  writeFile(`${entry.number}/index.html`, decisionPageHtml);
 }
 
 writeFile(
