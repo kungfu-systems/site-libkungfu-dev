@@ -24,9 +24,9 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.8.1` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.8.7` through its exported `dist/site` bundle.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.16` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.17` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 
 Expected upstream flow:
@@ -40,6 +40,24 @@ kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 Do not hand-write upstream facts in this repository. When more upstream
 packages publish real manifests, replace the remaining fixture inputs with
 pinned package artifacts.
+
+## KFD Compliance
+
+This repository is itself a Kungfu product surface and must follow KFD-1,
+KFD-2, and KFD-3:
+
+- KFD-1: every rendered product fact must identify its upstream source package,
+  fixture, version, and ownership boundary.
+- KFD-2: generated pages and machine entries must expose enough package,
+  integrity, renderer-contract, and release-propagation facts for another agent
+  to audit why the page changed.
+- KFD-3: human pages, `/manifest.json`, `/llms.txt`, and stable subdomain paths
+  must all describe the same product mechanism so humans and agents consume the
+  same release surface.
+
+The long-term renderer package from this repository should therefore render any
+Kungfu-compliant site bundle as a governed product surface, not as detached
+Markdown-to-HTML output.
 
 ## Local Check
 
@@ -70,8 +88,13 @@ release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
 runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.1` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.16`.
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.7` and the
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.17`.
+
+The site does not override Buildchain's own transitive dependencies. If a
+Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version
+belongs to Buildchain's published npm metadata. The site only pins the direct
+KFD artifact it consumes for rendering `kfd.libkungfu.dev`.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and
