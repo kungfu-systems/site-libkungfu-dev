@@ -1,40 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
-  <title id="title">libkungfu.dev manifest flow</title>
-  <desc id="desc">Upstream packages publish manifests, site-libkungfu-dev renders them, and libkungfu.dev exposes stable pages and machine entries.</desc>
+  <title id="title">libkungfu.dev product generation chain</title>
+  <desc id="desc">KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and kungfu.tech carries future products.</desc>
   <rect width="960" height="360" fill="#f8faf9"/>
   <g fill="#ffffff" stroke="#cbd5df" stroke-width="2">
-    <rect x="42" y="54" width="238" height="94" rx="8"/>
-    <rect x="42" y="212" width="238" height="94" rx="8"/>
-    <rect x="360" y="132" width="240" height="96" rx="8"/>
-    <rect x="680" y="54" width="238" height="94" rx="8"/>
-    <rect x="680" y="212" width="238" height="94" rx="8"/>
+    <rect x="42" y="96" width="172" height="126" rx="8"/>
+    <rect x="272" y="96" width="188" height="126" rx="8"/>
+    <rect x="518" y="96" width="172" height="126" rx="8"/>
+    <rect x="748" y="96" width="170" height="126" rx="8"/>
   </g>
   <g fill="#0f1720" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-    <text x="70" y="92" font-size="22" font-weight="700">kungfu</text>
-    <text x="70" y="122" font-size="16" fill="#52606d">@kungfu-tech/spec</text>
-    <text x="70" y="250" font-size="22" font-weight="700">buildchain</text>
-    <text x="70" y="280" font-size="16" fill="#52606d">@kungfu-tech/buildchain</text>
-    <text x="393" y="172" font-size="22" font-weight="700">site-libkungfu-dev</text>
-    <text x="393" y="202" font-size="16" fill="#52606d">render only, no fact ownership</text>
-    <text x="710" y="92" font-size="20" font-weight="700">core.libkungfu.dev</text>
-    <text x="710" y="122" font-size="16" fill="#52606d">spec, schemas, vectors</text>
-    <text x="710" y="246" font-size="20" font-weight="700">Buildchain surface</text>
-    <text x="710" y="272" font-size="14" fill="#52606d">buildchain.libkungfu.dev</text>
-    <text x="710" y="294" font-size="14" fill="#52606d">release governance</text>
+    <text x="70" y="138" font-size="24" font-weight="700">KFD</text>
+    <text x="70" y="168" font-size="15" fill="#52606d">principles</text>
+    <text x="70" y="192" font-size="15" fill="#52606d">and decisions</text>
+    <text x="300" y="138" font-size="24" font-weight="700">Buildchain</text>
+    <text x="300" y="168" font-size="15" fill="#52606d">release passport</text>
+    <text x="300" y="192" font-size="15" fill="#52606d">and evidence</text>
+    <text x="546" y="138" font-size="24" font-weight="700">Core</text>
+    <text x="546" y="168" font-size="15" fill="#52606d">first complex</text>
+    <text x="546" y="192" font-size="15" fill="#52606d">product proof</text>
+    <text x="776" y="138" font-size="24" font-weight="700">kungfu.tech</text>
+    <text x="776" y="168" font-size="15" fill="#52606d">future product</text>
+    <text x="776" y="192" font-size="15" fill="#52606d">home</text>
   </g>
   <g fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M282 101 C318 101 322 158 358 174"/>
-    <path d="M282 259 C318 259 322 202 358 186"/>
-    <path d="M602 172 C638 146 642 101 678 101"/>
-    <path d="M602 188 C638 214 642 259 678 259"/>
+    <path d="M216 159 H269"/>
+    <path d="M462 159 H515"/>
+    <path d="M692 159 H745"/>
   </g>
   <g fill="#0f766e">
-    <path d="M673 101 l-12 -7 v14z"/>
-    <path d="M673 259 l-12 -7 v14z"/>
-    <path d="M353 174 l-13 -6 2 14z"/>
-    <path d="M353 186 l-11 -8 -2 14z"/>
+    <path d="M268 159 l-13 -8 v16z"/>
+    <path d="M514 159 l-13 -8 v16z"/>
+    <path d="M744 159 l-13 -8 v16z"/>
   </g>
-  <g fill="#925a16" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="700">
-    <text x="306" y="334">Fixture manifests now; pinned upstream bundles later</text>
+  <g fill="#925a16" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">
+    <text x="64" y="286">libkungfu.dev explains the mechanism; kungfu.tech carries the user-facing product portfolio.</text>
   </g>
 </svg>

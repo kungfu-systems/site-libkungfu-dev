@@ -4,7 +4,33 @@
   "status": "fixture",
   "canonicalHost": "libkungfu.dev",
   "title": "libkungfu.dev",
-  "tagline": "Open developer and agent substrate hub for Kungfu.",
+  "tagline": "Open facts, decisions, and release mechanisms for Kungfu products.",
+  "homepage": {
+    "headline": "Kungfu product generation, in public.",
+    "lead": "Kungfu products are meant to be generated from standing decisions, executable release mechanisms, and declared product facts. libkungfu.dev is the human and agent-readable map of that chain.",
+    "chain": [
+      {
+        "surface": "kfd",
+        "role": "Principles",
+        "summary": "KFD defines the shared rules: what can count as a fact, when a product claim can be trusted, and how intelligent participants should cooperate."
+      },
+      {
+        "surface": "buildchain",
+        "role": "First load-bearing layer",
+        "summary": "Buildchain turns those principles into executable release infrastructure: version decisions, release passports, provenance, rollback, and propagation."
+      },
+      {
+        "surface": "core",
+        "role": "First complex product proof",
+        "summary": "Core is the first complex product family built with Buildchain and shaped by KFD principles. Future products should be legible through the same mechanism."
+      }
+    ],
+    "futureProducts": {
+      "label": "Future products",
+      "url": "https://kungfu.tech",
+      "summary": "Future Kungfu products belong on kungfu.tech as the user-facing product home. libkungfu.dev explains the generation mechanism those products should be able to trace back to: declared facts, Buildchain release evidence, and inspectable KFD decisions."
+    }
+  },
   "sourceBoundary": {
     "truthOwner": "upstream-manifests",
     "siteRole": "visual routing and rendering",

@@ -26,7 +26,7 @@ The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
 `@kungfu-tech/buildchain@2.8.1` through its exported `dist/site` bundle.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.7` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.13` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 
 Expected upstream flow:
@@ -71,7 +71,7 @@ branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
 runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.1` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.7`.
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.13`.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and

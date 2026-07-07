@@ -58,7 +58,7 @@ const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/k
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.7";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.13";
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -72,6 +72,14 @@ function readPnpmLockPackage(packageName, version) {
     version,
     integrity: match[1].trim(),
   };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -164,6 +172,19 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
+if (!hubHtml.includes('<a class="brand" href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
+  throw new Error("human header brand must link back to the libkungfu.dev home page");
+}
+if (
+  hubHtml.includes('href="https://core.libkungfu.dev/"') ||
+  hubHtml.includes('href="https://buildchain.libkungfu.dev/"') ||
+  hubHtml.includes('href="https://kfd.libkungfu.dev/"')
+) {
+  throw new Error("human header navigation should use site-relative links");
+}
+if (hubHtml.includes(">Hub</a>")) {
+  throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
+}
 if (!hubHtml.includes("Kungfu Origin Technology Limited") || !hubHtml.includes("Open developer and agent substrate hub")) {
   throw new Error("human footer must expose the commercial steward and substrate boundary");
 }
@@ -173,8 +194,59 @@ if (!hubHtml.includes("Public collaboration starts on") || !hubHtml.includes('hr
 if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manifest</h3>")) {
   throw new Error("human homepage should not render machine-entry cards");
 }
+if (
+  !hubHtml.includes("Kungfu product generation, in public") ||
+  !hubHtml.includes(">Principles</p>") ||
+  !hubHtml.includes(">First load-bearing layer</p>") ||
+  !hubHtml.includes(">First complex product proof</p>") ||
+  !hubHtml.includes('href="https://kungfu.tech"')
+) {
+  throw new Error("human homepage must expose the KFD -> Buildchain -> Core generation chain and future product home");
+}
+if (hubHtml.includes("Open product generation substrate")) {
+  throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
+}
+for (const [surfaceId, actionLabel] of [
+  ["kfd", "Open KFD"],
+  ["buildchain", "Open Buildchain"],
+  ["core", "Open Core"],
+]) {
+  const surface = site.surfaces.find((entry) => entry.id === surfaceId);
+  if (!surface) {
+    throw new Error(`missing homepage surface fixture: ${surfaceId}`);
+  }
+  const titleLink = `<h3><a href="${escapeHtml(surface.path)}">${escapeHtml(surface.label)}</a></h3>`;
+  const actionLink = `<a class="card-action" href="${escapeHtml(surface.path)}">${escapeHtml(actionLabel)}</a>`;
+  if (!hubHtml.includes(titleLink) || !hubHtml.includes(actionLink)) {
+    throw new Error(`homepage mechanism card must link to ${surface.path}`);
+  }
+}
+for (const [className, href, label] of [
+  ["kfd", "/kfd/", "Open KFD"],
+  ["buildchain", "/buildchain/", "Open Buildchain"],
+  ["core", "/core/", "Open Core"],
+  ["products", site.homepage.futureProducts.url, "Open kungfu.tech"],
+]) {
+  const hotspot = `<a class="map-hotspot ${className}" href="${escapeHtml(href)}" aria-label="${escapeHtml(label)}"></a>`;
+  if (!hubHtml.includes(hotspot)) {
+    throw new Error(`homepage substrate map is missing hotspot: ${hotspot}`);
+  }
+}
 if (!hubHtml.includes('rel="alternate" type="application/json"') || !hubHtml.includes('href="/llms.txt"')) {
   throw new Error("human pages must expose machine entries through head alternate links");
+}
+for (const [label, html, state] of [
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Core substrate"],
+  ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
+  ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
+]) {
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
+    throw new Error(`${label} page is missing the parent back link`);
+  }
+  const stateHtml = `<span class="page-kicker-state">${escapeHtml(state)}</span>`;
+  if (!html.includes(stateHtml)) {
+    throw new Error(`${label} page is missing the right-side page identity: ${stateHtml}`);
+  }
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
 if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
@@ -186,21 +258,52 @@ if (
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
-for (const entry of kfdRegistry.entries) {
-  const href = `href="https://kfd.libkungfu.dev/${entry.number}/"`;
+for (const entry of kfdSite.homepage.foundationTriad.commitments) {
+  const match = /^KFD-(\d+)\b/.exec(entry.id);
+  if (!match) {
+    throw new Error(`KFD foundation triad commitment does not expose a KFD number: ${entry.id}`);
+  }
+  const titleLink = `<article class="panel foundation-triad-card">\n              <h3><a href="${match[1]}/">${escapeHtml(entry.id)}</a></h3>`;
+  if (!kfdHomeHtml.includes(titleLink)) {
+    throw new Error(`KFD foundation triad commitment title is missing link: ${titleLink}`);
+  }
+}
+for (const layer of kfdSite.homepage.foundationModel.layers) {
+  const match = /^KFD-(\d+)\b/.exec(layer.decision);
+  if (!match) {
+    throw new Error(`KFD foundation triad decision does not expose a KFD number: ${layer.decision}`);
+  }
+  const number = match[1];
+  const href = `href="${number}/"`;
   if (!kfdHomeHtml.includes(href)) {
     throw new Error(`KFD home page is missing decision link: ${href}`);
+  }
+  const titleLink = `<h3><a href="${number}/">${escapeHtml(layer.layer)}</a></h3>`;
+  if (!kfdHomeHtml.includes(titleLink)) {
+    throw new Error(`KFD foundation triad title is missing link: ${titleLink}`);
+  }
+  const decisionLink = `<dd><p><a href="${number}/">${escapeHtml(layer.decision)}</a></p></dd>`;
+  if (!kfdHomeHtml.includes(decisionLink)) {
+    throw new Error(`KFD foundation triad decision label is missing link: ${decisionLink}`);
   }
 }
 const kfdOneHtml = fs.readFileSync("dist/kfd/1/index.html", "utf8");
 const kfdTwoHtml = fs.readFileSync("dist/kfd/2/index.html", "utf8");
 const kfdThreeHtml = fs.readFileSync("dist/kfd/3/index.html", "utf8");
-for (const [label, html] of [["KFD-1", kfdOneHtml], ["KFD-2", kfdTwoHtml], ["KFD-3", kfdThreeHtml]]) {
+for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.entries[1], kfdTwoHtml], [kfdRegistry.entries[2], kfdThreeHtml]]) {
+  const label = entry.id;
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
-  if (!html.includes('<p class="eyebrow"><a href="https://kfd.libkungfu.dev/" aria-label="Back to KFD home">')) {
-    throw new Error(`${label} page is missing the KFD home breadcrumb link`);
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="../" aria-label="Back to KFD home">Back to KFD home</a>')) {
+    throw new Error(`${label} page is missing the explicit KFD home back link`);
+  }
+  const stateHtml = `<span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span>`;
+  if (!html.includes(stateHtml)) {
+    throw new Error(`${label} page is missing the non-linked decision state: ${stateHtml}`);
+  }
+  if (html.includes(`aria-label="Back to KFD home">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</a>`)) {
+    throw new Error(`${label} page must not use the decision state as the back link label`);
   }
   if (!html.includes('class="panel doc-content"') || !html.includes('tabindex="-1"')) {
     throw new Error(`${label} markdown content is missing anchored headings`);
@@ -237,7 +340,7 @@ grep -q 'workflow-registry.json' dist/buildchain/index.html
 grep -q 'buildchain.release.json' dist/buildchain/index.html
 grep -q '@kungfu-tech/kfd' dist/kfd/index.html
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
-grep -q 'stable facts' dist/kfd/index.html
+grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
 if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
