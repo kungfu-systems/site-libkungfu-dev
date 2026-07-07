@@ -184,6 +184,17 @@ function renderDecisionMarkdown(source) {
   };
 }
 
+function rewriteKfdPackageLinks(source) {
+  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s]+\.md)(#[^)]+)?\)/g, (_match, target, hash = "") => {
+    const cleanTarget = target.replace(/^\.\//, "");
+    return `](https://github.com/kungfu-systems/kfd/blob/main/${cleanTarget}${hash})`;
+  });
+}
+
+function renderMarkdownBody(source) {
+  return markdown.render(rewriteKfdPackageLinks(source));
+}
+
 function page({ title, description, current, body, alternates = "" }) {
   const nav = [
     ["core", "/core/", "Core"],
@@ -1057,7 +1068,7 @@ const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.13";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.15";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1086,6 +1097,26 @@ const buildchainMachineArtifacts = Array.from(
   ]),
 );
 const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
+const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
+const kfdRendererContractSectionIds = kfdSite.homepage.displayPlan?.rendererContract || [];
+
+function kfdHomepageSection(id) {
+  return kfdSite.homepage.sections?.find((section) => section.id === id);
+}
+
+function kfdHomepageSectionPanels(ids, className = "") {
+  return ids
+    .map((id) => kfdHomepageSection(id))
+    .filter(Boolean)
+    .map(
+      (section) => `<section class="panel doc-content ${className}" data-kfd-section="${escapeAttr(section.id)}">
+        <p class="eyebrow">${escapeHtml(section.renderRole)}</p>
+        <h2>${escapeHtml(section.title)}</h2>
+        ${renderMarkdownBody(section.markdown)}
+      </section>`,
+    )
+    .join("\n");
+}
 
 writeFile(
   "index.html",
@@ -1217,6 +1248,22 @@ writeFile(
         ${decisionPanels(kfdRegistry.entries)}
       </div>
     </section>
+
+    ${
+      kfdSupportSectionIds.length > 0
+        ? `<div class="stack" style="margin-top: 18px;">
+        ${kfdHomepageSectionPanels(kfdSupportSectionIds, "kfd-support-section")}
+      </div>`
+        : ""
+    }
+
+    ${
+      kfdRendererContractSectionIds.length > 0
+        ? `<div class="stack" style="margin-top: 18px;">
+        ${kfdHomepageSectionPanels(kfdRendererContractSectionIds, "kfd-renderer-contract-section")}
+      </div>`
+        : ""
+    }
 
     <section class="panel" style="margin-top: 18px;">
       <h2>Machine facts</h2>

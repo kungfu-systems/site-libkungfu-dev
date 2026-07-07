@@ -58,7 +58,7 @@ const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/k
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.8.1";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.13";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.15";
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -128,6 +128,12 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 }
 if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("KFD site bundle contract mismatch");
+}
+if (!Array.isArray(kfdSite.homepage.sections) || kfdSite.homepage.sections.length === 0) {
+  throw new Error("KFD alpha.15 site bundle must expose homepage.sections");
+}
+if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !Array.isArray(kfdSite.homepage.displayPlan?.rendererContract)) {
+  throw new Error("KFD alpha.15 site bundle must expose homepage.displayPlan support and rendererContract groups");
 }
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
   throw new Error("KFD registry must expose decision entries");
@@ -257,6 +263,21 @@ if (
   !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/llms.txt"')
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
+}
+for (const sectionId of [...kfdSite.homepage.displayPlan.support, ...kfdSite.homepage.displayPlan.rendererContract]) {
+  const section = kfdSite.homepage.sections.find((entry) => entry.id === sectionId);
+  if (!section) {
+    throw new Error(`KFD displayPlan references missing homepage section: ${sectionId}`);
+  }
+  if (!kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdHomeHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
+    throw new Error(`KFD homepage did not render alpha.15 section: ${sectionId}`);
+  }
+}
+if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata") || !kfdHomeHtml.includes("Homepage content contract")) {
+  throw new Error("KFD homepage must render alpha.15 support and renderer-contract sections");
+}
+if (kfdHomeHtml.includes('href="docs/')) {
+  throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
 }
 for (const entry of kfdSite.homepage.foundationTriad.commitments) {
   const match = /^KFD-(\d+)\b/.exec(entry.id);
