@@ -25,6 +25,9 @@ const requiredFiles = [
   "dist/kfd/1/index.html",
   "dist/kfd/2/index.html",
   "dist/kfd/3/index.html",
+  "dist/1/index.html",
+  "dist/2/index.html",
+  "dist/3/index.html",
   "dist/kfd/manifest.json",
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
@@ -321,6 +324,13 @@ for (const layer of kfdSite.homepage.foundationModel.layers) {
 const kfdOneHtml = fs.readFileSync("dist/kfd/1/index.html", "utf8");
 const kfdTwoHtml = fs.readFileSync("dist/kfd/2/index.html", "utf8");
 const kfdThreeHtml = fs.readFileSync("dist/kfd/3/index.html", "utf8");
+for (const number of ["1", "2", "3"]) {
+  const canonicalHtml = fs.readFileSync(`dist/kfd/${number}/index.html`, "utf8");
+  const subdomainAliasHtml = fs.readFileSync(`dist/${number}/index.html`, "utf8");
+  if (subdomainAliasHtml !== canonicalHtml) {
+    throw new Error(`KFD subdomain route alias drifted: dist/${number}/index.html`);
+  }
+}
 for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.entries[1], kfdTwoHtml], [kfdRegistry.entries[2], kfdThreeHtml]]) {
   const label = entry.id;
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
