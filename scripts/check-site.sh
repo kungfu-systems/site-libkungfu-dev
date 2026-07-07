@@ -18,6 +18,7 @@ const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
+  "buildchain.contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
   "dist/core/index.html",
@@ -50,6 +51,7 @@ const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "u
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const buildchainContractLock = JSON.parse(fs.readFileSync("buildchain.contract-lock.json", "utf8"));
 const pnpmLockText = fs.readFileSync("pnpm-lock.yaml", "utf8");
 const kfdPropagationLockPath = "buildchain.upstreams/kfd.release.json";
 const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
@@ -61,7 +63,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.7";
+const expectedBuildchainVersion = "2.8.15";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 
 function readPnpmLockPackage(packageName, version) {
@@ -181,6 +183,28 @@ if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
 }
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
   throw new Error("KFD registry must expose decision entries");
+}
+if (
+  buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
+  buildchainContractLock.buildchain?.ref !== "v2" ||
+  buildchainContractLock.buildchain?.majorLine !== "v2" ||
+  buildchainContractLock.buildchain?.compatibilityPolicy !== "major-compatible" ||
+  !buildchainContractLock.buildchain?.resolvedSha ||
+  !buildchainContractLock.buildchain?.contractDigest ||
+  !buildchainContractLock.buildchain?.compatibilityDigest
+) {
+  throw new Error("buildchain.contract-lock.json must record the accepted floating Buildchain v2 contract");
+}
+for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
+  if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {
+    throw new Error(`${name} must expose Buildchain surface timestamp and reproducibility policy`);
+  }
+  if (generatedManifest.timestampPolicyDetails?.contract !== "kungfu-buildchain-surface-timestamp-policy") {
+    throw new Error(`${name} must expose Buildchain timestampPolicyDetails contract`);
+  }
+  if (generatedManifest.timestampPolicy === "ci-injected" && generatedManifest.generatedAt === "1970-01-01T00:00:00.000Z") {
+    throw new Error(`${name} must not expose epoch generatedAt when timestampPolicy=ci-injected`);
+  }
 }
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
@@ -454,7 +478,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.7' dist/buildchain/index.html
+grep -q '2.8.15' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html

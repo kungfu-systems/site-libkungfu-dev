@@ -24,7 +24,7 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.8.7` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.8.15` through its exported `dist/site` bundle.
 The KFD page consumes the pinned npm package artifact
 `@kungfu-tech/kfd@1.0.0-alpha.17` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
@@ -87,8 +87,12 @@ merged release pull requests can apply the public production deployment. The
 release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
-runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.7` and the
+runs through the floating Buildchain `@v2` workflow ref and checks
+`buildchain.contract-lock.json` before rendering. The lock records the accepted
+Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
+the current contract remains compatible with that accepted contract world. The
+workflow runs `pnpm install` from the official npm registry before building so the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.15` and the
 generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.17`.
 
 The site does not override Buildchain's own transitive dependencies. If a

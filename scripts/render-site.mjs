@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import markdownItAnchor from "markdown-it-anchor";
+import { createSurfaceTimestampPolicy } from "@kungfu-tech/buildchain/surface-manifest";
 
 const repoRoot = process.cwd();
 const distDir = path.join(repoRoot, "dist");
@@ -1228,7 +1229,7 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.8.7";
+const expectedBuildchainVersion = "2.8.15";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
@@ -1257,7 +1258,21 @@ const buildchainMachineArtifacts = Array.from(
     buildchainReleaseProvenance.contract,
   ]),
 );
-const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
+const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
+  generatedAt: process.env.SITE_GENERATED_AT || process.env.BUILDCHAIN_SITE_GENERATED_AT || process.env.BUILDCHAIN_SURFACE_GENERATED_AT,
+  publishedAt: process.env.SITE_PUBLISHED_AT || process.env.BUILDCHAIN_SITE_PUBLISHED_AT || process.env.BUILDCHAIN_SURFACE_PUBLISHED_AT,
+  sourceDateEpoch: process.env.SOURCE_DATE_EPOCH || "0",
+  sourceRevision: process.env.SITE_SOURCE_REVISION || process.env.BUILDCHAIN_SOURCE_SHA || process.env.GITHUB_SHA || "",
+  timestampPolicy: process.env.SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SURFACE_TIMESTAMP_POLICY,
+  deterministicInputs: [
+    "scripts/render-site.mjs",
+    "src/fixtures/*.json",
+    "pnpm-lock.yaml",
+    "@kungfu-tech/buildchain package content",
+    "@kungfu-tech/kfd package content",
+  ],
+  artifactDigestScope: "site dist manifest JSON files",
+});
 const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
 const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
 const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])
@@ -1827,7 +1842,7 @@ for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normaliz
 const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
-  generatedAt,
+  ...surfaceTimestampPolicy,
   canonicalHost: site.canonicalHost,
   sourceBoundary: site.sourceBoundary,
   pages: [
@@ -1908,7 +1923,7 @@ const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
 const kfdAgentManifest = {
   schemaVersion: 1,
   contract: "kfd-agent-surface",
-  generatedAt,
+  ...surfaceTimestampPolicy,
   canonicalHost: "kfd.libkungfu.dev",
   humanEntry: "https://kfd.libkungfu.dev/",
   agentEntries: {
