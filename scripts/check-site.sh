@@ -60,7 +60,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.1";
+const expectedBuildchainVersion = "2.8.7-alpha.1";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.16";
 
 function readPnpmLockPackage(packageName, version) {
@@ -373,7 +373,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.1' dist/buildchain/index.html
+grep -q '2.8.7-alpha.1' dist/buildchain/index.html
 grep -q 'Pinned npm package' dist/buildchain/index.html
 grep -q 'Buildchain Release Passport' dist/buildchain/index.html
 grep -q 'CLI command registry' dist/buildchain/index.html
