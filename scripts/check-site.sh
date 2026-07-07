@@ -292,6 +292,9 @@ if (
 if (hubHtml.includes("Open product generation substrate")) {
   throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
 }
+if (/<a\b[^>]*\shref="\/(?:kfd|buildchain|core)\/"/.test(hubHtml)) {
+  throw new Error("homepage cross-surface links must use canonical production hosts; local paths are only allowed as data-local-href fallbacks");
+}
 for (const [surfaceId, actionLabel] of [
   ["kfd", "Open KFD"],
   ["buildchain", "Open Buildchain"],
