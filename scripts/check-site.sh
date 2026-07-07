@@ -184,15 +184,13 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
-if (!hubHtml.includes('<a class="brand" href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
+if (!hubHtml.includes('<a class="brand" href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
   throw new Error("human header brand must link back to the libkungfu.dev home page");
 }
 if (
-  hubHtml.includes('href="https://core.libkungfu.dev/"') ||
-  hubHtml.includes('href="https://buildchain.libkungfu.dev/"') ||
-  hubHtml.includes('href="https://kfd.libkungfu.dev/"')
+  !hubHtml.includes('<nav aria-label="Primary"><a href="https://core.libkungfu.dev/">Core</a><a href="https://buildchain.libkungfu.dev/">Buildchain</a><a href="https://kfd.libkungfu.dev/">KFD</a></nav>')
 ) {
-  throw new Error("human header navigation should use site-relative links");
+  throw new Error("human header navigation must use canonical surface hosts");
 }
 if (hubHtml.includes(">Hub</a>")) {
   throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
@@ -227,16 +225,17 @@ for (const [surfaceId, actionLabel] of [
   if (!surface) {
     throw new Error(`missing homepage surface fixture: ${surfaceId}`);
   }
-  const titleLink = `<h3><a href="${escapeHtml(surface.path)}">${escapeHtml(surface.label)}</a></h3>`;
-  const actionLink = `<a class="card-action" href="${escapeHtml(surface.path)}">${escapeHtml(actionLabel)}</a>`;
+  const href = `https://${surface.host}/`;
+  const titleLink = `<h3><a href="${escapeHtml(href)}">${escapeHtml(surface.label)}</a></h3>`;
+  const actionLink = `<a class="card-action" href="${escapeHtml(href)}">${escapeHtml(actionLabel)}</a>`;
   if (!hubHtml.includes(titleLink) || !hubHtml.includes(actionLink)) {
-    throw new Error(`homepage mechanism card must link to ${surface.path}`);
+    throw new Error(`homepage mechanism card must link to ${href}`);
   }
 }
 for (const [className, href, label] of [
-  ["kfd", "/kfd/", "Open KFD"],
-  ["buildchain", "/buildchain/", "Open Buildchain"],
-  ["core", "/core/", "Open Core"],
+  ["kfd", "https://kfd.libkungfu.dev/", "Open KFD"],
+  ["buildchain", "https://buildchain.libkungfu.dev/", "Open Buildchain"],
+  ["core", "https://core.libkungfu.dev/", "Open Core"],
   ["products", site.homepage.futureProducts.url, "Open kungfu.tech"],
 ]) {
   const hotspot = `<a class="map-hotspot ${className}" href="${escapeHtml(href)}" aria-label="${escapeHtml(label)}"></a>`;
@@ -252,7 +251,7 @@ for (const [label, html, state] of [
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
     throw new Error(`${label} page is missing the parent back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(state)}</span>`;
@@ -297,7 +296,7 @@ for (const entry of kfdSite.homepage.foundationTriad.commitments) {
   if (!match) {
     throw new Error(`KFD foundation triad commitment does not expose a KFD number: ${entry.id}`);
   }
-  const titleLink = `<article class="panel foundation-triad-card">\n              <h3><a href="${match[1]}/">${escapeHtml(entry.id)}</a></h3>`;
+  const titleLink = `<article class="panel foundation-triad-card">\n              <h3><a href="/${match[1]}/">${escapeHtml(entry.id)}</a></h3>`;
   if (!kfdHomeHtml.includes(titleLink)) {
     throw new Error(`KFD foundation triad commitment title is missing link: ${titleLink}`);
   }
@@ -308,15 +307,15 @@ for (const layer of kfdSite.homepage.foundationModel.layers) {
     throw new Error(`KFD foundation triad decision does not expose a KFD number: ${layer.decision}`);
   }
   const number = match[1];
-  const href = `href="${number}/"`;
+  const href = `href="/${number}/"`;
   if (!kfdHomeHtml.includes(href)) {
     throw new Error(`KFD home page is missing decision link: ${href}`);
   }
-  const titleLink = `<h3><a href="${number}/">${escapeHtml(layer.layer)}</a></h3>`;
+  const titleLink = `<h3><a href="/${number}/">${escapeHtml(layer.layer)}</a></h3>`;
   if (!kfdHomeHtml.includes(titleLink)) {
     throw new Error(`KFD foundation triad title is missing link: ${titleLink}`);
   }
-  const decisionLink = `<dd><p><a href="${number}/">${escapeHtml(layer.decision)}</a></p></dd>`;
+  const decisionLink = `<dd><p><a href="/${number}/">${escapeHtml(layer.decision)}</a></p></dd>`;
   if (!kfdHomeHtml.includes(decisionLink)) {
     throw new Error(`KFD foundation triad decision label is missing link: ${decisionLink}`);
   }
@@ -336,7 +335,7 @@ for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="../" aria-label="Back to KFD home">Back to KFD home</a>')) {
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a>')) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span>`;
