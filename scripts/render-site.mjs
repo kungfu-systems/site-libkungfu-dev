@@ -900,9 +900,16 @@ ${alternates}
 
     .decision-card {
       display: grid;
-      grid-template-rows: auto 6.5em auto auto;
+      grid-row: span 4;
+      grid-template-rows: subgrid;
       gap: 14px;
       align-content: start;
+    }
+
+    .kfd-decision-list,
+    .practice-guideline-list {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-rows: auto minmax(6.5em, auto) auto auto;
     }
 
     .decision-card h3 {
@@ -1227,7 +1234,9 @@ ${alternates}
         grid-template-rows: none;
       }
 
-      .mechanism-chain {
+      .mechanism-chain,
+      .kfd-decision-list,
+      .practice-guideline-list {
         grid-template-rows: none;
       }
 
@@ -1409,6 +1418,39 @@ function foundationModelPanels(layers) {
     .join("\n");
 }
 
+function practiceGuidelinePanels(guidelines) {
+  return guidelines
+    .map((guideline) => {
+      const match = /^KFD-(\d+)\b/.exec(guideline.decision);
+      const title = match
+        ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(guideline.layer)}</a>`
+        : escapeHtml(guideline.layer);
+      const decision = match
+        ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(guideline.decision)}</a>`
+        : inlineMarkdown(guideline.decision);
+      return `<article class="panel foundation-layer">
+        <h3>${title}</h3>
+        <p class="foundation-commitment">${inlineMarkdown(guideline.commitment)}</p>
+        <dl class="foundation-fields">
+          <div>
+            <dt>decision</dt>
+            <dd><p>${decision}</p></dd>
+          </div>
+          <div>
+            <dt>question</dt>
+            <dd><p>${inlineMarkdown(guideline.readerQuestion)}</p></dd>
+          </div>
+        </dl>
+      </article>`;
+    })
+    .join("\n");
+}
+
+function isFlattenedMarkdownTable(text) {
+  const trimmed = String(text || "").trim();
+  return trimmed.startsWith("|") && trimmed.includes("|---|");
+}
+
 function decisionPanels(entries) {
   return entries
     .map((entry) => {
@@ -1447,7 +1489,7 @@ const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
 const expectedBuildchainVersion = "2.8.17";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1671,6 +1713,39 @@ function kfdHomepageSectionPanels(ids, className = "") {
     .join("\n");
 }
 
+function kfdPrimaryContinuationPanels() {
+  const handled = new Set(["foundation-triad", "foundation-model"]);
+  return (kfdSite.homepage.displayPlan?.primary || [])
+    .filter((id) => !handled.has(id))
+    .map((id) => {
+      if (id === "practice-guidelines" && kfdSite.homepage.practiceGuidelines) {
+        return `<section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.practiceGuidelines.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.practiceGuidelines.intro)}</p>
+      <div class="grid practice-guideline-list" style="margin-top: 18px;">
+        ${practiceGuidelinePanels(kfdSite.homepage.practiceGuidelines.guidelines || [])}
+      </div>
+      <div class="stack" style="margin-top: 18px;">
+        ${(kfdSite.homepage.practiceGuidelines.explanation || [])
+          .filter((text) => !isFlattenedMarkdownTable(text))
+          .map((text) => `<p>${inlineMarkdown(text)}</p>`)
+          .join("\n")}
+      </div>
+    </section>`;
+      }
+      if (id === "product-proof-path" && kfdSite.homepage.productProofPath) {
+        return `<section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
+    </section>`;
+      }
+      return `<div style="margin-top: 18px;">
+        ${kfdHomepageSectionPanels([id], "kfd-primary-section")}
+      </div>`;
+    })
+    .join("\n");
+}
+
 writeFile(
   "index.html",
   page({
@@ -1790,14 +1865,11 @@ writeFile(
       </div>
     </section>
 
-    <section class="panel" style="margin-top: 18px;">
-      <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
-      <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
-    </section>
+    ${kfdPrimaryContinuationPanels()}
 
     <section class="panel" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
-      <div class="grid three">
+      <div class="grid kfd-decision-list">
         ${decisionPanels(kfdRegistry.entries)}
       </div>
     </section>

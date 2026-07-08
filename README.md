@@ -42,7 +42,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.17` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.19` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 
 Expected upstream flow:
@@ -60,8 +60,8 @@ pinned package artifacts.
 
 ## KFD Compliance
 
-This repository is itself a Kungfu product surface and must follow KFD-1,
-KFD-2, and KFD-3:
+This repository is itself a Kungfu product surface and must follow the current
+KFD registry:
 
 - KFD-1: every rendered product fact must identify its upstream source package,
   fixture, version, and ownership boundary.
@@ -71,6 +71,9 @@ KFD-2, and KFD-3:
 - KFD-3: human pages, `/manifest.json`, `/llms.txt`, and stable subdomain paths
   must all describe the same product mechanism so humans and agents consume the
   same release surface.
+- KFD-4: perspective-bearing timeline or release views must expose their
+  observer and projection boundary instead of presenting mixed-source order as
+  a view from nowhere.
 
 The long-term renderer package from this repository should therefore render any
 Kungfu-compliant site bundle as a governed product surface, not as detached
@@ -110,7 +113,7 @@ Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.17` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.17`.
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.19`.
 
 The site does not override Buildchain's own transitive dependencies. If a
 Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version

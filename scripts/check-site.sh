@@ -17,7 +17,7 @@ fi
 node - <<'NODE'
 const fs = require("fs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
-const requiredFiles = [
+const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
@@ -31,12 +31,6 @@ const requiredFiles = [
   "dist/core/index.html",
   "dist/buildchain/index.html",
   "dist/kfd/index.html",
-  "dist/kfd/1/index.html",
-  "dist/kfd/2/index.html",
-  "dist/kfd/3/index.html",
-  "dist/1/index.html",
-  "dist/2/index.html",
-  "dist/3/index.html",
   "dist/kfd/manifest.json",
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
@@ -53,12 +47,6 @@ const requiredFiles = [
   "dist/manifest.json",
   "dist/llms.txt",
 ];
-
-for (const file of requiredFiles) {
-  if (!fs.existsSync(file)) {
-    throw new Error(`missing required file: ${file}`);
-  }
-}
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
@@ -81,7 +69,20 @@ const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/k
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.8.17";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
+const requiredFiles = [
+  ...requiredBaseFiles,
+  ...kfdRegistry.entries.flatMap((entry) => [
+    `dist/kfd/${entry.number}/index.html`,
+    `dist/${entry.number}/index.html`,
+  ]),
+];
+
+for (const file of requiredFiles) {
+  if (!fs.existsSync(file)) {
+    throw new Error(`missing required file: ${file}`);
+  }
+}
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -233,7 +234,7 @@ if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.r
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
   throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
 }
-if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
+if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
   throw new Error("KFD registry must expose decision entries");
 }
 if (
@@ -483,21 +484,29 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
     throw new Error(`KFD displayPlan references missing homepage section: ${sectionId}`);
   }
   if (!kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdHomeHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
-    throw new Error(`KFD homepage did not render alpha.16 support section: ${sectionId}`);
+    throw new Error(`KFD homepage did not render support section: ${sectionId}`);
   }
 }
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
-  throw new Error("KFD homepage must render alpha.16 support sections");
+  throw new Error("KFD homepage must render support sections");
 }
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract || !kfdHomeHtml.includes(`<dd><code>${escapeHtml(rendererContract.id)}</code></dd>`)) {
-  throw new Error("KFD homepage must expose the alpha.16 renderer contract in machine facts");
+  throw new Error("KFD homepage must expose the renderer contract in machine facts");
 }
 if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`)) {
-  throw new Error("KFD alpha.16 renderer contract must not render as ordinary homepage content");
+  throw new Error("KFD renderer contract must not render as ordinary homepage content");
 }
 if (kfdHomeHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
+}
+if (
+  !kfdHomeHtml.includes("Practice guidelines") ||
+  !kfdHomeHtml.includes("Timelines must declare their observer") ||
+  !kfdHomeHtml.includes('href="/4/"') ||
+  !kfdHomeHtml.includes("Adoption boundary")
+) {
+  throw new Error("KFD homepage must render alpha.19 practice guidance and KFD-4 links");
 }
 for (const entry of kfdSite.homepage.foundationTriad.commitments) {
   const match = /^KFD-(\d+)\b/.exec(entry.id);
@@ -528,17 +537,22 @@ for (const layer of kfdSite.homepage.foundationModel.layers) {
     throw new Error(`KFD foundation triad decision label is missing link: ${decisionLink}`);
   }
 }
-const kfdOneHtml = fs.readFileSync("dist/kfd/1/index.html", "utf8");
-const kfdTwoHtml = fs.readFileSync("dist/kfd/2/index.html", "utf8");
-const kfdThreeHtml = fs.readFileSync("dist/kfd/3/index.html", "utf8");
-for (const number of ["1", "2", "3"]) {
+const kfdDecisionHtmlByNumber = new Map(
+  kfdRegistry.entries.map((entry) => [String(entry.number), fs.readFileSync(`dist/kfd/${entry.number}/index.html`, "utf8")]),
+);
+const kfdOneHtml = kfdDecisionHtmlByNumber.get("1");
+const kfdThreeHtml = kfdDecisionHtmlByNumber.get("3");
+const kfdFourHtml = kfdDecisionHtmlByNumber.get("4");
+for (const entry of kfdRegistry.entries) {
+  const number = String(entry.number);
   const canonicalHtml = fs.readFileSync(`dist/kfd/${number}/index.html`, "utf8");
   const subdomainAliasHtml = fs.readFileSync(`dist/${number}/index.html`, "utf8");
   if (subdomainAliasHtml !== canonicalHtml) {
     throw new Error(`KFD subdomain route alias drifted: dist/${number}/index.html`);
   }
 }
-for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.entries[1], kfdTwoHtml], [kfdRegistry.entries[2], kfdThreeHtml]]) {
+for (const entry of kfdRegistry.entries) {
+  const html = kfdDecisionHtmlByNumber.get(String(entry.number));
   const label = entry.id;
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
@@ -559,6 +573,9 @@ for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.
 }
 if (!kfdOneHtml.includes('href="#the-decision-log"') || !kfdThreeHtml.includes('href="#three-commitments"')) {
   throw new Error("KFD decision pages must expose section links in the generated TOC");
+}
+if (!kfdFourHtml || !kfdFourHtml.includes("Timelines must declare their observer") || !kfdFourHtml.includes('href="#practice-role"')) {
+  throw new Error("KFD-4 page must render observer-timeline content and section links");
 }
 if (!kfdOneHtml.includes("<table>") || !kfdOneHtml.includes("<th>Condition</th>") || !kfdOneHtml.includes("<td><strong>major</strong></td>")) {
   throw new Error("KFD-1 markdown table was not rendered as an HTML table");
@@ -595,6 +612,8 @@ grep -q '@kungfu-tech/kfd' dist/kfd/index.html
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
 grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
+grep -q 'KFD-4' dist/kfd/4/index.html
+grep -q 'Timelines must declare their observer' dist/kfd/4/index.html
 if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
   exit 1

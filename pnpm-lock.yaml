@@ -12,8 +12,8 @@ importers:
         specifier: 2.8.17
         version: 2.8.17
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.17
-        version: 1.0.0-alpha.17
+        specifier: 1.0.0-alpha.19
+        version: 1.0.0-alpha.19
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -31,8 +31,8 @@ packages:
   '@kungfu-tech/kfd@1.0.0-alpha.16':
     resolution: {integrity: sha512-u2tHV9YRTr3U3hvB979SGX5WXoIPSjAWYk5li/5bOPvDyl3w4JZrf1b8c/CEIJi/vNXlylBUJQ1eLZEpWQlqUw==}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.17':
-    resolution: {integrity: sha512-/jy1vbhEogvdRyxOauhIGlIMo4dfM356t2RxtlX7ChFBQaT8admCEZDxaherMVF7J6IKTOPXZXPC/jyBWUuicQ==}
+  '@kungfu-tech/kfd@1.0.0-alpha.19':
+    resolution: {integrity: sha512-rpG6B5VKi7NEwxYs+oL1s3bSsTPUQrQb9IqmAgaF5wYYgGHCYf84SPUFNPWiqvKBmMLf/rO9R4UzQbqeBygTtA==}
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -86,7 +86,7 @@ snapshots:
 
   '@kungfu-tech/kfd@1.0.0-alpha.16': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.17': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.19': {}
 
   '@types/linkify-it@5.0.0': {}
 

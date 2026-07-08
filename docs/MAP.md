@@ -23,7 +23,7 @@
   badge endpoint contract until the same files are published in the Buildchain
   `dist/site` bundle.
 - `@kungfu-tech/buildchain@2.8.17` supplies the Buildchain `dist/site` bundle.
-- `@kungfu-tech/kfd@1.0.0-alpha.17` supplies the KFD site bundle, registry,
+- `@kungfu-tech/kfd@1.0.0-alpha.19` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
   package artifacts.
@@ -42,6 +42,8 @@ This repository is also a KFD-governed product surface:
   renderer contracts, manifests, and release-propagation locks.
 - KFD-3 consumption: human pages and agent entries must lead to the same stable
   mechanism, pages, and machine-readable facts.
+- KFD-4 perspective: timeline, release, sync, or mixed-source work-state views
+  must declare their observer and projection boundary.
 
 Future `site-libkungfu-dev` npm package exports should preserve these rules so
 any Kungfu-standard site bundle can be rendered by the same governed renderer.
