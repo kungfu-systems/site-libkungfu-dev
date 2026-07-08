@@ -73,7 +73,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.10.4";
+const expectedBuildchainVersion = "2.10.5";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const requiredFiles = [
   ...requiredBaseFiles,
@@ -322,6 +322,20 @@ if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
 }
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
+}
+const buildchainHomeHtml = fs.readFileSync("dist/buildchain/index.html", "utf8");
+const expectedBuildchainBadgeHost = expectedSurfaceEndpoint("buildchain", "badges/v1/");
+if (!buildchainHomeHtml.includes('class="lead badge-strip"')) {
+  throw new Error("Buildchain homepage must render the README badge block as a badge strip");
+}
+if (
+  !buildchainHomeHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}kfd-1/passed.svg`)}"`) ||
+  !buildchainHomeHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}buildchain-release-passport/passed.svg`)}"`)
+) {
+  throw new Error("Buildchain homepage badges must render as channel-aware image tags");
+}
+if (buildchainHomeHtml.includes("<!-- buildchain:badges:") || buildchainHomeHtml.includes("[![KFD-1:")) {
+  throw new Error("Buildchain homepage must not expose raw README badge markdown");
 }
 const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
 const expectedBadgeIds = [
@@ -689,7 +703,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.10.4' dist/buildchain/index.html
+grep -q '2.10.5' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html

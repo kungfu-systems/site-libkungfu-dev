@@ -47,12 +47,12 @@ jobs:
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
         node scripts/prepare-kfd-upstream.mjs
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
-        pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/
-        pnpm run build
+        pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
+        pnpm --config.minimumReleaseAge=0 run build
       verify-command: |
         export SITE_SURFACE_CHANNEL="${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.production_approved && 'production' || 'staging') }}"
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
-        pnpm run check
+        pnpm --config.minimumReleaseAge=0 run check
       artifact-path: dist
       preview-apply: true
       preview-cleanup-apply: true
