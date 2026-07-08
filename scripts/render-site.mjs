@@ -171,7 +171,7 @@ function renderToc(toc, ariaLabel = "Page sections") {
   </aside>`;
 }
 
-function renderDecisionMarkdown(source) {
+function renderDecisionMarkdown(source, tocLabel = "Decision sections") {
   const env = {};
   const tokens = markdown.parse(String(source), env);
   const toc = [];
@@ -194,7 +194,7 @@ function renderDecisionMarkdown(source) {
 
   return {
     html: markdown.renderer.render(tokens, markdown.options, env),
-    tocHtml: renderToc(toc, "Decision sections"),
+    tocHtml: renderToc(toc, tocLabel),
   };
 }
 
@@ -1606,6 +1606,10 @@ function decisionPanels(entries) {
   return entries
     .map((entry) => {
       const path = `/${entry.number}/`;
+      const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+      const usageAction = usagePage?.sourceExists
+        ? `<a class="card-action secondary" href="${escapeAttr(`/${entry.number}/usage/`)}">Usage notes</a>`
+        : "";
       return `<article class="panel decision-card">
         <h3><a href="${escapeAttr(path)}">${escapeHtml(entry.id)}</a></h3>
         <p class="decision-summary">${escapeHtml(entry.title)}</p>
@@ -1618,16 +1622,21 @@ function decisionPanels(entries) {
           <dd><a href="${escapeAttr(path)}"><code>${escapeHtml(`/${entry.number}/`)}</code></a></dd>
         </dl>
         <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
+        ${usageAction}
       </article>`;
     })
     .join("\n");
 }
 
-function kfdDecisionNav(currentEntry) {
+function kfdDecisionNav(currentEntry, currentPage = "decision") {
   const links = kfdRegistry.entries
     .map((entry) => {
-      const currentAttr = String(entry.number) === String(currentEntry.number) ? ` aria-current="page"` : "";
-      return `<a href="/${escapeAttr(entry.number)}/"${currentAttr}>${escapeHtml(entry.id)}</a>`;
+      const isCurrentDecision = String(entry.number) === String(currentEntry.number) && currentPage === "decision";
+      const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+      const usageLink = usagePage?.sourceExists
+        ? `<a class="doc-nav-child" href="/${escapeAttr(entry.number)}/usage/"${String(entry.number) === String(currentEntry.number) && currentPage === "usage" ? ' aria-current="page"' : ""}>Usage</a>`
+        : "";
+      return `<a href="/${escapeAttr(entry.number)}/"${isCurrentDecision ? ' aria-current="page"' : ""}>${escapeHtml(entry.id)}</a>${usageLink}`;
     })
     .join("\n");
   return `<nav class="doc-global-nav" aria-label="Kung Fu Decisions">
@@ -1655,8 +1664,8 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.10.5";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
+const expectedBuildchainVersion = "2.10.8";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.21";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1707,6 +1716,8 @@ const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.fi
 const buildchainRendererContract = buildchainSite.homepage.rendererContract;
 const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
 const kfdRendererContract = kfdSite.homepage.rendererContract;
+const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
+const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
 const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
 
@@ -2117,6 +2128,49 @@ for (const entry of kfdRegistry.entries) {
   });
   writeFile(`kfd/${entry.number}/index.html`, decisionPageHtml);
   writeFile(`${entry.number}/index.html`, decisionPageHtml);
+
+  const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+  if (usagePage?.sourceExists) {
+    const usageMarkdown = readPackageText(`@kungfu-tech/kfd/${usagePage.sourcePath || usagePage.path}`);
+    const renderedUsage = renderDecisionMarkdown(usageMarkdown, "Usage sections");
+    const usagePageHtml = page({
+      title: `${entry.id} usage | kfd.libkungfu.dev`,
+      description: usagePage.title || `${entry.id} usage notes`,
+      current: "kfd",
+      alternates: kfdSurfaceAlternates(),
+      body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a href="/${escapeAttr(entry.number)}/" aria-label="Back to ${escapeAttr(entry.id)}">${escapeHtml(`Back to ${entry.id}`)}</a><span class="page-kicker-state">usage / ${escapeHtml(entry.id)}</span></p>
+        <h1>${escapeHtml(usagePage.title || `${entry.id} usage`)}</h1>
+        <p class="lead">${escapeHtml(entry.title)}</p>
+      </section>
+
+      <section class="panel">
+        <h2>Usage metadata</h2>
+        <dl class="meta">
+          <dt>Decision</dt>
+          <dd><a href="/${escapeAttr(entry.number)}/"><code>${escapeHtml(entry.id)}</code></a></dd>
+          <dt>Stable URL</dt>
+          <dd><code>${escapeHtml(usagePage.url || `https://kfd.libkungfu.dev/${entry.number}/usage`)}</code></dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(usagePage.sourcePath || usagePage.path)}</code></dd>
+          <dt>Relationship</dt>
+          <dd><code>${escapeHtml(usagePage.relationship || "usage-child-of-decision")}</code></dd>
+        </dl>
+      </section>
+
+      <section class="doc-layout">
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(entry, "usage")}
+          ${renderedUsage.tocHtml}
+        </aside>
+        <article class="panel doc-content">
+          ${renderedUsage.html}
+        </article>
+      </section>`,
+    });
+    writeFile(`kfd/${entry.number}/usage/index.html`, usagePageHtml);
+    writeFile(`${entry.number}/usage/index.html`, usagePageHtml);
+  }
 }
 
 writeFile(
@@ -2330,6 +2384,13 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
     })),
+    ...kfdUsagePages
+      .filter((pageEntry) => pageEntry.sourceExists)
+      .map((pageEntry) => ({
+        path: `/${pageEntry.decisionNumber}/usage/`,
+        host: surfaceCanonicalHost("kfd"),
+        source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath || pageEntry.path}`,
+      })),
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
@@ -2379,6 +2440,13 @@ const manifest = {
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
 const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
+  usage: kfdUsagePageByDecisionNumber.get(String(entry.number))?.sourceExists
+    ? {
+        path: `/${entry.number}/usage/`,
+        url: surfaceEndpointHref("kfd", `${entry.number}/usage/`),
+        source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdUsagePageByDecisionNumber.get(String(entry.number)).sourcePath || kfdUsagePageByDecisionNumber.get(String(entry.number)).path}`,
+      }
+    : undefined,
   id: entry.id,
   number: entry.number,
   kind: entry.kind,
@@ -2416,6 +2484,7 @@ const kfdAgentManifest = {
   readOrder: [
     surfaceCanonicalHref("kfd"),
     ...kfdDecisionEntries.map((entry) => entry.url),
+    ...kfdDecisionEntries.map((entry) => entry.usage?.url).filter(Boolean),
     surfaceEndpointHref("kfd", "registry.json"),
     surfaceEndpointHref("kfd", "standards.json"),
   ],

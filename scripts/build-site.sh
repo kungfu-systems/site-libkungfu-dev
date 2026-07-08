@@ -22,6 +22,8 @@ test -f dist/kfd/index.html
 for number in $(node -e 'const fs=require("fs"); const registry=JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json","utf8")); console.log(registry.entries.map((entry)=>entry.number).join("\n"));'); do
   test -f "dist/kfd/${number}/index.html"
   test -f "dist/${number}/index.html"
+  test -f "dist/kfd/${number}/usage/index.html"
+  test -f "dist/${number}/usage/index.html"
 done
 test -f dist/kfd/1/index.html
 test -f dist/badges/v1/kfd-1/passed.svg
