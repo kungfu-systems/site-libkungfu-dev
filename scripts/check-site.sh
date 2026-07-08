@@ -111,6 +111,38 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function expectedSurfaceHref(id) {
+  const previewAlias = (process.env.SITE_PREVIEW_ALIAS || process.env.BUILDCHAIN_PREVIEW_ALIAS || "").trim();
+  const channel = (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim();
+  const hrefsByChannel = {
+    production: {
+      hub: "https://libkungfu.dev/",
+      core: "https://core.libkungfu.dev/",
+      buildchain: "https://buildchain.libkungfu.dev/",
+      kfd: "https://kfd.libkungfu.dev/",
+    },
+    staging: {
+      hub: "https://staging.libkungfu.dev/",
+      core: "https://core.staging.libkungfu.dev/",
+      buildchain: "https://buildchain.staging.libkungfu.dev/",
+      kfd: "https://kfd.staging.libkungfu.dev/",
+    },
+  };
+  if (channel === "preview" && previewAlias) {
+    hrefsByChannel.preview = {
+      hub: `https://${previewAlias}.preview.libkungfu.dev/`,
+      core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
+      buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
+      kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
+    };
+  }
+  const hrefs = hrefsByChannel[channel] || hrefsByChannel.production;
+  if (!hrefs[id]) {
+    throw new Error(`unknown site surface id: ${id}`);
+  }
+  return hrefs[id];
+}
+
 function normalizeBuildchainRoute(route) {
   const normalized = `/${String(route || "/").replace(/^\/+/, "")}`.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
@@ -417,11 +449,11 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
-if (!hubHtml.includes('<a class="brand" href="https://libkungfu.dev/" data-local-href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')) {
+if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>`)) {
   throw new Error("human header brand must link to the canonical hub and expose a local fallback");
 }
 if (
-  !hubHtml.includes('<nav aria-label="Primary"><a href="https://core.libkungfu.dev/" data-local-href="/core/">Core</a><a href="https://buildchain.libkungfu.dev/" data-local-href="/buildchain/">Buildchain</a><a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/">KFD</a></nav>')
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a></nav>`)
 ) {
   throw new Error("human header navigation must use canonical surface hosts with local fallbacks");
 }
@@ -451,7 +483,7 @@ if (hubHtml.includes("Open product generation substrate")) {
   throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
 }
 if (/<a\b[^>]*\shref="\/(?:kfd|buildchain|core)\/"/.test(hubHtml)) {
-  throw new Error("homepage cross-surface links must use canonical production hosts; local paths are only allowed as data-local-href fallbacks");
+  throw new Error("homepage cross-surface links must use channel surface hosts; local paths are only allowed as data-local-href fallbacks");
 }
 for (const [surfaceId, actionLabel] of [
   ["kfd", "Open KFD"],
@@ -463,7 +495,7 @@ for (const [surfaceId, actionLabel] of [
     throw new Error(`missing homepage surface fixture: ${surfaceId}`);
   }
   const surfacePaths = { kfd: "/kfd/", buildchain: "/buildchain/", core: "/core/" };
-  const href = `https://${surface.host}/`;
+  const href = expectedSurfaceHref(surfaceId);
   const titleLink = `<h3><a href="${escapeHtml(href)}" data-local-href="${escapeHtml(surfacePaths[surfaceId])}">${escapeHtml(surface.label)}</a></h3>`;
   const actionLink = `<a class="card-action" href="${escapeHtml(href)}" data-local-href="${escapeHtml(surfacePaths[surfaceId])}">${escapeHtml(actionLabel)}</a>`;
   if (!hubHtml.includes(titleLink) || !hubHtml.includes(actionLink)) {
@@ -471,9 +503,9 @@ for (const [surfaceId, actionLabel] of [
   }
 }
 for (const [className, href, label] of [
-  ["kfd", "https://kfd.libkungfu.dev/", "Open KFD"],
-  ["buildchain", "https://buildchain.libkungfu.dev/", "Open Buildchain"],
-  ["core", "https://core.libkungfu.dev/", "Open Core"],
+  ["kfd", expectedSurfaceHref("kfd"), "Open KFD"],
+  ["buildchain", expectedSurfaceHref("buildchain"), "Open Buildchain"],
+  ["core", expectedSurfaceHref("core"), "Open Core"],
   ["products", site.homepage.futureProducts.url, `Open ${site.homepage.futureProducts.displayName}`],
 ]) {
   const surfacePaths = { kfd: "/kfd/", buildchain: "/buildchain/", core: "/core/" };
@@ -491,7 +523,7 @@ for (const [label, html, state] of [
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://libkungfu.dev/" data-local-href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>')) {
+  if (!html.includes(`<p class="eyebrow page-kicker"><a href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a>`)) {
     throw new Error(`${label} page is missing the parent back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(state)}</span>`;
@@ -590,7 +622,7 @@ for (const entry of kfdRegistry.entries) {
   }
   if (
     !html.includes('class="doc-global-nav" aria-label="Kung Fu Decisions"') ||
-    !html.includes('<a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/">Overview</a>')
+    !html.includes(`<a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">Overview</a>`)
   ) {
     throw new Error(`${label} page is missing the KFD cross-decision navigation`);
   }
@@ -598,7 +630,7 @@ for (const entry of kfdRegistry.entries) {
   if (!html.includes(currentDecisionLink)) {
     throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
   }
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>')) {
+  if (!html.includes(`<p class="eyebrow page-kicker"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>`)) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span>`;
