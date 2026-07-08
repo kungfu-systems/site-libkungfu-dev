@@ -154,24 +154,29 @@ function headingText(token) {
     .join("");
 }
 
-function renderToc(toc, ariaLabel = "Page sections") {
-  if (toc.length === 0) {
+function renderToc(toc, ariaLabel = "Page sections", extraLinks = []) {
+  const title = ariaLabel;
+  const links = [
+    ...toc.map(
+      (entry) => `<a class="toc-level-${entry.level}" href="#${escapeAttr(entry.id)}">${escapeHtml(entry.title)}</a>`,
+    ),
+    ...extraLinks.map(
+      (entry) => `<a class="${escapeAttr(entry.className || "toc-related-link")}" href="${escapeAttr(entry.href)}">${escapeHtml(entry.title)}</a>`,
+    ),
+  ];
+  if (links.length === 0) {
     return `<aside class="doc-toc" aria-label="${escapeAttr(ariaLabel)}">
-      <h2>Sections</h2>
+      <h2>${escapeHtml(title)}</h2>
       <p>No sections found.</p>
     </aside>`;
   }
   return `<aside class="doc-toc" aria-label="${escapeAttr(ariaLabel)}">
-    <h2>Sections</h2>
-    <nav>${toc
-      .map(
-        (entry) => `<a class="toc-level-${entry.level}" href="#${escapeAttr(entry.id)}">${escapeHtml(entry.title)}</a>`,
-      )
-      .join("")}</nav>
+    <h2>${escapeHtml(title)}</h2>
+    <nav>${links.join("")}</nav>
   </aside>`;
 }
 
-function renderDecisionMarkdown(source, tocLabel = "Decision sections") {
+function renderDecisionMarkdown(source, tocLabel = "Decision sections", options = {}) {
   const env = {};
   const tokens = markdown.parse(String(source), env);
   const toc = [];
@@ -194,7 +199,7 @@ function renderDecisionMarkdown(source, tocLabel = "Decision sections") {
 
   return {
     html: markdown.renderer.render(tokens, markdown.options, env),
-    tocHtml: renderToc(toc, tocLabel),
+    tocHtml: renderToc(toc, tocLabel, options.tocLinks || []),
   };
 }
 
@@ -1225,6 +1230,26 @@ ${alternates}
       text-underline-offset: 4px;
     }
 
+    .doc-toc .toc-related-link {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 750;
+    }
+
+    .doc-global-nav .doc-nav-child {
+      margin: -2px 0 2px 14px;
+      padding-left: 12px;
+      border-left: 2px solid var(--line);
+      font-size: 13px;
+    }
+
+    .doc-global-nav .doc-nav-child[aria-current="page"] {
+      border-left-color: var(--accent);
+      font-weight: 750;
+    }
+
     .doc-page-sections {
       display: grid;
       gap: 6px;
@@ -1633,7 +1658,8 @@ function kfdDecisionNav(currentEntry, currentPage = "decision") {
     .map((entry) => {
       const isCurrentDecision = String(entry.number) === String(currentEntry.number) && currentPage === "decision";
       const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
-      const usageLink = usagePage?.sourceExists
+      const isCurrentUsage = String(entry.number) === String(currentEntry.number) && currentPage === "usage";
+      const usageLink = usagePage?.sourceExists && isCurrentUsage
         ? `<a class="doc-nav-child" href="/${escapeAttr(entry.number)}/usage/"${String(entry.number) === String(currentEntry.number) && currentPage === "usage" ? ' aria-current="page"' : ""}>Usage</a>`
         : "";
       return `<a href="/${escapeAttr(entry.number)}/"${isCurrentDecision ? ' aria-current="page"' : ""}>${escapeHtml(entry.id)}</a>${usageLink}`;
@@ -2092,7 +2118,22 @@ writeFile(
 
 for (const entry of kfdRegistry.entries) {
   const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
-  const renderedDecision = renderDecisionMarkdown(decisionMarkdown);
+  const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+  const renderedDecision = renderDecisionMarkdown(
+    decisionMarkdown,
+    "Decision sections",
+    usagePage?.sourceExists
+      ? {
+          tocLinks: [
+            {
+              title: usagePage.title || "Usage",
+              href: `/${entry.number}/usage/`,
+              className: "toc-related-link",
+            },
+          ],
+        }
+      : {},
+  );
   const decisionPageHtml = page({
     title: `${entry.id} | kfd.libkungfu.dev`,
     description: entry.title,
@@ -2129,7 +2170,6 @@ for (const entry of kfdRegistry.entries) {
   writeFile(`kfd/${entry.number}/index.html`, decisionPageHtml);
   writeFile(`${entry.number}/index.html`, decisionPageHtml);
 
-  const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
   if (usagePage?.sourceExists) {
     const usageMarkdown = readPackageText(`@kungfu-tech/kfd/${usagePage.sourcePath || usagePage.path}`);
     const renderedUsage = renderDecisionMarkdown(usageMarkdown, "Usage sections");
