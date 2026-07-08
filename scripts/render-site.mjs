@@ -364,14 +364,97 @@ function normalizeBadgePayload(registry, badge, state, payload) {
   return normalized;
 }
 
+function badgeColorForState(registry, state) {
+  const stateDefault = registry.stateDefaults?.[state]?.color;
+  if (stateDefault) {
+    return stateDefault;
+  }
+  for (const badge of registry.badges || []) {
+    for (const rawState of badge.states || []) {
+      if (badgeStateName(rawState) === state && rawState?.payload?.color) {
+        return rawState.payload.color;
+      }
+    }
+  }
+  return "4a5568";
+}
+
+function kfdBadgeMessageTemplate(entry) {
+  const title = String(entry.title || "").toLowerCase();
+  if (title.includes("timeline") && title.includes("observer")) {
+    return "timeline observer {state}";
+  }
+  return `${String(entry.id || `KFD-${entry.number}`).toUpperCase()} {state}`;
+}
+
+function buildKfdBadgeEntry(registry, entry) {
+  const badgeId = assertBadgeSlug(`kfd-${entry.number}`, "id");
+  const label = String(entry.id || `KFD-${entry.number}`).toUpperCase();
+  const messageTemplate = kfdBadgeMessageTemplate(entry);
+  const logoPolicy = registry.logoPolicy || { placeholder: "buildchain-monogram" };
+  const states = registry.supportedStates || ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
+  return {
+    id: badgeId,
+    label,
+    messageTemplate,
+    linkRole: "repository-release-passport",
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/registry.json#${badgeId}`,
+    states: states.map((state) => ({
+      state,
+      path: `badges/v1/${badgeId}/${state}.json`,
+      svgPath: `badges/v1/${badgeId}/${state}.svg`,
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/registry.json#${badgeId}/${state}`,
+      payload: {
+        schemaVersion: 1,
+        label,
+        message: messageTemplate.replaceAll("{state}", state),
+        color: badgeColorForState(registry, state),
+        logoPolicy,
+      },
+    })),
+  };
+}
+
+function badgeRegistryWithKfdEntries(registry) {
+  const badges = Array.isArray(registry.badges) ? [...registry.badges] : [];
+  const knownBadgeIds = new Set(badges.map((badge) => badge.id));
+  const added = [];
+  for (const entry of kfdRegistry.entries || []) {
+    const badgeId = `kfd-${entry.number}`;
+    if (knownBadgeIds.has(badgeId)) {
+      continue;
+    }
+    const badge = buildKfdBadgeEntry(registry, entry);
+    badges.push(badge);
+    knownBadgeIds.add(badgeId);
+    added.push({
+      badge: badge.id,
+      source: badge.source,
+    });
+  }
+  return {
+    ...registry,
+    badges,
+    siteAugmentations: [
+      ...(registry.siteAugmentations || []),
+      ...added.map((entry) => ({
+        contract: "libkungfu-dev-kfd-badge-registry-augmentation",
+        reason: "KFD registry contains a decision that is not yet present in the Buildchain badge endpoint registry.",
+        ...entry,
+      })),
+    ],
+  };
+}
+
 function readBadgePayload(source, badge, state, rawState) {
   if (rawState && typeof rawState === "object" && rawState.payload) {
     const relativePath = badgeStatePayloadPath(badge, state, rawState);
+    const payloadSource = rawState.source || badge.source;
     return {
       payload: normalizeBadgePayload(source.registry, badge, state, rawState.payload),
-      source: source.kind === "upstream-package"
+      source: payloadSource || (source.kind === "upstream-package"
         ? `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/${relativePath}#payload`
-        : `${source.source}#payload:${badge.id}/${state}`,
+        : `${source.source}#payload:${badge.id}/${state}`),
     };
   }
   const relativePath = badgeStatePayloadPath(badge, state, rawState);
@@ -439,7 +522,7 @@ function renderBadgeSvg(payload) {
 
 function renderBuildchainBadgeEndpoints() {
   const source = readBuildchainBadgeEndpointSource();
-  const registry = source.registry;
+  const registry = badgeRegistryWithKfdEntries(source.registry);
   if (!buildchainBadgeEndpointRegistryContracts.has(registry.contract)) {
     throw new Error("Buildchain badge endpoint registry contract mismatch");
   }
@@ -459,7 +542,7 @@ function renderBuildchainBadgeEndpoints() {
       const state = assertBadgeSlug(badgeStateName(rawState), "state");
       const { payload, source: payloadSource } = readBadgePayload(source, { ...badge, id: badgeId }, state, rawState);
       const endpointPath = `badges/${version}/${badgeId}/${state}`;
-      writeFile(`${endpointPath}.json`, `${JSON.stringify({
+      const jsonContent = `${JSON.stringify({
         ...payload,
         buildchain: {
           badge: badgeId,
@@ -467,18 +550,28 @@ function renderBuildchainBadgeEndpoints() {
           source: payloadSource,
           logoPolicy: payload.logoPolicy,
         },
-      }, null, 2)}\n`);
-      writeFile(`${endpointPath}.svg`, renderBadgeSvg(payload));
+      }, null, 2)}\n`;
+      const svgContent = renderBadgeSvg(payload);
+      writeFile(`${endpointPath}.json`, jsonContent);
+      writeFile(`${endpointPath}.svg`, svgContent);
+      writeFile(`buildchain/${endpointPath}.json`, jsonContent);
+      writeFile(`buildchain/${endpointPath}.svg`, svgContent);
       rendered.push({
         badge: badgeId,
         state,
+        host: "buildchain.libkungfu.dev",
         path: `/${endpointPath}.svg`,
         jsonPath: `/${endpointPath}.json`,
+        deployedPaths: [
+          `/${endpointPath}.svg`,
+          `/buildchain/${endpointPath}.svg`,
+        ],
         source: payloadSource,
       });
     }
   }
   writeFile(`badges/${version}/badge-endpoint-registry.json`, `${JSON.stringify(endpointRegistry, null, 2)}\n`);
+  writeFile(`buildchain/badges/${version}/badge-endpoint-registry.json`, `${JSON.stringify(endpointRegistry, null, 2)}\n`);
   return {
     source,
     registry: endpointRegistry,
