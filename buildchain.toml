@@ -16,6 +16,8 @@ workflows = ["buildchain-web-surface.yml"]
 url_pattern = "https://{alias}.preview.libkungfu.dev"
 visibility = "ephemeral"
 requires_auth = false
+access_control = "managed-network"
+edge_auth = "none"
 noindex = true
 
 [channels.staging]
@@ -94,6 +96,14 @@ keep_deploys = 10
 
 [retention.production]
 days = 365
+
+[security.preview]
+requires_auth = false
+access_control = "managed-network"
+edge_auth = "none"
+noindex = true
+isolated_providers = true
+sandbox_data = true
 
 [security.staging]
 requires_auth = false

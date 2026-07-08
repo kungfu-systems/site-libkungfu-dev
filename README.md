@@ -32,7 +32,7 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.10.2` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.10.3` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -112,7 +112,7 @@ runs through the floating Buildchain `@v2` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.10.2` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.10.3` and the
 generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.19`.
 
 The site does not override Buildchain's own transitive dependencies. If a
@@ -135,7 +135,9 @@ workflow consumes that lock before install, updates the local package pin and
 pnpm lockfile inside the build workspace, and verifies that the rendered
 `kfd.libkungfu.dev` pages match the exact KFD release version and integrity.
 
-Staging is modeled as managed-network protected, not edge Basic Auth protected.
+Preview and staging are modeled as managed-network protected, not edge Basic
+Auth protected. This lets Buildchain verify deploy health from deployment
+evidence or S3 object checks when public HTTP access is intentionally blocked.
 The AWS deployment targets are modeled in the private infrastructure contract.
 Production is active and remains gated by Buildchain release intent or trusted
 manual approval.
