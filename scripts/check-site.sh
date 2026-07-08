@@ -6,6 +6,8 @@ cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
 
+pnpm exec buildchain badges readme --check
+
 if grep -RInE 'mailto:|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
   README.md docs public src dist 2>/dev/null; then
   echo "error: email address or mailto link found" >&2

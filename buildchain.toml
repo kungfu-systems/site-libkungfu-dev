@@ -5,6 +5,13 @@ type = "web-surface"
 name = "site-libkungfu-dev"
 site = "libkungfu-dev"
 
+[badges]
+kfd_1 = "planned"
+kfd_2 = "planned"
+kfd_3 = "planned"
+release_passport_state = "declared"
+workflows = ["buildchain-web-surface.yml"]
+
 [channels.preview]
 url_pattern = "https://{alias}.preview.libkungfu.dev"
 visibility = "ephemeral"
