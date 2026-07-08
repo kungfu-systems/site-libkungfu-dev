@@ -73,7 +73,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.10.3";
+const expectedBuildchainVersion = "2.10.4";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const requiredFiles = [
   ...requiredBaseFiles,
@@ -638,7 +638,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.10.3' dist/buildchain/index.html
+grep -q '2.10.4' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html
