@@ -267,12 +267,31 @@ function surfaceSitePath(id) {
 }
 
 function surfaceCanonicalHref(id) {
-  const hrefs = {
-    hub: "https://libkungfu.dev/",
-    core: "https://core.libkungfu.dev/",
-    buildchain: "https://buildchain.libkungfu.dev/",
-    kfd: "https://kfd.libkungfu.dev/",
+  const previewAlias = (process.env.SITE_PREVIEW_ALIAS || process.env.BUILDCHAIN_PREVIEW_ALIAS || "").trim();
+  const channel = (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim();
+  const hrefsByChannel = {
+    production: {
+      hub: "https://libkungfu.dev/",
+      core: "https://core.libkungfu.dev/",
+      buildchain: "https://buildchain.libkungfu.dev/",
+      kfd: "https://kfd.libkungfu.dev/",
+    },
+    staging: {
+      hub: "https://staging.libkungfu.dev/",
+      core: "https://core.staging.libkungfu.dev/",
+      buildchain: "https://buildchain.staging.libkungfu.dev/",
+      kfd: "https://kfd.staging.libkungfu.dev/",
+    },
   };
+  if (channel === "preview" && previewAlias) {
+    hrefsByChannel.preview = {
+      hub: `https://${previewAlias}.preview.libkungfu.dev/`,
+      core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
+      buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
+      kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
+    };
+  }
+  const hrefs = hrefsByChannel[channel] || hrefsByChannel.production;
   if (!hrefs[id]) {
     throw new Error(`unknown site surface id: ${id}`);
   }
