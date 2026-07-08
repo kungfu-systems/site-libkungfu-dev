@@ -14,7 +14,7 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 - Run `npm run check` before opening a pull request.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
-  `@kungfu-tech/buildchain@2.9.1`; KFD facts currently come from
+  `@kungfu-tech/buildchain@2.10.0`; KFD facts currently come from
   `@kungfu-tech/kfd@1.0.0-alpha.19`.
 - Buildchain hosted README badge endpoints are generated under
   `/badges/v1/{badge}/{state}.svg` and `.json`. Prefer the Buildchain package

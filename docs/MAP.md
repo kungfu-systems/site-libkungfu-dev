@@ -22,7 +22,7 @@
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain
   `dist/site` bundle.
-- `@kungfu-tech/buildchain@2.9.1` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@2.10.0` supplies the Buildchain `dist/site` bundle.
 - `@kungfu-tech/kfd@1.0.0-alpha.19` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
