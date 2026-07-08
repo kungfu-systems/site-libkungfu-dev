@@ -298,6 +298,14 @@ function surfaceCanonicalHref(id) {
   return hrefs[id];
 }
 
+function surfaceCanonicalHost(id) {
+  return new URL(surfaceCanonicalHref(id)).host;
+}
+
+function surfaceEndpointHref(id, pathPart = "") {
+  return new URL(pathPart, surfaceCanonicalHref(id)).toString();
+}
+
 function surfaceLinkAttrs(id) {
   return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
 }
@@ -578,7 +586,7 @@ function renderBuildchainBadgeEndpoints() {
       rendered.push({
         badge: badgeId,
         state,
-        host: "buildchain.libkungfu.dev",
+        host: surfaceCanonicalHost("buildchain"),
         path: `/${endpointPath}.svg`,
         jsonPath: `/${endpointPath}.json`,
         deployedPaths: [
@@ -1417,10 +1425,10 @@ ${alternates}
 }
 
 function kfdSurfaceAlternates() {
-  return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="https://kfd.libkungfu.dev/manifest.json">
-  <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="https://kfd.libkungfu.dev/llms.txt">
-  <link rel="alternate" type="application/json" title="KFD registry" href="https://kfd.libkungfu.dev/registry.json">
-  <link rel="alternate" type="application/json" title="KFD standards" href="https://kfd.libkungfu.dev/standards.json">`;
+  return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="${escapeAttr(surfaceEndpointHref("kfd", "manifest.json"))}">
+  <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="${escapeAttr(surfaceEndpointHref("kfd", "llms.txt"))}">
+  <link rel="alternate" type="application/json" title="KFD registry" href="${escapeAttr(surfaceEndpointHref("kfd", "registry.json"))}">
+  <link rel="alternate" type="application/json" title="KFD standards" href="${escapeAttr(surfaceEndpointHref("kfd", "standards.json"))}">`;
 }
 
 function surfaceCard(surface) {
@@ -2264,31 +2272,31 @@ const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
   ...surfaceTimestampPolicy,
-  canonicalHost: site.canonicalHost,
+  canonicalHost: surfaceCanonicalHost("hub"),
   sourceBoundary: site.sourceBoundary,
   pages: [
-    { path: "/", host: "libkungfu.dev", source: "src/fixtures/site-manifest.json" },
-    { path: "/core/", host: core.surfaceHost, source: "src/fixtures/core-spec-manifest.json" },
+    { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-spec-manifest.json" },
     {
       path: "/buildchain/",
-      host: "buildchain.libkungfu.dev",
+      host: surfaceCanonicalHost("buildchain"),
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
     ...buildchainSite.pages
       .filter((pageEntry) => normalizeBuildchainRoute(pageEntry.route) !== "/")
       .map((pageEntry) => ({
         path: buildchainCanonicalPath(pageEntry.route),
-        host: "buildchain.libkungfu.dev",
+        host: surfaceCanonicalHost("buildchain"),
         source: `@kungfu-tech/buildchain@${buildchainPackage.version}/${pageEntry.sourcePath}`,
       })),
     {
       path: "/",
-      host: "kfd.libkungfu.dev",
+      host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
     },
     ...kfdRegistry.entries.map((entry) => ({
       path: `/${entry.number}/`,
-      host: "kfd.libkungfu.dev",
+      host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
     })),
   ],
@@ -2346,7 +2354,7 @@ const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
   status: entry.status,
   title: entry.title,
   path: `/${entry.number}/`,
-  url: `https://kfd.libkungfu.dev/${entry.number}/`,
+  url: surfaceEndpointHref("kfd", `${entry.number}/`),
   source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.path}`,
 }));
 
@@ -2354,13 +2362,13 @@ const kfdAgentManifest = {
   schemaVersion: 1,
   contract: "kfd-agent-surface",
   ...surfaceTimestampPolicy,
-  canonicalHost: "kfd.libkungfu.dev",
-  humanEntry: "https://kfd.libkungfu.dev/",
+  canonicalHost: surfaceCanonicalHost("kfd"),
+  humanEntry: surfaceCanonicalHref("kfd"),
   agentEntries: {
-    llms: "https://kfd.libkungfu.dev/llms.txt",
-    manifest: "https://kfd.libkungfu.dev/manifest.json",
-    registry: "https://kfd.libkungfu.dev/registry.json",
-    standards: "https://kfd.libkungfu.dev/standards.json",
+    llms: surfaceEndpointHref("kfd", "llms.txt"),
+    manifest: surfaceEndpointHref("kfd", "manifest.json"),
+    registry: surfaceEndpointHref("kfd", "registry.json"),
+    standards: surfaceEndpointHref("kfd", "standards.json"),
   },
   sourceBoundary: {
     truthOwner: "@kungfu-tech/kfd",
@@ -2375,16 +2383,16 @@ const kfdAgentManifest = {
     standardsContract: kfdStandards.contract,
   },
   readOrder: [
-    "https://kfd.libkungfu.dev/",
+    surfaceCanonicalHref("kfd"),
     ...kfdDecisionEntries.map((entry) => entry.url),
-    "https://kfd.libkungfu.dev/registry.json",
-    "https://kfd.libkungfu.dev/standards.json",
+    surfaceEndpointHref("kfd", "registry.json"),
+    surfaceEndpointHref("kfd", "standards.json"),
   ],
   decisions: kfdDecisionEntries,
   relatedSurfaces: {
-    buildchain: "https://buildchain.libkungfu.dev/",
+    buildchain: surfaceCanonicalHref("buildchain"),
     kungfu: "https://kungfu.tech/",
-    hub: "https://libkungfu.dev/",
+    hub: surfaceCanonicalHref("hub"),
   },
 };
 
@@ -2393,18 +2401,18 @@ writeFile("kfd/registry.json", `${JSON.stringify(kfdRegistry, null, 2)}\n`);
 writeFile("kfd/standards.json", `${JSON.stringify(kfdStandards, null, 2)}\n`);
 writeFile(
   "kfd/llms.txt",
-  `# kfd.libkungfu.dev
+  `# ${surfaceCanonicalHost("kfd")}
 
 Kung Fu Decisions (KFD) is the kungfu-systems decision registry surface.
 
 Human entry:
-- https://kfd.libkungfu.dev/
+- ${surfaceCanonicalHref("kfd")}
 
 Agent-first entries:
-- https://kfd.libkungfu.dev/manifest.json
-- https://kfd.libkungfu.dev/registry.json
-- https://kfd.libkungfu.dev/standards.json
-- https://kfd.libkungfu.dev/llms.txt
+- ${surfaceEndpointHref("kfd", "manifest.json")}
+- ${surfaceEndpointHref("kfd", "registry.json")}
+- ${surfaceEndpointHref("kfd", "standards.json")}
+- ${surfaceEndpointHref("kfd", "llms.txt")}
 
 Read order:
 ${kfdAgentManifest.readOrder.map((entry) => `- ${entry}`).join("\n")}
@@ -2418,20 +2426,20 @@ them, but does not own or fork their meaning.
 
 writeFile(
   "llms.txt",
-  `# libkungfu.dev
+  `# ${surfaceCanonicalHost("hub")}
 
 libkungfu.dev is the open developer and agent substrate hub for Kungfu.
 
 Primary pages:
-- https://libkungfu.dev/
-- https://core.libkungfu.dev/
-- https://buildchain.libkungfu.dev/
-- https://kfd.libkungfu.dev/
+- ${surfaceCanonicalHref("hub")}
+- ${surfaceCanonicalHref("core")}
+- ${surfaceCanonicalHref("buildchain")}
+- ${surfaceCanonicalHref("kfd")}
 
 Machine entries:
-- https://libkungfu.dev/manifest.json
-- https://libkungfu.dev/llms.txt
-- https://libkungfu.dev/llms-full.txt
+- ${surfaceEndpointHref("hub", "manifest.json")}
+- ${surfaceEndpointHref("hub", "llms.txt")}
+- ${surfaceEndpointHref("hub", "llms-full.txt")}
 
 Source boundary:
 This repository renders upstream manifests. It is not a product fact source.

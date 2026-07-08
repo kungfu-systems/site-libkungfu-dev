@@ -143,6 +143,14 @@ function expectedSurfaceHref(id) {
   return hrefs[id];
 }
 
+function expectedSurfaceHost(id) {
+  return new URL(expectedSurfaceHref(id)).host;
+}
+
+function expectedSurfaceEndpoint(id, pathPart = "") {
+  return new URL(pathPart, expectedSurfaceHref(id)).toString();
+}
+
 function normalizeBuildchainRoute(route) {
   const normalized = `/${String(route || "/").replace(/^\/+/, "")}`.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
@@ -371,7 +379,7 @@ if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((entry) =
 for (const entry of kfdRegistry.entries) {
   const badgePath = `/badges/v1/kfd-${entry.number}/passed.svg`;
   if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((route) => (
-    route.host === "buildchain.libkungfu.dev" &&
+    route.host === expectedSurfaceHost("buildchain") &&
     route.path === badgePath &&
     route.deployedPaths?.includes(`/buildchain${badgePath}`)
   ))) {
@@ -389,8 +397,8 @@ for (const pageEntry of buildchainSite.pages) {
     throw new Error(`missing generated Buildchain page: ${file}`);
   }
   const canonicalPath = buildchainCanonicalPath(route);
-  if (!manifest.pages.some((page) => page.host === "buildchain.libkungfu.dev" && page.path === canonicalPath)) {
-    throw new Error(`dist manifest does not record Buildchain canonical path: ${canonicalPath}`);
+  if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("buildchain") && page.path === canonicalPath)) {
+    throw new Error(`dist manifest does not record Buildchain channel path: ${expectedSurfaceHost("buildchain")}${canonicalPath}`);
   }
   const html = fs.readFileSync(file, "utf8");
   if (
@@ -421,17 +429,28 @@ if (
 if (kfdPropagationLock && manifest.upstreamPackages.kfd.releaseLock?.lockSha256 !== kfdPropagationLock.lockSha256) {
   throw new Error("dist manifest does not record the KFD release propagation lock");
 }
-if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === "/")) {
-  throw new Error("dist manifest does not record kfd.libkungfu.dev canonical root");
+if (manifest.canonicalHost !== expectedSurfaceHost("hub")) {
+  throw new Error(`dist manifest canonicalHost must match channel hub host: ${expectedSurfaceHost("hub")}`);
+}
+if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === "/")) {
+  throw new Error(`dist manifest does not record KFD channel root: ${expectedSurfaceHost("kfd")}`);
 }
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
-  if (!manifest.pages.some((page) => page.host === "kfd.libkungfu.dev" && page.path === path)) {
-    throw new Error(`dist manifest does not record KFD canonical path: ${path}`);
+  if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
+    throw new Error(`dist manifest does not record KFD channel path: ${expectedSurfaceHost("kfd")}${path}`);
   }
 }
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
+}
+if (
+  kfdAgentManifest.canonicalHost !== expectedSurfaceHost("kfd") ||
+  kfdAgentManifest.humanEntry !== expectedSurfaceHref("kfd") ||
+  kfdAgentManifest.agentEntries?.manifest !== expectedSurfaceEndpoint("kfd", "manifest.json") ||
+  kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt")
+) {
+  throw new Error("KFD agent manifest must expose channel-aware KFD entries");
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
@@ -536,8 +555,8 @@ if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
   throw new Error("KFD production artifact must not embed robots noindex metadata");
 }
 if (
-  !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/manifest.json"') ||
-  !kfdHomeHtml.includes('href="https://kfd.libkungfu.dev/llms.txt"')
+  !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "manifest.json"))}"`) ||
+  !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "llms.txt"))}"`)
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
