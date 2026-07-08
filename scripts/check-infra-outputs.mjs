@@ -86,6 +86,12 @@ for (const [key, expected] of Object.entries(releaseGateSnippets)) {
 }
 
 const config = parseTomlSections(buildchainToml);
+for (const channel of ["preview", "staging"]) {
+  const channelConfig = config[`channels.${channel}`];
+  if (!channelConfig) throw new Error(`missing buildchain channels.${channel}`);
+  expectEqual(channelConfig.access_control, "managed-network", `${channel} access control`);
+  expectEqual(channelConfig.edge_auth, "none", `${channel} edge auth`);
+}
 for (const [surface, expectedUrl] of Object.entries(requiredSurfaces)) {
   if (outputs.surfaces?.[surface] !== expectedUrl) {
     throw new Error(`infra outputs surface ${surface} must be ${expectedUrl}`);
