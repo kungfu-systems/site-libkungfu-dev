@@ -217,6 +217,20 @@ function renderBuildchainMarkdownBody(source) {
   return markdown.render(rewritePackageMarkdownLinks(source, "kungfu-systems/buildchain"));
 }
 
+function rewriteBuildchainHostedBadgeLinks(source) {
+  return String(source)
+    .replace(/<!--\s*buildchain:badges:(?:start|end)\s*-->/g, "")
+    .replaceAll("https://buildchain.libkungfu.dev/badges/v1/", surfaceEndpointHref("buildchain", "badges/v1/"));
+}
+
+function renderBuildchainLead(source) {
+  return markdown.render(rewriteBuildchainHostedBadgeLinks(source));
+}
+
+function buildchainPageDescription() {
+  return buildchainSite.homepage.mechanismSummary?.[0] || "Buildchain Release Passport and release infrastructure for Kungfu products.";
+}
+
 function normalizeBuildchainRoute(route) {
   const normalized = `/${String(route || "/").replace(/^\/+/, "")}`.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
@@ -865,6 +879,23 @@ ${alternates}
       color: var(--fg);
       font-size: 22px;
       line-height: 1.35;
+    }
+
+    .badge-strip {
+      max-width: 100%;
+    }
+
+    .badge-strip p {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-strip img {
+      display: block;
+      max-width: 100%;
+      height: auto;
     }
 
     .grid {
@@ -1624,7 +1655,7 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.10.4";
+const expectedBuildchainVersion = "2.10.5";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
@@ -2092,12 +2123,12 @@ writeFile(
   "buildchain/index.html",
   page({
     title: "buildchain.libkungfu.dev | Buildchain surface",
-    description: buildchainSite.homepage.lead,
+    description: buildchainPageDescription(),
     current: "buildchain",
     body: `<section class="hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
       <h1>${escapeHtml(buildchainSite.homepage.title)}</h1>
-      <p class="lead">${escapeHtml(buildchainSite.homepage.lead)}</p>
+      <div class="lead badge-strip">${renderBuildchainLead(buildchainSite.homepage.lead)}</div>
       <div class="stack">
         ${buildchainSite.homepage.mechanismSummary.map((entry) => `<p>${escapeHtml(entry)}</p>`).join("\n")}
       </div>
