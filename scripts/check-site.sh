@@ -40,6 +40,11 @@ const requiredBaseFiles = [
   "dist/badges/v1/kfd-2/passed.svg",
   "dist/badges/v1/kfd-3/passed.svg",
   "dist/badges/v1/buildchain-release-passport/passed.svg",
+  "dist/buildchain/badges/v1/badge-endpoint-registry.json",
+  "dist/buildchain/badges/v1/kfd-1/passed.svg",
+  "dist/buildchain/badges/v1/kfd-2/passed.svg",
+  "dist/buildchain/badges/v1/kfd-3/passed.svg",
+  "dist/buildchain/badges/v1/buildchain-release-passport/passed.svg",
   "dist/badges/v1/kfd-1/passed.json",
   "dist/badges/v1/kfd-2/passed.json",
   "dist/badges/v1/kfd-3/passed.json",
@@ -125,14 +130,27 @@ function buildchainCanonicalPath(route) {
 function assertBadgeEndpointFile(badge, state) {
   const jsonPath = `dist/badges/v1/${badge}/${state}.json`;
   const svgPath = `dist/badges/v1/${badge}/${state}.svg`;
+  const buildchainJsonPath = `dist/buildchain/badges/v1/${badge}/${state}.json`;
+  const buildchainSvgPath = `dist/buildchain/badges/v1/${badge}/${state}.svg`;
   if (!fs.existsSync(jsonPath)) {
     throw new Error(`missing Buildchain badge JSON endpoint: ${jsonPath}`);
   }
   if (!fs.existsSync(svgPath)) {
     throw new Error(`missing Buildchain badge SVG endpoint: ${svgPath}`);
   }
+  if (!fs.existsSync(buildchainJsonPath)) {
+    throw new Error(`missing Buildchain host badge JSON endpoint: ${buildchainJsonPath}`);
+  }
+  if (!fs.existsSync(buildchainSvgPath)) {
+    throw new Error(`missing Buildchain host badge SVG endpoint: ${buildchainSvgPath}`);
+  }
   const payload = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
   const svg = fs.readFileSync(svgPath, "utf8");
+  const buildchainPayload = fs.readFileSync(buildchainJsonPath, "utf8");
+  const buildchainSvg = fs.readFileSync(buildchainSvgPath, "utf8");
+  if (buildchainPayload !== fs.readFileSync(jsonPath, "utf8") || buildchainSvg !== svg) {
+    throw new Error(`Buildchain host badge mirror drifted for ${badge}/${state}`);
+  }
   for (const field of ["schemaVersion", "label", "message", "color"]) {
     if (payload[field] === undefined || payload[field] === "") {
       throw new Error(`Buildchain badge payload ${jsonPath} missing ${field}`);
@@ -266,7 +284,10 @@ if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) 
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
 }
 const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
-const expectedBadgeIds = ["kfd-1", "kfd-2", "kfd-3", "buildchain-release-passport"];
+const expectedBadgeIds = [
+  ...kfdRegistry.entries.map((entry) => `kfd-${entry.number}`),
+  "buildchain-release-passport",
+];
 if (
   badgeEndpointRegistry.contract !== "kungfu-buildchain-badge-endpoint-registry" &&
   badgeEndpointRegistry.contract !== "kungfu-buildchain-readme-badge-endpoint-registry"
@@ -314,6 +335,16 @@ if (manifest.upstreamPackages.buildchain.badgeEndpoints?.renderedCount < expecte
 }
 if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((entry) => entry.path === "/badges/v1/kfd-1/passed.svg")) {
   throw new Error("dist manifest does not record the hosted Buildchain badge SVG route");
+}
+for (const entry of kfdRegistry.entries) {
+  const badgePath = `/badges/v1/kfd-${entry.number}/passed.svg`;
+  if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((route) => (
+    route.host === "buildchain.libkungfu.dev" &&
+    route.path === badgePath &&
+    route.deployedPaths?.includes(`/buildchain${badgePath}`)
+  ))) {
+    throw new Error(`dist manifest does not record the hosted KFD badge SVG route: ${badgePath}`);
+  }
 }
 if (manifest.upstreamPackages.kfd.version !== expectedKfdVersion) {
   throw new Error(`dist manifest does not record KFD ${expectedKfdVersion}`);
