@@ -73,13 +73,17 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.10.5";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
+const expectedBuildchainVersion = "2.10.8";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.21";
+const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
+const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const requiredFiles = [
   ...requiredBaseFiles,
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
+    `dist/kfd/${entry.number}/usage/index.html`,
+    `dist/${entry.number}/usage/index.html`,
   ]),
 ];
 
@@ -295,6 +299,9 @@ if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
   throw new Error("KFD registry must expose decision entries");
 }
+if (!Array.isArray(kfdUsagePages) || kfdUsagePages.length !== kfdRegistry.entries.length) {
+  throw new Error("KFD site bundle must expose one usage page for each decision entry");
+}
 if (
   buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
   buildchainContractLock.buildchain?.ref !== "v2" ||
@@ -454,6 +461,10 @@ for (const entry of kfdRegistry.entries) {
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
     throw new Error(`dist manifest does not record KFD channel path: ${expectedSurfaceHost("kfd")}${path}`);
   }
+  const usagePath = `/${entry.number}/usage/`;
+  if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === usagePath)) {
+    throw new Error(`dist manifest does not record KFD usage path: ${expectedSurfaceHost("kfd")}${usagePath}`);
+  }
 }
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
@@ -468,6 +479,11 @@ if (
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
+}
+for (const entry of kfdAgentManifest.decisions) {
+  if (!entry.usage?.url || !entry.usage?.source || !kfdAgentManifest.readOrder.includes(entry.usage.url)) {
+    throw new Error(`KFD agent manifest is missing usage entry for ${entry.id}`);
+  }
 }
 if (kfdRenderedRegistry.contract !== kfdRegistry.contract) {
   throw new Error("rendered KFD registry contract mismatch");
@@ -646,10 +662,16 @@ for (const entry of kfdRegistry.entries) {
   if (subdomainAliasHtml !== canonicalHtml) {
     throw new Error(`KFD subdomain route alias drifted: dist/${number}/index.html`);
   }
+  const usageCanonicalHtml = fs.readFileSync(`dist/kfd/${number}/usage/index.html`, "utf8");
+  const usageAliasHtml = fs.readFileSync(`dist/${number}/usage/index.html`, "utf8");
+  if (usageAliasHtml !== usageCanonicalHtml) {
+    throw new Error(`KFD usage route alias drifted: dist/${number}/usage/index.html`);
+  }
 }
 for (const entry of kfdRegistry.entries) {
   const html = kfdDecisionHtmlByNumber.get(String(entry.number));
   const label = entry.id;
+  const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
@@ -675,6 +697,27 @@ for (const entry of kfdRegistry.entries) {
   }
   if (!html.includes('class="panel doc-content"') || !html.includes('tabindex="-1"')) {
     throw new Error(`${label} markdown content is missing anchored headings`);
+  }
+  if (usagePage?.sourceExists && !html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
+    throw new Error(`${label} page is missing its usage child link`);
+  }
+  if (usagePage?.sourceExists) {
+    const usageHtml = fs.readFileSync(`dist/kfd/${entry.number}/usage/index.html`, "utf8");
+    if (!usageHtml.includes('aria-label="Usage sections"') || !usageHtml.includes("Usage metadata")) {
+      throw new Error(`${label} usage page is missing usage navigation or metadata`);
+    }
+    if (!usageHtml.includes(`<span class="page-kicker-state">usage / ${escapeHtml(entry.id)}</span>`)) {
+      throw new Error(`${label} usage page is missing usage state`);
+    }
+    if (!usageHtml.includes(`<a href="/${escapeHtml(entry.number)}/" aria-label="Back to ${escapeHtml(entry.id)}">Back to ${escapeHtml(entry.id)}</a>`)) {
+      throw new Error(`${label} usage page is missing parent decision back link`);
+    }
+    if (!usageHtml.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/" aria-current="page">Usage</a>`)) {
+      throw new Error(`${label} usage page is missing current usage marker`);
+    }
+    if (!usageHtml.includes(escapeHtml(usagePage.sourcePath || usagePage.path))) {
+      throw new Error(`${label} usage page does not expose its KFD package source path`);
+    }
   }
 }
 if (!kfdOneHtml.includes('href="#the-decision-log"') || !kfdThreeHtml.includes('href="#three-commitments"')) {
@@ -703,7 +746,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.10.5' dist/buildchain/index.html
+grep -q '2.10.8' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html

@@ -62,7 +62,10 @@ jobs:
       production-apply: true
       production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
       production-release-on-main: true
+      production-release-app-id: ${{ vars.KUNGFU_RELEASE_APP_ID }}
       production-release-label: buildchain-release
       production-release-head-prefix: release/
       production-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions
       production-environment: production
+    secrets:
+      production-release-app-private-key: ${{ secrets.KUNGFU_RELEASE_APP_PRIVATE_KEY }}
