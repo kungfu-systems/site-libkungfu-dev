@@ -1472,6 +1472,22 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
+function kfdDecisionNav(currentEntry) {
+  const links = kfdRegistry.entries
+    .map((entry) => {
+      const currentAttr = String(entry.number) === String(currentEntry.number) ? ` aria-current="page"` : "";
+      return `<a href="/${escapeAttr(entry.number)}/"${currentAttr}>${escapeHtml(entry.id)}</a>`;
+    })
+    .join("\n");
+  return `<nav class="doc-global-nav" aria-label="Kung Fu Decisions">
+    <h2>Kung Fu Decisions</h2>
+    <div class="doc-nav-group">
+      <a ${surfaceLinkAttrs("kfd")}>Overview</a>
+      ${links}
+    </div>
+  </nav>`;
+}
+
 const site = readFixtureJson("site-manifest.json");
 const core = readFixtureJson("core-spec-manifest.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
@@ -1488,7 +1504,7 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.8.17";
+const expectedBuildchainVersion = "2.9.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
@@ -1921,7 +1937,7 @@ for (const entry of kfdRegistry.entries) {
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
+        <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
       </section>
@@ -1939,7 +1955,10 @@ for (const entry of kfdRegistry.entries) {
       </section>
 
       <section class="doc-layout">
-        ${renderedDecision.tocHtml}
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(entry)}
+          ${renderedDecision.tocHtml}
+        </aside>
         <article class="panel doc-content">
           ${renderedDecision.html}
         </article>

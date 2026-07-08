@@ -68,7 +68,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.17";
+const expectedBuildchainVersion = "2.9.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const requiredFiles = [
   ...requiredBaseFiles,
@@ -557,7 +557,17 @@ for (const entry of kfdRegistry.entries) {
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a>')) {
+  if (
+    !html.includes('class="doc-global-nav" aria-label="Kung Fu Decisions"') ||
+    !html.includes('<a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/">Overview</a>')
+  ) {
+    throw new Error(`${label} page is missing the KFD cross-decision navigation`);
+  }
+  const currentDecisionLink = `<a href="/${escapeHtml(entry.number)}/" aria-current="page">${escapeHtml(entry.id)}</a>`;
+  if (!html.includes(currentDecisionLink)) {
+    throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
+  }
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>')) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span>`;
@@ -597,7 +607,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.17' dist/buildchain/index.html
+grep -q '2.9.0' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html
