@@ -1340,6 +1340,19 @@ ${alternates}
       font-weight: 700;
     }
 
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 16px;
+      margin-top: 16px;
+    }
+
+    .card-actions .card-action {
+      margin-top: 0;
+    }
+
     .warning {
       border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
     }
@@ -1646,8 +1659,10 @@ function decisionPanels(entries) {
           <dt>path</dt>
           <dd><a href="${escapeAttr(path)}"><code>${escapeHtml(`/${entry.number}/`)}</code></a></dd>
         </dl>
-        <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
-        ${usageAction}
+        <div class="card-actions">
+          <a class="card-action" href="${escapeAttr(path)}">Read ${escapeHtml(entry.id)}</a>
+          ${usageAction}
+        </div>
       </article>`;
     })
     .join("\n");
@@ -1741,7 +1756,6 @@ const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.fi
   .filter((id) => buildchainSite.homepage.sections?.some((section) => section.id === id));
 const buildchainRendererContract = buildchainSite.homepage.rendererContract;
 const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
-const kfdRendererContract = kfdSite.homepage.rendererContract;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
@@ -2086,33 +2100,7 @@ writeFile(
         : ""
     }
 
-    <section class="panel" style="margin-top: 18px;">
-      <h2>Machine facts</h2>
-      <dl class="meta">
-        <dt>Package</dt>
-        <dd><code>${escapeHtml(kfdPackage.name)}</code></dd>
-        <dt>Version</dt>
-        <dd><code>${escapeHtml(kfdPackage.version)}</code></dd>
-        <dt>Site bundle</dt>
-        <dd><code>${escapeHtml(kfdSite.contract)}</code></dd>
-        <dt>Registry</dt>
-        <dd><code>${escapeHtml(kfdSite.decisionPages.source)}</code></dd>
-        <dt>Standards</dt>
-        <dd><code>${escapeHtml(kfdStandards.contract)}</code></dd>
-        ${
-          kfdRendererContract
-            ? `<dt>Renderer contract</dt>
-        <dd><code>${escapeHtml(kfdRendererContract.id)}</code></dd>
-        <dt>Renderer contract display</dt>
-        <dd><code>renderAsHomepageContent: ${escapeHtml(String(kfdRendererContract.renderAsHomepageContent))}</code></dd>
-        <dt>Renderer contract note</dt>
-        <dd>${escapeHtml(kfdRendererContract.note)}</dd>`
-            : ""
-        }
-        <dt>Lock integrity</dt>
-        <dd><code>${escapeHtml(kfdLock.integrity)}</code></dd>
-      </dl>
-    </section>`,
+    `,
   }),
 );
 

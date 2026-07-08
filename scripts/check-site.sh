@@ -603,8 +603,11 @@ if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision
   throw new Error("KFD homepage must render support sections");
 }
 const rendererContract = kfdSite.homepage.rendererContract;
-if (!rendererContract || !kfdHomeHtml.includes(`<dd><code>${escapeHtml(rendererContract.id)}</code></dd>`)) {
-  throw new Error("KFD homepage must expose the renderer contract in machine facts");
+if (!rendererContract) {
+  throw new Error("KFD site bundle must expose the homepage renderer contract");
+}
+if (kfdHomeHtml.includes("<h2>Machine facts</h2>") || kfdHomeHtml.includes(`<dd><code>${escapeHtml(rendererContract.id)}</code></dd>`)) {
+  throw new Error("KFD homepage must not render machine facts or the renderer contract as human content");
 }
 if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`)) {
   throw new Error("KFD renderer contract must not render as ordinary homepage content");
@@ -768,7 +771,7 @@ grep -q 'Buildchain Release Passport' dist/buildchain/index.html
 grep -q 'CLI command registry' dist/buildchain/index.html
 grep -q 'workflow-registry.json' dist/buildchain/index.html
 grep -q 'buildchain.release.json' dist/buildchain/index.html
-grep -q '@kungfu-tech/kfd' dist/kfd/index.html
+grep -q '@kungfu-tech/kfd' dist/kfd/manifest.json
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
 grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
