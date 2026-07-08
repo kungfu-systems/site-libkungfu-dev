@@ -4,6 +4,7 @@
 [![KFD-1: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-1/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-2: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-2/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-3: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-3/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-4: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-4/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Release Passport: declared](https://buildchain.libkungfu.dev/badges/v1/buildchain-release-passport/declared.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Web Surface](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml/badge.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml)
 <!-- buildchain:badges:end -->
@@ -32,7 +33,7 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.10.3` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.10.4` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -112,7 +113,7 @@ runs through the floating Buildchain `@v2` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.10.3` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.10.4` and the
 generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.19`.
 
 The site does not override Buildchain's own transitive dependencies. If a
