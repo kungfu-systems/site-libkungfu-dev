@@ -20,6 +20,11 @@ test -f dist/core/index.html
 test -f dist/buildchain/index.html
 test -f dist/kfd/index.html
 test -f dist/kfd/1/index.html
+test -f dist/badges/v1/kfd-1/passed.svg
+test -f dist/badges/v1/kfd-2/passed.svg
+test -f dist/badges/v1/kfd-3/passed.svg
+test -f dist/badges/v1/buildchain-release-passport/passed.svg
+test -f dist/badges/v1/kfd-1/passed.json
 test -f dist/manifest.json
 test -f dist/llms.txt
 

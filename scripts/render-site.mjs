@@ -30,6 +30,10 @@ function readPackageText(specifier) {
   return fs.readFileSync(require.resolve(specifier), "utf8");
 }
 
+function packageRoot(packageName) {
+  return path.dirname(require.resolve(`${packageName}/package.json`));
+}
+
 function readPnpmLockPackage(packageName, version) {
   const lockText = fs.readFileSync(path.join(repoRoot, "pnpm-lock.yaml"), "utf8");
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -65,6 +69,15 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 function inlineMarkdown(value) {
@@ -268,6 +281,210 @@ function surfaceCanonicalHref(id) {
 
 function surfaceLinkAttrs(id) {
   return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
+}
+
+function assertBadgeSlug(value, label) {
+  const slug = String(value || "").trim();
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+    throw new Error(`invalid Buildchain badge ${label}: ${value}`);
+  }
+  return slug;
+}
+
+const buildchainBadgeEndpointRegistryContracts = new Set([
+  "kungfu-buildchain-badge-endpoint-registry",
+  "kungfu-buildchain-readme-badge-endpoint-registry",
+]);
+
+function buildchainDistSiteRoot() {
+  return path.join(packageRoot("@kungfu-tech/buildchain"), "dist", "site");
+}
+
+function readBuildchainBadgeEndpointSource() {
+  const upstreamRoot = buildchainDistSiteRoot();
+  const upstreamRegistryPath = path.join(upstreamRoot, "badge-endpoint-registry.json");
+  if (fs.existsSync(upstreamRegistryPath)) {
+    return {
+      kind: "upstream-package",
+      root: upstreamRoot,
+      registryPath: upstreamRegistryPath,
+      registry: readJsonFile(upstreamRegistryPath),
+      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/badge-endpoint-registry.json`,
+    };
+  }
+  const fixtureRegistryPath = path.join(fixturesDir, "buildchain-badge-endpoint-registry.json");
+  return {
+    kind: "fixture",
+    root: fixturesDir,
+    registryPath: fixtureRegistryPath,
+    registry: readJsonFile(fixtureRegistryPath),
+    source: "src/fixtures/buildchain-badge-endpoint-registry.json",
+  };
+}
+
+function badgePayloadRelativePath(badge, state) {
+  const template = badge.payloadPath || `badges/v1/${badge.id}/{state}.json`;
+  return template.replaceAll("{badge}", badge.id).replaceAll("{state}", state);
+}
+
+function badgeStateName(rawState) {
+  return typeof rawState === "string" ? rawState : rawState?.state;
+}
+
+function badgeStatePayloadPath(badge, state, rawState) {
+  if (rawState && typeof rawState === "object" && rawState.path) {
+    return rawState.path;
+  }
+  return badgePayloadRelativePath(badge, state);
+}
+
+function generatedFixtureBadgePayload(registry, badge, state) {
+  const stateDefaults = registry.stateDefaults?.[state] || {};
+  return {
+    schemaVersion: 1,
+    label: badge.label || badge.id,
+    message: stateDefaults.message || state,
+    color: stateDefaults.color || "4a5568",
+    logoPolicy: registry.logoPolicy || { placeholder: "buildchain-monogram" },
+  };
+}
+
+function normalizeBadgePayload(registry, badge, state, payload) {
+  const normalized = {
+    ...payload,
+    schemaVersion: Number(payload.schemaVersion || 1),
+    label: String(payload.label || badge.label || badge.id),
+    message: String(payload.message || state),
+    color: String(payload.color || registry.stateDefaults?.[state]?.color || "4a5568").replace(/^#/, ""),
+    logoPolicy: payload.logoPolicy || registry.logoPolicy || { placeholder: "buildchain-monogram" },
+  };
+  if (!/^[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(normalized.color)) {
+    throw new Error(`invalid Buildchain badge color for ${badge.id}/${state}: ${normalized.color}`);
+  }
+  return normalized;
+}
+
+function readBadgePayload(source, badge, state, rawState) {
+  if (rawState && typeof rawState === "object" && rawState.payload) {
+    const relativePath = badgeStatePayloadPath(badge, state, rawState);
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, rawState.payload),
+      source: source.kind === "upstream-package"
+        ? `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/${relativePath}#payload`
+        : `${source.source}#payload:${badge.id}/${state}`,
+    };
+  }
+  const relativePath = badgeStatePayloadPath(badge, state, rawState);
+  const payloadPath = path.join(source.root, relativePath);
+  if (fs.existsSync(payloadPath)) {
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, readJsonFile(payloadPath)),
+      source: source.kind === "upstream-package"
+        ? `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/${relativePath}`
+        : path.posix.join("src/fixtures", relativePath),
+    };
+  }
+  if (source.kind === "fixture") {
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, generatedFixtureBadgePayload(source.registry, badge, state)),
+      source: `${source.source}#generated:${badge.id}/${state}`,
+    };
+  }
+  throw new Error(`Buildchain badge payload missing from package: ${relativePath}`);
+}
+
+function badgeTextWidth(value) {
+  return Math.max(34, String(value).length * 7 + 16);
+}
+
+function renderBuildchainMonogram(x, y) {
+  return `<g aria-hidden="true">
+    <rect x="${x}" y="${y}" width="18" height="18" rx="3" fill="#111827" opacity="0.28"/>
+    <path d="M${x + 4} ${y + 13} L${x + 4} ${y + 5} L${x + 8} ${y + 9} L${x + 12} ${y + 5} L${x + 14} ${y + 7} L${x + 10} ${y + 11} L${x + 14} ${y + 15} L${x + 12} ${y + 17} L${x + 8} ${y + 13} L${x + 4} ${y + 17} Z" fill="#ffffff"/>
+  </g>`;
+}
+
+function renderBadgeSvg(payload) {
+  const label = payload.label;
+  const message = payload.message;
+  const hasMonogram = payload.logoPolicy?.placeholder === "buildchain-monogram";
+  const logoWidth = hasMonogram ? 24 : 0;
+  const labelWidth = badgeTextWidth(label) + logoWidth;
+  const messageWidth = badgeTextWidth(message);
+  const width = labelWidth + messageWidth;
+  const labelTextX = 8 + logoWidth;
+  const messageTextX = labelWidth + messageWidth / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="28" role="img" aria-label="${escapeXml(`${label}: ${message}`)}">
+  <title>${escapeXml(`${label}: ${message}`)}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".10"/>
+  </linearGradient>
+  <clipPath id="r"><rect width="${width}" height="28" rx="5"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${labelWidth}" height="28" fill="#344054"/>
+    <rect x="${labelWidth}" width="${messageWidth}" height="28" fill="#${escapeXml(payload.color)}"/>
+    <rect width="${width}" height="28" fill="url(#s)"/>
+  </g>
+  ${hasMonogram ? renderBuildchainMonogram(5, 5) : ""}
+  <g fill="#fff" text-anchor="start" font-family="Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" font-weight="700">
+    <text x="${labelTextX}" y="18">${escapeXml(label)}</text>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" font-weight="700">
+    <text x="${messageTextX}" y="18">${escapeXml(message)}</text>
+  </g>
+</svg>
+`;
+}
+
+function renderBuildchainBadgeEndpoints() {
+  const source = readBuildchainBadgeEndpointSource();
+  const registry = source.registry;
+  if (!buildchainBadgeEndpointRegistryContracts.has(registry.contract)) {
+    throw new Error("Buildchain badge endpoint registry contract mismatch");
+  }
+  const version = assertBadgeSlug(registry.version || "v1", "version");
+  const badges = Array.isArray(registry.badges) ? registry.badges : [];
+  if (badges.length === 0) {
+    throw new Error("Buildchain badge endpoint registry must declare badges");
+  }
+  const endpointRegistry = { ...registry, version };
+  const rendered = [];
+  for (const badge of badges) {
+    const badgeId = assertBadgeSlug(badge.id, "id");
+    const states = Array.isArray(badge.states) && badge.states.length > 0
+      ? badge.states
+      : registry.supportedStates || [];
+    for (const rawState of states) {
+      const state = assertBadgeSlug(badgeStateName(rawState), "state");
+      const { payload, source: payloadSource } = readBadgePayload(source, { ...badge, id: badgeId }, state, rawState);
+      const endpointPath = `badges/${version}/${badgeId}/${state}`;
+      writeFile(`${endpointPath}.json`, `${JSON.stringify({
+        ...payload,
+        buildchain: {
+          badge: badgeId,
+          state,
+          source: payloadSource,
+          logoPolicy: payload.logoPolicy,
+        },
+      }, null, 2)}\n`);
+      writeFile(`${endpointPath}.svg`, renderBadgeSvg(payload));
+      rendered.push({
+        badge: badgeId,
+        state,
+        path: `/${endpointPath}.svg`,
+        jsonPath: `/${endpointPath}.json`,
+        source: payloadSource,
+      });
+    }
+  }
+  writeFile(`badges/${version}/badge-endpoint-registry.json`, `${JSON.stringify(endpointRegistry, null, 2)}\n`);
+  return {
+    source,
+    registry: endpointRegistry,
+    version,
+    rendered,
+  };
 }
 
 function page({ title, description, current, body, alternates = "" }) {
@@ -1229,7 +1446,7 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.8.15";
+const expectedBuildchainVersion = "2.8.17";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
@@ -1273,6 +1490,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
   ],
   artifactDigestScope: "site dist manifest JSON files",
 });
+const buildchainBadgeEndpoints = renderBuildchainBadgeEndpoints();
 const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
 const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
 const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])
@@ -1887,6 +2105,15 @@ const manifest = {
       sourceOfTruth: buildchainSite.sourceOfTruth,
       lockIntegrity: buildchainLock.integrity,
       exportedEntrypoints: buildchainSite.entrypoints,
+      badgeEndpoints: {
+        contract: buildchainBadgeEndpoints.registry.contract,
+        version: buildchainBadgeEndpoints.version,
+        source: buildchainBadgeEndpoints.source.source,
+        sourceKind: buildchainBadgeEndpoints.source.kind,
+        logoPolicy: buildchainBadgeEndpoints.registry.logoPolicy,
+        renderedCount: buildchainBadgeEndpoints.rendered.length,
+        routes: buildchainBadgeEndpoints.rendered,
+      },
     },
     kfd: {
       contract: kfdSite.contract,

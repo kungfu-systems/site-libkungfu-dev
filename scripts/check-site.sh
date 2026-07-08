@@ -18,6 +18,11 @@ const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
+  "src/fixtures/buildchain-badge-endpoint-registry.json",
+  "src/fixtures/badges/v1/kfd-1/passed.json",
+  "src/fixtures/badges/v1/kfd-2/passed.json",
+  "src/fixtures/badges/v1/kfd-3/passed.json",
+  "src/fixtures/badges/v1/buildchain-release-passport/passed.json",
   "buildchain.contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
@@ -34,6 +39,15 @@ const requiredFiles = [
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
   "dist/kfd/llms.txt",
+  "dist/badges/v1/badge-endpoint-registry.json",
+  "dist/badges/v1/kfd-1/passed.svg",
+  "dist/badges/v1/kfd-2/passed.svg",
+  "dist/badges/v1/kfd-3/passed.svg",
+  "dist/badges/v1/buildchain-release-passport/passed.svg",
+  "dist/badges/v1/kfd-1/passed.json",
+  "dist/badges/v1/kfd-2/passed.json",
+  "dist/badges/v1/kfd-3/passed.json",
+  "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
   "dist/llms.txt",
 ];
@@ -47,6 +61,7 @@ for (const file of requiredFiles) {
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
@@ -63,7 +78,7 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.15";
+const expectedBuildchainVersion = "2.8.17";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
 
 function readPnpmLockPackage(packageName, version) {
@@ -102,6 +117,41 @@ function buildchainRouteFile(route) {
 function buildchainCanonicalPath(route) {
   const normalized = normalizeBuildchainRoute(route);
   return normalized === "/" ? "/" : `${normalized}/`;
+}
+
+function assertBadgeEndpointFile(badge, state) {
+  const jsonPath = `dist/badges/v1/${badge}/${state}.json`;
+  const svgPath = `dist/badges/v1/${badge}/${state}.svg`;
+  if (!fs.existsSync(jsonPath)) {
+    throw new Error(`missing Buildchain badge JSON endpoint: ${jsonPath}`);
+  }
+  if (!fs.existsSync(svgPath)) {
+    throw new Error(`missing Buildchain badge SVG endpoint: ${svgPath}`);
+  }
+  const payload = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  const svg = fs.readFileSync(svgPath, "utf8");
+  for (const field of ["schemaVersion", "label", "message", "color"]) {
+    if (payload[field] === undefined || payload[field] === "") {
+      throw new Error(`Buildchain badge payload ${jsonPath} missing ${field}`);
+    }
+  }
+  if (payload.logoPolicy?.placeholder !== "buildchain-monogram") {
+    throw new Error(`Buildchain badge payload ${jsonPath} must preserve buildchain-monogram logo policy`);
+  }
+  if (!svg.startsWith("<svg ") || !svg.includes(`aria-label="${escapeHtml(`${payload.label}: ${payload.message}`)}"`)) {
+    throw new Error(`Buildchain badge SVG endpoint did not render accessible label/message: ${svgPath}`);
+  }
+  if (!svg.includes(`fill="#${payload.color.replace(/^#/, "")}"`) || !svg.includes("buildchain-monogram") && !svg.includes("<path")) {
+    throw new Error(`Buildchain badge SVG endpoint did not render payload color and placeholder mark: ${svgPath}`);
+  }
+  return payload;
+}
+
+function badgeRegistryStateNames(registry, badgeEntry) {
+  if (Array.isArray(registry.supportedStates) && registry.supportedStates.length > 0) {
+    return registry.supportedStates;
+  }
+  return (badgeEntry.states || []).map((entry) => (typeof entry === "string" ? entry : entry.state)).filter(Boolean);
 }
 
 const buildchainHomeWrites = renderSiteSource.match(/writeFile\(\s*"buildchain\/index\.html"/g) || [];
@@ -211,6 +261,56 @@ if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
 }
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
+}
+const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
+const expectedBadgeIds = ["kfd-1", "kfd-2", "kfd-3", "buildchain-release-passport"];
+if (
+  badgeEndpointRegistry.contract !== "kungfu-buildchain-badge-endpoint-registry" &&
+  badgeEndpointRegistry.contract !== "kungfu-buildchain-readme-badge-endpoint-registry"
+) {
+  throw new Error("Buildchain badge endpoint registry contract mismatch");
+}
+if (badgeEndpointRegistry.version !== "v1") {
+  throw new Error("Buildchain badge endpoint registry must expose v1 routes");
+}
+if (badgeEndpointRegistry.logoPolicy?.placeholder !== "buildchain-monogram") {
+  throw new Error("Buildchain badge endpoint registry must keep the placeholder logo policy renderer-owned");
+}
+for (const state of expectedBadgeStates) {
+  const registryStates = new Set(
+    badgeEndpointRegistry.supportedStates ||
+      badgeEndpointRegistry.badges?.flatMap((entry) => badgeRegistryStateNames(badgeEndpointRegistry, entry)) ||
+      [],
+  );
+  if (!registryStates.has(state)) {
+    throw new Error(`Buildchain badge endpoint registry missing state: ${state}`);
+  }
+}
+for (const badge of expectedBadgeIds) {
+  const badgeEntry = badgeEndpointRegistry.badges?.find((entry) => entry.id === badge);
+  if (!badgeEntry) {
+    throw new Error(`Buildchain badge endpoint registry missing badge: ${badge}`);
+  }
+  const badgeStates = new Set(badgeRegistryStateNames(badgeEndpointRegistry, badgeEntry));
+  for (const state of expectedBadgeStates) {
+    if (!badgeStates.has(state)) {
+      throw new Error(`Buildchain badge endpoint registry missing ${badge}/${state}`);
+    }
+    assertBadgeEndpointFile(badge, state);
+  }
+  const passedPayload = assertBadgeEndpointFile(badge, "passed");
+  if (!passedPayload.message.includes("passed")) {
+    throw new Error(`Buildchain hosted README badge endpoint must render passed state for ${badge}`);
+  }
+}
+if (manifest.upstreamPackages.buildchain.badgeEndpoints?.contract !== badgeEndpointRegistry.contract) {
+  throw new Error("dist manifest does not record the Buildchain badge endpoint registry contract");
+}
+if (manifest.upstreamPackages.buildchain.badgeEndpoints?.renderedCount < expectedBadgeIds.length * expectedBadgeStates.length) {
+  throw new Error("dist manifest does not record the minimum Buildchain badge endpoint route set");
+}
+if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((entry) => entry.path === "/badges/v1/kfd-1/passed.svg")) {
+  throw new Error("dist manifest does not record the hosted Buildchain badge SVG route");
 }
 if (manifest.upstreamPackages.kfd.version !== expectedKfdVersion) {
   throw new Error(`dist manifest does not record KFD ${expectedKfdVersion}`);
@@ -478,7 +578,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.15' dist/buildchain/index.html
+grep -q '2.8.17' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html

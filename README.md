@@ -24,7 +24,15 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.8.15` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.8.17` through its exported `dist/site` bundle.
+The hosted Buildchain README badge endpoints are rendered at
+`/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
+prefer the future Buildchain bundle registry
+`@kungfu-tech/buildchain/dist/site/badge-endpoint-registry.json` and payloads
+under `@kungfu-tech/buildchain/dist/site/badges/v1/**/*.json`; until that bundle
+is published, the same contract is exercised through
+`src/fixtures/buildchain-badge-endpoint-registry.json` and
+`src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
 `@kungfu-tech/kfd@1.0.0-alpha.17` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
@@ -34,6 +42,7 @@ Expected upstream flow:
 ```text
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
+buildchain -> @kungfu-tech/buildchain badge endpoint registry -> site-libkungfu-dev -> buildchain.libkungfu.dev/badges/v1
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
@@ -92,13 +101,23 @@ runs through the floating Buildchain `@v2` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.15` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.8.17` and the
 generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.17`.
 
 The site does not override Buildchain's own transitive dependencies. If a
 Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version
 belongs to Buildchain's published npm metadata. The site only pins the direct
 KFD artifact it consumes for rendering `kfd.libkungfu.dev`.
+
+Buildchain-owned README badges use stable hosted URLs such as
+`https://buildchain.libkungfu.dev/badges/v1/kfd-1/passed.svg`. The site owns the
+SVG renderer and the placeholder logo policy
+`logoPolicy.placeholder = "buildchain-monogram"`; consumers should not encode a
+logo asset in README URLs. When Buildchain publishes the formal badge endpoint
+registry and payloads in its site bundle, this repository can switch from the
+fixture data to the package data without changing consumer README links. A later
+official Buildchain logo change is handled by redeploying or purging the site
+asset/renderer, not by regenerating downstream README badges.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and

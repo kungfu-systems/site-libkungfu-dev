@@ -1,3 +1,3 @@
 minimumReleaseAgeExclude:
-  - "@kungfu-tech/buildchain@2.8.15"
+  - '@kungfu-tech/buildchain@2.8.17 || 2.8.17'
   - '@kungfu-tech/kfd@1.0.0-alpha.3 || 1.0.0-alpha.16 || 1.0.0-alpha.17'
