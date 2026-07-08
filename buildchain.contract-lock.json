@@ -3,13 +3,13 @@
   "contract": "kungfu-buildchain-contract-lock",
   "buildchain": {
     "ref": "v2",
-    "resolvedSha": "39b0637f99215677c048b0077ae76e6b508362f4",
+    "resolvedSha": "aa039c39e7d5a5a74d078025a21a47676fadca82",
     "contract": "kungfu-buildchain-runtime-contract-world",
-    "contractDigest": "sha256:3a7e7b0ae8accb3c830791de83b8af310305b198949adcbd1483526b5abb1b17",
-    "compatibilityDigest": "sha256:85e27de8d34ceac1652d9374697ea5a1a7a08666d2ba7ae377b9afdd14e2ca1f",
+    "contractDigest": "sha256:590724458a59dfed521c876c24cedec43124409b4be79f4ce839ce26ce9f98de",
+    "compatibilityDigest": "sha256:407d6d5ee6a96a34d2cc30db9ac64cf4b1819ab6d77bd7a57a07a124f22101ca",
     "majorLine": "v2",
     "compatibilityPolicy": "major-compatible",
-    "acceptedAt": "2026-07-07T13:50:19.556Z",
+    "acceptedAt": "2026-07-08T00:37:28.604Z",
     "surfaces": [
       {
         "id": "reusable-build",
@@ -59,7 +59,17 @@
       {
         "id": "buildchain-cli",
         "kind": "cli",
-        "breakingDigest": "sha256:097db3e67509bedda8c6548bf1edfbfcf57f7b5510520b6a7b7e078d7ec087c8"
+        "breakingDigest": "sha256:90a73892b2d6c214048448d5f45df75639bdf7b7e8fefd9c596e04b087407bcc"
+      },
+      {
+        "id": "homebrew-distribution-index",
+        "kind": "node-api",
+        "breakingDigest": "sha256:148c0387ff4cea76433bbde80cd9d77c5aa67e1a29856ced33e4d819366f2213"
+      },
+      {
+        "id": "readme-badge-facts",
+        "kind": "node-api",
+        "breakingDigest": "sha256:bcd72ad6dfba8013c96f8b2f7b0a307d2e7713972a1219348f0d5ecc493939a0"
       },
       {
         "id": "agent-manual-registry",
