@@ -698,12 +698,16 @@ for (const entry of kfdRegistry.entries) {
   if (!html.includes('class="panel doc-content"') || !html.includes('tabindex="-1"')) {
     throw new Error(`${label} markdown content is missing anchored headings`);
   }
-  if (usagePage?.sourceExists && !html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
-    throw new Error(`${label} page is missing its usage child link`);
+  if (usagePage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
+    throw new Error(`${label} decision page must not show the usage child link outside the usage page context`);
   }
   if (usagePage?.sourceExists) {
+    const expectedUsageTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/usage/">${escapeHtml(usagePage.title || "Usage")}</a>`;
+    if (!html.includes(expectedUsageTocLink)) {
+      throw new Error(`${label} decision page is missing its usage link in the decision sections navigation`);
+    }
     const usageHtml = fs.readFileSync(`dist/kfd/${entry.number}/usage/index.html`, "utf8");
-    if (!usageHtml.includes('aria-label="Usage sections"') || !usageHtml.includes("Usage metadata")) {
+    if (!usageHtml.includes('aria-label="Usage sections"') || !usageHtml.includes("<h2>Usage sections</h2>") || !usageHtml.includes("Usage metadata")) {
       throw new Error(`${label} usage page is missing usage navigation or metadata`);
     }
     if (!usageHtml.includes(`<span class="page-kicker-state">usage / ${escapeHtml(entry.id)}</span>`)) {
@@ -714,6 +718,13 @@ for (const entry of kfdRegistry.entries) {
     }
     if (!usageHtml.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/" aria-current="page">Usage</a>`)) {
       throw new Error(`${label} usage page is missing current usage marker`);
+    }
+    for (const otherEntry of kfdRegistry.entries) {
+      if (String(otherEntry.number) === String(entry.number)) continue;
+      const otherUsageLink = `<a class="doc-nav-child" href="/${escapeHtml(otherEntry.number)}/usage/">Usage</a>`;
+      if (usageHtml.includes(otherUsageLink)) {
+        throw new Error(`${label} usage page must not expand usage child links for other KFD entries`);
+      }
     }
     if (!usageHtml.includes(escapeHtml(usagePage.sourcePath || usagePage.path))) {
       throw new Error(`${label} usage page does not expose its KFD package source path`);
