@@ -66,7 +66,7 @@ kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
-Buildchain already uses the pinned `@kungfu-tech/buildchain@2.10.1` npm package
+Buildchain already uses the pinned `@kungfu-tech/buildchain@2.10.2` npm package
 and its exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd`
 package and its exported site bundle.
 
