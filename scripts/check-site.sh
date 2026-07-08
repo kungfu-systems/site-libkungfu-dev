@@ -6,6 +6,8 @@ cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
 
+pnpm exec buildchain badges readme --check
+
 if grep -RInE 'mailto:|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
   README.md docs public src dist 2>/dev/null; then
   echo "error: email address or mailto link found" >&2
@@ -15,41 +17,46 @@ fi
 node - <<'NODE'
 const fs = require("fs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
-const requiredFiles = [
+const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
+  "src/fixtures/buildchain-badge-endpoint-registry.json",
+  "src/fixtures/badges/v1/kfd-1/passed.json",
+  "src/fixtures/badges/v1/kfd-2/passed.json",
+  "src/fixtures/badges/v1/kfd-3/passed.json",
+  "src/fixtures/badges/v1/buildchain-release-passport/passed.json",
+  "buildchain.contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
   "dist/core/index.html",
   "dist/buildchain/index.html",
   "dist/kfd/index.html",
-  "dist/kfd/1/index.html",
-  "dist/kfd/2/index.html",
-  "dist/kfd/3/index.html",
-  "dist/1/index.html",
-  "dist/2/index.html",
-  "dist/3/index.html",
   "dist/kfd/manifest.json",
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
   "dist/kfd/llms.txt",
+  "dist/badges/v1/badge-endpoint-registry.json",
+  "dist/badges/v1/kfd-1/passed.svg",
+  "dist/badges/v1/kfd-2/passed.svg",
+  "dist/badges/v1/kfd-3/passed.svg",
+  "dist/badges/v1/buildchain-release-passport/passed.svg",
+  "dist/badges/v1/kfd-1/passed.json",
+  "dist/badges/v1/kfd-2/passed.json",
+  "dist/badges/v1/kfd-3/passed.json",
+  "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
   "dist/llms.txt",
 ];
 
-for (const file of requiredFiles) {
-  if (!fs.existsSync(file)) {
-    throw new Error(`missing required file: ${file}`);
-  }
-}
-
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const buildchainContractLock = JSON.parse(fs.readFileSync("buildchain.contract-lock.json", "utf8"));
 const pnpmLockText = fs.readFileSync("pnpm-lock.yaml", "utf8");
 const kfdPropagationLockPath = "buildchain.upstreams/kfd.release.json";
 const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
@@ -61,8 +68,21 @@ const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/pac
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.8.7";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
+const expectedBuildchainVersion = "2.10.2";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
+const requiredFiles = [
+  ...requiredBaseFiles,
+  ...kfdRegistry.entries.flatMap((entry) => [
+    `dist/kfd/${entry.number}/index.html`,
+    `dist/${entry.number}/index.html`,
+  ]),
+];
+
+for (const file of requiredFiles) {
+  if (!fs.existsSync(file)) {
+    throw new Error(`missing required file: ${file}`);
+  }
+}
 
 function readPnpmLockPackage(packageName, version) {
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -100,6 +120,41 @@ function buildchainRouteFile(route) {
 function buildchainCanonicalPath(route) {
   const normalized = normalizeBuildchainRoute(route);
   return normalized === "/" ? "/" : `${normalized}/`;
+}
+
+function assertBadgeEndpointFile(badge, state) {
+  const jsonPath = `dist/badges/v1/${badge}/${state}.json`;
+  const svgPath = `dist/badges/v1/${badge}/${state}.svg`;
+  if (!fs.existsSync(jsonPath)) {
+    throw new Error(`missing Buildchain badge JSON endpoint: ${jsonPath}`);
+  }
+  if (!fs.existsSync(svgPath)) {
+    throw new Error(`missing Buildchain badge SVG endpoint: ${svgPath}`);
+  }
+  const payload = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  const svg = fs.readFileSync(svgPath, "utf8");
+  for (const field of ["schemaVersion", "label", "message", "color"]) {
+    if (payload[field] === undefined || payload[field] === "") {
+      throw new Error(`Buildchain badge payload ${jsonPath} missing ${field}`);
+    }
+  }
+  if (payload.logoPolicy?.placeholder !== "buildchain-monogram") {
+    throw new Error(`Buildchain badge payload ${jsonPath} must preserve buildchain-monogram logo policy`);
+  }
+  if (!svg.startsWith("<svg ") || !svg.includes(`aria-label="${escapeHtml(`${payload.label}: ${payload.message}`)}"`)) {
+    throw new Error(`Buildchain badge SVG endpoint did not render accessible label/message: ${svgPath}`);
+  }
+  if (!svg.includes(`fill="#${payload.color.replace(/^#/, "")}"`) || !svg.includes("buildchain-monogram") && !svg.includes("<path")) {
+    throw new Error(`Buildchain badge SVG endpoint did not render payload color and placeholder mark: ${svgPath}`);
+  }
+  return payload;
+}
+
+function badgeRegistryStateNames(registry, badgeEntry) {
+  if (Array.isArray(registry.supportedStates) && registry.supportedStates.length > 0) {
+    return registry.supportedStates;
+  }
+  return (badgeEntry.states || []).map((entry) => (typeof entry === "string" ? entry : entry.state)).filter(Boolean);
 }
 
 const buildchainHomeWrites = renderSiteSource.match(/writeFile\(\s*"buildchain\/index\.html"/g) || [];
@@ -179,14 +234,86 @@ if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.r
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
   throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
 }
-if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 3) {
+if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
   throw new Error("KFD registry must expose decision entries");
+}
+if (
+  buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
+  buildchainContractLock.buildchain?.ref !== "v2" ||
+  buildchainContractLock.buildchain?.majorLine !== "v2" ||
+  buildchainContractLock.buildchain?.compatibilityPolicy !== "major-compatible" ||
+  !buildchainContractLock.buildchain?.resolvedSha ||
+  !buildchainContractLock.buildchain?.contractDigest ||
+  !buildchainContractLock.buildchain?.compatibilityDigest
+) {
+  throw new Error("buildchain.contract-lock.json must record the accepted floating Buildchain v2 contract");
+}
+for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
+  if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {
+    throw new Error(`${name} must expose Buildchain surface timestamp and reproducibility policy`);
+  }
+  if (generatedManifest.timestampPolicyDetails?.contract !== "kungfu-buildchain-surface-timestamp-policy") {
+    throw new Error(`${name} must expose Buildchain timestampPolicyDetails contract`);
+  }
+  if (generatedManifest.timestampPolicy === "ci-injected" && generatedManifest.generatedAt === "1970-01-01T00:00:00.000Z") {
+    throw new Error(`${name} must not expose epoch generatedAt when timestampPolicy=ci-injected`);
+  }
 }
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
 }
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
+}
+const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
+const expectedBadgeIds = ["kfd-1", "kfd-2", "kfd-3", "buildchain-release-passport"];
+if (
+  badgeEndpointRegistry.contract !== "kungfu-buildchain-badge-endpoint-registry" &&
+  badgeEndpointRegistry.contract !== "kungfu-buildchain-readme-badge-endpoint-registry"
+) {
+  throw new Error("Buildchain badge endpoint registry contract mismatch");
+}
+if (badgeEndpointRegistry.version !== "v1") {
+  throw new Error("Buildchain badge endpoint registry must expose v1 routes");
+}
+if (badgeEndpointRegistry.logoPolicy?.placeholder !== "buildchain-monogram") {
+  throw new Error("Buildchain badge endpoint registry must keep the placeholder logo policy renderer-owned");
+}
+for (const state of expectedBadgeStates) {
+  const registryStates = new Set(
+    badgeEndpointRegistry.supportedStates ||
+      badgeEndpointRegistry.badges?.flatMap((entry) => badgeRegistryStateNames(badgeEndpointRegistry, entry)) ||
+      [],
+  );
+  if (!registryStates.has(state)) {
+    throw new Error(`Buildchain badge endpoint registry missing state: ${state}`);
+  }
+}
+for (const badge of expectedBadgeIds) {
+  const badgeEntry = badgeEndpointRegistry.badges?.find((entry) => entry.id === badge);
+  if (!badgeEntry) {
+    throw new Error(`Buildchain badge endpoint registry missing badge: ${badge}`);
+  }
+  const badgeStates = new Set(badgeRegistryStateNames(badgeEndpointRegistry, badgeEntry));
+  for (const state of expectedBadgeStates) {
+    if (!badgeStates.has(state)) {
+      throw new Error(`Buildchain badge endpoint registry missing ${badge}/${state}`);
+    }
+    assertBadgeEndpointFile(badge, state);
+  }
+  const passedPayload = assertBadgeEndpointFile(badge, "passed");
+  if (!passedPayload.message.includes("passed")) {
+    throw new Error(`Buildchain hosted README badge endpoint must render passed state for ${badge}`);
+  }
+}
+if (manifest.upstreamPackages.buildchain.badgeEndpoints?.contract !== badgeEndpointRegistry.contract) {
+  throw new Error("dist manifest does not record the Buildchain badge endpoint registry contract");
+}
+if (manifest.upstreamPackages.buildchain.badgeEndpoints?.renderedCount < expectedBadgeIds.length * expectedBadgeStates.length) {
+  throw new Error("dist manifest does not record the minimum Buildchain badge endpoint route set");
+}
+if (!manifest.upstreamPackages.buildchain.badgeEndpoints?.routes?.some((entry) => entry.path === "/badges/v1/kfd-1/passed.svg")) {
+  throw new Error("dist manifest does not record the hosted Buildchain badge SVG route");
 }
 if (manifest.upstreamPackages.kfd.version !== expectedKfdVersion) {
   throw new Error(`dist manifest does not record KFD ${expectedKfdVersion}`);
@@ -357,21 +484,29 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
     throw new Error(`KFD displayPlan references missing homepage section: ${sectionId}`);
   }
   if (!kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdHomeHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
-    throw new Error(`KFD homepage did not render alpha.16 support section: ${sectionId}`);
+    throw new Error(`KFD homepage did not render support section: ${sectionId}`);
   }
 }
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
-  throw new Error("KFD homepage must render alpha.16 support sections");
+  throw new Error("KFD homepage must render support sections");
 }
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract || !kfdHomeHtml.includes(`<dd><code>${escapeHtml(rendererContract.id)}</code></dd>`)) {
-  throw new Error("KFD homepage must expose the alpha.16 renderer contract in machine facts");
+  throw new Error("KFD homepage must expose the renderer contract in machine facts");
 }
 if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`)) {
-  throw new Error("KFD alpha.16 renderer contract must not render as ordinary homepage content");
+  throw new Error("KFD renderer contract must not render as ordinary homepage content");
 }
 if (kfdHomeHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
+}
+if (
+  !kfdHomeHtml.includes("Practice guidelines") ||
+  !kfdHomeHtml.includes("Timelines must declare their observer") ||
+  !kfdHomeHtml.includes('href="/4/"') ||
+  !kfdHomeHtml.includes("Adoption boundary")
+) {
+  throw new Error("KFD homepage must render alpha.19 practice guidance and KFD-4 links");
 }
 for (const entry of kfdSite.homepage.foundationTriad.commitments) {
   const match = /^KFD-(\d+)\b/.exec(entry.id);
@@ -402,22 +537,37 @@ for (const layer of kfdSite.homepage.foundationModel.layers) {
     throw new Error(`KFD foundation triad decision label is missing link: ${decisionLink}`);
   }
 }
-const kfdOneHtml = fs.readFileSync("dist/kfd/1/index.html", "utf8");
-const kfdTwoHtml = fs.readFileSync("dist/kfd/2/index.html", "utf8");
-const kfdThreeHtml = fs.readFileSync("dist/kfd/3/index.html", "utf8");
-for (const number of ["1", "2", "3"]) {
+const kfdDecisionHtmlByNumber = new Map(
+  kfdRegistry.entries.map((entry) => [String(entry.number), fs.readFileSync(`dist/kfd/${entry.number}/index.html`, "utf8")]),
+);
+const kfdOneHtml = kfdDecisionHtmlByNumber.get("1");
+const kfdThreeHtml = kfdDecisionHtmlByNumber.get("3");
+const kfdFourHtml = kfdDecisionHtmlByNumber.get("4");
+for (const entry of kfdRegistry.entries) {
+  const number = String(entry.number);
   const canonicalHtml = fs.readFileSync(`dist/kfd/${number}/index.html`, "utf8");
   const subdomainAliasHtml = fs.readFileSync(`dist/${number}/index.html`, "utf8");
   if (subdomainAliasHtml !== canonicalHtml) {
     throw new Error(`KFD subdomain route alias drifted: dist/${number}/index.html`);
   }
 }
-for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.entries[1], kfdTwoHtml], [kfdRegistry.entries[2], kfdThreeHtml]]) {
+for (const entry of kfdRegistry.entries) {
+  const html = kfdDecisionHtmlByNumber.get(String(entry.number));
   const label = entry.id;
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
-  if (!html.includes('<p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a>')) {
+  if (
+    !html.includes('class="doc-global-nav" aria-label="Kung Fu Decisions"') ||
+    !html.includes('<a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/">Overview</a>')
+  ) {
+    throw new Error(`${label} page is missing the KFD cross-decision navigation`);
+  }
+  const currentDecisionLink = `<a href="/${escapeHtml(entry.number)}/" aria-current="page">${escapeHtml(entry.id)}</a>`;
+  if (!html.includes(currentDecisionLink)) {
+    throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
+  }
+  if (!html.includes('<p class="eyebrow page-kicker"><a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>')) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
   }
   const stateHtml = `<span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span>`;
@@ -433,6 +583,9 @@ for (const [entry, html] of [[kfdRegistry.entries[0], kfdOneHtml], [kfdRegistry.
 }
 if (!kfdOneHtml.includes('href="#the-decision-log"') || !kfdThreeHtml.includes('href="#three-commitments"')) {
   throw new Error("KFD decision pages must expose section links in the generated TOC");
+}
+if (!kfdFourHtml || !kfdFourHtml.includes("Timelines must declare their observer") || !kfdFourHtml.includes('href="#practice-role"')) {
+  throw new Error("KFD-4 page must render observer-timeline content and section links");
 }
 if (!kfdOneHtml.includes("<table>") || !kfdOneHtml.includes("<th>Condition</th>") || !kfdOneHtml.includes("<td><strong>major</strong></td>")) {
   throw new Error("KFD-1 markdown table was not rendered as an HTML table");
@@ -454,7 +607,7 @@ grep -q 'Fixture source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.8.7' dist/buildchain/index.html
+grep -q '2.10.2' dist/buildchain/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html
@@ -469,6 +622,8 @@ grep -q '@kungfu-tech/kfd' dist/kfd/index.html
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
 grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
+grep -q 'KFD-4' dist/kfd/4/index.html
+grep -q 'Timelines must declare their observer' dist/kfd/4/index.html
 if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
   exit 1

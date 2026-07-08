@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import markdownItAnchor from "markdown-it-anchor";
+import { createSurfaceTimestampPolicy } from "@kungfu-tech/buildchain/surface-manifest";
 
 const repoRoot = process.cwd();
 const distDir = path.join(repoRoot, "dist");
@@ -27,6 +28,10 @@ function readPackageJson(specifier) {
 
 function readPackageText(specifier) {
   return fs.readFileSync(require.resolve(specifier), "utf8");
+}
+
+function packageRoot(packageName) {
+  return path.dirname(require.resolve(`${packageName}/package.json`));
 }
 
 function readPnpmLockPackage(packageName, version) {
@@ -64,6 +69,15 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 function inlineMarkdown(value) {
@@ -267,6 +281,210 @@ function surfaceCanonicalHref(id) {
 
 function surfaceLinkAttrs(id) {
   return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
+}
+
+function assertBadgeSlug(value, label) {
+  const slug = String(value || "").trim();
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+    throw new Error(`invalid Buildchain badge ${label}: ${value}`);
+  }
+  return slug;
+}
+
+const buildchainBadgeEndpointRegistryContracts = new Set([
+  "kungfu-buildchain-badge-endpoint-registry",
+  "kungfu-buildchain-readme-badge-endpoint-registry",
+]);
+
+function buildchainDistSiteRoot() {
+  return path.join(packageRoot("@kungfu-tech/buildchain"), "dist", "site");
+}
+
+function readBuildchainBadgeEndpointSource() {
+  const upstreamRoot = buildchainDistSiteRoot();
+  const upstreamRegistryPath = path.join(upstreamRoot, "badge-endpoint-registry.json");
+  if (fs.existsSync(upstreamRegistryPath)) {
+    return {
+      kind: "upstream-package",
+      root: upstreamRoot,
+      registryPath: upstreamRegistryPath,
+      registry: readJsonFile(upstreamRegistryPath),
+      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/badge-endpoint-registry.json`,
+    };
+  }
+  const fixtureRegistryPath = path.join(fixturesDir, "buildchain-badge-endpoint-registry.json");
+  return {
+    kind: "fixture",
+    root: fixturesDir,
+    registryPath: fixtureRegistryPath,
+    registry: readJsonFile(fixtureRegistryPath),
+    source: "src/fixtures/buildchain-badge-endpoint-registry.json",
+  };
+}
+
+function badgePayloadRelativePath(badge, state) {
+  const template = badge.payloadPath || `badges/v1/${badge.id}/{state}.json`;
+  return template.replaceAll("{badge}", badge.id).replaceAll("{state}", state);
+}
+
+function badgeStateName(rawState) {
+  return typeof rawState === "string" ? rawState : rawState?.state;
+}
+
+function badgeStatePayloadPath(badge, state, rawState) {
+  if (rawState && typeof rawState === "object" && rawState.path) {
+    return rawState.path;
+  }
+  return badgePayloadRelativePath(badge, state);
+}
+
+function generatedFixtureBadgePayload(registry, badge, state) {
+  const stateDefaults = registry.stateDefaults?.[state] || {};
+  return {
+    schemaVersion: 1,
+    label: badge.label || badge.id,
+    message: stateDefaults.message || state,
+    color: stateDefaults.color || "4a5568",
+    logoPolicy: registry.logoPolicy || { placeholder: "buildchain-monogram" },
+  };
+}
+
+function normalizeBadgePayload(registry, badge, state, payload) {
+  const normalized = {
+    ...payload,
+    schemaVersion: Number(payload.schemaVersion || 1),
+    label: String(payload.label || badge.label || badge.id),
+    message: String(payload.message || state),
+    color: String(payload.color || registry.stateDefaults?.[state]?.color || "4a5568").replace(/^#/, ""),
+    logoPolicy: payload.logoPolicy || registry.logoPolicy || { placeholder: "buildchain-monogram" },
+  };
+  if (!/^[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(normalized.color)) {
+    throw new Error(`invalid Buildchain badge color for ${badge.id}/${state}: ${normalized.color}`);
+  }
+  return normalized;
+}
+
+function readBadgePayload(source, badge, state, rawState) {
+  if (rawState && typeof rawState === "object" && rawState.payload) {
+    const relativePath = badgeStatePayloadPath(badge, state, rawState);
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, rawState.payload),
+      source: source.kind === "upstream-package"
+        ? `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/${relativePath}#payload`
+        : `${source.source}#payload:${badge.id}/${state}`,
+    };
+  }
+  const relativePath = badgeStatePayloadPath(badge, state, rawState);
+  const payloadPath = path.join(source.root, relativePath);
+  if (fs.existsSync(payloadPath)) {
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, readJsonFile(payloadPath)),
+      source: source.kind === "upstream-package"
+        ? `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/${relativePath}`
+        : path.posix.join("src/fixtures", relativePath),
+    };
+  }
+  if (source.kind === "fixture") {
+    return {
+      payload: normalizeBadgePayload(source.registry, badge, state, generatedFixtureBadgePayload(source.registry, badge, state)),
+      source: `${source.source}#generated:${badge.id}/${state}`,
+    };
+  }
+  throw new Error(`Buildchain badge payload missing from package: ${relativePath}`);
+}
+
+function badgeTextWidth(value) {
+  return Math.max(34, String(value).length * 7 + 16);
+}
+
+function renderBuildchainMonogram(x, y) {
+  return `<g aria-hidden="true">
+    <rect x="${x}" y="${y}" width="18" height="18" rx="3" fill="#111827" opacity="0.28"/>
+    <path d="M${x + 4} ${y + 13} L${x + 4} ${y + 5} L${x + 8} ${y + 9} L${x + 12} ${y + 5} L${x + 14} ${y + 7} L${x + 10} ${y + 11} L${x + 14} ${y + 15} L${x + 12} ${y + 17} L${x + 8} ${y + 13} L${x + 4} ${y + 17} Z" fill="#ffffff"/>
+  </g>`;
+}
+
+function renderBadgeSvg(payload) {
+  const label = payload.label;
+  const message = payload.message;
+  const hasMonogram = payload.logoPolicy?.placeholder === "buildchain-monogram";
+  const logoWidth = hasMonogram ? 24 : 0;
+  const labelWidth = badgeTextWidth(label) + logoWidth;
+  const messageWidth = badgeTextWidth(message);
+  const width = labelWidth + messageWidth;
+  const labelTextX = 8 + logoWidth;
+  const messageTextX = labelWidth + messageWidth / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="28" role="img" aria-label="${escapeXml(`${label}: ${message}`)}">
+  <title>${escapeXml(`${label}: ${message}`)}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".10"/>
+  </linearGradient>
+  <clipPath id="r"><rect width="${width}" height="28" rx="5"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${labelWidth}" height="28" fill="#344054"/>
+    <rect x="${labelWidth}" width="${messageWidth}" height="28" fill="#${escapeXml(payload.color)}"/>
+    <rect width="${width}" height="28" fill="url(#s)"/>
+  </g>
+  ${hasMonogram ? renderBuildchainMonogram(5, 5) : ""}
+  <g fill="#fff" text-anchor="start" font-family="Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" font-weight="700">
+    <text x="${labelTextX}" y="18">${escapeXml(label)}</text>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" font-weight="700">
+    <text x="${messageTextX}" y="18">${escapeXml(message)}</text>
+  </g>
+</svg>
+`;
+}
+
+function renderBuildchainBadgeEndpoints() {
+  const source = readBuildchainBadgeEndpointSource();
+  const registry = source.registry;
+  if (!buildchainBadgeEndpointRegistryContracts.has(registry.contract)) {
+    throw new Error("Buildchain badge endpoint registry contract mismatch");
+  }
+  const version = assertBadgeSlug(registry.version || "v1", "version");
+  const badges = Array.isArray(registry.badges) ? registry.badges : [];
+  if (badges.length === 0) {
+    throw new Error("Buildchain badge endpoint registry must declare badges");
+  }
+  const endpointRegistry = { ...registry, version };
+  const rendered = [];
+  for (const badge of badges) {
+    const badgeId = assertBadgeSlug(badge.id, "id");
+    const states = Array.isArray(badge.states) && badge.states.length > 0
+      ? badge.states
+      : registry.supportedStates || [];
+    for (const rawState of states) {
+      const state = assertBadgeSlug(badgeStateName(rawState), "state");
+      const { payload, source: payloadSource } = readBadgePayload(source, { ...badge, id: badgeId }, state, rawState);
+      const endpointPath = `badges/${version}/${badgeId}/${state}`;
+      writeFile(`${endpointPath}.json`, `${JSON.stringify({
+        ...payload,
+        buildchain: {
+          badge: badgeId,
+          state,
+          source: payloadSource,
+          logoPolicy: payload.logoPolicy,
+        },
+      }, null, 2)}\n`);
+      writeFile(`${endpointPath}.svg`, renderBadgeSvg(payload));
+      rendered.push({
+        badge: badgeId,
+        state,
+        path: `/${endpointPath}.svg`,
+        jsonPath: `/${endpointPath}.json`,
+        source: payloadSource,
+      });
+    }
+  }
+  writeFile(`badges/${version}/badge-endpoint-registry.json`, `${JSON.stringify(endpointRegistry, null, 2)}\n`);
+  return {
+    source,
+    registry: endpointRegistry,
+    version,
+    rendered,
+  };
 }
 
 function page({ title, description, current, body, alternates = "" }) {
@@ -682,9 +900,16 @@ ${alternates}
 
     .decision-card {
       display: grid;
-      grid-template-rows: auto 6.5em auto auto;
+      grid-row: span 4;
+      grid-template-rows: subgrid;
       gap: 14px;
       align-content: start;
+    }
+
+    .kfd-decision-list,
+    .practice-guideline-list {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-rows: auto minmax(6.5em, auto) auto auto;
     }
 
     .decision-card h3 {
@@ -1009,7 +1234,9 @@ ${alternates}
         grid-template-rows: none;
       }
 
-      .mechanism-chain {
+      .mechanism-chain,
+      .kfd-decision-list,
+      .practice-guideline-list {
         grid-template-rows: none;
       }
 
@@ -1191,6 +1418,39 @@ function foundationModelPanels(layers) {
     .join("\n");
 }
 
+function practiceGuidelinePanels(guidelines) {
+  return guidelines
+    .map((guideline) => {
+      const match = /^KFD-(\d+)\b/.exec(guideline.decision);
+      const title = match
+        ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(guideline.layer)}</a>`
+        : escapeHtml(guideline.layer);
+      const decision = match
+        ? `<a href="/${escapeHtml(match[1])}/">${escapeHtml(guideline.decision)}</a>`
+        : inlineMarkdown(guideline.decision);
+      return `<article class="panel foundation-layer">
+        <h3>${title}</h3>
+        <p class="foundation-commitment">${inlineMarkdown(guideline.commitment)}</p>
+        <dl class="foundation-fields">
+          <div>
+            <dt>decision</dt>
+            <dd><p>${decision}</p></dd>
+          </div>
+          <div>
+            <dt>question</dt>
+            <dd><p>${inlineMarkdown(guideline.readerQuestion)}</p></dd>
+          </div>
+        </dl>
+      </article>`;
+    })
+    .join("\n");
+}
+
+function isFlattenedMarkdownTable(text) {
+  const trimmed = String(text || "").trim();
+  return trimmed.startsWith("|") && trimmed.includes("|---|");
+}
+
 function decisionPanels(entries) {
   return entries
     .map((entry) => {
@@ -1212,6 +1472,22 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
+function kfdDecisionNav(currentEntry) {
+  const links = kfdRegistry.entries
+    .map((entry) => {
+      const currentAttr = String(entry.number) === String(currentEntry.number) ? ` aria-current="page"` : "";
+      return `<a href="/${escapeAttr(entry.number)}/"${currentAttr}>${escapeHtml(entry.id)}</a>`;
+    })
+    .join("\n");
+  return `<nav class="doc-global-nav" aria-label="Kung Fu Decisions">
+    <h2>Kung Fu Decisions</h2>
+    <div class="doc-nav-group">
+      <a ${surfaceLinkAttrs("kfd")}>Overview</a>
+      ${links}
+    </div>
+  </nav>`;
+}
+
 const site = readFixtureJson("site-manifest.json");
 const core = readFixtureJson("core-spec-manifest.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
@@ -1228,8 +1504,8 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.8.7";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.17";
+const expectedBuildchainVersion = "2.10.2";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.19";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -1257,7 +1533,22 @@ const buildchainMachineArtifacts = Array.from(
     buildchainReleaseProvenance.contract,
   ]),
 );
-const generatedAt = process.env.SITE_GENERATED_AT || "1970-01-01T00:00:00.000Z";
+const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
+  generatedAt: process.env.SITE_GENERATED_AT || process.env.BUILDCHAIN_SITE_GENERATED_AT || process.env.BUILDCHAIN_SURFACE_GENERATED_AT,
+  publishedAt: process.env.SITE_PUBLISHED_AT || process.env.BUILDCHAIN_SITE_PUBLISHED_AT || process.env.BUILDCHAIN_SURFACE_PUBLISHED_AT,
+  sourceDateEpoch: process.env.SOURCE_DATE_EPOCH || "0",
+  sourceRevision: process.env.SITE_SOURCE_REVISION || process.env.BUILDCHAIN_SOURCE_SHA || process.env.GITHUB_SHA || "",
+  timestampPolicy: process.env.SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SURFACE_TIMESTAMP_POLICY,
+  deterministicInputs: [
+    "scripts/render-site.mjs",
+    "src/fixtures/*.json",
+    "pnpm-lock.yaml",
+    "@kungfu-tech/buildchain package content",
+    "@kungfu-tech/kfd package content",
+  ],
+  artifactDigestScope: "site dist manifest JSON files",
+});
+const buildchainBadgeEndpoints = renderBuildchainBadgeEndpoints();
 const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
 const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
 const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])
@@ -1438,6 +1729,39 @@ function kfdHomepageSectionPanels(ids, className = "") {
     .join("\n");
 }
 
+function kfdPrimaryContinuationPanels() {
+  const handled = new Set(["foundation-triad", "foundation-model"]);
+  return (kfdSite.homepage.displayPlan?.primary || [])
+    .filter((id) => !handled.has(id))
+    .map((id) => {
+      if (id === "practice-guidelines" && kfdSite.homepage.practiceGuidelines) {
+        return `<section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.practiceGuidelines.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.practiceGuidelines.intro)}</p>
+      <div class="grid practice-guideline-list" style="margin-top: 18px;">
+        ${practiceGuidelinePanels(kfdSite.homepage.practiceGuidelines.guidelines || [])}
+      </div>
+      <div class="stack" style="margin-top: 18px;">
+        ${(kfdSite.homepage.practiceGuidelines.explanation || [])
+          .filter((text) => !isFlattenedMarkdownTable(text))
+          .map((text) => `<p>${inlineMarkdown(text)}</p>`)
+          .join("\n")}
+      </div>
+    </section>`;
+      }
+      if (id === "product-proof-path" && kfdSite.homepage.productProofPath) {
+        return `<section class="panel" style="margin-top: 18px;">
+      <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
+      <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
+    </section>`;
+      }
+      return `<div style="margin-top: 18px;">
+        ${kfdHomepageSectionPanels([id], "kfd-primary-section")}
+      </div>`;
+    })
+    .join("\n");
+}
+
 writeFile(
   "index.html",
   page({
@@ -1557,14 +1881,11 @@ writeFile(
       </div>
     </section>
 
-    <section class="panel" style="margin-top: 18px;">
-      <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
-      <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
-    </section>
+    ${kfdPrimaryContinuationPanels()}
 
     <section class="panel" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
-      <div class="grid three">
+      <div class="grid kfd-decision-list">
         ${decisionPanels(kfdRegistry.entries)}
       </div>
     </section>
@@ -1616,7 +1937,7 @@ for (const entry of kfdRegistry.entries) {
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
+        <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
       </section>
@@ -1634,7 +1955,10 @@ for (const entry of kfdRegistry.entries) {
       </section>
 
       <section class="doc-layout">
-        ${renderedDecision.tocHtml}
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(entry)}
+          ${renderedDecision.tocHtml}
+        </aside>
         <article class="panel doc-content">
           ${renderedDecision.html}
         </article>
@@ -1827,7 +2151,7 @@ for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normaliz
 const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
-  generatedAt,
+  ...surfaceTimestampPolicy,
   canonicalHost: site.canonicalHost,
   sourceBoundary: site.sourceBoundary,
   pages: [
@@ -1872,6 +2196,15 @@ const manifest = {
       sourceOfTruth: buildchainSite.sourceOfTruth,
       lockIntegrity: buildchainLock.integrity,
       exportedEntrypoints: buildchainSite.entrypoints,
+      badgeEndpoints: {
+        contract: buildchainBadgeEndpoints.registry.contract,
+        version: buildchainBadgeEndpoints.version,
+        source: buildchainBadgeEndpoints.source.source,
+        sourceKind: buildchainBadgeEndpoints.source.kind,
+        logoPolicy: buildchainBadgeEndpoints.registry.logoPolicy,
+        renderedCount: buildchainBadgeEndpoints.rendered.length,
+        routes: buildchainBadgeEndpoints.rendered,
+      },
     },
     kfd: {
       contract: kfdSite.contract,
@@ -1908,7 +2241,7 @@ const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
 const kfdAgentManifest = {
   schemaVersion: 1,
   contract: "kfd-agent-surface",
-  generatedAt,
+  ...surfaceTimestampPolicy,
   canonicalHost: "kfd.libkungfu.dev",
   humanEntry: "https://kfd.libkungfu.dev/",
   agentEntries: {

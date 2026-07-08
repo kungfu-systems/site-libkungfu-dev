@@ -1,0 +1,125 @@
+{
+  "contract": "kungfu-buildchain-badge-endpoint-registry",
+  "schemaVersion": 1,
+  "status": "fixture",
+  "version": "v1",
+  "canonicalBaseUrl": "https://buildchain.libkungfu.dev/badges/v1/",
+  "sourceBoundary": {
+    "truthOwner": "@kungfu-tech/buildchain",
+    "siteRole": "hosted badge endpoint rendering",
+    "rule": "Before Buildchain publishes the badge endpoint registry, this fixture preserves the expected contract shape. After release, site-libkungfu-dev reads the registry and payloads from @kungfu-tech/buildchain/dist/site."
+  },
+  "logoPolicy": {
+    "placeholder": "buildchain-monogram"
+  },
+  "supportedStates": [
+    "passed",
+    "aligned",
+    "declared",
+    "planned",
+    "draft",
+    "downgraded",
+    "failed",
+    "missing"
+  ],
+  "stateDefaults": {
+    "passed": {
+      "message": "passed",
+      "color": "2f855a"
+    },
+    "aligned": {
+      "message": "aligned",
+      "color": "2b6cb0"
+    },
+    "declared": {
+      "message": "declared",
+      "color": "0f766e"
+    },
+    "planned": {
+      "message": "planned",
+      "color": "6b46c1"
+    },
+    "draft": {
+      "message": "draft",
+      "color": "718096"
+    },
+    "downgraded": {
+      "message": "downgraded",
+      "color": "b7791f"
+    },
+    "failed": {
+      "message": "failed",
+      "color": "c53030"
+    },
+    "missing": {
+      "message": "missing",
+      "color": "4a5568"
+    }
+  },
+  "badges": [
+    {
+      "id": "kfd-1",
+      "label": "KFD-1",
+      "description": "KFD-1 source and fact boundary check.",
+      "states": [
+        "passed",
+        "aligned",
+        "declared",
+        "planned",
+        "draft",
+        "downgraded",
+        "failed",
+        "missing"
+      ],
+      "payloadPath": "badges/v1/kfd-1/{state}.json"
+    },
+    {
+      "id": "kfd-2",
+      "label": "KFD-2",
+      "description": "KFD-2 auditability and decision trace check.",
+      "states": [
+        "passed",
+        "aligned",
+        "declared",
+        "planned",
+        "draft",
+        "downgraded",
+        "failed",
+        "missing"
+      ],
+      "payloadPath": "badges/v1/kfd-2/{state}.json"
+    },
+    {
+      "id": "kfd-3",
+      "label": "KFD-3",
+      "description": "KFD-3 consumer and agent interface check.",
+      "states": [
+        "passed",
+        "aligned",
+        "declared",
+        "planned",
+        "draft",
+        "downgraded",
+        "failed",
+        "missing"
+      ],
+      "payloadPath": "badges/v1/kfd-3/{state}.json"
+    },
+    {
+      "id": "buildchain-release-passport",
+      "label": "Release Passport",
+      "description": "Buildchain Release Passport availability check.",
+      "states": [
+        "passed",
+        "aligned",
+        "declared",
+        "planned",
+        "draft",
+        "downgraded",
+        "failed",
+        "missing"
+      ],
+      "payloadPath": "badges/v1/buildchain-release-passport/{state}.json"
+    }
+  ]
+}

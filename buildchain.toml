@@ -5,6 +5,13 @@ type = "web-surface"
 name = "site-libkungfu-dev"
 site = "libkungfu-dev"
 
+[badges]
+kfd_1 = "planned"
+kfd_2 = "planned"
+kfd_3 = "planned"
+release_passport_state = "declared"
+workflows = ["buildchain-web-surface.yml"]
+
 [channels.preview]
 url_pattern = "https://{alias}.preview.libkungfu.dev"
 visibility = "ephemeral"
@@ -52,6 +59,7 @@ preview_url_pattern = "https://kfd-{alias}.preview.libkungfu.dev"
 
 [deploy.preview]
 adapter = "aws-s3-cloudfront"
+directory_index_rewrite = "external"
 bucket = "libkungfu-dev-preview-727884401362-us-east-1"
 cloudfront_distribution = "E23JLOB98N6R7U"
 artifact_path = "dist"
@@ -60,6 +68,7 @@ secret_refs = ["AWS_ROLE_ARN"]
 
 [deploy.staging]
 adapter = "aws-s3-cloudfront"
+directory_index_rewrite = "external"
 bucket = "libkungfu-dev-staging-727884401362-us-east-1"
 cloudfront_distribution = "E1B23YHEY9RCE0"
 artifact_path = "dist"
@@ -68,6 +77,7 @@ secret_refs = ["AWS_ROLE_ARN"]
 
 [deploy.production]
 adapter = "aws-s3-cloudfront"
+directory_index_rewrite = "external"
 bucket = "libkungfu-dev-site-727884401362-us-east-1"
 cloudfront_distribution = "EXWVGLVVXGURT"
 artifact_path = "dist"

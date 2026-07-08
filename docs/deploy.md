@@ -36,6 +36,10 @@ resource lifecycle decisions belong in the infra repository.
 - The repository builds a static `dist/` artifact.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
+- The workflow consumes Buildchain through the floating `@v2` workflow ref and
+  records the accepted runtime contract in `buildchain.contract-lock.json`.
+  The build checks that lock before rendering so `@v2` movement is audited as
+  compatible drift or blocked as breaking drift.
 - Preview, preview cleanup, and staging apply are enabled in the repository
   workflow so same-repository pull requests publish short-lived preview
   surfaces, closed pull requests clean them up, and `main` pushes publish the
@@ -62,7 +66,7 @@ kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
-Buildchain already uses the pinned `@kungfu-tech/buildchain@2.8.7` npm package
+Buildchain already uses the pinned `@kungfu-tech/buildchain@2.10.2` npm package
 and its exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd`
 package and its exported site bundle.
 

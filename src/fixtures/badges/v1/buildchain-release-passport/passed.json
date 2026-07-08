@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "label": "Release Passport",
+  "message": "passed",
+  "color": "2f855a",
+  "logoPolicy": {
+    "placeholder": "buildchain-monogram"
+  }
+}

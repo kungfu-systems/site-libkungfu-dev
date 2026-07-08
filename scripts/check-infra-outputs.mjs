@@ -44,10 +44,24 @@ if (outputs.site !== "site-libkungfu-dev") {
   throw new Error("infra outputs site mismatch");
 }
 if (
-  !workflow.includes(expectedBuildchainShell) &&
+  !workflow.includes(`uses: ${expectedBuildchainShell}`) &&
   !workflow.includes(`buildchain-ref: ${expectedBuildchainRef}`)
 ) {
   throw new Error(`Buildchain web-surface workflow must run ${expectedBuildchainRef}`);
+}
+if (/uses:\s*kungfu-systems\/buildchain\/\.github\/workflows\/\.web-surface\.yml@v2\./.test(workflow)) {
+  throw new Error("Buildchain web-surface workflow must use the floating @v2 ref, not an exact v2.x.y tag");
+}
+for (const snippet of [
+  "contents: write",
+  "issues: write",
+  "buildchain-contract-lock-path: buildchain.contract-lock.json",
+  "buildchain-contract-compatibility-policy: major-compatible",
+  "buildchain-contract-drift-issue-mode: compatible-and-breaking",
+]) {
+  if (!workflow.includes(snippet)) {
+    throw new Error(`Buildchain web-surface workflow must set ${snippet}`);
+  }
 }
 const expectedApplySwitches = {
   "preview-apply": true,

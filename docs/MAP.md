@@ -7,6 +7,10 @@
   ledger, specs, schemas, vectors, and stable docs URLs.
 - Use `https://buildchain.libkungfu.dev` for Buildchain release-governance and
   deployment-operation facts.
+- Use `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.svg` for
+  Buildchain-owned hosted README badges and
+  `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.json` for the
+  matching Shields-compatible payload.
 - Use `https://kfd.libkungfu.dev` for Kung Fu Decisions, KFD-owned standard
   metadata, schemas, and stable decision pages.
 - Use `/llms.txt` and `/manifest.json` as stable machine entries.
@@ -14,8 +18,12 @@
 ## Work In This Repository
 
 - `src/fixtures/` contains temporary contract fixtures for hub/core.
-- `@kungfu-tech/buildchain@2.8.7` supplies the Buildchain `dist/site` bundle.
-- `@kungfu-tech/kfd@1.0.0-alpha.17` supplies the KFD site bundle, registry,
+- `src/fixtures/buildchain-badge-endpoint-registry.json` and
+  `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
+  badge endpoint contract until the same files are published in the Buildchain
+  `dist/site` bundle.
+- `@kungfu-tech/buildchain@2.10.2` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/kfd@1.0.0-alpha.19` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
   package artifacts.
@@ -34,6 +42,8 @@ This repository is also a KFD-governed product surface:
   renderer contracts, manifests, and release-propagation locks.
 - KFD-3 consumption: human pages and agent entries must lead to the same stable
   mechanism, pages, and machine-readable facts.
+- KFD-4 perspective: timeline, release, sync, or mixed-source work-state views
+  must declare their observer and projection boundary.
 
 Future `site-libkungfu-dev` npm package exports should preserve these rules so
 any Kungfu-standard site bundle can be rendered by the same governed renderer.

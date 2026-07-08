@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "label": "KFD-2",
+  "message": "passed",
+  "color": "2f855a",
+  "logoPolicy": {
+    "placeholder": "buildchain-monogram"
+  }
+}
