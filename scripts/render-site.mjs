@@ -2126,8 +2126,8 @@ const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
-const expectedBuildchainVersion = "2.10.8";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.21";
+const expectedBuildchainVersion = "2.11.1";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.22";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
