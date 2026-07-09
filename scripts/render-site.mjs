@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
@@ -57,6 +58,16 @@ function writeFile(relativePath, content) {
   const target = path.join(distDir, relativePath);
   ensureDir(path.dirname(target));
   fs.writeFileSync(target, content);
+}
+
+function writeBinaryFile(relativePath, content) {
+  const target = path.join(distDir, relativePath);
+  ensureDir(path.dirname(target));
+  fs.writeFileSync(target, content);
+}
+
+function sha256Buffer(content) {
+  return `sha256:${crypto.createHash("sha256").update(content).digest("hex")}`;
 }
 
 function escapeHtml(value) {
@@ -278,6 +289,7 @@ function surfaceSitePath(id) {
     core: "/core/",
     buildchain: "/buildchain/",
     kfd: "/kfd/",
+    papers: "/papers/",
   };
   if (!paths[id]) {
     throw new Error(`unknown site surface id: ${id}`);
@@ -294,12 +306,14 @@ function surfaceCanonicalHref(id) {
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
+      papers: "https://papers.libkungfu.dev/",
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
+      papers: "https://papers.staging.libkungfu.dev/",
     },
   };
   if (channel === "preview" && previewAlias) {
@@ -308,6 +322,7 @@ function surfaceCanonicalHref(id) {
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
+      papers: `https://papers-${previewAlias}.preview.libkungfu.dev/`,
     };
   }
   const hrefs = hrefsByChannel[channel] || hrefsByChannel.production;
@@ -623,6 +638,412 @@ function renderBuildchainBadgeEndpoints() {
     registry: endpointRegistry,
     version,
     rendered,
+  };
+}
+
+function readBuildchainPublicationRegistrySource() {
+  const upstreamRoot = buildchainDistSiteRoot();
+  const upstreamRegistryPath = path.join(upstreamRoot, "publication-registry.json");
+  if (fs.existsSync(upstreamRegistryPath)) {
+    return {
+      kind: "upstream-package",
+      root: upstreamRoot,
+      registryPath: upstreamRegistryPath,
+      registry: readJsonFile(upstreamRegistryPath),
+      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/publication-registry.json`,
+    };
+  }
+  const fixtureRegistryPath = path.join(fixturesDir, "publication-registry.json");
+  return {
+    kind: "fixture",
+    root: fixturesDir,
+    registryPath: fixtureRegistryPath,
+    registry: readJsonFile(fixtureRegistryPath),
+    source: "src/fixtures/publication-registry.json",
+  };
+}
+
+function assertArchiveSlug(value, label) {
+  const slug = String(value || "").trim();
+  if (!/^[a-z0-9][a-z0-9.-]*$/.test(slug)) {
+    throw new Error(`invalid publication archive ${label}: ${value}`);
+  }
+  return slug;
+}
+
+function publicationPath(pathValue, label) {
+  const value = String(pathValue || "").trim();
+  if (!value.startsWith("/") || value.includes("..") || value.includes("//")) {
+    throw new Error(`invalid publication archive path for ${label}: ${pathValue}`);
+  }
+  return value.endsWith("/") ? value : `${value}/`;
+}
+
+function archiveOutputPath(urlPath, suffix = "") {
+  const cleanPath = String(urlPath || "").replace(/^\/+/, "");
+  return path.posix.join("papers", cleanPath, suffix);
+}
+
+function archiveHref(urlPath) {
+  return surfaceEndpointHref("papers", String(urlPath || "").replace(/^\/+/, ""));
+}
+
+function archiveLocalHref(urlPath) {
+  return `/${archiveOutputPath(urlPath).replace(/\/?$/, "/")}`;
+}
+
+function archiveLinkAttrs(urlPath) {
+  return `href="${escapeAttr(archiveHref(urlPath))}" data-local-href="${escapeAttr(archiveLocalHref(urlPath))}"`;
+}
+
+function artifactHref(versionPath, artifactPath) {
+  return archiveHref(`${versionPath}${artifactPath}`);
+}
+
+function artifactLocalHref(versionPath, artifactPath) {
+  return `/${artifactOutputPath(versionPath, artifactPath)}`;
+}
+
+function artifactLinkAttrs(versionPath, artifactPath) {
+  return `href="${escapeAttr(artifactHref(versionPath, artifactPath))}" data-local-href="${escapeAttr(artifactLocalHref(versionPath, artifactPath))}"`;
+}
+
+function artifactOutputPath(versionPath, artifactPath) {
+  return archiveOutputPath(`${versionPath}${artifactPath}`);
+}
+
+function renderPublicationArtifacts(version) {
+  return [
+    ...version.artifacts.map((artifact) => ({
+      kind: artifact.role || "artifact",
+      path: artifact.path,
+      mediaType: artifact.mediaType || "application/octet-stream",
+      sha256: artifact.sha256,
+      fixtureBodyBase64: artifact.fixtureBodyBase64,
+    })),
+    {
+      kind: "source",
+      path: version.source.bundle.path,
+      mediaType: "application/gzip",
+      sha256: version.source.bundle.sha256,
+      fixtureBodyBase64: version.source.bundle.fixtureBodyBase64,
+    },
+    {
+      kind: "passport",
+      path: version.passport.path,
+      mediaType: "application/json",
+      sha256: version.passport.sha256,
+      fixtureBodyBase64: version.passport.fixtureBodyBase64,
+    },
+  ].map((artifact) => {
+    const artifactPath = String(artifact.path || "").trim();
+    if (!artifactPath || artifactPath.startsWith("/") || artifactPath.includes("..")) {
+      throw new Error(`invalid publication artifact path: ${artifact.path}`);
+    }
+    const body = artifact.fixtureBodyBase64 ? Buffer.from(artifact.fixtureBodyBase64, "base64") : undefined;
+    if (!body) {
+      throw new Error(`publication fixture artifact is missing fixtureBodyBase64: ${artifactPath}`);
+    }
+    const digest = sha256Buffer(body);
+    if (digest !== artifact.sha256) {
+      throw new Error(`publication fixture artifact digest mismatch for ${artifactPath}: expected ${artifact.sha256}, got ${digest}`);
+    }
+    return {
+      ...artifact,
+      path: artifactPath,
+      body,
+      sha256: digest,
+    };
+  });
+}
+
+function publicationVersionCards(publication, versions) {
+  return versions
+    .map((version) => {
+      const pdf = version.artifacts.find((artifact) => artifact.kind === "pdf") || version.artifacts[0];
+      return `<article class="panel">
+        <h3><a ${archiveLinkAttrs(version.immutablePath)}>Version ${escapeHtml(version.version)}</a></h3>
+        <p>Immutable archive prefix: <code>${escapeHtml(version.immutablePath)}</code></p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>released</dt>
+          <dd><code>${escapeHtml(version.releasedAt)}</code></dd>
+          <dt>source</dt>
+          <dd><code>${escapeHtml(version.source.repository)}#${escapeHtml(version.source.tag)}</code></dd>
+          <dt>primary PDF</dt>
+          <dd><a ${artifactLinkAttrs(version.immutablePath, pdf.path)}><code>${escapeHtml(pdf.path)}</code></a></dd>
+        </dl>
+      </article>`;
+    })
+    .join("\n");
+}
+
+function renderPublicationArchives() {
+  const source = readBuildchainPublicationRegistrySource();
+  const registry = source.registry;
+  if (registry.contract !== "kungfu-buildchain-publication-release-registry") {
+    throw new Error("publication registry contract mismatch");
+  }
+  if (!Array.isArray(registry.publications) || registry.publications.length === 0) {
+    throw new Error("publication registry must expose publications");
+  }
+
+  const renderedRoutes = [];
+  const immutableArtifacts = [];
+  const normalizedPublications = registry.publications.map((publication) => {
+    const id = assertArchiveSlug(publication.id, "publication id");
+    const latestPath = publicationPath(publication.latest?.path, `${id} latest`);
+    const versions = (publication.versions || []).map((version) => {
+      const versionId = assertArchiveSlug(version.version, `${id} version`);
+      const immutablePath = publicationPath(version.immutablePath, `${id} ${versionId} immutable path`);
+      const expectedPrefix = publicationPath(publication.immutablePrefixTemplate.replaceAll("{version}", versionId), `${id} ${versionId} immutable template`);
+      if (!version.immutable || immutablePath !== expectedPrefix) {
+        throw new Error(`publication version ${id}@${versionId} must be immutable and match ${expectedPrefix}`);
+      }
+      return {
+        ...version,
+        version: versionId,
+        immutablePath,
+        artifacts: renderPublicationArtifacts(version),
+      };
+    });
+    if (!versions.some((version) => version.version === publication.latest.version)) {
+      throw new Error(`publication ${id} latest version is missing from versions: ${publication.latest.version}`);
+    }
+    return {
+      ...publication,
+      id,
+      latest: {
+        ...publication.latest,
+        path: latestPath,
+      },
+      versions,
+    };
+  });
+
+  writeFile("papers/registry.json", `${JSON.stringify({ ...registry, publications: normalizedPublications }, null, 2)}\n`);
+
+  writeFile(
+    "papers/index.html",
+    page({
+      title: "papers.libkungfu.dev | Publication archives",
+      description: "Publication registry, latest reader routes, and immutable version artifact archives.",
+      current: "papers",
+      alternates: `  <link rel="alternate" type="application/json" title="Publication registry" href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}">
+  <link rel="alternate" type="application/json" title="Publication archive manifest" href="${escapeAttr(surfaceEndpointHref("papers", "manifest.json"))}">
+  <link rel="alternate" type="text/plain" title="Publication archive agent entrypoint" href="${escapeAttr(surfaceEndpointHref("papers", "llms.txt"))}">`,
+      body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Publication archives</span></p>
+        <h1>Publication archives</h1>
+        <p class="lead">Latest reader pages may move with new builds; declared version prefixes preserve PDF, source, and passport artifacts as append-only evidence.</p>
+      </section>
+
+      <section class="panel warning">
+        <h2>Archive boundary</h2>
+        <p><strong>Rule:</strong> ${escapeHtml(registry.archivePolicy.rule)}</p>
+        <dl class="meta" style="margin-top: 14px;">
+          <dt>source</dt>
+          <dd><code>${escapeHtml(source.source)}</code></dd>
+          <dt>deployment</dt>
+          <dd><code>${escapeHtml(registry.archivePolicy.deploymentBoundary)}</code></dd>
+        </dl>
+      </section>
+
+      <section class="grid" style="margin-top: 18px;">
+        ${normalizedPublications
+          .map((publication) => `<article class="panel">
+            <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
+            <p>${escapeHtml(publication.summary)}</p>
+            <dl class="meta" style="margin-top: 14px;">
+              <dt>canonical</dt>
+              <dd><a href="${escapeAttr(publication.canonicalReader.url)}">${escapeHtml(publication.canonicalReader.url)}</a></dd>
+              <dt>latest</dt>
+              <dd><a ${archiveLinkAttrs(publication.latest.path)}><code>${escapeHtml(publication.latest.path)}</code></a></dd>
+              <dt>versions</dt>
+              <dd><code>${escapeHtml(String(publication.versions.length))}</code></dd>
+            </dl>
+          </article>`)
+          .join("\n")}
+      </section>`,
+    }),
+  );
+  renderedRoutes.push({ path: "/", host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "registry-index" });
+
+  for (const publication of normalizedPublications) {
+    const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+    const publicationBasePath = `/${publication.id}/`;
+
+    writeFile(
+      archiveOutputPath(publicationBasePath, "index.html"),
+      page({
+        title: `${publication.title} | papers.libkungfu.dev`,
+        description: publication.summary,
+        current: "papers",
+        body: `<section class="hero">
+          <p class="eyebrow page-kicker"><a ${archiveLinkAttrs("/")} aria-label="Back to publication archives">Back to publication archives</a><span class="page-kicker-state">publication / ${escapeHtml(publication.id)}</span></p>
+          <h1>${escapeHtml(publication.title)}</h1>
+          <p class="lead">${escapeHtml(publication.summary)}</p>
+        </section>
+
+        <section class="panel">
+          <h2>Reader routes</h2>
+          <dl class="meta">
+            <dt>canonical reader</dt>
+            <dd><a href="${escapeAttr(publication.canonicalReader.url)}">${escapeHtml(publication.canonicalReader.url)}</a></dd>
+            <dt>latest evidence</dt>
+            <dd><a ${archiveLinkAttrs(publication.latest.path)}><code>${escapeHtml(publication.latest.path)}</code></a></dd>
+            <dt>immutable template</dt>
+            <dd><code>${escapeHtml(publication.immutablePrefixTemplate)}</code></dd>
+          </dl>
+        </section>
+
+        <section class="grid" style="margin-top: 18px;">
+          ${publicationVersionCards(publication, publication.versions)}
+        </section>`,
+      }),
+    );
+    renderedRoutes.push({ path: publicationBasePath, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "publication-index" });
+
+    writeFile(
+      archiveOutputPath(publication.latest.path, "index.html"),
+      page({
+        title: `${publication.title} latest | papers.libkungfu.dev`,
+        description: `Latest evidence route for ${publication.title}.`,
+        current: "papers",
+        body: `<section class="hero">
+          <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">latest / ${escapeHtml(latestVersion.version)}</span></p>
+          <h1>${escapeHtml(publication.title)} latest</h1>
+          <p class="lead">This mutable route points to the latest declared immutable version. Historical files remain under version prefixes.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Latest version</h2>
+          <dl class="meta">
+            <dt>version</dt>
+            <dd><a ${archiveLinkAttrs(latestVersion.immutablePath)}><code>${escapeHtml(latestVersion.version)}</code></a></dd>
+            <dt>immutable prefix</dt>
+            <dd><code>${escapeHtml(latestVersion.immutablePath)}</code></dd>
+            <dt>passport</dt>
+            <dd><a ${artifactLinkAttrs(latestVersion.immutablePath, latestVersion.passport.path)}><code>${escapeHtml(latestVersion.passport.path)}</code></a></dd>
+          </dl>
+        </section>`,
+      }),
+    );
+    renderedRoutes.push({ path: publication.latest.path, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "latest" });
+
+    for (const version of publication.versions) {
+      writeFile(
+        archiveOutputPath(version.immutablePath, "index.html"),
+        page({
+          title: `${publication.title} ${version.version} | papers.libkungfu.dev`,
+          description: `Immutable archive for ${publication.title} ${version.version}.`,
+          current: "papers",
+          body: `<section class="hero">
+            <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">immutable / ${escapeHtml(version.version)}</span></p>
+            <h1>${escapeHtml(publication.title)} ${escapeHtml(version.version)}</h1>
+            <p class="lead">Immutable archive prefix. Later builds must preserve every file listed here.</p>
+          </section>
+
+          <section class="panel warning">
+            <h2>Immutable route</h2>
+            <p><strong>Append-only:</strong> <code>${escapeHtml(version.immutablePath)}</code></p>
+          </section>
+
+          <section class="panel" style="margin-top: 18px;">
+            <h2>Artifacts</h2>
+            <dl class="meta">
+              ${version.artifacts
+                .map((artifact) => `<dt>${escapeHtml(artifact.kind)}</dt>
+                <dd><a ${artifactLinkAttrs(version.immutablePath, artifact.path)}><code>${escapeHtml(artifact.path)}</code></a><br><code>${escapeHtml(artifact.sha256)}</code></dd>`)
+                .join("")}
+            </dl>
+          </section>`,
+        }),
+      );
+      renderedRoutes.push({ path: version.immutablePath, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "version-index", immutable: true });
+
+      for (const artifact of version.artifacts) {
+        const outputPath = artifactOutputPath(version.immutablePath, artifact.path);
+        writeBinaryFile(outputPath, artifact.body);
+        const route = {
+          path: `${version.immutablePath}${artifact.path}`,
+          host: surfaceCanonicalHost("papers"),
+          source: source.source,
+          routeKind: `version-${artifact.kind}`,
+          immutable: true,
+          sha256: artifact.sha256,
+          mediaType: artifact.mediaType,
+        };
+        renderedRoutes.push(route);
+        immutableArtifacts.push({
+          publication: publication.id,
+          version: version.version,
+          ...route,
+        });
+      }
+    }
+  }
+
+  const archiveManifest = {
+    schemaVersion: 1,
+    contract: "libkungfu-dev-publication-archive-surface",
+    ...surfaceTimestampPolicy,
+    canonicalHost: surfaceCanonicalHost("papers"),
+    source: {
+      kind: source.kind,
+      path: source.source,
+      registryContract: registry.contract,
+    },
+    archivePolicy: registry.archivePolicy,
+    publications: normalizedPublications.map((publication) => ({
+      id: publication.id,
+      title: publication.title,
+      canonicalReader: publication.canonicalReader,
+      latest: {
+        ...publication.latest,
+        url: archiveHref(publication.latest.path),
+      },
+      versions: publication.versions.map((version) => ({
+        version: version.version,
+        immutablePath: version.immutablePath,
+        immutableUrl: archiveHref(version.immutablePath),
+        artifacts: version.artifacts.map((artifact) => ({
+          kind: artifact.kind,
+          path: artifact.path,
+          url: artifactHref(version.immutablePath, artifact.path),
+          sha256: artifact.sha256,
+          mediaType: artifact.mediaType,
+        })),
+      })),
+    })),
+    routes: renderedRoutes,
+    immutableArtifacts,
+  };
+  writeFile("papers/manifest.json", `${JSON.stringify(archiveManifest, null, 2)}\n`);
+  writeFile(
+    "papers/llms.txt",
+    `# ${surfaceCanonicalHost("papers")}
+
+Publication archives expose mutable latest routes and immutable version artifact prefixes.
+
+Human entry:
+- ${surfaceCanonicalHref("papers")}
+
+Agent-first entries:
+- ${surfaceEndpointHref("papers", "manifest.json")}
+- ${surfaceEndpointHref("papers", "registry.json")}
+- ${surfaceEndpointHref("papers", "llms.txt")}
+
+Archive rule:
+${registry.archivePolicy.rule}
+`,
+  );
+
+  return {
+    source,
+    registry,
+    manifest: archiveManifest,
+    routes: renderedRoutes,
+    immutableArtifacts,
   };
 }
 
@@ -1750,6 +2171,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
   artifactDigestScope: "site dist manifest JSON files",
 });
 const buildchainBadgeEndpoints = renderBuildchainBadgeEndpoints();
+const publicationArchives = renderPublicationArchives();
 const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
 const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
 const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])
@@ -2390,6 +2812,14 @@ const manifest = {
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-spec-manifest.json" },
+    ...publicationArchives.routes.map((route) => ({
+      path: route.path,
+      host: route.host,
+      source: route.source,
+      routeKind: route.routeKind,
+      immutable: route.immutable || undefined,
+      sha256: route.sha256,
+    })),
     {
       path: "/buildchain/",
       host: surfaceCanonicalHost("buildchain"),
@@ -2444,6 +2874,15 @@ const manifest = {
         logoPolicy: buildchainBadgeEndpoints.registry.logoPolicy,
         renderedCount: buildchainBadgeEndpoints.rendered.length,
         routes: buildchainBadgeEndpoints.rendered,
+      },
+      publicationRegistry: {
+        contract: publicationArchives.registry.contract,
+        source: publicationArchives.source.source,
+        sourceKind: publicationArchives.source.kind,
+        archivePolicy: publicationArchives.registry.archivePolicy,
+        publicationCount: publicationArchives.registry.publications.length,
+        immutableArtifactCount: publicationArchives.immutableArtifacts.length,
+        routes: publicationArchives.routes,
       },
     },
     kfd: {
@@ -2563,17 +3002,21 @@ Primary pages:
 - ${surfaceCanonicalHref("core")}
 - ${surfaceCanonicalHref("buildchain")}
 - ${surfaceCanonicalHref("kfd")}
+- ${surfaceCanonicalHref("papers")}
 
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
+- ${surfaceEndpointHref("papers", "manifest.json")}
+- ${surfaceEndpointHref("papers", "registry.json")}
 
 Source boundary:
 This repository renders upstream manifests. It is not a product fact source.
 Core facts must come from @kungfu-tech/spec. Buildchain facts must come from
 the @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
-@kungfu-tech/kfd site bundle, registry, and decision documents.
+@kungfu-tech/kfd site bundle, registry, and decision documents. Publication
+archive facts must come from Buildchain publication registry data.
 `,
 );
 

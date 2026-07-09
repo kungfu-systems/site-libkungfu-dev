@@ -21,6 +21,10 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
   `dist/site/badge-endpoint-registry.json` and `dist/site/badges/v1/**/*.json`
   when present; keep the same-structure fixtures only as the pre-release
   fallback.
+- Publication archive routes are generated under `/papers/**`. Prefer the
+  Buildchain package `dist/site/publication-registry.json` when present; keep
+  `src/fixtures/publication-registry.json` only as the pre-release route and
+  archive-preservation contract fixture.
 
 ## Boundary
 
