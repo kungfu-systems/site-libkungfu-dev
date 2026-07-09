@@ -41,5 +41,15 @@ test -f dist/badges/v1/kfd-1/passed.json
 test -f dist/buildchain/badges/v1/badge-endpoint-registry.json
 test -f dist/manifest.json
 test -f dist/llms.txt
+test -f dist/papers/index.html
+test -f dist/papers/manifest.json
+test -f dist/papers/registry.json
+test -f dist/papers/llms.txt
+test -f dist/papers/publication-archive-fixture/index.html
+test -f dist/papers/publication-archive-fixture/latest/index.html
+test -f dist/papers/publication-archive-fixture/v0.1.0/index.html
+test -f dist/papers/publication-archive-fixture/v0.1.0/main.pdf
+test -f dist/papers/publication-archive-fixture/v0.1.0/source.tar.gz
+test -f dist/papers/publication-archive-fixture/v0.1.0/publication-artifact-passport.json
 
 echo "site-libkungfu-dev built dist/"

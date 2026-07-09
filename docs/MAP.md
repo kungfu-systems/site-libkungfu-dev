@@ -13,6 +13,9 @@
   matching Shields-compatible payload.
 - Use `https://kfd.libkungfu.dev` for Kung Fu Decisions, KFD-owned standard
   metadata, schemas, and stable decision pages.
+- Use `https://papers.libkungfu.dev` for publication archive registry pages:
+  mutable latest reader routes, immutable version artifact prefixes, and
+  agent-readable archive manifests.
 - Use `/llms.txt` and `/manifest.json` as stable machine entries.
 
 ## Work In This Repository
@@ -22,6 +25,9 @@
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain
   `dist/site` bundle.
+- `src/fixtures/publication-registry.json` temporarily exercises the Buildchain
+  publication release registry contract until Buildchain publishes
+  `dist/site/publication-registry.json`.
 - `@kungfu-tech/buildchain@2.10.2` supplies the Buildchain `dist/site` bundle.
 - `@kungfu-tech/kfd@1.0.0-alpha.19` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
@@ -53,3 +59,9 @@ any Kungfu-standard site bundle can be rendered by the same governed renderer.
 This repository renders upstream facts. It does not author the spec, CLI,
 workflow, release model, KFD decision text, schemas, or artifact evidence
 facts.
+
+Publication archive pages are renderer-owned, but archive facts are not. The
+site must consume Buildchain publication registry data for canonical reader,
+latest, immutable version, artifact hash, source bundle, and passport facts.
+Until that upstream registry is published, the fixture registry keeps the route
+and check contract executable.

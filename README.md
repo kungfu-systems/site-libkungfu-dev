@@ -26,6 +26,9 @@ machines, artifact schemas, or provenance facts.
   release-governance product surface.
 - `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
   decision registry, standards metadata, schemas, and stable decision pages.
+- `https://papers.libkungfu.dev` presents publication archive evidence surfaces:
+  mutable latest routes, immutable versioned artifact prefixes, and
+  agent-readable registry/manifests for papers and reports.
 - `https://kungfu.tech` remains the end-user, buyer, and Kungfu Rewind product
   home.
 
@@ -52,6 +55,7 @@ Expected upstream flow:
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain badge endpoint registry -> site-libkungfu-dev -> buildchain.libkungfu.dev/badges/v1
+buildchain -> @kungfu-tech/buildchain publication registry -> site-libkungfu-dev -> papers.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
@@ -130,6 +134,16 @@ registry and payloads in its site bundle, this repository can switch from the
 fixture data to the package data without changing consumer README links. A later
 official Buildchain logo change is handled by redeploying or purging the site
 asset/renderer, not by regenerating downstream README badges.
+
+Publication archives follow the same source-boundary rule. The site renders the
+archive UI and static files, but canonical reader URLs, latest aliases,
+immutable version prefixes, artifact hashes, source bundles, passports, and
+release registry entries must come from Buildchain publication registry data.
+Until Buildchain publishes that registry in its site bundle, this repository
+keeps an executable fixture at `src/fixtures/publication-registry.json`.
+`pnpm run check` fails if a declared immutable version artifact disappears,
+if a digest drifts, or if the generated manifests omit the immutable route
+semantics.
 
 KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and

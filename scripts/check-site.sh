@@ -16,10 +16,12 @@ fi
 
 node - <<'NODE'
 const fs = require("fs");
+const crypto = require("crypto");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
+  "src/fixtures/publication-registry.json",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
   "src/fixtures/badges/v1/kfd-1/passed.json",
   "src/fixtures/badges/v1/kfd-2/passed.json",
@@ -51,11 +53,18 @@ const requiredBaseFiles = [
   "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
   "dist/llms.txt",
+  "dist/papers/index.html",
+  "dist/papers/manifest.json",
+  "dist/papers/registry.json",
+  "dist/papers/llms.txt",
 ];
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
+const publicationFixtureRegistry = JSON.parse(fs.readFileSync("src/fixtures/publication-registry.json", "utf8"));
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
+const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
@@ -115,6 +124,10 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function sha256File(file) {
+  return `sha256:${crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex")}`;
+}
+
 function expectedSurfaceHref(id) {
   const previewAlias = (process.env.SITE_PREVIEW_ALIAS || process.env.BUILDCHAIN_PREVIEW_ALIAS || "").trim();
   const channel = (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim();
@@ -124,12 +137,14 @@ function expectedSurfaceHref(id) {
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
+      papers: "https://papers.libkungfu.dev/",
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
+      papers: "https://papers.staging.libkungfu.dev/",
     },
   };
   if (channel === "preview" && previewAlias) {
@@ -138,6 +153,7 @@ function expectedSurfaceHref(id) {
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
+      papers: `https://papers-${previewAlias}.preview.libkungfu.dev/`,
     };
   }
   const hrefs = hrefsByChannel[channel] || hrefsByChannel.production;
@@ -326,6 +342,76 @@ for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dis
 }
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
+}
+if (publicationFixtureRegistry.contract !== "kungfu-buildchain-publication-release-registry") {
+  throw new Error("publication fixture registry contract mismatch");
+}
+if (publicationRenderedRegistry.contract !== publicationFixtureRegistry.contract) {
+  throw new Error("rendered publication registry contract mismatch");
+}
+if (publicationManifest.contract !== "libkungfu-dev-publication-archive-surface") {
+  throw new Error("publication archive manifest contract mismatch");
+}
+if (
+  publicationManifest.canonicalHost !== expectedSurfaceHost("papers") ||
+  publicationManifest.source?.registryContract !== publicationFixtureRegistry.contract ||
+  publicationManifest.archivePolicy?.deploymentBoundary !== "append-only immutable version prefixes"
+) {
+  throw new Error("publication archive manifest must expose channel-aware host, registry source, and append-only deployment boundary");
+}
+if (manifest.upstreamPackages.buildchain.publicationRegistry?.contract !== publicationFixtureRegistry.contract) {
+  throw new Error("dist manifest does not record the Buildchain publication registry contract");
+}
+if (manifest.upstreamPackages.buildchain.publicationRegistry?.immutableArtifactCount < 3) {
+  throw new Error("dist manifest does not record immutable publication artifacts");
+}
+for (const publication of publicationRenderedRegistry.publications || []) {
+  const renderedPublication = publicationManifest.publications.find((entry) => entry.id === publication.id);
+  if (!renderedPublication) {
+    throw new Error(`publication manifest missing publication: ${publication.id}`);
+  }
+  if (!renderedPublication.latest?.url || !renderedPublication.latest.url.startsWith(expectedSurfaceHref("papers"))) {
+    throw new Error(`publication ${publication.id} latest URL must be channel-aware`);
+  }
+  for (const version of publication.versions || []) {
+    if (!version.immutable || !version.immutablePath || !version.immutablePath.includes(`/v${version.version}/`)) {
+      throw new Error(`publication version must declare immutable semantic path: ${publication.id}@${version.version}`);
+    }
+    const renderedVersion = renderedPublication.versions.find((entry) => entry.version === version.version);
+    if (!renderedVersion || renderedVersion.immutablePath !== version.immutablePath || !renderedVersion.immutableUrl.startsWith(expectedSurfaceHref("papers"))) {
+      throw new Error(`publication manifest missing immutable version route: ${publication.id}@${version.version}`);
+    }
+    const versionIndex = `dist/papers${version.immutablePath}index.html`;
+    if (!fs.existsSync(versionIndex)) {
+      throw new Error(`missing immutable publication version index: ${versionIndex}`);
+    }
+    const versionHtml = fs.readFileSync(versionIndex, "utf8");
+    if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
+      throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
+    }
+    const expectedArtifacts = [
+      ...version.artifacts,
+      { ...version.source.bundle, kind: "source" },
+      { ...version.passport, kind: "passport" },
+    ];
+    for (const artifact of expectedArtifacts) {
+      const artifactPath = `dist/papers${version.immutablePath}${artifact.path}`;
+      if (!fs.existsSync(artifactPath)) {
+        throw new Error(`declared immutable publication artifact disappeared: ${artifactPath}`);
+      }
+      const digest = sha256File(artifactPath);
+      if (digest !== artifact.sha256) {
+        throw new Error(`immutable publication artifact digest drifted: ${artifactPath}`);
+      }
+      const manifestArtifact = renderedVersion.artifacts.find((entry) => entry.path === artifact.path);
+      if (!manifestArtifact || manifestArtifact.sha256 !== artifact.sha256 || !manifestArtifact.url.startsWith(expectedSurfaceHref("papers"))) {
+        throw new Error(`publication manifest missing immutable artifact facts: ${publication.id}@${version.version}/${artifact.path}`);
+      }
+      if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("papers") && page.path === `${version.immutablePath}${artifact.path}` && page.immutable === true && page.sha256 === artifact.sha256)) {
+        throw new Error(`dist manifest missing immutable artifact route: ${publication.id}@${version.version}/${artifact.path}`);
+      }
+    }
+  }
 }
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
