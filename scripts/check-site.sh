@@ -27,7 +27,8 @@ const requiredBaseFiles = [
   "src/fixtures/badges/v1/kfd-2/passed.json",
   "src/fixtures/badges/v1/kfd-3/passed.json",
   "src/fixtures/badges/v1/buildchain-release-passport/passed.json",
-  "buildchain.contract-lock.json",
+  ".buildchain/buildchain.toml",
+  ".buildchain/contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
   "dist/core/index.html",
@@ -70,9 +71,11 @@ const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "u
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-const buildchainContractLock = JSON.parse(fs.readFileSync("buildchain.contract-lock.json", "utf8"));
+const buildchainContractLock = JSON.parse(fs.readFileSync(".buildchain/contract-lock.json", "utf8"));
 const pnpmLockText = fs.readFileSync("pnpm-lock.yaml", "utf8");
-const kfdPropagationLockPath = "buildchain.upstreams/kfd.release.json";
+const kfdPropagationLockPath = fs.existsSync(".buildchain/upstreams/kfd.release.json")
+  ? ".buildchain/upstreams/kfd.release.json"
+  : "buildchain.upstreams/kfd.release.json";
 const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
   ? JSON.parse(fs.readFileSync(kfdPropagationLockPath, "utf8"))
   : undefined;
@@ -318,6 +321,12 @@ if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
 if (!Array.isArray(kfdUsagePages) || kfdUsagePages.length !== kfdRegistry.entries.length) {
   throw new Error("KFD site bundle must expose one usage page for each decision entry");
 }
+for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock.json"]) {
+  if (fs.existsSync(legacyBuildchainPath)) {
+    throw new Error(`${legacyBuildchainPath} must not be kept at repository root; use .buildchain/ instead`);
+  }
+}
+
 if (
   buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
   buildchainContractLock.buildchain?.ref !== "v2" ||
@@ -327,7 +336,7 @@ if (
   !buildchainContractLock.buildchain?.contractDigest ||
   !buildchainContractLock.buildchain?.compatibilityDigest
 ) {
-  throw new Error("buildchain.contract-lock.json must record the accepted floating Buildchain v2 contract");
+  throw new Error(".buildchain/contract-lock.json must record the accepted floating Buildchain v2 contract");
 }
 for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
   if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {

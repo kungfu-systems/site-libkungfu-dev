@@ -2,7 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const lockPath = path.join(repoRoot, "buildchain.upstreams", "kfd.release.json");
+const lockCandidates = [
+  path.join(repoRoot, ".buildchain", "upstreams", "kfd.release.json"),
+  path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"),
+];
+const lockPath = lockCandidates.find((candidate) => fs.existsSync(candidate)) || lockCandidates[0];
 const packagePath = path.join(repoRoot, "package.json");
 const workspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
 const packageName = "@kungfu-tech/kfd";

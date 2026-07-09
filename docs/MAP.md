@@ -35,7 +35,7 @@
   package artifacts.
 - `scripts/build-site.sh` writes `dist/`.
 - `scripts/check-site.sh` enforces basic policy and source-boundary checks.
-- `buildchain.toml` declares the web-surface channels and deployment planning
+- `.buildchain/buildchain.toml` declares the web-surface channels and deployment planning
   targets.
 
 ## KFD Compliance

@@ -2,7 +2,7 @@
 import fs from "node:fs";
 
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
-const buildchainToml = fs.readFileSync("buildchain.toml", "utf8");
+const buildchainToml = fs.readFileSync(".buildchain/buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
 const expectedBuildchainRef = "v2";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
@@ -55,7 +55,7 @@ if (/uses:\s*kungfu-systems\/buildchain\/\.github\/workflows\/\.web-surface\.yml
 for (const snippet of [
   "contents: write",
   "issues: write",
-  "buildchain-contract-lock-path: buildchain.contract-lock.json",
+  "buildchain-contract-lock-path: .buildchain/contract-lock.json",
   "buildchain-contract-compatibility-policy: major-compatible",
   "buildchain-contract-drift-issue-mode: compatible-and-breaking",
 ]) {

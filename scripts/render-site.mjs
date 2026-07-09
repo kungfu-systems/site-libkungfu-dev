@@ -2125,7 +2125,10 @@ const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
-const kfdPropagationLock = readOptionalJsonFile(path.join(repoRoot, "buildchain.upstreams", "kfd.release.json"));
+const kfdPropagationLockPath = fs.existsSync(path.join(repoRoot, ".buildchain", "upstreams", "kfd.release.json"))
+  ? path.join(repoRoot, ".buildchain", "upstreams", "kfd.release.json")
+  : path.join(repoRoot, "buildchain.upstreams", "kfd.release.json");
+const kfdPropagationLock = readOptionalJsonFile(kfdPropagationLockPath);
 const expectedBuildchainVersion = "2.11.1";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.22";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -2892,7 +2895,9 @@ const manifest = {
       lockIntegrity: kfdLock.integrity,
       releaseLock: kfdPropagationLock
         ? {
-            path: "buildchain.upstreams/kfd.release.json",
+            path: kfdPropagationLockPath.startsWith(path.join(repoRoot, ".buildchain"))
+              ? ".buildchain/upstreams/kfd.release.json"
+              : "buildchain.upstreams/kfd.release.json",
             tag: kfdPropagationLock.upstream?.tag,
             lockSha256: kfdPropagationLock.lockSha256,
           }

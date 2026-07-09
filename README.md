@@ -94,7 +94,7 @@ pnpm run check
 
 The build writes `dist/`. The `pnpm install` step makes the pinned Buildchain site
 bundle available from `node_modules/`. When a Buildchain release propagation PR
-adds `buildchain.upstreams/kfd.release.json`, run
+adds `.buildchain/upstreams/kfd.release.json`, run
 `node scripts/prepare-kfd-upstream.mjs` before `pnpm install --lockfile-only`;
 it pins `@kungfu-tech/kfd` to the exact upstream release version from the lock.
 The same preparation step refreshes the exact `minimumReleaseAgeExclude` entry
@@ -113,7 +113,7 @@ release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
 runs through the floating Buildchain `@v2` workflow ref and checks
-`buildchain.contract-lock.json` before rendering. The lock records the accepted
+`.buildchain/contract-lock.json` before rendering. The lock records the accepted
 Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
@@ -145,7 +145,7 @@ keeps an executable fixture at `src/fixtures/publication-registry.json`.
 if a digest drifts, or if the generated manifests omit the immutable route
 semantics.
 
-KFD release propagation writes `buildchain.upstreams/kfd.release.json`. The
+KFD release propagation writes `.buildchain/upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and
 pnpm lockfile inside the build workspace, and verifies that the rendered
 `kfd.libkungfu.dev` pages match the exact KFD release version and integrity.
@@ -159,7 +159,7 @@ manual approval.
 
 The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
-`buildchain.toml` and the GitHub Actions role assumptions still match that
+`.buildchain/buildchain.toml` and the GitHub Actions role assumptions still match that
 contract, wires all declared role references, keeps the workflow shell on
 Buildchain `@v2`, and fails closed if the production release gate drifts.
 
