@@ -1,4 +1,15 @@
 .DS_Store
 dist/
 node_modules/
-
+.buildchain/artifacts/
+.buildchain/deployments/
+.buildchain/diagnostics/
+.buildchain/downloaded-diagnostics/
+.buildchain/downloaded-manifests/
+.buildchain/downloaded-relay-manifests/
+.buildchain/logs/
+.buildchain/release-evidence/
+.buildchain/release-state/
+.buildchain/relayed-artifacts/
+.buildchain/runtime/
+.buildchain/tmp/
