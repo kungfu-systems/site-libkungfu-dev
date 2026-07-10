@@ -1,4 +1,5 @@
 name: Buildchain Stable Canary
+run-name: Buildchain Stable Canary / ${{ inputs.buildchain_ref }}
 
 on:
   workflow_dispatch:
