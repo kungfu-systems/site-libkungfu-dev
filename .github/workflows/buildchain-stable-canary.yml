@@ -1,0 +1,46 @@
+name: Buildchain Stable Canary
+run-name: Buildchain Stable Canary / ${{ inputs.buildchain_ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildchain_ref:
+        description: "Exact Buildchain alpha tag to validate before stable promotion"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  canary:
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
+    with:
+      buildchain-ref: ${{ inputs.buildchain_ref }}
+      buildchain-contract-lock-path: .buildchain/contract-lock.json
+      buildchain-contract-compatibility-policy: major-compatible
+      buildchain-contract-drift-issue-mode: compatible-and-breaking
+      node-version: "24"
+      build-command: |
+        export SITE_GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")"
+        export SITE_PUBLISHED_AT="$SITE_GENERATED_AT"
+        export SITE_TIMESTAMP_POLICY=ci-injected
+        export SITE_SOURCE_REVISION="$GITHUB_SHA"
+        export SITE_SURFACE_CHANNEL=staging
+        export SITE_PREVIEW_ALIAS=""
+        node scripts/prepare-kfd-upstream.mjs
+        pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
+        pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
+        pnpm --config.minimumReleaseAge=0 run build
+      verify-command: |
+        export SITE_SURFACE_CHANNEL=staging
+        export SITE_PREVIEW_ALIAS=""
+        pnpm --config.minimumReleaseAge=0 run check
+      artifact-path: dist
+      preview-apply: false
+      preview-cleanup-apply: false
+      staging-apply: false
+      production-apply: false
+      production-approved: false
+      production-release-on-main: false
