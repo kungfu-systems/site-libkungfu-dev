@@ -28,7 +28,7 @@
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@2.11.1` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@2.11.13` supplies the Buildchain `dist/site` bundle.
 - `@kungfu-tech/kfd@1.0.0-alpha.22` supplies the KFD site bundle, registry,
   standards metadata, schemas, and decision markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream

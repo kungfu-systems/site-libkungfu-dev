@@ -36,7 +36,7 @@ machines, artifact schemas, or provenance facts.
 
 The generated hub and core pages currently consume fixture manifests under
 `src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.11.1` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.11.13` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -122,7 +122,7 @@ runs through the floating Buildchain `@v2` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.1` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
 generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.22`.
 
 The site does not override Buildchain's own transitive dependencies. If a
