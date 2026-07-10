@@ -160,7 +160,7 @@ function expectedSurfaceHref(id) {
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
-      papers: `https://${previewAlias}.preview.libkungfu.dev/papers/`,
+      papers: `https://papers-${previewAlias}.preview.libkungfu.dev/`,
     };
   }
   const hrefs = hrefsByChannel[channel] || hrefsByChannel.production;

@@ -72,10 +72,9 @@ exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
 its exported site bundle. Papers use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable
 version prefixes while allowing canonical and latest pages to advance.
-Until the dedicated papers preview alias is published by the infrastructure
-contract, preview builds use the composite
-`https://{alias}.preview.libkungfu.dev/papers/` route. Production and staging
-continue to declare their dedicated papers hosts.
+The infrastructure contract publishes Papers as a first-class surface in every
+channel: `papers-{alias}.preview.libkungfu.dev`,
+`papers.staging.libkungfu.dev`, and `papers.libkungfu.dev`.
 
 Do not store AWS credentials in this repository.
 
@@ -89,9 +88,9 @@ release-PR gate to stay enabled.
 
 Production readiness must remain true:
 
-- `libkungfu.dev`, `core.libkungfu.dev`, `buildchain.libkungfu.dev`, and
-  `kfd.libkungfu.dev` are configured as production aliases on the serving
-  distribution;
+- `libkungfu.dev`, `core.libkungfu.dev`, `buildchain.libkungfu.dev`,
+  `kfd.libkungfu.dev`, and `papers.libkungfu.dev` are configured as production
+  aliases on the serving distribution;
 - DNS for all production surface hosts resolves to the intended distribution;
 - the GitHub OIDC role exists in AWS Global and is scoped to the production
   bucket and distribution;

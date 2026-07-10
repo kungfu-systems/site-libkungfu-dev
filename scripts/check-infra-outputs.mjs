@@ -11,6 +11,7 @@ const requiredSurfaces = {
   core: "https://core.libkungfu.dev",
   buildchain: "https://buildchain.libkungfu.dev",
   kfd: "https://kfd.libkungfu.dev",
+  papers: "https://papers.libkungfu.dev",
 };
 
 function parseTomlSections(text) {
