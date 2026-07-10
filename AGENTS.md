@@ -22,9 +22,10 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
   when present; keep the same-structure fixtures only as the pre-release
   fallback.
 - Publication archive routes are generated under `/papers/**`. Prefer the
-  Buildchain package `dist/site/publication-registry.json` when present; keep
-  `src/fixtures/publication-registry.json` only as the pre-release route and
-  archive-preservation contract fixture.
+  exact paper packages declared in `src/publication-packages.json`. Each paper
+  package owns its publication registry, manifest, PDF, passport, source bundle,
+  routes, and digests; this repository owns only package-set membership,
+  aggregation, rendering, and deployment-environment links.
 
 ## Boundary
 

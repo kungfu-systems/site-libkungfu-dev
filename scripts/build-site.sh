@@ -45,11 +45,25 @@ test -f dist/papers/index.html
 test -f dist/papers/manifest.json
 test -f dist/papers/registry.json
 test -f dist/papers/llms.txt
-test -f dist/papers/publication-archive-fixture/index.html
-test -f dist/papers/publication-archive-fixture/latest/index.html
-test -f dist/papers/publication-archive-fixture/v0.1.0/index.html
-test -f dist/papers/publication-archive-fixture/v0.1.0/main.pdf
-test -f dist/papers/publication-archive-fixture/v0.1.0/source.tar.gz
-test -f dist/papers/publication-archive-fixture/v0.1.0/publication-artifact-passport.json
+node - <<'NODE'
+const fs = require("node:fs");
+const registry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
+for (const publication of registry.publications || []) {
+  const required = [
+    `dist/papers/${publication.id}/index.html`,
+    `dist/papers/${publication.id}/latest/index.html`,
+  ];
+  for (const version of publication.versions || []) {
+    const prefix = `dist/papers${version.immutablePath}`;
+    required.push(`${prefix}index.html`);
+    for (const artifact of [...version.artifacts, version.manifest, version.passport, version.source.bundle]) {
+      required.push(`${prefix}${artifact.path}`);
+    }
+  }
+  for (const file of required) {
+    if (!fs.existsSync(file)) throw new Error(`missing rendered publication file: ${file}`);
+  }
+}
+NODE
 
 echo "site-libkungfu-dev built dist/"

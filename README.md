@@ -26,9 +26,9 @@ machines, artifact schemas, or provenance facts.
   release-governance product surface.
 - `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
   decision registry, standards metadata, schemas, and stable decision pages.
-- `https://papers.libkungfu.dev` presents publication archive evidence surfaces:
-  mutable latest routes, immutable versioned artifact prefixes, and
-  agent-readable registry/manifests for papers and reports.
+- `https://papers.libkungfu.dev` presents Kungfu product and research papers,
+  PDF-first reader entrypoints, mutable latest routes, immutable versioned
+  artifact prefixes, and agent-readable publication evidence.
 - `https://kungfu.tech` remains the end-user, buyer, and Kungfu Rewind product
   home.
 
@@ -48,6 +48,11 @@ is published, the same contract is exercised through
 The KFD page consumes the pinned npm package artifact
 `@kungfu-tech/kfd@1.0.0-alpha.22` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
+The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
+in `src/publication-packages.json`. Package-local publication registries and
+manifests own titles, abstracts, authors, routes, versions, PDFs, passports,
+source bundles, and digests; the local package set owns only which published
+papers appear on this site.
 
 Expected upstream flow:
 
@@ -55,7 +60,7 @@ Expected upstream flow:
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain badge endpoint registry -> site-libkungfu-dev -> buildchain.libkungfu.dev/badges/v1
-buildchain -> @kungfu-tech/buildchain publication registry -> site-libkungfu-dev -> papers.libkungfu.dev
+paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
@@ -138,9 +143,11 @@ asset/renderer, not by regenerating downstream README badges.
 Publication archives follow the same source-boundary rule. The site renders the
 archive UI and static files, but canonical reader URLs, latest aliases,
 immutable version prefixes, artifact hashes, source bundles, passports, and
-release registry entries must come from Buildchain publication registry data.
-Until Buildchain publishes that registry in its site bundle, this repository
-keeps an executable fixture at `src/fixtures/publication-registry.json`.
+release registry entries come from each pinned paper package. Buildchain owns
+the publication contracts and release mechanism; it does not own the changing
+facts of every paper release. `scripts/publication-packages.cjs` verifies and
+aggregates the package-local registries without copying paper facts into site
+source.
 `pnpm run check` fails if a declared immutable version artifact disappears,
 if a digest drifts, or if the generated manifests omit the immutable route
 semantics.

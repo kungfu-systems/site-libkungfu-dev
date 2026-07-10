@@ -59,6 +59,12 @@ production_url = "https://kfd.libkungfu.dev"
 staging_url = "https://kfd.staging.libkungfu.dev"
 preview_url_pattern = "https://kfd-{alias}.preview.libkungfu.dev"
 
+[surfaces.papers]
+path = "/papers/"
+production_url = "https://papers.libkungfu.dev"
+staging_url = "https://papers.staging.libkungfu.dev"
+preview_url_pattern = "https://papers-{alias}.preview.libkungfu.dev"
+
 [deploy.preview]
 adapter = "aws-s3-cloudfront"
 directory_index_rewrite = "external"

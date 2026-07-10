@@ -17,11 +17,13 @@ fi
 node - <<'NODE'
 const fs = require("fs");
 const crypto = require("crypto");
+const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-spec-manifest.json",
-  "src/fixtures/publication-registry.json",
+  "src/publication-packages.json",
+  "scripts/publication-packages.cjs",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
   "src/fixtures/badges/v1/kfd-1/passed.json",
   "src/fixtures/badges/v1/kfd-2/passed.json",
@@ -62,7 +64,8 @@ const requiredBaseFiles = [
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
-const publicationFixtureRegistry = JSON.parse(fs.readFileSync("src/fixtures/publication-registry.json", "utf8"));
+const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
+const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
@@ -87,6 +90,7 @@ const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/re
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.11.1";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.22";
+const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const requiredFiles = [
@@ -252,6 +256,11 @@ if (
 
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
+const paperLocks = expectedPaperPackages.map((entry) => ({
+  ...entry,
+  lock: readPnpmLockPackage(entry.name, entry.version),
+  installed: JSON.parse(fs.readFileSync(`node_modules/${entry.name}/package.json`, "utf8")),
+}));
 
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
@@ -270,6 +279,17 @@ if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
 }
 if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
   throw new Error(`KFD lockfile entry must resolve to ${expectedKfdVersion}`);
+}
+if (publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" || expectedPaperPackages.length !== 3) {
+  throw new Error("publication package set must declare the three paper packages");
+}
+for (const entry of paperLocks) {
+  if (packageJson.dependencies[entry.name] !== entry.version) {
+    throw new Error(`paper dependency must be pinned to ${entry.name}@${entry.version}`);
+  }
+  if (entry.lock.version !== entry.version || entry.installed.name !== entry.name || entry.installed.version !== entry.version) {
+    throw new Error(`paper package identity or lock mismatch: ${entry.name}@${entry.version}`);
+  }
 }
 if (kfdPropagationLock) {
   if (kfdPropagationLock.contract !== "kungfu-buildchain-release-propagation-lock") {
@@ -352,26 +372,40 @@ for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dis
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
 }
-if (publicationFixtureRegistry.contract !== "kungfu-buildchain-publication-release-registry") {
-  throw new Error("publication fixture registry contract mismatch");
+if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
+  throw new Error("publication package aggregation contract mismatch");
 }
-if (publicationRenderedRegistry.contract !== publicationFixtureRegistry.contract) {
+if (publicationRenderedRegistry.contract !== publicationSource.registry.contract) {
   throw new Error("rendered publication registry contract mismatch");
+}
+if (publicationRenderedRegistry.publications?.length !== 3 || publicationRenderedRegistry.publications.some((entry) => entry.id === "publication-archive-fixture")) {
+  throw new Error("rendered publication registry must expose the three real papers and no fixture publication");
 }
 if (publicationManifest.contract !== "libkungfu-dev-publication-archive-surface") {
   throw new Error("publication archive manifest contract mismatch");
 }
 if (
   publicationManifest.canonicalHost !== expectedSurfaceHost("papers") ||
-  publicationManifest.source?.registryContract !== publicationFixtureRegistry.contract ||
+  publicationManifest.source?.kind !== "paper-packages" ||
+  publicationManifest.source?.registryContract !== publicationSource.registry.contract ||
+  publicationManifest.source?.packages?.length !== 3 ||
+  publicationManifest.source.packages.some((entry) => !entry.lockIntegrity) ||
   publicationManifest.archivePolicy?.deploymentBoundary !== "append-only immutable version prefixes"
 ) {
-  throw new Error("publication archive manifest must expose channel-aware host, registry source, and append-only deployment boundary");
+  throw new Error("publication archive manifest must expose channel-aware host, paper package sources, and append-only deployment boundary");
 }
-if (manifest.upstreamPackages.buildchain.publicationRegistry?.contract !== publicationFixtureRegistry.contract) {
-  throw new Error("dist manifest does not record the Buildchain publication registry contract");
+if (manifest.upstreamPackages.buildchain.publicationRegistry !== undefined) {
+  throw new Error("paper publication facts must not be attributed to the Buildchain package");
 }
-if (manifest.upstreamPackages.buildchain.publicationRegistry?.immutableArtifactCount < 3) {
+if (
+  manifest.upstreamPackages.papers?.contract !== publicationSource.registry.contract ||
+  manifest.upstreamPackages.papers?.sourceKind !== "paper-packages" ||
+  manifest.upstreamPackages.papers?.packages?.length !== 3 ||
+  manifest.upstreamPackages.papers.packages.some((entry) => !entry.lockIntegrity)
+) {
+  throw new Error("dist manifest does not record the real paper package source boundary");
+}
+if (manifest.upstreamPackages.papers?.immutableArtifactCount < 12) {
   throw new Error("dist manifest does not record immutable publication artifacts");
 }
 for (const publication of publicationRenderedRegistry.publications || []) {
@@ -400,6 +434,7 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     }
     const expectedArtifacts = [
       ...version.artifacts,
+      { ...version.manifest, kind: "manifest" },
       { ...version.source.bundle, kind: "source" },
       { ...version.passport, kind: "passport" },
     ];
@@ -412,6 +447,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       if (digest !== artifact.sha256) {
         throw new Error(`immutable publication artifact digest drifted: ${artifactPath}`);
       }
+      if (!fs.readFileSync(artifactPath).equals(readPublicationArtifact(artifact))) {
+        throw new Error(`immutable publication artifact does not match its npm package source: ${artifactPath}`);
+      }
       const manifestArtifact = renderedVersion.artifacts.find((entry) => entry.path === artifact.path);
       if (!manifestArtifact || manifestArtifact.sha256 !== artifact.sha256 || !manifestArtifact.url.startsWith(expectedSurfaceHref("papers"))) {
         throw new Error(`publication manifest missing immutable artifact facts: ${publication.id}@${version.version}/${artifact.path}`);
@@ -421,6 +459,19 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       }
     }
   }
+  const publicationPage = fs.readFileSync(`dist/papers/${publication.id}/index.html`, "utf8");
+  if (!publicationPage.includes(escapeHtml(publication.title)) || !publicationPage.includes("Read PDF") || !publicationPage.includes("Versions and evidence")) {
+    throw new Error(`publication page is missing human reader entrypoints: ${publication.id}`);
+  }
+}
+const papersIndex = fs.readFileSync("dist/papers/index.html", "utf8");
+for (const publication of publicationRenderedRegistry.publications) {
+  if (!papersIndex.includes(escapeHtml(publication.title))) {
+    throw new Error(`papers index missing publication: ${publication.id}`);
+  }
+}
+if (papersIndex.includes("Publication Archive Fixture") || !papersIndex.includes("Kungfu Papers")) {
+  throw new Error("papers index must be human-first and free of fixture content");
 }
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
@@ -597,7 +648,7 @@ if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("
   throw new Error("human header brand must link to the canonical hub and expose a local fallback");
 }
 if (
-  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a></nav>`)
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a></nav>`)
 ) {
   throw new Error("human header navigation must use canonical surface hosts with local fallbacks");
 }
