@@ -3,4 +3,4 @@ minimumReleaseAgeExclude:
   - '@kungfu-tech/kfd@1.0.0-alpha.16 || 1.0.0-alpha.19 || 1.0.0-alpha.21 || 1.0.0-alpha.22'
   - '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1 || 0.1.0-alpha.3'
   - '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1 || 0.1.0-alpha.2'
-  - '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3'
+  - '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.4'
