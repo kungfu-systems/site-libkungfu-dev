@@ -10,6 +10,9 @@
   "dependencies": {
     "@kungfu-tech/buildchain": "2.11.1",
     "@kungfu-tech/kfd": "1.0.0-alpha.22",
+    "@kungfu-tech/paper-kfd-foundation-real-world-agent-work": "0.1.0-alpha.1",
+    "@kungfu-tech/paper-kungfu-product-white-paper": "0.1.0-alpha.1",
+    "@kungfu-tech/paper-observer-declared-timelines": "0.1.0-alpha.1",
     "markdown-it": "14.1.0",
     "markdown-it-anchor": "9.2.0"
   }

@@ -63,12 +63,15 @@ render pinned upstream bundles:
 kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
+paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
 ```
 
 For now, hub/core still use `src/fixtures/` as explicit contract fixtures.
-Buildchain already uses the pinned `@kungfu-tech/buildchain@2.10.2` npm package
-and its exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd`
-package and its exported site bundle.
+Buildchain uses the pinned `@kungfu-tech/buildchain@2.11.1` npm package and its
+exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
+its exported site bundle. Papers use the exact package set in
+`src/publication-packages.json`; deploys must preserve declared immutable
+version prefixes while allowing canonical and latest pages to advance.
 
 Do not store AWS credentials in this repository.
 

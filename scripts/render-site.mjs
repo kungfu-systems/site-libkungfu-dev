@@ -10,6 +10,7 @@ const repoRoot = process.cwd();
 const distDir = path.join(repoRoot, "dist");
 const fixturesDir = path.join(repoRoot, "src", "fixtures");
 const require = createRequire(import.meta.url);
+const { loadPublicationPackageSet, readPublicationArtifact } = require("./publication-packages.cjs");
 
 function readJsonFile(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
@@ -641,26 +642,8 @@ function renderBuildchainBadgeEndpoints() {
   };
 }
 
-function readBuildchainPublicationRegistrySource() {
-  const upstreamRoot = buildchainDistSiteRoot();
-  const upstreamRegistryPath = path.join(upstreamRoot, "publication-registry.json");
-  if (fs.existsSync(upstreamRegistryPath)) {
-    return {
-      kind: "upstream-package",
-      root: upstreamRoot,
-      registryPath: upstreamRegistryPath,
-      registry: readJsonFile(upstreamRegistryPath),
-      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/publication-registry.json`,
-    };
-  }
-  const fixtureRegistryPath = path.join(fixturesDir, "publication-registry.json");
-  return {
-    kind: "fixture",
-    root: fixturesDir,
-    registryPath: fixtureRegistryPath,
-    registry: readJsonFile(fixtureRegistryPath),
-    source: "src/fixtures/publication-registry.json",
-  };
+function readPublicationRegistrySource() {
+  return loadPublicationPackageSet(repoRoot);
 }
 
 function assertArchiveSlug(value, label) {
@@ -714,61 +697,42 @@ function artifactOutputPath(versionPath, artifactPath) {
 
 function renderPublicationArtifacts(version) {
   return [
-    ...version.artifacts.map((artifact) => ({
-      kind: artifact.role || "artifact",
-      path: artifact.path,
-      mediaType: artifact.mediaType || "application/octet-stream",
-      sha256: artifact.sha256,
-      fixtureBodyBase64: artifact.fixtureBodyBase64,
-    })),
-    {
-      kind: "source",
-      path: version.source.bundle.path,
-      mediaType: "application/gzip",
-      sha256: version.source.bundle.sha256,
-      fixtureBodyBase64: version.source.bundle.fixtureBodyBase64,
-    },
-    {
-      kind: "passport",
-      path: version.passport.path,
-      mediaType: "application/json",
-      sha256: version.passport.sha256,
-      fixtureBodyBase64: version.passport.fixtureBodyBase64,
-    },
+    ...version.artifacts,
+    version.manifest,
+    version.source.bundle,
+    version.passport,
   ].map((artifact) => {
     const artifactPath = String(artifact.path || "").trim();
     if (!artifactPath || artifactPath.startsWith("/") || artifactPath.includes("..")) {
       throw new Error(`invalid publication artifact path: ${artifact.path}`);
     }
-    const body = artifact.fixtureBodyBase64 ? Buffer.from(artifact.fixtureBodyBase64, "base64") : undefined;
-    if (!body) {
-      throw new Error(`publication fixture artifact is missing fixtureBodyBase64: ${artifactPath}`);
-    }
+    const body = readPublicationArtifact(artifact);
     const digest = sha256Buffer(body);
     if (digest !== artifact.sha256) {
-      throw new Error(`publication fixture artifact digest mismatch for ${artifactPath}: expected ${artifact.sha256}, got ${digest}`);
+      throw new Error(`publication artifact digest mismatch for ${artifactPath}: expected ${artifact.sha256}, got ${digest}`);
     }
-    return {
+    const renderedArtifact = {
       ...artifact,
       path: artifactPath,
-      body,
       sha256: digest,
     };
+    Object.defineProperty(renderedArtifact, "body", { value: body, enumerable: false });
+    return renderedArtifact;
   });
 }
 
 function publicationVersionCards(publication, versions) {
   return versions
     .map((version) => {
-      const pdf = version.artifacts.find((artifact) => artifact.kind === "pdf") || version.artifacts[0];
+      const pdf = version.renderedArtifacts.find((artifact) => artifact.kind === "pdf") || version.renderedArtifacts[0];
       return `<article class="panel">
         <h3><a ${archiveLinkAttrs(version.immutablePath)}>Version ${escapeHtml(version.version)}</a></h3>
         <p>Immutable archive prefix: <code>${escapeHtml(version.immutablePath)}</code></p>
         <dl class="meta" style="margin-top: 14px;">
           <dt>released</dt>
           <dd><code>${escapeHtml(version.releasedAt)}</code></dd>
-          <dt>source</dt>
-          <dd><code>${escapeHtml(version.source.repository)}#${escapeHtml(version.source.tag)}</code></dd>
+          <dt>source revision</dt>
+          <dd><a href="${escapeAttr(version.source.repository)}"><code>${escapeHtml(version.source.commit)}</code></a></dd>
           <dt>primary PDF</dt>
           <dd><a ${artifactLinkAttrs(version.immutablePath, pdf.path)}><code>${escapeHtml(pdf.path)}</code></a></dd>
         </dl>
@@ -778,7 +742,11 @@ function publicationVersionCards(publication, versions) {
 }
 
 function renderPublicationArchives() {
-  const source = readBuildchainPublicationRegistrySource();
+  const source = readPublicationRegistrySource();
+  source.packages = source.packages.map((entry) => ({
+    ...entry,
+    lockIntegrity: readPnpmLockPackage(entry.name, entry.version).integrity,
+  }));
   const registry = source.registry;
   if (registry.contract !== "kungfu-buildchain-publication-release-registry") {
     throw new Error("publication registry contract mismatch");
@@ -803,7 +771,7 @@ function renderPublicationArchives() {
         ...version,
         version: versionId,
         immutablePath,
-        artifacts: renderPublicationArtifacts(version),
+        renderedArtifacts: renderPublicationArtifacts(version),
       };
     });
     if (!versions.some((version) => version.version === publication.latest.version)) {
@@ -820,49 +788,68 @@ function renderPublicationArchives() {
     };
   });
 
-  writeFile("papers/registry.json", `${JSON.stringify({ ...registry, publications: normalizedPublications }, null, 2)}\n`);
+  const publicRegistry = {
+    ...registry,
+    source: {
+      kind: source.kind,
+      path: source.source,
+      packages: source.packages,
+    },
+    publications: normalizedPublications.map((publication) => ({
+      ...publication,
+      versions: publication.versions.map(({ renderedArtifacts, ...version }) => version),
+    })),
+  };
+  writeFile("papers/registry.json", `${JSON.stringify(publicRegistry, null, 2)}\n`);
 
   writeFile(
     "papers/index.html",
     page({
-      title: "papers.libkungfu.dev | Publication archives",
-      description: "Publication registry, latest reader routes, and immutable version artifact archives.",
+      title: "Kungfu Papers | papers.libkungfu.dev",
+      description: "Kungfu product and research papers with reviewable publication evidence and immutable artifacts.",
       current: "papers",
       alternates: `  <link rel="alternate" type="application/json" title="Publication registry" href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}">
   <link rel="alternate" type="application/json" title="Publication archive manifest" href="${escapeAttr(surfaceEndpointHref("papers", "manifest.json"))}">
   <link rel="alternate" type="text/plain" title="Publication archive agent entrypoint" href="${escapeAttr(surfaceEndpointHref("papers", "llms.txt"))}">`,
       body: `<section class="hero">
         <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Publication archives</span></p>
-        <h1>Publication archives</h1>
-        <p class="lead">Latest reader pages may move with new builds; declared version prefixes preserve PDF, source, and passport artifacts as append-only evidence.</p>
+        <h1>Kungfu Papers</h1>
+        <p class="lead">Product and research papers that explain the principles, system direction, and evidence model behind Kungfu. Read the papers first; inspect their publication facts when you need to verify them.</p>
       </section>
 
-      <section class="panel warning">
-        <h2>Archive boundary</h2>
-        <p><strong>Rule:</strong> ${escapeHtml(registry.archivePolicy.rule)}</p>
+      <section class="grid three publication-grid" aria-label="Kungfu papers">
+        ${normalizedPublications
+          .map((publication) => {
+            const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+            const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
+            return `<article class="panel publication-card">
+              <p class="eyebrow">${escapeHtml(publication.kind || "paper")}</p>
+              <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
+              <p>${escapeHtml(publication.summary)}</p>
+              <dl class="meta">
+                <dt>latest release</dt>
+                <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
+                <dt>published</dt>
+                <dd><code>${escapeHtml(latestVersion.releasedAt.slice(0, 10))}</code></dd>
+              </dl>
+              <div class="card-actions">
+                <a class="card-action" ${archiveLinkAttrs(`/${publication.id}/`)}>View paper</a>
+                <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, pdf.path)}>Open PDF</a>
+              </div>
+            </article>`;
+          })
+          .join("\n")}
+      </section>
+
+      <section class="panel archive-boundary">
+        <h2>Publication evidence</h2>
+        <p>Each release preserves its PDF, source bundle, manifest, and passport under an immutable version path.</p>
         <dl class="meta" style="margin-top: 14px;">
           <dt>source</dt>
           <dd><code>${escapeHtml(source.source)}</code></dd>
-          <dt>deployment</dt>
-          <dd><code>${escapeHtml(registry.archivePolicy.deploymentBoundary)}</code></dd>
+          <dt>archive rule</dt>
+          <dd>${escapeHtml(registry.archivePolicy.rule)}</dd>
         </dl>
-      </section>
-
-      <section class="grid" style="margin-top: 18px;">
-        ${normalizedPublications
-          .map((publication) => `<article class="panel">
-            <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
-            <p>${escapeHtml(publication.summary)}</p>
-            <dl class="meta" style="margin-top: 14px;">
-              <dt>canonical</dt>
-              <dd><a href="${escapeAttr(publication.canonicalReader.url)}">${escapeHtml(publication.canonicalReader.url)}</a></dd>
-              <dt>latest</dt>
-              <dd><a ${archiveLinkAttrs(publication.latest.path)}><code>${escapeHtml(publication.latest.path)}</code></a></dd>
-              <dt>versions</dt>
-              <dd><code>${escapeHtml(String(publication.versions.length))}</code></dd>
-            </dl>
-          </article>`)
-          .join("\n")}
       </section>`,
     }),
   );
@@ -870,7 +857,12 @@ function renderPublicationArchives() {
 
   for (const publication of normalizedPublications) {
     const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+    const latestPdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
+    const latestManifest = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "manifest");
     const publicationBasePath = `/${publication.id}/`;
+    const relatedReaderActions = (publication.relatedReaders || [])
+      .map((reader) => `<a class="card-action" href="${escapeAttr(reader.url)}">${escapeHtml(reader.label)}</a>`)
+      .join("\n");
 
     writeFile(
       archiveOutputPath(publicationBasePath, "index.html"),
@@ -882,21 +874,34 @@ function renderPublicationArchives() {
           <p class="eyebrow page-kicker"><a ${archiveLinkAttrs("/")} aria-label="Back to publication archives">Back to publication archives</a><span class="page-kicker-state">publication / ${escapeHtml(publication.id)}</span></p>
           <h1>${escapeHtml(publication.title)}</h1>
           <p class="lead">${escapeHtml(publication.summary)}</p>
+          <div class="card-actions paper-primary-actions">
+            <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, latestPdf.path)}>Read PDF</a>
+            <a class="card-action" ${archiveLinkAttrs(publication.latest.path)}>Latest evidence</a>
+            ${relatedReaderActions}
+          </div>
         </section>
 
         <section class="panel">
-          <h2>Reader routes</h2>
+          <h2>About this paper</h2>
           <dl class="meta">
-            <dt>canonical reader</dt>
-            <dd><a href="${escapeAttr(publication.canonicalReader.url)}">${escapeHtml(publication.canonicalReader.url)}</a></dd>
-            <dt>latest evidence</dt>
-            <dd><a ${archiveLinkAttrs(publication.latest.path)}><code>${escapeHtml(publication.latest.path)}</code></a></dd>
-            <dt>immutable template</dt>
-            <dd><code>${escapeHtml(publication.immutablePrefixTemplate)}</code></dd>
+            <dt>authors</dt>
+            <dd>${escapeHtml((publication.authors || []).join(", ") || "Not declared")}</dd>
+            <dt>current version</dt>
+            <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
+            <dt>published</dt>
+            <dd><code>${escapeHtml(latestVersion.releasedAt)}</code></dd>
+            <dt>canonical URL</dt>
+            <dd><code>${escapeHtml(publication.canonicalReader.url)}</code></dd>
+            <dt>source repository</dt>
+            <dd><a href="${escapeAttr(latestVersion.source.repository)}">${escapeHtml(latestVersion.source.repository)}</a></dd>
           </dl>
         </section>
 
-        <section class="grid" style="margin-top: 18px;">
+        <section class="section-heading">
+          <p class="eyebrow">Publication history</p>
+          <h2>Versions and evidence</h2>
+        </section>
+        <section class="grid">
           ${publicationVersionCards(publication, publication.versions)}
         </section>`,
       }),
@@ -913,6 +918,10 @@ function renderPublicationArchives() {
           <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">latest / ${escapeHtml(latestVersion.version)}</span></p>
           <h1>${escapeHtml(publication.title)} latest</h1>
           <p class="lead">This mutable route points to the latest declared immutable version. Historical files remain under version prefixes.</p>
+          <div class="card-actions paper-primary-actions">
+            <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, latestPdf.path)}>Read PDF</a>
+            <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, latestManifest.path)}>Open manifest</a>
+          </div>
         </section>
 
         <section class="panel">
@@ -951,7 +960,7 @@ function renderPublicationArchives() {
           <section class="panel" style="margin-top: 18px;">
             <h2>Artifacts</h2>
             <dl class="meta">
-              ${version.artifacts
+              ${version.renderedArtifacts
                 .map((artifact) => `<dt>${escapeHtml(artifact.kind)}</dt>
                 <dd><a ${artifactLinkAttrs(version.immutablePath, artifact.path)}><code>${escapeHtml(artifact.path)}</code></a><br><code>${escapeHtml(artifact.sha256)}</code></dd>`)
                 .join("")}
@@ -961,7 +970,7 @@ function renderPublicationArchives() {
       );
       renderedRoutes.push({ path: version.immutablePath, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "version-index", immutable: true });
 
-      for (const artifact of version.artifacts) {
+      for (const artifact of version.renderedArtifacts) {
         const outputPath = artifactOutputPath(version.immutablePath, artifact.path);
         writeBinaryFile(outputPath, artifact.body);
         const route = {
@@ -992,12 +1001,18 @@ function renderPublicationArchives() {
       kind: source.kind,
       path: source.source,
       registryContract: registry.contract,
+      packages: source.packages,
     },
     archivePolicy: registry.archivePolicy,
     publications: normalizedPublications.map((publication) => ({
       id: publication.id,
+      kind: publication.kind,
       title: publication.title,
+      summary: publication.summary,
+      authors: publication.authors,
+      package: publication.package,
       canonicalReader: publication.canonicalReader,
+      relatedReaders: publication.relatedReaders,
       latest: {
         ...publication.latest,
         url: archiveHref(publication.latest.path),
@@ -1006,7 +1021,7 @@ function renderPublicationArchives() {
         version: version.version,
         immutablePath: version.immutablePath,
         immutableUrl: archiveHref(version.immutablePath),
-        artifacts: version.artifacts.map((artifact) => ({
+        artifacts: version.renderedArtifacts.map((artifact) => ({
           kind: artifact.kind,
           path: artifact.path,
           url: artifactHref(version.immutablePath, artifact.path),
@@ -1033,6 +1048,15 @@ Agent-first entries:
 - ${surfaceEndpointHref("papers", "registry.json")}
 - ${surfaceEndpointHref("papers", "llms.txt")}
 
+Papers:
+${normalizedPublications
+  .map((publication) => {
+    const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+    const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
+    return `- ${publication.title}\n  Page: ${archiveHref(`/${publication.id}/`)}\n  Latest: ${archiveHref(publication.latest.path)}\n  PDF: ${artifactHref(latestVersion.immutablePath, pdf.path)}`;
+  })
+  .join("\n")}
+
 Archive rule:
 ${registry.archivePolicy.rule}
 `,
@@ -1052,6 +1076,7 @@ function page({ title, description, current, body, alternates = "" }) {
     ["core", "Core"],
     ["buildchain", "Buildchain"],
     ["kfd", "KFD"],
+    ["papers", "Papers"],
   ];
 
   const navHtml = nav
@@ -1332,6 +1357,46 @@ ${alternates}
 
     .grid.three {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .publication-grid {
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    }
+
+    .publication-card {
+      display: grid;
+      grid-row: span 5;
+      grid-template-rows: subgrid;
+      gap: 14px;
+      align-content: stretch;
+    }
+
+    .publication-card .card-actions {
+      align-self: end;
+    }
+
+    .publication-card .meta {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .publication-card .meta dd {
+      text-align: right;
+    }
+
+    .publication-card .meta code {
+      white-space: nowrap;
+    }
+
+    .archive-boundary {
+      margin-top: 18px;
+    }
+
+    .paper-primary-actions {
+      justify-content: flex-start;
+    }
+
+    .section-heading {
+      margin: 48px 0 18px;
     }
 
     .panel {
@@ -1846,7 +1911,13 @@ ${alternates}
 
       .mechanism-chain,
       .kfd-decision-list,
-      .practice-guideline-list {
+      .practice-guideline-list,
+      .publication-grid {
+        grid-template-rows: none;
+      }
+
+      .publication-card {
+        grid-row: auto;
         grid-template-rows: none;
       }
 
@@ -2166,10 +2237,13 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
   timestampPolicy: process.env.SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SITE_TIMESTAMP_POLICY || process.env.BUILDCHAIN_SURFACE_TIMESTAMP_POLICY,
   deterministicInputs: [
     "scripts/render-site.mjs",
+    "scripts/publication-packages.cjs",
     "src/fixtures/*.json",
+    "src/publication-packages.json",
     "pnpm-lock.yaml",
     "@kungfu-tech/buildchain package content",
     "@kungfu-tech/kfd package content",
+    "declared @kungfu-tech/paper-* package content",
   ],
   artifactDigestScope: "site dist manifest JSON files",
 });
@@ -2878,15 +2952,16 @@ const manifest = {
         renderedCount: buildchainBadgeEndpoints.rendered.length,
         routes: buildchainBadgeEndpoints.rendered,
       },
-      publicationRegistry: {
-        contract: publicationArchives.registry.contract,
-        source: publicationArchives.source.source,
-        sourceKind: publicationArchives.source.kind,
-        archivePolicy: publicationArchives.registry.archivePolicy,
-        publicationCount: publicationArchives.registry.publications.length,
-        immutableArtifactCount: publicationArchives.immutableArtifacts.length,
-        routes: publicationArchives.routes,
-      },
+    },
+    papers: {
+      contract: publicationArchives.registry.contract,
+      source: publicationArchives.source.source,
+      sourceKind: publicationArchives.source.kind,
+      packages: publicationArchives.source.packages,
+      archivePolicy: publicationArchives.registry.archivePolicy,
+      publicationCount: publicationArchives.registry.publications.length,
+      immutableArtifactCount: publicationArchives.immutableArtifacts.length,
+      routes: publicationArchives.routes,
     },
     kfd: {
       contract: kfdSite.contract,

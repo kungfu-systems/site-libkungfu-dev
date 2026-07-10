@@ -14,6 +14,15 @@ importers:
       '@kungfu-tech/kfd':
         specifier: 1.0.0-alpha.22
         version: 1.0.0-alpha.22
+      '@kungfu-tech/paper-kfd-foundation-real-world-agent-work':
+        specifier: 0.1.0-alpha.1
+        version: 0.1.0-alpha.1
+      '@kungfu-tech/paper-kungfu-product-white-paper':
+        specifier: 0.1.0-alpha.1
+        version: 0.1.0-alpha.1
+      '@kungfu-tech/paper-observer-declared-timelines':
+        specifier: 0.1.0-alpha.1
+        version: 0.1.0-alpha.1
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -33,6 +42,15 @@ packages:
 
   '@kungfu-tech/kfd@1.0.0-alpha.22':
     resolution: {integrity: sha512-qGaPtB8xurbIzeSxDgo78cU5nNot78O+Om7Jlg8jVv9L7cty/nUV2j9a+5eP4CTMxenqs+Aepd1FWpPv8s+uUQ==}
+
+  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1':
+    resolution: {integrity: sha512-E7MArQck5dz705G01IIyA7zeHPUVDXd24R944SvSmo5Cfjzg8XPZ9YS2kFn22EUsOq/B0h8NECnsXewUeIH/ng==}
+
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1':
+    resolution: {integrity: sha512-fWIlJ8csaWDfZtEeJCkIWtKe2XoiFabjJjeCURrqswwfvDGNYkPiFG0ZD7rm37FkJZ68+S4zRvq7QV1TNh6Dcg==}
+
+  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1':
+    resolution: {integrity: sha512-0TjyzuTmhg6n8+lCv5LXXQERArcET38DX+VEn0OaHAUNrVgTmXvpKRiCuNmk3YxKPTY7AU5sOo3QeFOO6PO/YQ==}
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -87,6 +105,12 @@ snapshots:
   '@kungfu-tech/kfd@1.0.0-alpha.21': {}
 
   '@kungfu-tech/kfd@1.0.0-alpha.22': {}
+
+  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1': {}
+
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1': {}
+
+  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1': {}
 
   '@types/linkify-it@5.0.0': {}
 
