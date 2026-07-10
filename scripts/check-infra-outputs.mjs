@@ -5,7 +5,7 @@ const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync(".buildchain/buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
 const expectedBuildchainRef = "v2-alpha";
-const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
+const expectedBuildchainShell = "kungfu-systems/buildchain/.github/workflows/.web-surface.yml@train/v2/v2.11/official-alpha-channel";
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
   core: "https://core.libkungfu.dev",
