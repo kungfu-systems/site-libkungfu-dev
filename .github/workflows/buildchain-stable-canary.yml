@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   canary:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@train/v2/v2.3/open-issue-remediation
     with:
       buildchain-ref: ${{ inputs.buildchain_ref }}
       buildchain-contract-lock-path: .buildchain/contract-lock.json
@@ -29,15 +29,15 @@ jobs:
         export SITE_PUBLISHED_AT="$SITE_GENERATED_AT"
         export SITE_TIMESTAMP_POLICY=ci-injected
         export SITE_SOURCE_REVISION="$GITHUB_SHA"
-        export SITE_SURFACE_CHANNEL=staging
-        export SITE_PREVIEW_ALIAS=""
+        export SITE_SURFACE_CHANNEL="$BUILDCHAIN_WEB_SURFACE_CHANNEL"
+        export SITE_PREVIEW_ALIAS="$BUILDCHAIN_PREVIEW_ALIAS"
         node scripts/prepare-kfd-upstream.mjs
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm --config.minimumReleaseAge=0 run build
       verify-command: |
-        export SITE_SURFACE_CHANNEL=staging
-        export SITE_PREVIEW_ALIAS=""
+        export SITE_SURFACE_CHANNEL="$BUILDCHAIN_WEB_SURFACE_CHANNEL"
+        export SITE_PREVIEW_ALIAS="$BUILDCHAIN_PREVIEW_ALIAS"
         pnpm --config.minimumReleaseAge=0 run check
       artifact-path: dist
       preview-apply: false
