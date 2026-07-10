@@ -4,7 +4,7 @@ import fs from "node:fs";
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync(".buildchain/buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
-const expectedBuildchainRef = "v2";
+const expectedBuildchainRef = "v2-alpha";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainRef}`;
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
@@ -44,14 +44,8 @@ if (outputs.contract !== "kungfu-site-infra-outputs") {
 if (outputs.site !== "site-libkungfu-dev") {
   throw new Error("infra outputs site mismatch");
 }
-if (
-  !workflow.includes(`uses: ${expectedBuildchainShell}`) &&
-  !workflow.includes(`buildchain-ref: ${expectedBuildchainRef}`)
-) {
+if (!workflow.includes(`uses: ${expectedBuildchainShell}`)) {
   throw new Error(`Buildchain web-surface workflow must run ${expectedBuildchainRef}`);
-}
-if (/uses:\s*kungfu-systems\/buildchain\/\.github\/workflows\/\.web-surface\.yml@v2\./.test(workflow)) {
-  throw new Error("Buildchain web-surface workflow must use the floating @v2 ref, not an exact v2.x.y tag");
 }
 for (const snippet of [
   "contents: write",

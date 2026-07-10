@@ -349,14 +349,14 @@ for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock
 
 if (
   buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
-  buildchainContractLock.buildchain?.ref !== "v2" ||
+  buildchainContractLock.buildchain?.ref !== "v2-alpha" ||
   buildchainContractLock.buildchain?.majorLine !== "v2" ||
   buildchainContractLock.buildchain?.compatibilityPolicy !== "major-compatible" ||
   !buildchainContractLock.buildchain?.resolvedSha ||
   !buildchainContractLock.buildchain?.contractDigest ||
   !buildchainContractLock.buildchain?.compatibilityDigest
 ) {
-  throw new Error(".buildchain/contract-lock.json must record the accepted floating Buildchain v2 contract");
+  throw new Error(".buildchain/contract-lock.json must record the accepted floating Buildchain v2-alpha contract");
 }
 for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
   if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {

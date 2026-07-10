@@ -12,9 +12,9 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 
 - Run `npm run build` before checking generated output.
 - Run `npm run check` before opening a pull request.
-- For a Buildchain stable-release canary, manually dispatch `Buildchain Stable
-  Canary` with an exact Buildchain alpha ref. That workflow builds and verifies
-  the site with preview, staging, and production apply fixed to `false`.
+- For a Buildchain runtime canary, manually dispatch `Buildchain Alpha Canary`
+  with a trusted train ref or exact SHA. Its workflow shell follows
+  `v2-alpha`, and preview, staging, and production apply stay fixed to `false`.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
   `@kungfu-tech/buildchain@2.11.13`; KFD facts currently come from
