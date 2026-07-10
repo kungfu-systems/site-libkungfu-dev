@@ -72,6 +72,10 @@ exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
 its exported site bundle. Papers use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable
 version prefixes while allowing canonical and latest pages to advance.
+Until the dedicated papers preview alias is published by the infrastructure
+contract, preview builds use the composite
+`https://{alias}.preview.libkungfu.dev/papers/` route. Production and staging
+continue to declare their dedicated papers hosts.
 
 Do not store AWS credentials in this repository.
 
