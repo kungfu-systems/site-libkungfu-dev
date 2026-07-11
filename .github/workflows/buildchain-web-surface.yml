@@ -31,10 +31,10 @@ permissions:
 
 jobs:
   web-surface:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2-alpha
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
     with:
-      buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
-      buildchain-contract-lock-path: .buildchain/contract-lock.json
+      buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || ((((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && 'v2' || 'v2-alpha') }}
+      buildchain-contract-lock-path: ${{ (((github.event_name == 'workflow_dispatch' && inputs.buildchain_ref == 'v2') || (github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && '.buildchain/contract-lock.json' || '.buildchain/alpha-contract-lock.json' }}
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
       node-version: "24"
