@@ -75,6 +75,7 @@ const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json",
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const buildchainContractLock = JSON.parse(fs.readFileSync(".buildchain/contract-lock.json", "utf8"));
+const buildchainAlphaContractLock = JSON.parse(fs.readFileSync(".buildchain/alpha-contract-lock.json", "utf8"));
 const pnpmLockText = fs.readFileSync("pnpm-lock.yaml", "utf8");
 const kfdPropagationLockPath = fs.existsSync(".buildchain/upstreams/kfd.release.json")
   ? ".buildchain/upstreams/kfd.release.json"
@@ -347,16 +348,21 @@ for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock
   }
 }
 
-if (
-  buildchainContractLock.contract !== "kungfu-buildchain-contract-lock" ||
-  buildchainContractLock.buildchain?.ref !== "v2-alpha" ||
-  buildchainContractLock.buildchain?.majorLine !== "v2" ||
-  buildchainContractLock.buildchain?.compatibilityPolicy !== "major-compatible" ||
-  !buildchainContractLock.buildchain?.resolvedSha ||
-  !buildchainContractLock.buildchain?.contractDigest ||
-  !buildchainContractLock.buildchain?.compatibilityDigest
-) {
-  throw new Error(".buildchain/contract-lock.json must record the accepted floating Buildchain v2-alpha contract");
+for (const [channel, lock, expectedRef] of [
+  ["stable", buildchainContractLock, "v2"],
+  ["alpha", buildchainAlphaContractLock, "v2-alpha"],
+]) {
+  if (
+    lock.contract !== "kungfu-buildchain-contract-lock" ||
+    lock.buildchain?.ref !== expectedRef ||
+    lock.buildchain?.majorLine !== "v2" ||
+    lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
+    !lock.buildchain?.resolvedSha ||
+    !lock.buildchain?.contractDigest ||
+    !lock.buildchain?.compatibilityDigest
+  ) {
+    throw new Error(`.buildchain ${channel} contract lock must record the accepted floating Buildchain ${expectedRef} contract`);
+  }
 }
 for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
   if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {
