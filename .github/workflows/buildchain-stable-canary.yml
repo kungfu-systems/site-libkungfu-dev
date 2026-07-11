@@ -1,11 +1,11 @@
-name: Buildchain Stable Canary
-run-name: Buildchain Stable Canary / ${{ inputs.buildchain_ref }}
+name: Buildchain Alpha Canary
+run-name: Buildchain Alpha Canary / ${{ inputs.buildchain_ref }}
 
 on:
   workflow_dispatch:
     inputs:
       buildchain_ref:
-        description: "Exact Buildchain alpha tag to validate before stable promotion"
+        description: "Trusted Buildchain train ref or exact SHA to validate"
         type: string
         required: true
 
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   canary:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2-alpha
     with:
       buildchain-ref: ${{ inputs.buildchain_ref }}
       buildchain-contract-lock-path: .buildchain/contract-lock.json

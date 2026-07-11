@@ -36,9 +36,9 @@ resource lifecycle decisions belong in the infra repository.
 - The repository builds a static `dist/` artifact.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- The workflow consumes Buildchain through the floating `@v2` workflow ref and
+- The workflow consumes Buildchain through the floating `@v2-alpha` workflow ref and
   records the accepted runtime contract in `.buildchain/contract-lock.json`.
-  The build checks that lock before rendering so `@v2` movement is audited as
+  The build checks that lock before rendering so `@v2-alpha` movement is audited as
   compatible drift or blocked as breaking drift.
 - Preview, preview cleanup, and staging apply are enabled in the repository
   workflow so same-repository pull requests publish short-lived preview

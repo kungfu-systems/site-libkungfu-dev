@@ -2,34 +2,34 @@
   "schemaVersion": 1,
   "contract": "kungfu-buildchain-contract-lock",
   "buildchain": {
-    "ref": "v2",
-    "resolvedSha": "618512fd874cc0125cc8a3daa07ef4d1b195777e",
+    "ref": "v2-alpha",
+    "resolvedSha": "d7b9453665a60392e9082444dcc8e023cafc000c",
     "contract": "kungfu-buildchain-runtime-contract-world",
-    "contractDigest": "sha256:ccaf30dea1fc96675059498ccac0f8095b8ddf8669f7387380cfbfcb694d44c4",
-    "compatibilityDigest": "sha256:967df7e854fdf582294ddfb6403eff25c00db9518a24051e7d47cbd75527c785",
+    "contractDigest": "sha256:cac32376b91ac2f828d7e9053bbb678d4e2a1d8503f2cd1c2252a04277b37623",
+    "compatibilityDigest": "sha256:1396e42444aaf3f26a40121faf3d599eb9db13537f627fc8dbcef2475af8af44",
     "majorLine": "v2",
     "compatibilityPolicy": "major-compatible",
-    "acceptedAt": "2026-07-10T09:29:08.944Z",
+    "acceptedAt": "2026-07-11T00:10:04.000Z",
     "surfaces": [
       {
         "id": "reusable-build",
         "kind": "workflow",
-        "breakingDigest": "sha256:6303aa2c2cb8c2cef4301ceea95cc3c426c2aa81d98714aa9bdf2471d63faee1"
+        "breakingDigest": "sha256:a6a35370d6b0d0f46e1b2712dcc01961fe53c2febde95409a27a485c10a36650"
       },
       {
         "id": "release-candidate-promote",
         "kind": "workflow",
-        "breakingDigest": "sha256:403d2fcdb0c5eabe749e89102defad69745f70a1556707bec7831fcc2e9fa8f8"
+        "breakingDigest": "sha256:6dbae32ce3d7aab3be6957065105af574794581847b7637314dad45f5349c919"
       },
       {
         "id": "web-surface",
         "kind": "workflow",
-        "breakingDigest": "sha256:82ee63cb336e40d832dfff4a1c5e6cbfa221a4fc8b2359990033bc931bffc43a"
+        "breakingDigest": "sha256:da569f90374e878948e3d5160ed9929338ce0572473ca8ee54867b0fe1aaeace"
       },
       {
         "id": "promote-buildchain-ref-action",
         "kind": "action",
-        "breakingDigest": "sha256:0c5896590c8c9a44dfecbe060bcef1b43d3a9556737309dbe7e5f2bf83bfee6c"
+        "breakingDigest": "sha256:a59f0910e6df842e7699139472e5dd69ac2fdd7f7213bf2cb346d1d622556874"
       },
       {
         "id": "report-buildchain-issue-action",

@@ -117,9 +117,9 @@ merged release pull requests can apply the public production deployment. The
 release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
-runs through the floating Buildchain `@v2` workflow ref and checks
+runs through the floating Buildchain `@v2-alpha` workflow ref and checks
 `.buildchain/contract-lock.json` before rendering. The lock records the accepted
-Buildchain runtime SHA and contract digests; `@v2` is allowed to move only when
+Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
@@ -168,7 +168,7 @@ The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
 `.buildchain/buildchain.toml` and the GitHub Actions role assumptions still match that
 contract, wires all declared role references, keeps the workflow shell on
-Buildchain `@v2`, and fails closed if the production release gate drifts.
+Buildchain `@v2-alpha`, and fails closed if the production release gate drifts.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
