@@ -31,9 +31,9 @@ permissions:
 
 jobs:
   web-surface:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@train/v2/v2.11/official-alpha-channel
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2-alpha
     with:
-      buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || 'v2-alpha' }}
+      buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
       buildchain-contract-lock-path: .buildchain/contract-lock.json
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
