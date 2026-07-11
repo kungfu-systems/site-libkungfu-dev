@@ -1,11 +1,11 @@
-name: Buildchain Alpha Canary
-run-name: Buildchain Alpha Canary / ${{ inputs.buildchain_ref }}
+name: Buildchain Stable Canary
+run-name: Buildchain Stable Canary / ${{ inputs.buildchain_ref }}
 
 on:
   workflow_dispatch:
     inputs:
       buildchain_ref:
-        description: "Trusted Buildchain train ref or exact SHA to validate"
+        description: "Exact Buildchain alpha tag or SHA to validate before stable promotion"
         type: string
         required: true
 
