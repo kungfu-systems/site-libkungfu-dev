@@ -43,14 +43,12 @@ jobs:
         export SITE_PUBLISHED_AT="$SITE_GENERATED_AT"
         export SITE_TIMESTAMP_POLICY=ci-injected
         export SITE_SOURCE_REVISION="$GITHUB_SHA"
-        export SITE_SURFACE_CHANNEL="${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.production_approved && 'production' || 'staging') }}"
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
         node scripts/prepare-kfd-upstream.mjs
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm --config.minimumReleaseAge=0 run build
       verify-command: |
-        export SITE_SURFACE_CHANNEL="${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.production_approved && 'production' || 'staging') }}"
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
         pnpm --config.minimumReleaseAge=0 run check
       artifact-path: dist
