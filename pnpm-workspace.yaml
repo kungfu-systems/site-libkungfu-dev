@@ -1,6 +1,6 @@
 minimumReleaseAgeExclude:
   - '@kungfu-tech/buildchain@2.10.1 || 2.10.2 || 2.10.3 || 2.10.4 || 2.10.8 || 2.11.0 || 2.11.1 || 2.11.13'
-  - '@kungfu-tech/kfd@1.0.0-alpha.16 || 1.0.0-alpha.19 || 1.0.0-alpha.21 || 1.0.0-alpha.22'
-  - '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1 || 0.1.0-alpha.3'
-  - '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1 || 0.1.0-alpha.2'
-  - '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.4'
+  - '@kungfu-tech/kfd@1.0.0-alpha.16 || 1.0.0-alpha.19 || 1.0.0-alpha.21 || 1.0.0-alpha.22 || 1.0.0-alpha.24'
+  - '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.6'
+  - '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1 || 0.1.0-alpha.2 || 0.1.0-alpha.5'
+  - '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.4 || 0.1.0-alpha.8'
