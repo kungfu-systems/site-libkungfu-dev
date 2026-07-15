@@ -4,15 +4,15 @@
   "packages": [
     {
       "name": "@kungfu-tech/paper-kungfu-product-white-paper",
-      "version": "0.1.0-alpha.2"
+      "version": "0.1.0-alpha.5"
     },
     {
       "name": "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",
-      "version": "0.1.0-alpha.3"
+      "version": "0.1.0-alpha.6"
     },
     {
       "name": "@kungfu-tech/paper-observer-declared-timelines",
-      "version": "0.1.0-alpha.4"
+      "version": "0.1.0-alpha.8"
     }
   ]
 }

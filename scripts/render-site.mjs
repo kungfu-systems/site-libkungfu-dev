@@ -2201,7 +2201,7 @@ const kfdPropagationLockPath = fs.existsSync(path.join(repoRoot, ".buildchain", 
   : path.join(repoRoot, "buildchain.upstreams", "kfd.release.json");
 const kfdPropagationLock = readOptionalJsonFile(kfdPropagationLockPath);
 const expectedBuildchainVersion = "2.11.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.22";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.25";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {

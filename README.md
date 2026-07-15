@@ -5,6 +5,8 @@
 [![KFD-2: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-2/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-3: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-3/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-4: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-4/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-5: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-5/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-6: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-6/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Release Passport: declared](https://buildchain.libkungfu.dev/badges/v1/buildchain-release-passport/declared.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Web Surface](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml/badge.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml)
 <!-- buildchain:badges:end -->
@@ -46,7 +48,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.22` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.25` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
 in `src/publication-packages.json`. Package-local publication registries and
@@ -123,7 +125,7 @@ Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.22`.
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.25`.
 
 The site does not override Buildchain's own transitive dependencies. If a
 Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version
