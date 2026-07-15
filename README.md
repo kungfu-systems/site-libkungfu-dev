@@ -48,7 +48,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.24` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.25` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports.
 The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
 in `src/publication-packages.json`. Package-local publication registries and
@@ -125,7 +125,7 @@ Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.24`.
+generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.25`.
 
 The site does not override Buildchain's own transitive dependencies. If a
 Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version
