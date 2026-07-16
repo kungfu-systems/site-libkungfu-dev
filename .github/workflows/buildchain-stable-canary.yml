@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   canary:
-    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v2
+    uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@18c1a7416fdec76eb098d186c55475bda256af92
     with:
       buildchain-ref: ${{ inputs.buildchain_ref }}
       buildchain-contract-lock-path: .buildchain/alpha-contract-lock.json

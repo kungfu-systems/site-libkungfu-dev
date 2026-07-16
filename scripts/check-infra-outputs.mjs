@@ -10,6 +10,8 @@ const stableCanaryWorkflow = fs.readFileSync(
 );
 const expectedBuildchainShellRef = "v2";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
+const expectedStableCanaryShellRef = "18c1a7416fdec76eb098d186c55475bda256af92";
+const expectedStableCanaryShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedStableCanaryShellRef}`;
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
   core: "https://core.libkungfu.dev",
@@ -51,8 +53,8 @@ if (outputs.site !== "site-libkungfu-dev") {
 if (!workflow.includes(`uses: ${expectedBuildchainShell}`)) {
   throw new Error(`Buildchain web-surface workflow must use stable ${expectedBuildchainShellRef} shell`);
 }
-if (!stableCanaryWorkflow.includes(`uses: ${expectedBuildchainShell}`)) {
-  throw new Error(`Buildchain stable canary must use stable ${expectedBuildchainShellRef} shell`);
+if (!stableCanaryWorkflow.includes(`uses: ${expectedStableCanaryShell}`)) {
+  throw new Error(`Buildchain stable canary must use exact bootstrap shell ${expectedStableCanaryShellRef}`);
 }
 for (const snippet of [
   "actions: read",
