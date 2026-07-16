@@ -767,13 +767,24 @@ if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`
 if (kfdHomeHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
 }
-if (
-  !kfdHomeHtml.includes("Practice guidelines") ||
-  !kfdHomeHtml.includes("Timelines must declare their observer") ||
-  !kfdHomeHtml.includes('href="/4/"') ||
-  !kfdHomeHtml.includes("Adoption boundary")
-) {
-  throw new Error("KFD homepage must render alpha.19 practice guidance and KFD-4 links");
+if (!kfdHomeHtml.includes("Adoption boundary")) {
+  throw new Error("KFD homepage must render the adoption boundary");
+}
+for (const entry of kfdRegistry.entries) {
+  const number = String(entry.number);
+  const expectedLinks = [
+    `<h3><a href="/${escapeHtml(number)}/">${escapeHtml(entry.id)}</a></h3>`,
+    `<a class="card-action" href="/${escapeHtml(number)}/">Read ${escapeHtml(entry.id)}</a>`,
+  ];
+  const usagePage = kfdUsagePageByDecisionNumber.get(number);
+  if (usagePage?.sourceExists) {
+    expectedLinks.push(`<a class="card-action secondary" href="/${escapeHtml(number)}/usage/">Usage notes</a>`);
+  }
+  for (const expectedLink of expectedLinks) {
+    if (!kfdHomeHtml.includes(expectedLink)) {
+      throw new Error(`KFD homepage is missing current decision navigation: ${expectedLink}`);
+    }
+  }
 }
 for (const entry of kfdSite.homepage.foundationTriad.commitments) {
   const match = /^KFD-(\d+)\b/.exec(entry.id);
