@@ -84,6 +84,7 @@ for (const [channel, lockPath, expectedRef] of [
   }
 }
 for (const snippet of [
+  "actions: read",
   "contents: write",
   "issues: write",
   "buildchain-contract-lock-path: ${{",
