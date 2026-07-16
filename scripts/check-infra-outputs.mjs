@@ -4,6 +4,10 @@ import fs from "node:fs";
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync(".buildchain/buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+const stableCanaryWorkflow = fs.readFileSync(
+  ".github/workflows/buildchain-stable-canary.yml",
+  "utf8",
+);
 const expectedBuildchainShellRef = "v2";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
 const requiredSurfaces = {
@@ -46,6 +50,20 @@ if (outputs.site !== "site-libkungfu-dev") {
 }
 if (!workflow.includes(`uses: ${expectedBuildchainShell}`)) {
   throw new Error(`Buildchain web-surface workflow must use stable ${expectedBuildchainShellRef} shell`);
+}
+if (!stableCanaryWorkflow.includes(`uses: ${expectedBuildchainShell}`)) {
+  throw new Error(`Buildchain stable canary must use stable ${expectedBuildchainShellRef} shell`);
+}
+for (const snippet of [
+  "actions: read",
+  "preview-apply: false",
+  "preview-cleanup-apply: false",
+  "staging-apply: false",
+  "production-apply: false",
+]) {
+  if (!stableCanaryWorkflow.includes(snippet)) {
+    throw new Error(`Buildchain stable canary must set ${snippet}`);
+  }
 }
 for (const [channel, lockPath, expectedRef] of [
   ["stable", ".buildchain/contract-lock.json", "v2"],
