@@ -767,6 +767,42 @@ if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`
 if (kfdHomeHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
 }
+const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
+const kfdFoundationCanonicalHtml = fs.readFileSync("dist/kfd/foundation/index.html", "utf8");
+const kfdFoundationAliasHtml = fs.readFileSync("dist/foundation/index.html", "utf8");
+if (kfdFoundationAliasHtml !== kfdFoundationCanonicalHtml) {
+  throw new Error("KFD foundation subdomain route alias drifted: dist/foundation/index.html");
+}
+if (!kfdHomeHtml.includes(`href="${escapeHtml(kfdFoundationPath)}"`)) {
+  throw new Error(`KFD homepage is missing the bundle-owned foundation route: ${kfdFoundationPath}`);
+}
+if (kfdHomeHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/docs/foundation-model.md")) {
+  throw new Error("KFD homepage must route the foundation model to the rendered site page, not GitHub");
+}
+if (
+  !kfdFoundationCanonicalHtml.includes("KFD Foundation Model") ||
+  !kfdFoundationCanonicalHtml.includes("Civilizational shift") ||
+  !kfdFoundationCanonicalHtml.includes("Load-bearing product witness") ||
+  !kfdFoundationCanonicalHtml.includes("Practice guidelines")
+) {
+  throw new Error("KFD foundation page is missing bundle-owned foundation content");
+}
+if (
+  !kfdFoundationCanonicalHtml.includes('class="doc-toc"') ||
+  !kfdFoundationCanonicalHtml.includes('aria-label="Foundation sections"') ||
+  !kfdFoundationCanonicalHtml.includes(`<a href="${escapeHtml(kfdFoundationPath)}" aria-current="page">Foundation model</a>`)
+) {
+  throw new Error("KFD foundation page is missing section or global navigation");
+}
+if (!kfdFoundationCanonicalHtml.includes("<table>") || !kfdFoundationCanonicalHtml.includes("<th>Layer</th>")) {
+  throw new Error("KFD foundation markdown table was not rendered as an HTML table");
+}
+if (
+  !kfdFoundationCanonicalHtml.includes(escapeHtml(kfdSite.foundationPage.sourcePath)) ||
+  !kfdFoundationCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.foundationPage.normative))}</code>`)
+) {
+  throw new Error("KFD foundation page is missing source or authority metadata");
+}
 if (!kfdHomeHtml.includes("Adoption boundary")) {
   throw new Error("KFD homepage must render the adoption boundary");
 }
