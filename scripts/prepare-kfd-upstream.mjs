@@ -23,7 +23,7 @@ function ensureMinimumReleaseAgeExclude(version) {
   const existing = match
     ? match[1]
         .split(/\r?\n/)
-        .map((line) => line.trim().replace(/^- /, "").replace(/^"|"$/g, ""))
+        .map((line) => line.trim().replace(/^- /, "").replace(/^(['"])(.*)\1$/, "$2"))
         .filter(Boolean)
     : [];
   const entries = Array.from(new Set([...existing, entry])).sort();
