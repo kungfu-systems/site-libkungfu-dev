@@ -13,6 +13,11 @@ if [ -d public ]; then
   cp -R public/. dist/
 fi
 
+for surface in core buildchain kfd papers; do
+  mkdir -p "dist/${surface}/assets"
+  cp public/assets/favicon.svg "dist/${surface}/assets/favicon.svg"
+done
+
 node scripts/render-site.mjs
 
 test -f dist/index.html

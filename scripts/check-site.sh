@@ -44,6 +44,10 @@ const requiredBaseFiles = [
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
   "dist/kfd/llms.txt",
+  "dist/core/assets/favicon.svg",
+  "dist/buildchain/assets/favicon.svg",
+  "dist/kfd/assets/favicon.svg",
+  "dist/papers/assets/favicon.svg",
   "dist/badges/v1/badge-endpoint-registry.json",
   "dist/badges/v1/kfd-1/passed.svg",
   "dist/badges/v1/kfd-2/passed.svg",
@@ -126,6 +130,12 @@ const requiredFiles = [
 for (const file of requiredFiles) {
   if (!fs.existsSync(file)) {
     throw new Error(`missing required file: ${file}`);
+  }
+}
+const rootFavicon = fs.readFileSync("dist/assets/favicon.svg", "utf8");
+for (const surface of ["core", "buildchain", "kfd", "papers"]) {
+  if (fs.readFileSync(`dist/${surface}/assets/favicon.svg`, "utf8") !== rootFavicon) {
+    throw new Error(`${surface} favicon must match the shared site asset`);
   }
 }
 
