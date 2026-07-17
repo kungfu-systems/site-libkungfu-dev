@@ -101,13 +101,30 @@ const expectedApplySwitches = {
   "preview-apply": true,
   "preview-cleanup-apply": true,
   "staging-apply": true,
-  "production-apply": outputs.channels?.production?.status === "active",
   "production-release-on-main": outputs.channels?.production?.status === "active",
 };
 for (const [applySwitch, expectedEnabled] of Object.entries(expectedApplySwitches)) {
   if (!workflow.includes(`${applySwitch}: ${expectedEnabled}`)) {
     throw new Error(`Buildchain web-surface workflow must set ${applySwitch}: ${expectedEnabled}`);
   }
+}
+const productionApplyLine = workflow
+  .split(/\r?\n/)
+  .map((line) => line.trim())
+  .find((line) => line.startsWith("production-apply:"));
+if (outputs.channels?.production?.status === "active") {
+  for (const snippet of [
+    "github.event_name == 'push'",
+    "github.ref_name == 'main'",
+    "github.event_name == 'workflow_dispatch'",
+    "inputs.production_approved",
+  ]) {
+    if (!productionApplyLine?.includes(snippet)) {
+      throw new Error(`Buildchain production apply must be event-scoped by ${snippet}`);
+    }
+  }
+} else if (productionApplyLine !== "production-apply: false") {
+  throw new Error("Buildchain production apply must be disabled when production infra is inactive");
 }
 const releaseGateSnippets = {
   "production-release-label": "buildchain-release",

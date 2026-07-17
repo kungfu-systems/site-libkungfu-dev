@@ -125,7 +125,8 @@ Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
 generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
-generated KFD page is based on `@kungfu-tech/kfd@1.0.0-alpha.25`.
+generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
+`.buildchain/upstreams/kfd.release.json`.
 
 The site does not override Buildchain's own transitive dependencies. If a
 Buildchain package declares its own `@kungfu-tech/kfd` dependency, that version
