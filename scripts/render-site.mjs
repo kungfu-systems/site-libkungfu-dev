@@ -1940,6 +1940,11 @@ ${alternates}
         overflow: visible;
       }
 
+      .doc-layout.long-toc .doc-sidebar {
+        max-height: min(58vh, 520px);
+        overflow: auto;
+      }
+
       .doc-toc {
         position: static;
       }
@@ -2187,6 +2192,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision") {
     <div class="doc-nav-group">
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
+      <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
       ${links}
     </div>
   </nav>`;
@@ -2269,7 +2275,11 @@ const kfdSupportSectionIds = kfdSite.homepage.displayPlan?.support || [];
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
-const kfdPageRouteBySourcePath = new Map([[kfdSite.foundationPage.sourcePath, kfdFoundationPath]]);
+const kfdCasesPath = `${kfdSite.casesPage.url.replace(/\/+$/, "")}/`;
+const kfdPageRouteBySourcePath = new Map([
+  [kfdSite.foundationPage.sourcePath, kfdFoundationPath],
+  [kfdSite.casesPage.sourcePath, kfdCasesPath],
+]);
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
 const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
 
@@ -2464,7 +2474,7 @@ function kfdPrimaryContinuationPanels() {
     </section>`;
       }
       if (id === "product-proof-path" && kfdSite.homepage.productProofPath) {
-        return `<section class="panel" style="margin-top: 18px;">
+        return `<section class="panel" id="product-proof-path" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.productProofPath.heading)}</h2>
       <p>${inlineMarkdown(kfdSite.homepage.productProofPath.body)}</p>
     </section>`;
@@ -2561,7 +2571,7 @@ writeFile(
       <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="foundation-triad">
       <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
       <p>${inlineMarkdown(kfdSite.homepage.foundationTriad.intro)}</p>
       <div class="grid three" style="margin-top: 18px;">
@@ -2581,6 +2591,14 @@ writeFile(
           .join("\n")}
       </div>
       <p style="margin-top: 18px;">${inlineMarkdown(kfdSite.homepage.foundationTriad.summary)}</p>
+      <nav class="card-actions" aria-label="Foundation reading paths">
+        ${(kfdSite.homepage.foundationTriad.links || [])
+          .map((entry) => {
+            const href = entry.url.startsWith("/") && !entry.url.endsWith("/") ? `${entry.url}/` : entry.url;
+            return `<a class="card-action secondary" href="${escapeAttr(href)}">${escapeHtml(entry.label)}</a>`;
+          })
+          .join("\n")}
+      </nav>
     </section>
 
     <section class="panel" style="margin-top: 18px;">
@@ -2597,7 +2615,7 @@ writeFile(
 
     ${kfdPrimaryContinuationPanels()}
 
-    <section class="panel" style="margin-top: 18px;">
+    <section class="panel" id="current-decisions" style="margin-top: 18px;">
       <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
       <div class="grid kfd-decision-list">
         ${decisionPanels(kfdRegistry.entries)}
@@ -2662,6 +2680,53 @@ const kfdFoundationPageHtml = page({
 });
 writeFile("kfd/foundation/index.html", kfdFoundationPageHtml);
 writeFile("foundation/index.html", kfdFoundationPageHtml);
+
+const renderedKfdCases = renderDecisionMarkdown(
+  rewritePackageMarkdownLinks(kfdSite.casesPage.markdown, "kungfu-systems/kfd", {
+    filePattern: /\.md$/,
+    internalRoutes: kfdPageRouteBySourcePath,
+  }),
+  "Case sections",
+);
+const kfdCasesPageHtml = page({
+  title: `${kfdSite.casesPage.title} | kfd.libkungfu.dev`,
+  description: kfdSite.casesPage.authorityNote,
+  current: "kfd",
+  alternates: kfdSurfaceAlternates(),
+  body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">historical companion / non-normative</span></p>
+      <h1>${escapeHtml(kfdSite.casesPage.title)}</h1>
+      <p class="lead">${escapeHtml(kfdSite.casesPage.authorityNote)}</p>
+    </section>
+
+    <section class="doc-layout long-toc">
+      <aside class="doc-sidebar">
+        ${kfdDecisionNav(undefined, "cases")}
+        ${renderedKfdCases.tocHtml}
+      </aside>
+      <article class="panel doc-content">
+        ${renderedKfdCases.html}
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Page metadata</h2>
+      <dl class="meta">
+        <dt>Route</dt>
+        <dd><code>${escapeHtml(kfdCasesPath)}</code></dd>
+        <dt>Relationship</dt>
+        <dd><code>${escapeHtml(kfdSite.casesPage.relationship)}</code></dd>
+        <dt>Normative</dt>
+        <dd><code>${escapeHtml(String(kfdSite.casesPage.normative))}</code></dd>
+        <dt>Source path</dt>
+        <dd><code>${escapeHtml(kfdSite.casesPage.sourcePath)}</code></dd>
+        <dt>Package</dt>
+        <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+      </dl>
+    </section>`,
+});
+writeFile("kfd/cases/index.html", kfdCasesPageHtml);
+writeFile("cases/index.html", kfdCasesPageHtml);
 
 for (const entry of kfdRegistry.entries) {
   const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
@@ -2979,6 +3044,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.foundationPage.sourcePath}`,
     },
+    {
+      path: kfdCasesPath,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
+    },
     ...kfdRegistry.entries.map((entry) => ({
       path: `/${entry.number}/`,
       host: surfaceCanonicalHost("kfd"),
@@ -3096,6 +3166,7 @@ const kfdAgentManifest = {
   readOrder: [
     surfaceCanonicalHref("kfd"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
+    surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
     ...kfdDecisionEntries.map((entry) => entry.url),
     ...kfdDecisionEntries.map((entry) => entry.usage?.url).filter(Boolean),
     surfaceEndpointHref("kfd", "registry.json"),
@@ -3107,6 +3178,13 @@ const kfdAgentManifest = {
     source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.foundationPage.sourcePath}`,
     relationship: kfdSite.foundationPage.relationship,
     normative: kfdSite.foundationPage.normative,
+  },
+  cases: {
+    path: kfdCasesPath,
+    url: surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
+    relationship: kfdSite.casesPage.relationship,
+    normative: kfdSite.casesPage.normative,
   },
   decisions: kfdDecisionEntries,
   relatedSurfaces: {

@@ -36,6 +36,10 @@ const requiredBaseFiles = [
   "dist/core/index.html",
   "dist/buildchain/index.html",
   "dist/kfd/index.html",
+  "dist/kfd/foundation/index.html",
+  "dist/foundation/index.html",
+  "dist/kfd/cases/index.html",
+  "dist/cases/index.html",
   "dist/kfd/manifest.json",
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
@@ -779,11 +783,10 @@ if (!kfdHomeHtml.includes(`href="${escapeHtml(kfdFoundationPath)}"`)) {
 if (kfdHomeHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/docs/foundation-model.md")) {
   throw new Error("KFD homepage must route the foundation model to the rendered site page, not GitHub");
 }
+const foundationHeadings = [...kfdSite.foundationPage.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
 if (
-  !kfdFoundationCanonicalHtml.includes("KFD Foundation Model") ||
-  !kfdFoundationCanonicalHtml.includes("Civilizational shift") ||
-  !kfdFoundationCanonicalHtml.includes("Load-bearing product witness") ||
-  !kfdFoundationCanonicalHtml.includes("Practice guidelines")
+  foundationHeadings.length < 4 ||
+  foundationHeadings.some((heading) => !kfdFoundationCanonicalHtml.includes(`>${escapeHtml(heading)}</h`))
 ) {
   throw new Error("KFD foundation page is missing bundle-owned foundation content");
 }
@@ -802,6 +805,41 @@ if (
   !kfdFoundationCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.foundationPage.normative))}</code>`)
 ) {
   throw new Error("KFD foundation page is missing source or authority metadata");
+}
+const kfdCasesPath = `${kfdSite.casesPage.url.replace(/\/+$/, "")}/`;
+const kfdCasesCanonicalHtml = fs.readFileSync("dist/kfd/cases/index.html", "utf8");
+const kfdCasesAliasHtml = fs.readFileSync("dist/cases/index.html", "utf8");
+if (kfdCasesAliasHtml !== kfdCasesCanonicalHtml) {
+  throw new Error("KFD cases subdomain route alias drifted: dist/cases/index.html");
+}
+if (!kfdHomeHtml.includes(`href="${escapeHtml(kfdCasesPath)}"`)) {
+  throw new Error(`KFD homepage is missing the bundle-owned cases route: ${kfdCasesPath}`);
+}
+const casesHeadings = [...kfdSite.casesPage.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
+if (
+  casesHeadings.length < 4 ||
+  casesHeadings.some((heading) => !kfdCasesCanonicalHtml.includes(`>${escapeHtml(heading)}</h`))
+) {
+  throw new Error("KFD cases page is missing bundle-owned historical content");
+}
+if (
+  !kfdCasesCanonicalHtml.includes('aria-label="Case sections"') ||
+  !kfdCasesCanonicalHtml.includes(`<a href="${escapeHtml(kfdCasesPath)}" aria-current="page">Historical cases</a>`) ||
+  !kfdCasesCanonicalHtml.includes("<table>")
+) {
+  throw new Error("KFD cases page is missing navigation or rendered tables");
+}
+if (
+  !kfdCasesCanonicalHtml.includes(escapeHtml(kfdSite.casesPage.sourcePath)) ||
+  !kfdCasesCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.casesPage.normative))}</code>`)
+) {
+  throw new Error("KFD cases page is missing source or authority metadata");
+}
+if (
+  !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", kfdCasesPath.replace(/^\/+/, ""))) ||
+  kfdAgentManifest.cases?.path !== kfdCasesPath
+) {
+  throw new Error("KFD agent manifest is missing the bundle-owned cases page");
 }
 if (!kfdHomeHtml.includes("Adoption boundary")) {
   throw new Error("KFD homepage must render the adoption boundary");
@@ -855,8 +893,6 @@ const kfdDecisionHtmlByNumber = new Map(
   kfdRegistry.entries.map((entry) => [String(entry.number), fs.readFileSync(`dist/kfd/${entry.number}/index.html`, "utf8")]),
 );
 const kfdOneHtml = kfdDecisionHtmlByNumber.get("1");
-const kfdThreeHtml = kfdDecisionHtmlByNumber.get("3");
-const kfdFourHtml = kfdDecisionHtmlByNumber.get("4");
 for (const entry of kfdRegistry.entries) {
   const number = String(entry.number);
   const canonicalHtml = fs.readFileSync(`dist/kfd/${number}/index.html`, "utf8");
@@ -900,6 +936,14 @@ for (const entry of kfdRegistry.entries) {
   if (!html.includes('class="panel doc-content"') || !html.includes('tabindex="-1"')) {
     throw new Error(`${label} markdown content is missing anchored headings`);
   }
+  const decisionMarkdown = fs.readFileSync(`node_modules/@kungfu-tech/kfd/${entry.path}`, "utf8");
+  const decisionHeadings = [...decisionMarkdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
+  if (
+    decisionHeadings.length < 2 ||
+    decisionHeadings.some((heading) => !html.includes(`>${escapeHtml(heading)}</h`))
+  ) {
+    throw new Error(`${label} page is missing bundle-owned decision content`);
+  }
   if (usagePage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
     throw new Error(`${label} decision page must not show the usage child link outside the usage page context`);
   }
@@ -932,12 +976,6 @@ for (const entry of kfdRegistry.entries) {
       throw new Error(`${label} usage page does not expose its KFD package source path`);
     }
   }
-}
-if (!kfdOneHtml.includes('href="#the-decision-log"') || !kfdThreeHtml.includes('href="#three-commitments"')) {
-  throw new Error("KFD decision pages must expose section links in the generated TOC");
-}
-if (!kfdFourHtml || !kfdFourHtml.includes("Timelines must declare their observer") || !kfdFourHtml.includes('href="#practice-role"')) {
-  throw new Error("KFD-4 page must render observer-timeline content and section links");
 }
 if (!kfdOneHtml.includes("<table>") || !kfdOneHtml.includes("<th>Condition</th>") || !kfdOneHtml.includes("<td><strong>major</strong></td>")) {
   throw new Error("KFD-1 markdown table was not rendered as an HTML table");
@@ -975,7 +1013,6 @@ grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
 grep -q 'non-drifting facts' dist/kfd/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
 grep -q 'KFD-4' dist/kfd/4/index.html
-grep -q 'Timelines must declare their observer' dist/kfd/4/index.html
 if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
   exit 1
