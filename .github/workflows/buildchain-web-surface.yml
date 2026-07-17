@@ -58,7 +58,8 @@ jobs:
       preview-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-preview-github-actions
       staging-apply: true
       staging-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-staging-github-actions
-      production-apply: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.production_approved) }}
+      # Keep ordinary main pushes staging-only until Buildchain resolves trusted release PR intent before apply validation (buildchain#1368).
+      production-apply: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
       production-approved: ${{ github.event_name == 'workflow_dispatch' && inputs.production_approved }}
       production-release-on-main: true
       production-release-app-client-id: ${{ vars.KUNGFU_RELEASE_APP_CLIENT_ID }}

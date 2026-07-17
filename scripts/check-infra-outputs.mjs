@@ -114,13 +114,16 @@ const productionApplyLine = workflow
   .find((line) => line.startsWith("production-apply:"));
 if (outputs.channels?.production?.status === "active") {
   for (const snippet of [
-    "github.event_name == 'push'",
-    "github.ref_name == 'main'",
     "github.event_name == 'workflow_dispatch'",
     "inputs.production_approved",
   ]) {
     if (!productionApplyLine?.includes(snippet)) {
       throw new Error(`Buildchain production apply must be event-scoped by ${snippet}`);
+    }
+  }
+  for (const forbiddenSnippet of ["github.event_name == 'push'", "github.ref_name == 'main'"]) {
+    if (productionApplyLine.includes(forbiddenSnippet)) {
+      throw new Error(`Buildchain production apply must keep ordinary main pushes staging-only: ${forbiddenSnippet}`);
     }
   }
 } else if (productionApplyLine !== "production-apply: false") {
