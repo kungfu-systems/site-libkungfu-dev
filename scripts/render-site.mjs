@@ -2005,6 +2005,7 @@ function kfdSurfaceAlternates() {
   return `  <link rel="alternate" type="application/json" title="KFD agent manifest" href="${escapeAttr(surfaceEndpointHref("kfd", "manifest.json"))}">
   <link rel="alternate" type="text/plain" title="KFD agent entrypoint" href="${escapeAttr(surfaceEndpointHref("kfd", "llms.txt"))}">
   <link rel="alternate" type="application/json" title="KFD registry" href="${escapeAttr(surfaceEndpointHref("kfd", "registry.json"))}">
+  <link rel="alternate" type="application/json" title="KFD candidate registry" href="${escapeAttr(surfaceEndpointHref("kfd", "drafts/registry.json"))}">
   <link rel="alternate" type="application/json" title="KFD standards" href="${escapeAttr(surfaceEndpointHref("kfd", "standards.json"))}">`;
 }
 
@@ -2176,8 +2177,11 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
-function kfdDecisionNav(currentEntry, currentPage = "decision") {
+function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate) {
   const currentNumber = currentEntry ? String(currentEntry.number) : undefined;
+  const candidateLinks = currentPage === "candidate" && currentCandidate
+    ? `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}" aria-current="page">${escapeHtml(currentCandidate.title)}</a>`
+    : "";
   const links = kfdRegistry.entries
     .map((entry) => {
       const isCurrentDecision = String(entry.number) === currentNumber && currentPage === "decision";
@@ -2200,6 +2204,8 @@ function kfdDecisionNav(currentEntry, currentPage = "decision") {
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
+      <a href="${escapeAttr(kfdCandidateIndexPath)}"${currentPage === "candidates" ? ' aria-current="page"' : ""}>Candidates</a>
+      ${candidateLinks}
       ${links}
     </div>
   </nav>`;
@@ -2219,13 +2225,14 @@ const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent
 const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
+const kfdCandidateRegistry = readPackageJson("@kungfu-tech/kfd/drafts/registry.json");
 const kfdStandards = readPackageJson("@kungfu-tech/kfd/standards.json");
 const kfdPropagationLockPath = fs.existsSync(path.join(repoRoot, ".buildchain", "upstreams", "kfd.release.json"))
   ? path.join(repoRoot, ".buildchain", "upstreams", "kfd.release.json")
   : path.join(repoRoot, "buildchain.upstreams", "kfd.release.json");
 const kfdPropagationLock = readOptionalJsonFile(kfdPropagationLockPath);
 const expectedBuildchainVersion = "2.11.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.29";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.31";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -2283,6 +2290,8 @@ const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
 const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
+const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
+const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
 const kfdCasesPath = `${kfdSite.casesPage.url.replace(/\/+$/, "")}/`;
 const kfdPageRouteBySourcePath = new Map([
@@ -2295,6 +2304,8 @@ const kfdPageRouteBySourcePath = new Map([
   ...kfdFormalPages
     .filter((pageEntry) => pageEntry.sourceExists)
     .map((pageEntry) => [pageEntry.sourcePath || pageEntry.path, `/${pageEntry.decisionNumber}/formal/`]),
+  [kfdSite.kfdCandidates.source, `${kfdCandidateIndexPath}registry.json`],
+  ...kfdCandidatePages.map((pageEntry) => [pageEntry.sourcePath, pageEntry.url]),
 ]);
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
 const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
@@ -2459,13 +2470,17 @@ function kfdHomepageSectionPanels(ids, className = "") {
   return ids
     .map((id) => kfdHomepageSection(id))
     .filter(Boolean)
-    .map(
-      (section) => `<section class="panel doc-content ${className}" data-kfd-section="${escapeAttr(section.id)}">
+    .map((section) => {
+      const candidateAction = section.id === "current-candidates"
+        ? `<div class="card-actions"><a class="card-action" href="${escapeAttr(kfdCandidateIndexPath)}">Browse candidates</a></div>`
+        : "";
+      return `<section class="panel doc-content ${className}" data-kfd-section="${escapeAttr(section.id)}">
         <p class="eyebrow">${escapeHtml(section.renderRole)}</p>
         <h2>${escapeHtml(section.title)}</h2>
         ${renderMarkdownBody(section.markdown)}
-      </section>`,
-    )
+        ${candidateAction}
+      </section>`;
+    })
     .join("\n");
 }
 
@@ -2753,6 +2768,114 @@ const kfdCasesPageHtml = page({
 });
 writeFile("kfd/cases/index.html", kfdCasesPageHtml);
 writeFile("cases/index.html", kfdCasesPageHtml);
+
+const renderedKfdCandidateIndex = renderDecisionMarkdown(
+  rewritePackageMarkdownLinks(kfdSite.kfdCandidates.indexMarkdown, "kungfu-systems/kfd", {
+    filePattern: /\.md$|registry\.json$/,
+    internalRoutes: kfdPageRouteBySourcePath,
+    sourcePath: kfdSite.kfdCandidates.indexSource,
+  }),
+  "Candidate index sections",
+);
+const kfdCandidateIndexHtml = page({
+  title: "KFD Candidates | kfd.libkungfu.dev",
+  description: kfdSite.kfdCandidates.authorityNote,
+  current: "kfd",
+  alternates: kfdSurfaceAlternates(),
+  body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">candidate index / non-normative</span></p>
+      <h1>KFD Candidates</h1>
+      <p class="lead">${escapeHtml(kfdSite.kfdCandidates.authorityNote)}</p>
+    </section>
+
+    <section class="doc-layout">
+      <aside class="doc-sidebar">
+        ${kfdDecisionNav(undefined, "candidates")}
+        ${renderedKfdCandidateIndex.tocHtml}
+      </aside>
+      <article class="panel doc-content">
+        ${renderedKfdCandidateIndex.html}
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Candidate index metadata</h2>
+      <dl class="meta">
+        <dt>Registry source</dt>
+        <dd><code>${escapeHtml(kfdSite.kfdCandidates.source)}</code></dd>
+        <dt>Relationship</dt>
+        <dd><code>${escapeHtml(kfdSite.kfdCandidates.relationship)}</code></dd>
+        <dt>Normative</dt>
+        <dd><code>${escapeHtml(String(kfdSite.kfdCandidates.normative))}</code></dd>
+        <dt>Number allocation</dt>
+        <dd><code>${escapeHtml(kfdSite.kfdCandidates.numberingPolicy.allocation)}</code></dd>
+        <dt>Slot hints</dt>
+        <dd><code>${escapeHtml(kfdSite.kfdCandidates.numberingPolicy.slotHints)}</code></dd>
+        <dt>Package</dt>
+        <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+      </dl>
+    </section>`,
+});
+const kfdCandidateIndexOutput = kfdCandidateIndexPath.replace(/^\/+|\/+$/g, "");
+writeFile(`kfd/${kfdCandidateIndexOutput}/index.html`, kfdCandidateIndexHtml);
+writeFile(`${kfdCandidateIndexOutput}/index.html`, kfdCandidateIndexHtml);
+writeFile(`kfd/${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdCandidateRegistry, null, 2)}\n`);
+writeFile(`${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdCandidateRegistry, null, 2)}\n`);
+
+for (const candidatePage of kfdCandidatePages) {
+  const renderedCandidate = renderDecisionMarkdown(
+    rewritePackageMarkdownLinks(candidatePage.markdown, "kungfu-systems/kfd", {
+      filePattern: /\.md$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: candidatePage.sourcePath,
+    }),
+    "Candidate sections",
+  );
+  const candidateHtml = page({
+    title: `${candidatePage.title} | KFD Candidates`,
+    description: candidatePage.claimBoundary,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a href="${escapeAttr(kfdCandidateIndexPath)}" aria-label="Back to KFD Candidates">Back to KFD Candidates</a><span class="page-kicker-state">candidate / ${escapeHtml(candidatePage.status)}</span></p>
+        <h1>${escapeHtml(candidatePage.title)}</h1>
+        <p class="lead">${escapeHtml(candidatePage.claimBoundary)}</p>
+      </section>
+
+      <section class="doc-layout">
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(undefined, "candidate", candidatePage)}
+          ${renderedCandidate.tocHtml}
+        </aside>
+        <article class="panel doc-content">
+          ${renderedCandidate.html}
+        </article>
+      </section>
+
+      <section class="panel" style="margin-top: 18px;">
+        <h2>Candidate metadata</h2>
+        <dl class="meta">
+          <dt>Status</dt>
+          <dd><code>${escapeHtml(candidatePage.status)}</code></dd>
+          <dt>Slot hint</dt>
+          <dd><code>${escapeHtml(String(candidatePage.slotHint))}</code></dd>
+          <dt>Relationship</dt>
+          <dd><code>${escapeHtml(kfdSite.candidatePages.relationship)}</code></dd>
+          <dt>Normative</dt>
+          <dd><code>${escapeHtml(String(kfdSite.candidatePages.normative))}</code></dd>
+          <dt>Claim boundary</dt>
+          <dd>${escapeHtml(candidatePage.claimBoundary)}</dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(candidatePage.sourcePath)}</code></dd>
+          <dt>Package</dt>
+          <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+        </dl>
+      </section>`,
+  });
+  const candidateOutput = candidatePage.url.replace(/^\/+|\/+$/g, "");
+  writeFile(`kfd/${candidateOutput}/index.html`, candidateHtml);
+  writeFile(`${candidateOutput}/index.html`, candidateHtml);
+}
 
 for (const entry of kfdRegistry.entries) {
   const decisionMarkdown = readPackageText(`@kungfu-tech/kfd/${entry.path}`);
@@ -3150,6 +3273,16 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
     },
+    {
+      path: kfdCandidateIndexPath,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.kfdCandidates.indexSource}`,
+    },
+    ...kfdCandidatePages.map((pageEntry) => ({
+      path: pageEntry.url,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
+    })),
     ...kfdRegistry.entries.map((entry) => ({
       path: `/${entry.number}/`,
       host: surfaceCanonicalHost("kfd"),
@@ -3221,8 +3354,10 @@ const manifest = {
           }
         : undefined,
       registryContract: kfdRegistry.contract,
+      candidateRegistryContract: kfdCandidateRegistry.contract,
       standardsContract: kfdStandards.contract,
       decisionCount: kfdRegistry.entries.length,
+      candidateCount: kfdCandidatePages.length,
     },
   },
 };
@@ -3270,6 +3405,7 @@ const kfdAgentManifest = {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
     manifest: surfaceEndpointHref("kfd", "manifest.json"),
     registry: surfaceEndpointHref("kfd", "registry.json"),
+    candidateRegistry: surfaceEndpointHref("kfd", "drafts/registry.json"),
     standards: surfaceEndpointHref("kfd", "standards.json"),
   },
   sourceBoundary: {
@@ -3288,10 +3424,13 @@ const kfdAgentManifest = {
     surfaceCanonicalHref("kfd"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
+    surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
+    ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdDecisionEntries.map((entry) => entry.url),
     ...kfdDecisionEntries.map((entry) => entry.usage?.url).filter(Boolean),
     ...kfdDecisionEntries.map((entry) => entry.formal?.url).filter(Boolean),
     surfaceEndpointHref("kfd", "registry.json"),
+    surfaceEndpointHref("kfd", "drafts/registry.json"),
     surfaceEndpointHref("kfd", "standards.json"),
   ],
   foundation: {
@@ -3307,6 +3446,26 @@ const kfdAgentManifest = {
     source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
     relationship: kfdSite.casesPage.relationship,
     normative: kfdSite.casesPage.normative,
+  },
+  candidates: {
+    path: kfdCandidateIndexPath,
+    url: surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
+    registry: surfaceEndpointHref("kfd", "drafts/registry.json"),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.kfdCandidates.source}`,
+    relationship: kfdSite.kfdCandidates.relationship,
+    normative: kfdSite.kfdCandidates.normative,
+    entries: kfdCandidatePages.map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      status: entry.status,
+      slotHint: entry.slotHint,
+      path: entry.url,
+      url: surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, "")),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.sourcePath}`,
+      relationship: kfdSite.candidatePages.relationship,
+      normative: kfdSite.candidatePages.normative,
+      claimBoundary: entry.claimBoundary,
+    })),
   },
   decisions: kfdDecisionEntries,
   relatedSurfaces: {
@@ -3331,6 +3490,7 @@ Human entry:
 Agent-first entries:
 - ${surfaceEndpointHref("kfd", "manifest.json")}
 - ${surfaceEndpointHref("kfd", "registry.json")}
+- ${surfaceEndpointHref("kfd", "drafts/registry.json")}
 - ${surfaceEndpointHref("kfd", "standards.json")}
 - ${surfaceEndpointHref("kfd", "llms.txt")}
 

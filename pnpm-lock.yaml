@@ -12,8 +12,8 @@ importers:
         specifier: 2.11.13
         version: 2.11.13
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.29
-        version: 1.0.0-alpha.29
+        specifier: 1.0.0-alpha.31
+        version: 1.0.0-alpha.31
       '@kungfu-tech/paper-kfd-foundation-real-world-agent-work':
         specifier: 0.1.0-alpha.7
         version: 0.1.0-alpha.7
@@ -40,8 +40,8 @@ packages:
   '@kungfu-tech/kfd@1.0.0-alpha.21':
     resolution: {integrity: sha512-lsr3aJ93pUaO9gxnGBsrTJkTkvpIHPHp9Rxug7WvdS4Zkte3AdFvyCl1DgwQN+/38FAXf8fBozyGkHxxXaN7Dg==}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.29':
-    resolution: {integrity: sha512-gX1xWL7I2bqRkjbAuLLbkqcGdbRn6Aemdxg2y7zQZHFYPKi0Y7Su55xby++52fafX6A/ZpPZtO+9iQalqHVRxw==}
+  '@kungfu-tech/kfd@1.0.0-alpha.31':
+    resolution: {integrity: sha512-Ki5xa9HSw7ZD2TeSkQEVuM+C+ANzbVTE/cKEVtbPrC6Rzqa/sgmmvkLTGL2b15GEBQqvqh6rfQMpr0QTW58G8A==}
     hasBin: true
 
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7':
@@ -105,7 +105,7 @@ snapshots:
 
   '@kungfu-tech/kfd@1.0.0-alpha.21': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.29': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.31': {}
 
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7': {}
 
