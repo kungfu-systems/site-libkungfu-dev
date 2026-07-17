@@ -1940,11 +1940,6 @@ ${alternates}
         overflow: visible;
       }
 
-      .doc-layout.long-toc .doc-sidebar {
-        max-height: min(58vh, 520px);
-        overflow: auto;
-      }
-
       .doc-toc {
         position: static;
       }
@@ -2693,7 +2688,15 @@ const kfdCasesPageHtml = page({
   description: kfdSite.casesPage.authorityNote,
   current: "kfd",
   alternates: kfdSurfaceAlternates(),
-  body: `<section class="hero">
+  body: `<style>
+    @media (max-width: 820px) {
+      .doc-layout.long-toc .doc-sidebar {
+        max-height: min(58vh, 520px);
+        overflow: auto;
+      }
+    }
+  </style>
+    <section class="hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">historical companion / non-normative</span></p>
       <h1>${escapeHtml(kfdSite.casesPage.title)}</h1>
       <p class="lead">${escapeHtml(kfdSite.casesPage.authorityNote)}</p>
