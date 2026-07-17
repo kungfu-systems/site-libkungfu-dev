@@ -94,10 +94,12 @@ const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/k
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.11.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.25";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.29";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
+const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
+const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const requiredFiles = [
   ...requiredBaseFiles,
   ...kfdRegistry.entries.flatMap((entry) => [
@@ -105,6 +107,8 @@ const requiredFiles = [
     `dist/${entry.number}/index.html`,
     `dist/kfd/${entry.number}/usage/index.html`,
     `dist/${entry.number}/usage/index.html`,
+    `dist/kfd/${entry.number}/formal/index.html`,
+    `dist/${entry.number}/formal/index.html`,
   ]),
 ];
 
@@ -345,6 +349,9 @@ if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
 }
 if (!Array.isArray(kfdUsagePages) || kfdUsagePages.length !== kfdRegistry.entries.length) {
   throw new Error("KFD site bundle must expose one usage page for each decision entry");
+}
+if (!Array.isArray(kfdFormalPages) || kfdFormalPages.length !== kfdRegistry.entries.length) {
+  throw new Error("KFD site bundle must expose one formal reference page for each decision entry");
 }
 for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock.json"]) {
   if (fs.existsSync(legacyBuildchainPath)) {
@@ -621,6 +628,10 @@ for (const entry of kfdRegistry.entries) {
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === usagePath)) {
     throw new Error(`dist manifest does not record KFD usage path: ${expectedSurfaceHost("kfd")}${usagePath}`);
   }
+  const formalPath = `/${entry.number}/formal/`;
+  if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === formalPath)) {
+    throw new Error(`dist manifest does not record KFD formal reference path: ${expectedSurfaceHost("kfd")}${formalPath}`);
+  }
 }
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
@@ -639,6 +650,16 @@ if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.len
 for (const entry of kfdAgentManifest.decisions) {
   if (!entry.usage?.url || !entry.usage?.source || !kfdAgentManifest.readOrder.includes(entry.usage.url)) {
     throw new Error(`KFD agent manifest is missing usage entry for ${entry.id}`);
+  }
+  if (
+    !entry.formal?.url
+    || !entry.formal?.source
+    || entry.formal?.relationship !== "formal-reference-child-of-decision"
+    || entry.formal?.normative !== false
+    || !entry.formal?.sha256
+    || !kfdAgentManifest.readOrder.includes(entry.formal.url)
+  ) {
+    throw new Error(`KFD agent manifest is missing formal reference entry for ${entry.id}`);
   }
 }
 if (kfdRenderedRegistry.contract !== kfdRegistry.contract) {
@@ -905,11 +926,17 @@ for (const entry of kfdRegistry.entries) {
   if (usageAliasHtml !== usageCanonicalHtml) {
     throw new Error(`KFD usage route alias drifted: dist/${number}/usage/index.html`);
   }
+  const formalCanonicalHtml = fs.readFileSync(`dist/kfd/${number}/formal/index.html`, "utf8");
+  const formalAliasHtml = fs.readFileSync(`dist/${number}/formal/index.html`, "utf8");
+  if (formalAliasHtml !== formalCanonicalHtml) {
+    throw new Error(`KFD formal reference route alias drifted: dist/${number}/formal/index.html`);
+  }
 }
 for (const entry of kfdRegistry.entries) {
   const html = kfdDecisionHtmlByNumber.get(String(entry.number));
   const label = entry.id;
   const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+  const formalPage = kfdFormalPageByDecisionNumber.get(String(entry.number));
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
@@ -947,6 +974,9 @@ for (const entry of kfdRegistry.entries) {
   if (usagePage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
     throw new Error(`${label} decision page must not show the usage child link outside the usage page context`);
   }
+  if (formalPage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/formal/">Formal reference</a>`)) {
+    throw new Error(`${label} decision page must not show the formal child link outside the formal page context`);
+  }
   if (usagePage?.sourceExists) {
     const expectedUsageTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/usage/">${escapeHtml(usagePage.title || "Usage")}</a>`;
     if (!html.includes(expectedUsageTocLink)) {
@@ -976,8 +1006,65 @@ for (const entry of kfdRegistry.entries) {
       throw new Error(`${label} usage page does not expose its KFD package source path`);
     }
   }
+  if (formalPage?.sourceExists) {
+    const expectedFormalTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/formal/">${escapeHtml(formalPage.title || "Formal reference")}</a>`;
+    if (!html.includes(expectedFormalTocLink)) {
+      throw new Error(`${label} decision page is missing its formal reference link in the decision sections navigation`);
+    }
+    const formalHtml = fs.readFileSync(`dist/kfd/${entry.number}/formal/index.html`, "utf8");
+    if (
+      !formalHtml.includes('aria-label="Formal reference sections"')
+      || !formalHtml.includes("<h2>Formal reference sections</h2>")
+      || !formalHtml.includes("Formal reference metadata")
+    ) {
+      throw new Error(`${label} formal reference page is missing formal navigation or metadata`);
+    }
+    if (!formalHtml.includes(`<span class="page-kicker-state">formal reference / ${escapeHtml(entry.id)}</span>`)) {
+      throw new Error(`${label} formal reference page is missing formal state`);
+    }
+    if (!formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/" aria-label="Back to ${escapeHtml(entry.id)}">Back to ${escapeHtml(entry.id)}</a>`)) {
+      throw new Error(`${label} formal reference page is missing parent decision back link`);
+    }
+    if (!formalHtml.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/formal/" aria-current="page">Formal reference</a>`)) {
+      throw new Error(`${label} formal reference page is missing current formal marker`);
+    }
+    if (
+      !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/">Authoritative decision</a>`)
+      || !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)
+      || !formalHtml.includes('href="https://github.com/kungfu-systems/kfd/blob/main/docs/formal-model.md"')
+      || /href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(formalHtml)
+    ) {
+      throw new Error(`${label} formal reference page has unresolved package markdown links`);
+    }
+    for (const otherEntry of kfdRegistry.entries) {
+      if (String(otherEntry.number) === String(entry.number)) continue;
+      const otherFormalLink = `<a class="doc-nav-child" href="/${escapeHtml(otherEntry.number)}/formal/">Formal reference</a>`;
+      if (formalHtml.includes(otherFormalLink)) {
+        throw new Error(`${label} formal reference page must not expand formal child links for other KFD entries`);
+      }
+    }
+    for (const expectedValue of [
+      formalPage.sourcePath || formalPage.path,
+      formalPage.relationship,
+      formalPage.formalModelStatus,
+      formalPage.authorityPath,
+    ]) {
+      if (!formalHtml.includes(escapeHtml(expectedValue))) {
+        throw new Error(`${label} formal reference page is missing bundle metadata: ${expectedValue}`);
+      }
+    }
+    if (!formalHtml.includes(`<code>${escapeHtml(String(formalPage.normative))}</code>`)) {
+      throw new Error(`${label} formal reference page is missing normative metadata`);
+    }
+  }
 }
-if (!kfdOneHtml.includes("<table>") || !kfdOneHtml.includes("<th>Condition</th>") || !kfdOneHtml.includes("<td><strong>major</strong></td>")) {
+if (
+  !kfdOneHtml.includes("<table>")
+  || !kfdOneHtml.includes("<th>Condition</th>")
+  || !kfdOneHtml.includes("<th>Compatibility impact</th>")
+  || !kfdOneHtml.includes("<th>Release verdict</th>")
+  || !kfdOneHtml.includes("<td>major</td>")
+) {
   throw new Error("KFD-1 markdown table was not rendered as an HTML table");
 }
 if (!kfdOneHtml.includes("<th>Date</th>") || !kfdOneHtml.includes("<td>open-minor</td>")) {
