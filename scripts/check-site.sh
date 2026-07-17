@@ -957,6 +957,17 @@ if (
 ) {
   throw new Error("KFD candidate index is missing navigation or its machine registry link");
 }
+const candidateNavPosition = kfdCandidateIndexCanonicalHtml.indexOf(
+  `<a href="${escapeHtml(kfdCandidateIndexPath)}" aria-current="page">Candidates</a>`,
+);
+for (const entry of kfdRegistry.entries) {
+  const stableNavPosition = kfdCandidateIndexCanonicalHtml.indexOf(
+    `<a href="/${escapeHtml(String(entry.number))}/">${escapeHtml(entry.id)}</a>`,
+  );
+  if (stableNavPosition < 0 || stableNavPosition > candidateNavPosition) {
+    throw new Error(`KFD navigation must place stable ${entry.id} before Candidates`);
+  }
+}
 for (const candidate of kfdCandidatePages) {
   const candidateCanonicalHtml = fs.readFileSync(`dist/kfd/drafts/${candidate.id}/index.html`, "utf8");
   const candidateAliasHtml = fs.readFileSync(`dist/drafts/${candidate.id}/index.html`, "utf8");

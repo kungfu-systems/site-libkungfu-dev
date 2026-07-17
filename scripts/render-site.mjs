@@ -2204,9 +2204,9 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
+      ${links}
       <a href="${escapeAttr(kfdCandidateIndexPath)}"${currentPage === "candidates" ? ' aria-current="page"' : ""}>Candidates</a>
       ${candidateLinks}
-      ${links}
     </div>
   </nav>`;
 }
