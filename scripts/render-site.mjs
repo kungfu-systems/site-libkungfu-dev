@@ -369,6 +369,13 @@ function surfaceEndpointHref(id, pathPart = "") {
   return new URL(pathPart, surfaceCanonicalHref(id)).toString();
 }
 
+function pageMachineEntryHref(current, pathPart) {
+  const owningSurface = pathPart === "llms-full.txt" || ["core", "buildchain"].includes(current)
+    ? "hub"
+    : current;
+  return owningSurface === current ? `/${pathPart}` : surfaceEndpointHref(owningSurface, pathPart);
+}
+
 function surfaceLinkAttrs(id) {
   return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
 }
@@ -1122,9 +1129,9 @@ function page({ title, description, current, body, alternates = "" }) {
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeAttr(description)}">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="/manifest.json">
-  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="/llms.txt">
-  <link rel="alternate" type="text/plain" title="Full agent index" href="/llms-full.txt">
+  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(pageMachineEntryHref(current, "manifest.json"))}">
+  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(pageMachineEntryHref(current, "llms.txt"))}">
+  <link rel="alternate" type="text/plain" title="Full agent index" href="${escapeAttr(pageMachineEntryHref(current, "llms-full.txt"))}">
 ${alternates}
   <style>
     :root {

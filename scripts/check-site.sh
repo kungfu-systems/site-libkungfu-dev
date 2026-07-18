@@ -849,8 +849,18 @@ for (const [className, href, label] of [
     throw new Error(`homepage substrate map is missing hotspot: ${hotspot}`);
   }
 }
-if (!hubHtml.includes('rel="alternate" type="application/json"') || !hubHtml.includes('href="/llms.txt"')) {
-  throw new Error("human pages must expose machine entries through head alternate links");
+for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
+  ["Hub", hubHtml, "/manifest.json", "/llms.txt", "/llms-full.txt"],
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), expectedSurfaceEndpoint("hub", "manifest.json"), expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["Buildchain", buildchainHomeHtml, expectedSurfaceEndpoint("hub", "manifest.json"), expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["Papers", papersIndex, "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
+]) {
+  for (const href of [manifestHref, llmsHref, fullIndexHref]) {
+    if (!html.includes(`href="${escapeHtml(href)}"`)) {
+      throw new Error(`${label} page must expose the owned machine entry: ${href}`);
+    }
+  }
 }
 for (const [label, html, state] of [
   ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Core substrate"],
