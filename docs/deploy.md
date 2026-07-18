@@ -82,9 +82,12 @@ Do not store AWS credentials in this repository.
 
 The workflow carries the planned production role reference so Buildchain can
 plan the production channel with the same contract shape as other sites.
-`production-apply` stays wired to the mirrored infrastructure contract: when the
-production channel is active, `pnpm run check` requires production apply and the
-release-PR gate to stay enabled.
+`production-apply` stays wired to the mirrored infrastructure contract as a
+production capability switch. It does not approve production for every event:
+Buildchain keeps ordinary `main` pushes on staging and only admits production
+after a matching reviewed release PR merge or a trusted manual approval. When
+the production channel is active, `pnpm run check` requires the capability,
+manual-approval scope, and release-PR gate to stay enabled.
 
 Production readiness must remain true:
 
