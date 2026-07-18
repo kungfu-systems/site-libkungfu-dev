@@ -12,11 +12,11 @@ importers:
         specifier: 2.11.13
         version: 2.11.13
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.25
-        version: 1.0.0-alpha.25
+        specifier: 1.0.0-alpha.31
+        version: 1.0.0-alpha.31
       '@kungfu-tech/paper-kfd-foundation-real-world-agent-work':
-        specifier: 0.1.0-alpha.6
-        version: 0.1.0-alpha.6
+        specifier: 0.1.0-alpha.7
+        version: 0.1.0-alpha.7
       '@kungfu-tech/paper-kungfu-product-white-paper':
         specifier: 0.1.0-alpha.5
         version: 0.1.0-alpha.5
@@ -40,11 +40,12 @@ packages:
   '@kungfu-tech/kfd@1.0.0-alpha.21':
     resolution: {integrity: sha512-lsr3aJ93pUaO9gxnGBsrTJkTkvpIHPHp9Rxug7WvdS4Zkte3AdFvyCl1DgwQN+/38FAXf8fBozyGkHxxXaN7Dg==}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.25':
-    resolution: {integrity: sha512-npPqGZp5XwbPp8X3xv3weWFj0dp29jXIbxd4PBBtRmE64uffXBUFfML4gXF2coUrQDmg5Vtp2g92R291WyeXEQ==}
+  '@kungfu-tech/kfd@1.0.0-alpha.31':
+    resolution: {integrity: sha512-Ki5xa9HSw7ZD2TeSkQEVuM+C+ANzbVTE/cKEVtbPrC6Rzqa/sgmmvkLTGL2b15GEBQqvqh6rfQMpr0QTW58G8A==}
+    hasBin: true
 
-  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.6':
-    resolution: {integrity: sha512-O448d9NNXK6At+OVnysZO+VgrgGx4p/3ilKW73gW7Rw4mV8m7yBpBH17NdgJPJKjQwZW+J5AXImZQZC+5UShJw==}
+  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7':
+    resolution: {integrity: sha512-XwDf5AVlKb2HvgSOeSSGXDvmOWR2KEzTt4bZUuP3nWVmwuqohaTsQ5yYjNSEV0gv5D0HTU6CKn+mpNKAXooEtA==}
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.5':
     resolution: {integrity: sha512-qyIRiVehKP5FuSzKFaVdhrs1955S4vvLjuMmhjXdsZISKOoI5quz3/aRkwahplqjcEJwT6pEnkTWTI2VxIUlmw==}
@@ -104,9 +105,9 @@ snapshots:
 
   '@kungfu-tech/kfd@1.0.0-alpha.21': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.25': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.31': {}
 
-  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.6': {}
+  '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7': {}
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.5': {}
 

@@ -12,6 +12,10 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 
 - Run `npm run build` before checking generated output.
 - Run `npm run check` before opening a pull request.
+- Render bundle-declared KFD candidates, usage children, and formal reference
+  children as governed pages. Preserve the decision document as authority,
+  keep candidates explicitly non-normative, and expose each page's declared
+  relationship, status, model metadata, and source path.
 - Before a stable Buildchain promotion, manually dispatch `Buildchain Stable Canary`
   with the exact alpha tag or SHA. Its workflow shell stays on stable `v2` while
   the explicit runtime ref follows the alpha candidate; preview, staging, and
@@ -19,7 +23,7 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
   `@kungfu-tech/buildchain@2.11.13`; KFD facts currently come from
-  `@kungfu-tech/kfd@1.0.0-alpha.25`.
+  `@kungfu-tech/kfd@1.0.0-alpha.31`.
 - Buildchain hosted README badge endpoints are generated under
   `/badges/v1/{badge}/{state}.svg` and `.json`. Prefer the Buildchain package
   `dist/site/badge-endpoint-registry.json` and `dist/site/badges/v1/**/*.json`

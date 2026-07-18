@@ -44,6 +44,10 @@ const requiredBaseFiles = [
   "dist/kfd/registry.json",
   "dist/kfd/standards.json",
   "dist/kfd/llms.txt",
+  "dist/core/assets/favicon.svg",
+  "dist/buildchain/assets/favicon.svg",
+  "dist/kfd/assets/favicon.svg",
+  "dist/papers/assets/favicon.svg",
   "dist/badges/v1/badge-endpoint-registry.json",
   "dist/badges/v1/kfd-1/passed.svg",
   "dist/badges/v1/kfd-2/passed.svg",
@@ -76,6 +80,8 @@ const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/regi
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
+const kfdRenderedCandidateRegistry = JSON.parse(fs.readFileSync("dist/kfd/drafts/registry.json", "utf8"));
+const kfdRenderedCaseRegistry = JSON.parse(fs.readFileSync("dist/kfd/cases/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const buildchainContractLock = JSON.parse(fs.readFileSync(".buildchain/contract-lock.json", "utf8"));
@@ -87,30 +93,56 @@ const kfdPropagationLockPath = fs.existsSync(".buildchain/upstreams/kfd.release.
 const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
   ? JSON.parse(fs.readFileSync(kfdPropagationLockPath, "utf8"))
   : undefined;
+const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
+  || kfdPropagationLock?.upstream?.tag
+  || "main";
 const buildchainPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/package.json", "utf8"));
 const buildchainSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/buildchain-site.json", "utf8"));
 const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/package.json", "utf8"));
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
+const kfdCandidateRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/drafts/registry.json", "utf8"));
+const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/cases/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.11.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.25";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.31";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
+const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
+const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
+const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
 const requiredFiles = [
   ...requiredBaseFiles,
+  "dist/kfd/drafts/index.html",
+  "dist/drafts/index.html",
+  "dist/kfd/drafts/registry.json",
+  "dist/drafts/registry.json",
+  "dist/kfd/cases/registry.json",
+  "dist/cases/registry.json",
+  ...kfdCandidatePages.flatMap((entry) => [
+    `dist/kfd/drafts/${entry.id}/index.html`,
+    `dist/drafts/${entry.id}/index.html`,
+  ]),
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
     `dist/kfd/${entry.number}/usage/index.html`,
     `dist/${entry.number}/usage/index.html`,
+    `dist/kfd/${entry.number}/formal/index.html`,
+    `dist/${entry.number}/formal/index.html`,
   ]),
 ];
 
 for (const file of requiredFiles) {
   if (!fs.existsSync(file)) {
     throw new Error(`missing required file: ${file}`);
+  }
+}
+const rootFavicon = fs.readFileSync("dist/assets/favicon.svg", "utf8");
+for (const surface of ["core", "buildchain", "kfd", "papers"]) {
+  if (fs.readFileSync(`dist/${surface}/assets/favicon.svg`, "utf8") !== rootFavicon) {
+    throw new Error(`${surface} favicon must match the shared site asset`);
   }
 }
 
@@ -345,6 +377,17 @@ if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
 }
 if (!Array.isArray(kfdUsagePages) || kfdUsagePages.length !== kfdRegistry.entries.length) {
   throw new Error("KFD site bundle must expose one usage page for each decision entry");
+}
+if (!Array.isArray(kfdFormalPages) || kfdFormalPages.length !== kfdRegistry.entries.length) {
+  throw new Error("KFD site bundle must expose one formal reference page for each decision entry");
+}
+if (
+  kfdSite.candidatePages?.source !== "drafts/registry.json"
+  || kfdSite.candidatePages?.normative !== false
+  || !Array.isArray(kfdCandidatePages)
+  || kfdCandidatePages.length === 0
+) {
+  throw new Error("KFD site bundle must expose governed non-normative candidate pages");
 }
 for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock.json"]) {
   if (fs.existsSync(legacyBuildchainPath)) {
@@ -621,6 +664,42 @@ for (const entry of kfdRegistry.entries) {
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === usagePath)) {
     throw new Error(`dist manifest does not record KFD usage path: ${expectedSurfaceHost("kfd")}${usagePath}`);
   }
+  const formalPath = `/${entry.number}/formal/`;
+  if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === formalPath)) {
+    throw new Error(`dist manifest does not record KFD formal reference path: ${expectedSurfaceHost("kfd")}${formalPath}`);
+  }
+}
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === kfdSite.candidatePages.indexUrl
+      && page.source.endsWith(`/${kfdSite.kfdCandidates.indexSource}`),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD candidate index");
+}
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === "/cases/registry.json"
+      && page.source.endsWith("/cases/registry.json"),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD case registry");
+}
+for (const candidate of kfdCandidatePages) {
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === candidate.url
+        && page.source.endsWith(`/${candidate.sourcePath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD candidate: ${candidate.id}`);
+  }
 }
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
@@ -636,13 +715,63 @@ if (
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
 }
+if (
+  kfdAgentManifest.agentEntries?.candidateRegistry !== expectedSurfaceEndpoint("kfd", "drafts/registry.json")
+  || kfdAgentManifest.agentEntries?.caseRegistry !== expectedSurfaceEndpoint("kfd", "cases/registry.json")
+  || kfdAgentManifest.candidates?.normative !== false
+  || kfdAgentManifest.candidates?.entries?.length !== kfdCandidatePages.length
+) {
+  throw new Error("KFD agent manifest candidate surface mismatch");
+}
+if (
+  kfdAgentManifest.cases?.registry !== expectedSurfaceEndpoint("kfd", "cases/registry.json")
+  || kfdAgentManifest.cases?.registryContract !== kfdCaseRegistry.contract
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/registry.json"))
+) {
+  throw new Error("KFD agent manifest case registry mismatch");
+}
+for (const candidate of kfdAgentManifest.candidates.entries) {
+  if (
+    candidate.relationship !== kfdSite.candidatePages.relationship
+    || candidate.normative !== false
+    || !candidate.claimBoundary
+    || !kfdAgentManifest.readOrder.includes(candidate.url)
+  ) {
+    throw new Error(`KFD agent manifest is missing candidate facts for ${candidate.id}`);
+  }
+}
 for (const entry of kfdAgentManifest.decisions) {
   if (!entry.usage?.url || !entry.usage?.source || !kfdAgentManifest.readOrder.includes(entry.usage.url)) {
     throw new Error(`KFD agent manifest is missing usage entry for ${entry.id}`);
   }
+  if (
+    !entry.formal?.url
+    || !entry.formal?.source
+    || entry.formal?.relationship !== "formal-reference-child-of-decision"
+    || entry.formal?.normative !== false
+    || !entry.formal?.sha256
+    || !kfdAgentManifest.readOrder.includes(entry.formal.url)
+  ) {
+    throw new Error(`KFD agent manifest is missing formal reference entry for ${entry.id}`);
+  }
 }
 if (kfdRenderedRegistry.contract !== kfdRegistry.contract) {
   throw new Error("rendered KFD registry contract mismatch");
+}
+if (
+  kfdRenderedCandidateRegistry.contract !== "kfd-candidate-registry"
+  || JSON.stringify(kfdRenderedCandidateRegistry) !== JSON.stringify(kfdCandidateRegistry)
+) {
+  throw new Error("rendered KFD candidate registry contract mismatch");
+}
+if (
+  kfdRenderedCaseRegistry.contract !== kfdCaseRegistry.contract
+  || JSON.stringify(kfdRenderedCaseRegistry) !== JSON.stringify(kfdCaseRegistry)
+  || JSON.stringify(kfdRenderedCaseRegistry) !== JSON.stringify(
+    JSON.parse(fs.readFileSync("dist/cases/registry.json", "utf8")),
+  )
+) {
+  throw new Error("rendered KFD case registry contract mismatch");
 }
 if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
@@ -742,7 +871,8 @@ if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
 }
 if (
   !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "manifest.json"))}"`) ||
-  !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "llms.txt"))}"`)
+  !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "llms.txt"))}"`) ||
+  !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "drafts/registry.json"))}"`)
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
@@ -825,9 +955,10 @@ if (
 if (
   !kfdCasesCanonicalHtml.includes('aria-label="Case sections"') ||
   !kfdCasesCanonicalHtml.includes(`<a href="${escapeHtml(kfdCasesPath)}" aria-current="page">Historical cases</a>`) ||
-  !kfdCasesCanonicalHtml.includes("<table>")
+  !kfdCasesCanonicalHtml.includes("<table>") ||
+  !kfdCasesCanonicalHtml.includes('href="../cases/registry.json"')
 ) {
-  throw new Error("KFD cases page is missing navigation or rendered tables");
+  throw new Error("KFD cases page is missing navigation, registry, or rendered tables");
 }
 if (
   !kfdCasesCanonicalHtml.includes(escapeHtml(kfdSite.casesPage.sourcePath)) ||
@@ -840,6 +971,88 @@ if (
   kfdAgentManifest.cases?.path !== kfdCasesPath
 ) {
   throw new Error("KFD agent manifest is missing the bundle-owned cases page");
+}
+const kfdCandidateIndexPath = `${kfdSite.candidatePages.indexUrl.replace(/\/+$/, "")}/`;
+const kfdCandidateIndexCanonicalHtml = fs.readFileSync("dist/kfd/drafts/index.html", "utf8");
+const kfdCandidateIndexAliasHtml = fs.readFileSync("dist/drafts/index.html", "utf8");
+if (kfdCandidateIndexAliasHtml !== kfdCandidateIndexCanonicalHtml) {
+  throw new Error("KFD candidate index alias drifted: dist/drafts/index.html");
+}
+if (
+  !kfdHomeHtml.includes(`href="${escapeHtml(kfdCandidateIndexPath)}"`)
+  || kfdHomeHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/drafts/action-state-separation.md")
+) {
+  throw new Error("KFD homepage must route candidates to rendered site pages");
+}
+const currentDecisionsPosition = kfdHomeHtml.indexOf('id="current-decisions"');
+const currentCandidatesPosition = kfdHomeHtml.indexOf('data-kfd-section="current-candidates"');
+if (
+  currentDecisionsPosition < 0
+  || currentCandidatesPosition < currentDecisionsPosition
+  || !kfdHomeHtml.slice(currentDecisionsPosition, currentCandidatesPosition).includes(
+    '<p class="eyebrow">numbered authority</p>',
+  )
+  || !kfdHomeHtml.slice(currentCandidatesPosition).includes(
+    '<p class="eyebrow">non-normative</p>',
+  )
+) {
+  throw new Error("KFD homepage must place non-normative candidates after numbered authority");
+}
+const decisionMetadataPosition = kfdHomeHtml.indexOf('data-kfd-section="decision-metadata"');
+const decisionMetadataEnd = kfdHomeHtml.indexOf("</section>", decisionMetadataPosition);
+const decisionMetadataHtml = kfdHomeHtml.slice(decisionMetadataPosition, decisionMetadataEnd);
+for (const expectedLink of [
+  'href="https://github.com/kungfu-systems/kfd"',
+  'href="#current-decisions"',
+  'href="/registry.json"',
+  'href="/standards.json"',
+  'href="/drafts/registry.json"',
+  'href="/cases/registry.json"',
+  'href="/"',
+]) {
+  if (!decisionMetadataHtml.includes(expectedLink)) {
+    throw new Error(`KFD decision metadata is missing clickable reference: ${expectedLink}`);
+  }
+}
+if (
+  !kfdCandidateIndexCanonicalHtml.includes('aria-label="Candidate index sections"')
+  || !kfdCandidateIndexCanonicalHtml.includes(`<a href="${escapeHtml(kfdCandidateIndexPath)}" aria-current="page">Candidates</a>`)
+  || !kfdCandidateIndexCanonicalHtml.includes(`href="${escapeHtml(kfdCandidateIndexPath)}registry.json"`)
+  || !kfdCandidateIndexCanonicalHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "drafts/registry.json"))}"`)
+) {
+  throw new Error("KFD candidate index is missing navigation or its machine registry link");
+}
+const candidateNavPosition = kfdCandidateIndexCanonicalHtml.indexOf(
+  `<a href="${escapeHtml(kfdCandidateIndexPath)}" aria-current="page">Candidates</a>`,
+);
+for (const entry of kfdRegistry.entries) {
+  const stableNavPosition = kfdCandidateIndexCanonicalHtml.indexOf(
+    `<a href="/${escapeHtml(String(entry.number))}/">${escapeHtml(entry.id)}</a>`,
+  );
+  if (stableNavPosition < 0 || stableNavPosition > candidateNavPosition) {
+    throw new Error(`KFD navigation must place stable ${entry.id} before Candidates`);
+  }
+}
+for (const candidate of kfdCandidatePages) {
+  const candidateCanonicalHtml = fs.readFileSync(`dist/kfd/drafts/${candidate.id}/index.html`, "utf8");
+  const candidateAliasHtml = fs.readFileSync(`dist/drafts/${candidate.id}/index.html`, "utf8");
+  if (candidateAliasHtml !== candidateCanonicalHtml) {
+    throw new Error(`KFD candidate alias drifted: ${candidate.id}`);
+  }
+  if (
+    !candidateCanonicalHtml.includes('aria-label="Candidate sections"')
+    || !candidateCanonicalHtml.includes(`<span class="page-kicker-state">candidate / ${escapeHtml(candidate.status)}</span>`)
+    || !candidateCanonicalHtml.includes(`<a class="doc-nav-child" href="${escapeHtml(candidate.url)}" aria-current="page">${escapeHtml(candidate.title)}</a>`)
+    || !candidateCanonicalHtml.includes(escapeHtml(candidate.claimBoundary))
+    || !candidateCanonicalHtml.includes(escapeHtml(candidate.sourcePath))
+    || !candidateCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.candidatePages.normative))}</code>`)
+    || !candidateCanonicalHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "drafts/registry.json"))}"`)
+  ) {
+    throw new Error(`KFD candidate page is missing declared facts: ${candidate.id}`);
+  }
+  if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(candidateCanonicalHtml)) {
+    throw new Error(`KFD candidate page has unresolved package markdown links: ${candidate.id}`);
+  }
 }
 if (!kfdHomeHtml.includes("Adoption boundary")) {
   throw new Error("KFD homepage must render the adoption boundary");
@@ -905,11 +1118,17 @@ for (const entry of kfdRegistry.entries) {
   if (usageAliasHtml !== usageCanonicalHtml) {
     throw new Error(`KFD usage route alias drifted: dist/${number}/usage/index.html`);
   }
+  const formalCanonicalHtml = fs.readFileSync(`dist/kfd/${number}/formal/index.html`, "utf8");
+  const formalAliasHtml = fs.readFileSync(`dist/${number}/formal/index.html`, "utf8");
+  if (formalAliasHtml !== formalCanonicalHtml) {
+    throw new Error(`KFD formal reference route alias drifted: dist/${number}/formal/index.html`);
+  }
 }
 for (const entry of kfdRegistry.entries) {
   const html = kfdDecisionHtmlByNumber.get(String(entry.number));
   const label = entry.id;
   const usagePage = kfdUsagePageByDecisionNumber.get(String(entry.number));
+  const formalPage = kfdFormalPageByDecisionNumber.get(String(entry.number));
   if (!html.includes('class="doc-toc"') || !html.includes('aria-label="Decision sections"')) {
     throw new Error(`${label} page is missing the decision section navigation`);
   }
@@ -922,6 +1141,11 @@ for (const entry of kfdRegistry.entries) {
   const currentDecisionLink = `<a href="/${escapeHtml(entry.number)}/" aria-current="page">${escapeHtml(entry.id)}</a>`;
   if (!html.includes(currentDecisionLink)) {
     throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
+  }
+  const stableUrlLink = `<a href="/${escapeHtml(entry.number)}/"><code>${escapeHtml(entry.url)}</code></a>`;
+  const sourcePathLink = `<a href="https://github.com/kungfu-systems/kfd/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}"><code>${escapeHtml(entry.path)}</code></a>`;
+  if (!html.includes(stableUrlLink) || !html.includes(sourcePathLink)) {
+    throw new Error(`${label} decision metadata links are incomplete`);
   }
   if (!html.includes(`<p class="eyebrow page-kicker"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>`)) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
@@ -946,6 +1170,9 @@ for (const entry of kfdRegistry.entries) {
   }
   if (usagePage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)) {
     throw new Error(`${label} decision page must not show the usage child link outside the usage page context`);
+  }
+  if (formalPage?.sourceExists && html.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/formal/">Formal reference</a>`)) {
+    throw new Error(`${label} decision page must not show the formal child link outside the formal page context`);
   }
   if (usagePage?.sourceExists) {
     const expectedUsageTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/usage/">${escapeHtml(usagePage.title || "Usage")}</a>`;
@@ -976,8 +1203,65 @@ for (const entry of kfdRegistry.entries) {
       throw new Error(`${label} usage page does not expose its KFD package source path`);
     }
   }
+  if (formalPage?.sourceExists) {
+    const expectedFormalTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/formal/">${escapeHtml(formalPage.title || "Formal reference")}</a>`;
+    if (!html.includes(expectedFormalTocLink)) {
+      throw new Error(`${label} decision page is missing its formal reference link in the decision sections navigation`);
+    }
+    const formalHtml = fs.readFileSync(`dist/kfd/${entry.number}/formal/index.html`, "utf8");
+    if (
+      !formalHtml.includes('aria-label="Formal reference sections"')
+      || !formalHtml.includes("<h2>Formal reference sections</h2>")
+      || !formalHtml.includes("Formal reference metadata")
+    ) {
+      throw new Error(`${label} formal reference page is missing formal navigation or metadata`);
+    }
+    if (!formalHtml.includes(`<span class="page-kicker-state">formal reference / ${escapeHtml(entry.id)}</span>`)) {
+      throw new Error(`${label} formal reference page is missing formal state`);
+    }
+    if (!formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/" aria-label="Back to ${escapeHtml(entry.id)}">Back to ${escapeHtml(entry.id)}</a>`)) {
+      throw new Error(`${label} formal reference page is missing parent decision back link`);
+    }
+    if (!formalHtml.includes(`<a class="doc-nav-child" href="/${escapeHtml(entry.number)}/formal/" aria-current="page">Formal reference</a>`)) {
+      throw new Error(`${label} formal reference page is missing current formal marker`);
+    }
+    if (
+      !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/">Authoritative decision</a>`)
+      || !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)
+      || !formalHtml.includes('href="https://github.com/kungfu-systems/kfd/blob/main/docs/formal-model.md"')
+      || /href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(formalHtml)
+    ) {
+      throw new Error(`${label} formal reference page has unresolved package markdown links`);
+    }
+    for (const otherEntry of kfdRegistry.entries) {
+      if (String(otherEntry.number) === String(entry.number)) continue;
+      const otherFormalLink = `<a class="doc-nav-child" href="/${escapeHtml(otherEntry.number)}/formal/">Formal reference</a>`;
+      if (formalHtml.includes(otherFormalLink)) {
+        throw new Error(`${label} formal reference page must not expand formal child links for other KFD entries`);
+      }
+    }
+    for (const expectedValue of [
+      formalPage.sourcePath || formalPage.path,
+      formalPage.relationship,
+      formalPage.formalModelStatus,
+      formalPage.authorityPath,
+    ]) {
+      if (!formalHtml.includes(escapeHtml(expectedValue))) {
+        throw new Error(`${label} formal reference page is missing bundle metadata: ${expectedValue}`);
+      }
+    }
+    if (!formalHtml.includes(`<code>${escapeHtml(String(formalPage.normative))}</code>`)) {
+      throw new Error(`${label} formal reference page is missing normative metadata`);
+    }
+  }
 }
-if (!kfdOneHtml.includes("<table>") || !kfdOneHtml.includes("<th>Condition</th>") || !kfdOneHtml.includes("<td><strong>major</strong></td>")) {
+if (
+  !kfdOneHtml.includes("<table>")
+  || !kfdOneHtml.includes("<th>Condition</th>")
+  || !kfdOneHtml.includes("<th>Compatibility impact</th>")
+  || !kfdOneHtml.includes("<th>Release verdict</th>")
+  || !kfdOneHtml.includes("<td>major</td>")
+) {
   throw new Error("KFD-1 markdown table was not rendered as an HTML table");
 }
 if (!kfdOneHtml.includes("<th>Date</th>") || !kfdOneHtml.includes("<td>open-minor</td>")) {
