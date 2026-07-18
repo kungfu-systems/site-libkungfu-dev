@@ -81,6 +81,7 @@ const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-e
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
 const kfdRenderedCandidateRegistry = JSON.parse(fs.readFileSync("dist/kfd/drafts/registry.json", "utf8"));
+const kfdRenderedCaseRegistry = JSON.parse(fs.readFileSync("dist/kfd/cases/registry.json", "utf8"));
 const kfdRenderedStandards = JSON.parse(fs.readFileSync("dist/kfd/standards.json", "utf8"));
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const buildchainContractLock = JSON.parse(fs.readFileSync(".buildchain/contract-lock.json", "utf8"));
@@ -92,12 +93,16 @@ const kfdPropagationLockPath = fs.existsSync(".buildchain/upstreams/kfd.release.
 const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
   ? JSON.parse(fs.readFileSync(kfdPropagationLockPath, "utf8"))
   : undefined;
+const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
+  || kfdPropagationLock?.upstream?.tag
+  || "main";
 const buildchainPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/package.json", "utf8"));
 const buildchainSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/buildchain-site.json", "utf8"));
 const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/package.json", "utf8"));
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
 const kfdCandidateRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/drafts/registry.json", "utf8"));
+const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/cases/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const expectedBuildchainVersion = "2.11.13";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.31";
@@ -113,6 +118,8 @@ const requiredFiles = [
   "dist/drafts/index.html",
   "dist/kfd/drafts/registry.json",
   "dist/drafts/registry.json",
+  "dist/kfd/cases/registry.json",
+  "dist/cases/registry.json",
   ...kfdCandidatePages.flatMap((entry) => [
     `dist/kfd/drafts/${entry.id}/index.html`,
     `dist/drafts/${entry.id}/index.html`,
@@ -672,6 +679,16 @@ if (
 ) {
   throw new Error("dist manifest does not record the KFD candidate index");
 }
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === "/cases/registry.json"
+      && page.source.endsWith("/cases/registry.json"),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD case registry");
+}
 for (const candidate of kfdCandidatePages) {
   if (
     !manifest.pages.some(
@@ -700,10 +717,18 @@ if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.len
 }
 if (
   kfdAgentManifest.agentEntries?.candidateRegistry !== expectedSurfaceEndpoint("kfd", "drafts/registry.json")
+  || kfdAgentManifest.agentEntries?.caseRegistry !== expectedSurfaceEndpoint("kfd", "cases/registry.json")
   || kfdAgentManifest.candidates?.normative !== false
   || kfdAgentManifest.candidates?.entries?.length !== kfdCandidatePages.length
 ) {
   throw new Error("KFD agent manifest candidate surface mismatch");
+}
+if (
+  kfdAgentManifest.cases?.registry !== expectedSurfaceEndpoint("kfd", "cases/registry.json")
+  || kfdAgentManifest.cases?.registryContract !== kfdCaseRegistry.contract
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/registry.json"))
+) {
+  throw new Error("KFD agent manifest case registry mismatch");
 }
 for (const candidate of kfdAgentManifest.candidates.entries) {
   if (
@@ -738,6 +763,15 @@ if (
   || JSON.stringify(kfdRenderedCandidateRegistry) !== JSON.stringify(kfdCandidateRegistry)
 ) {
   throw new Error("rendered KFD candidate registry contract mismatch");
+}
+if (
+  kfdRenderedCaseRegistry.contract !== kfdCaseRegistry.contract
+  || JSON.stringify(kfdRenderedCaseRegistry) !== JSON.stringify(kfdCaseRegistry)
+  || JSON.stringify(kfdRenderedCaseRegistry) !== JSON.stringify(
+    JSON.parse(fs.readFileSync("dist/cases/registry.json", "utf8")),
+  )
+) {
+  throw new Error("rendered KFD case registry contract mismatch");
 }
 if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
@@ -921,9 +955,10 @@ if (
 if (
   !kfdCasesCanonicalHtml.includes('aria-label="Case sections"') ||
   !kfdCasesCanonicalHtml.includes(`<a href="${escapeHtml(kfdCasesPath)}" aria-current="page">Historical cases</a>`) ||
-  !kfdCasesCanonicalHtml.includes("<table>")
+  !kfdCasesCanonicalHtml.includes("<table>") ||
+  !kfdCasesCanonicalHtml.includes('href="../cases/registry.json"')
 ) {
-  throw new Error("KFD cases page is missing navigation or rendered tables");
+  throw new Error("KFD cases page is missing navigation, registry, or rendered tables");
 }
 if (
   !kfdCasesCanonicalHtml.includes(escapeHtml(kfdSite.casesPage.sourcePath)) ||
@@ -962,6 +997,22 @@ if (
   )
 ) {
   throw new Error("KFD homepage must place non-normative candidates after numbered authority");
+}
+const decisionMetadataPosition = kfdHomeHtml.indexOf('data-kfd-section="decision-metadata"');
+const decisionMetadataEnd = kfdHomeHtml.indexOf("</section>", decisionMetadataPosition);
+const decisionMetadataHtml = kfdHomeHtml.slice(decisionMetadataPosition, decisionMetadataEnd);
+for (const expectedLink of [
+  'href="https://github.com/kungfu-systems/kfd"',
+  'href="#current-decisions"',
+  'href="/registry.json"',
+  'href="/standards.json"',
+  'href="/drafts/registry.json"',
+  'href="/cases/registry.json"',
+  'href="/"',
+]) {
+  if (!decisionMetadataHtml.includes(expectedLink)) {
+    throw new Error(`KFD decision metadata is missing clickable reference: ${expectedLink}`);
+  }
 }
 if (
   !kfdCandidateIndexCanonicalHtml.includes('aria-label="Candidate index sections"')
@@ -1090,6 +1141,11 @@ for (const entry of kfdRegistry.entries) {
   const currentDecisionLink = `<a href="/${escapeHtml(entry.number)}/" aria-current="page">${escapeHtml(entry.id)}</a>`;
   if (!html.includes(currentDecisionLink)) {
     throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
+  }
+  const stableUrlLink = `<a href="/${escapeHtml(entry.number)}/"><code>${escapeHtml(entry.url)}</code></a>`;
+  const sourcePathLink = `<a href="https://github.com/kungfu-systems/kfd/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}"><code>${escapeHtml(entry.path)}</code></a>`;
+  if (!html.includes(stableUrlLink) || !html.includes(sourcePathLink)) {
+    throw new Error(`${label} decision metadata links are incomplete`);
   }
   if (!html.includes(`<p class="eyebrow page-kicker"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/" aria-label="Back to KFD home">Back to KFD home</a>`)) {
     throw new Error(`${label} page is missing the explicit KFD home back link`);
