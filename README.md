@@ -7,6 +7,7 @@
 [![KFD-4: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-4/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-5: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-5/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-6: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-6/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-7: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-7/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Release Passport: declared](https://buildchain.libkungfu.dev/badges/v1/buildchain-release-passport/declared.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Web Surface](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml/badge.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml)
 <!-- buildchain:badges:end -->
@@ -48,7 +49,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.31` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.34` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 usage and non-normative formal reference children are rendered under
 `/{number}/usage/` and `/{number}/formal/`; the decision remains their authority

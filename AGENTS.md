@@ -23,7 +23,7 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Buildchain facts currently come from
   `@kungfu-tech/buildchain@2.11.13`; KFD facts currently come from
-  `@kungfu-tech/kfd@1.0.0-alpha.31`.
+  `@kungfu-tech/kfd@1.0.0-alpha.34`.
 - Buildchain hosted README badge endpoints are generated under
   `/badges/v1/{badge}/{state}.svg` and `.json`. Prefer the Buildchain package
   `dist/site/badge-endpoint-registry.json` and `dist/site/badges/v1/**/*.json`
