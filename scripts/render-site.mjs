@@ -981,6 +981,7 @@ function renderPublicationArchives() {
           title: `${publication.title} ${version.version} | papers.libkungfu.dev`,
           description: `Immutable archive for ${publication.title} ${version.version}.`,
           current: "papers",
+          preserveRelativeMachineEntries: true,
           body: `<section class="hero">
             <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">immutable / ${escapeHtml(version.version)}</span></p>
             <h1>${escapeHtml(publication.title)} ${escapeHtml(version.version)}</h1>
@@ -1106,7 +1107,7 @@ ${registry.archivePolicy.rule}
   };
 }
 
-function page({ title, description, current, body, alternates = "" }) {
+function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false }) {
   const nav = [
     ["core", "Core"],
     ["buildchain", "Buildchain"],
@@ -1129,9 +1130,9 @@ function page({ title, description, current, body, alternates = "" }) {
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeAttr(description)}">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(pageMachineEntryHref(current, "manifest.json"))}">
-  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(pageMachineEntryHref(current, "llms.txt"))}">
-  <link rel="alternate" type="text/plain" title="Full agent index" href="${escapeAttr(pageMachineEntryHref(current, "llms-full.txt"))}">
+  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(preserveRelativeMachineEntries ? "/manifest.json" : pageMachineEntryHref(current, "manifest.json"))}">
+  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(preserveRelativeMachineEntries ? "/llms.txt" : pageMachineEntryHref(current, "llms.txt"))}">
+  <link rel="alternate" type="text/plain" title="Full agent index" href="${escapeAttr(preserveRelativeMachineEntries ? "/llms-full.txt" : pageMachineEntryHref(current, "llms-full.txt"))}">
 ${alternates}
   <style>
     :root {
