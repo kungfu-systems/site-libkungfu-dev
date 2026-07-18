@@ -485,6 +485,11 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
       throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
     }
+    for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
+      if (!versionHtml.includes(`href="${href}"`)) {
+        throw new Error(`immutable publication version page changed its legacy machine entry: ${publication.id}@${version.version} ${href}`);
+      }
+    }
     const expectedArtifacts = [
       ...version.artifacts,
       { ...version.manifest, kind: "manifest" },
