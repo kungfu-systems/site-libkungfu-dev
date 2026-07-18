@@ -2471,11 +2471,14 @@ function kfdHomepageSectionPanels(ids, className = "") {
     .map((id) => kfdHomepageSection(id))
     .filter(Boolean)
     .map((section) => {
+      const displayRole = section.id === "current-candidates" && kfdSite.candidatePages?.normative === false
+        ? "non-normative"
+        : section.renderRole;
       const candidateAction = section.id === "current-candidates"
         ? `<div class="card-actions"><a class="card-action" href="${escapeAttr(kfdCandidateIndexPath)}">Browse candidates</a></div>`
         : "";
       return `<section class="panel doc-content ${className}" data-kfd-section="${escapeAttr(section.id)}">
-        <p class="eyebrow">${escapeHtml(section.renderRole)}</p>
+        <p class="eyebrow">${escapeHtml(displayRole)}</p>
         <h2>${escapeHtml(section.title)}</h2>
         ${renderMarkdownBody(section.markdown)}
         ${candidateAction}
@@ -2485,7 +2488,7 @@ function kfdHomepageSectionPanels(ids, className = "") {
 }
 
 function kfdPrimaryContinuationPanels() {
-  const handled = new Set(["foundation-triad", "foundation-model"]);
+  const handled = new Set(["foundation-triad", "foundation-model", "current-candidates"]);
   return (kfdSite.homepage.displayPlan?.primary || [])
     .filter((id) => !handled.has(id))
     .map((id) => {
@@ -2647,11 +2650,16 @@ writeFile(
     ${kfdPrimaryContinuationPanels()}
 
     <section class="panel" id="current-decisions" style="margin-top: 18px;">
+      <p class="eyebrow">numbered authority</p>
       <h2>${escapeHtml(kfdSite.homepage.currentDecisions.heading)}</h2>
       <div class="grid kfd-decision-list">
         ${decisionPanels(kfdRegistry.entries)}
       </div>
     </section>
+
+    <div style="margin-top: 18px;">
+      ${kfdHomepageSectionPanels(["current-candidates"], "kfd-candidate-section")}
+    </div>
 
     ${
       kfdSupportSectionIds.length > 0

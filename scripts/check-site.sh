@@ -949,6 +949,20 @@ if (
 ) {
   throw new Error("KFD homepage must route candidates to rendered site pages");
 }
+const currentDecisionsPosition = kfdHomeHtml.indexOf('id="current-decisions"');
+const currentCandidatesPosition = kfdHomeHtml.indexOf('data-kfd-section="current-candidates"');
+if (
+  currentDecisionsPosition < 0
+  || currentCandidatesPosition < currentDecisionsPosition
+  || !kfdHomeHtml.slice(currentDecisionsPosition, currentCandidatesPosition).includes(
+    '<p class="eyebrow">numbered authority</p>',
+  )
+  || !kfdHomeHtml.slice(currentCandidatesPosition).includes(
+    '<p class="eyebrow">non-normative</p>',
+  )
+) {
+  throw new Error("KFD homepage must place non-normative candidates after numbered authority");
+}
 if (
   !kfdCandidateIndexCanonicalHtml.includes('aria-label="Candidate index sections"')
   || !kfdCandidateIndexCanonicalHtml.includes(`<a href="${escapeHtml(kfdCandidateIndexPath)}" aria-current="page">Candidates</a>`)
