@@ -997,6 +997,13 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
   throw new Error("KFD homepage must render support sections");
 }
+if (
+  kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
+  || !kfdHomeHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
+  || !kfdHomeHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
+) {
+  throw new Error("KFD foundation explanation must render bundle block Markdown as headings and fenced code");
+}
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract) {
   throw new Error("KFD site bundle must expose the homepage renderer contract");

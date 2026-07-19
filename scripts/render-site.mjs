@@ -2529,6 +2529,23 @@ function kfdHomepageSection(id) {
   return kfdSite.homepage.sections?.find((section) => section.id === id);
 }
 
+function kfdFoundationModelExplanationMarkdown() {
+  const explanation = kfdSite.homepage.foundationModel.explanation || [];
+  const sectionMarkdown = kfdHomepageSection("foundation-model")?.markdown || "";
+  const firstParagraph = explanation[0] || "";
+  const marker = firstParagraph.includes(":")
+    ? `${firstParagraph.split(":", 1)[0]}:`
+    : firstParagraph.slice(0, 48);
+  const explanationOffset = marker ? sectionMarkdown.indexOf(marker) : -1;
+  if (explanation.length === 0) {
+    return "";
+  }
+  if (explanationOffset < 0) {
+    throw new Error("KFD foundation explanation is missing from its bundle-owned Markdown section");
+  }
+  return sectionMarkdown.slice(explanationOffset);
+}
+
 function kfdFuturePictureHero() {
   const futurePicture = kfdSite.homepage.futurePicture || {};
   const question = futurePicture.question
@@ -2728,7 +2745,7 @@ writeFile(
       </div>
       <p style="margin-top: 18px;"><code>${escapeHtml(kfdSite.homepage.foundationModel.chain)}</code></p>
       <div class="stack" style="margin-top: 18px;">
-        ${kfdSite.homepage.foundationModel.explanation.map((text) => `<p>${inlineMarkdown(text)}</p>`).join("\n")}
+        ${renderMarkdownBody(kfdFoundationModelExplanationMarkdown())}
       </div>
     </section>
 
