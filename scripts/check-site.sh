@@ -112,6 +112,10 @@ const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [S
 const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
 const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
+const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || [];
+const kfdCandidateFormalPageByCandidateId = new Map(
+  kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
+);
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -124,6 +128,13 @@ const requiredFiles = [
     `dist/kfd/drafts/${entry.id}/index.html`,
     `dist/drafts/${entry.id}/index.html`,
   ]),
+  ...kfdCandidateFormalPages.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+|\/+$/g, "");
+    return [
+      `dist/kfd/${output}/index.html`,
+      `dist/${output}/index.html`,
+    ];
+  }),
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
@@ -388,6 +399,31 @@ if (
   || kfdCandidatePages.length === 0
 ) {
   throw new Error("KFD site bundle must expose governed non-normative candidate pages");
+}
+if (
+  kfdSite.candidatePages?.formalPages?.relationship !== "formal-candidate-child-of-candidate"
+  || kfdSite.candidatePages?.formalPages?.normative !== false
+  || !Array.isArray(kfdCandidateFormalPages)
+  || kfdCandidateFormalPages.length === 0
+) {
+  throw new Error("KFD site bundle must expose governed non-normative formal candidate pages");
+}
+for (const formalPage of kfdCandidateFormalPages) {
+  const parent = kfdCandidatePages.find((candidate) => candidate.id === formalPage.candidateId);
+  const registryEntry = kfdCandidateRegistry.candidates?.find((candidate) => candidate.id === formalPage.candidateId);
+  if (
+    !parent
+    || formalPage.parentPath !== parent.sourcePath
+    || formalPage.parentUrl !== parent.url
+    || formalPage.relationship !== kfdSite.candidatePages.formalPages.relationship
+    || formalPage.normative !== false
+    || registryEntry?.formalReference?.path !== formalPage.sourcePath
+    || registryEntry?.formalReference?.version !== formalPage.formalCandidateVersion
+    || registryEntry?.formalReference?.status !== formalPage.formalCandidateStatus
+    || registryEntry?.formalReference?.authorityPath !== formalPage.authorityPath
+  ) {
+    throw new Error(`KFD formal candidate contract mismatch: ${formalPage.id}`);
+  }
 }
 for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock.json"]) {
   if (fs.existsSync(legacyBuildchainPath)) {
@@ -706,6 +742,18 @@ for (const candidate of kfdCandidatePages) {
     throw new Error(`dist manifest does not record KFD candidate: ${candidate.id}`);
   }
 }
+for (const formalCandidate of kfdCandidateFormalPages) {
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === formalCandidate.url
+        && page.source.endsWith(`/${formalCandidate.sourcePath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD formal candidate: ${formalCandidate.id}`);
+  }
+}
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
 }
@@ -736,6 +784,7 @@ if (
   throw new Error("KFD agent manifest case registry mismatch");
 }
 for (const candidate of kfdAgentManifest.candidates.entries) {
+  const formalCandidate = kfdCandidateFormalPageByCandidateId.get(candidate.id);
   if (
     candidate.relationship !== kfdSite.candidatePages.relationship
     || candidate.normative !== false
@@ -743,6 +792,21 @@ for (const candidate of kfdAgentManifest.candidates.entries) {
     || !kfdAgentManifest.readOrder.includes(candidate.url)
   ) {
     throw new Error(`KFD agent manifest is missing candidate facts for ${candidate.id}`);
+  }
+  if (
+    formalCandidate
+    && (
+      candidate.formal?.path !== formalCandidate.url
+      || candidate.formal?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${formalCandidate.sourcePath}`
+      || candidate.formal?.relationship !== formalCandidate.relationship
+      || candidate.formal?.normative !== false
+      || candidate.formal?.formalCandidateVersion !== formalCandidate.formalCandidateVersion
+      || candidate.formal?.formalCandidateStatus !== formalCandidate.formalCandidateStatus
+      || candidate.formal?.authorityPath !== formalCandidate.authorityPath
+      || !kfdAgentManifest.readOrder.includes(candidate.formal?.url)
+    )
+  ) {
+    throw new Error(`KFD agent manifest is missing formal candidate facts for ${candidate.id}`);
   }
 }
 for (const entry of kfdAgentManifest.decisions) {
@@ -933,6 +997,14 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
   throw new Error("KFD homepage must render support sections");
 }
+if (
+  kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
+  || !kfdHomeHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
+  || !kfdHomeHtml.includes('<div class="stack doc-content" style="margin-top: 18px;">')
+  || !kfdHomeHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
+) {
+  throw new Error("KFD foundation explanation must render bundle block Markdown with document code-block styling");
+}
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract) {
   throw new Error("KFD site bundle must expose the homepage renderer contract");
@@ -1097,6 +1169,52 @@ for (const candidate of kfdCandidatePages) {
   }
   if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(candidateCanonicalHtml)) {
     throw new Error(`KFD candidate page has unresolved package markdown links: ${candidate.id}`);
+  }
+  const formalCandidate = kfdCandidateFormalPageByCandidateId.get(candidate.id);
+  if (
+    formalCandidate
+    && !candidateCanonicalHtml.includes(
+      `<a class="toc-related-link" href="${escapeHtml(formalCandidate.url)}">Formal candidate</a>`,
+    )
+  ) {
+    throw new Error(`KFD candidate page is missing its formal child navigation: ${candidate.id}`);
+  }
+}
+for (const formalCandidate of kfdCandidateFormalPages) {
+  const parent = kfdCandidatePages.find((candidate) => candidate.id === formalCandidate.candidateId);
+  const output = formalCandidate.url.replace(/^\/+|\/+$/g, "");
+  const formalCanonicalHtml = fs.readFileSync(`dist/kfd/${output}/index.html`, "utf8");
+  const formalAliasHtml = fs.readFileSync(`dist/${output}/index.html`, "utf8");
+  if (formalAliasHtml !== formalCanonicalHtml) {
+    throw new Error(`KFD formal candidate alias drifted: ${formalCandidate.id}`);
+  }
+  if (
+    !formalCanonicalHtml.includes('aria-label="Formal candidate sections"')
+    || !formalCanonicalHtml.includes(
+      `<span class="page-kicker-state">formal candidate / ${escapeHtml(formalCandidate.formalCandidateStatus)}</span>`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a href="${escapeHtml(parent.url)}" aria-label="Back to ${escapeHtml(parent.title)}">`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a class="doc-nav-child" href="${escapeHtml(parent.url)}">${escapeHtml(parent.title)}</a>`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeHtml(formalCandidate.url)}" aria-current="page">Formal candidate</a>`,
+    )
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.relationship))
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.sourcePath))
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.authorityPath))
+    || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.normative))}</code>`)
+    || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.formalCandidateVersion))}</code>`)
+    || !formalCanonicalHtml.includes(`href="${escapeHtml(parent.url)}"`)
+    || !formalCanonicalHtml.includes('href="/7/formal/"')
+    || !formalCanonicalHtml.includes('href="/drafts/registry.json"')
+  ) {
+    throw new Error(`KFD formal candidate page is missing declared facts or navigation: ${formalCandidate.id}`);
+  }
+  if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(formalCanonicalHtml)) {
+    throw new Error(`KFD formal candidate page has unresolved package markdown links: ${formalCandidate.id}`);
   }
 }
 if (!kfdHomeHtml.includes("Adoption boundary")) {
