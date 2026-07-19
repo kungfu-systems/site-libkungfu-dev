@@ -2210,10 +2210,15 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
-function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate) {
+function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate, currentCandidateFormal) {
   const currentNumber = currentEntry ? String(currentEntry.number) : undefined;
-  const candidateLinks = currentPage === "candidate" && currentCandidate
-    ? `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}" aria-current="page">${escapeHtml(currentCandidate.title)}</a>`
+  const candidateLinks = currentCandidate
+    ? [
+        `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}"${currentPage === "candidate" ? ' aria-current="page"' : ""}>${escapeHtml(currentCandidate.title)}</a>`,
+        currentPage === "candidate-formal" && currentCandidateFormal
+          ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(currentCandidateFormal.url)}" aria-current="page">Formal candidate</a>`
+          : "",
+      ].join("")
     : "";
   const links = kfdRegistry.entries
     .map((entry) => {
@@ -2331,6 +2336,11 @@ const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [S
 const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
 const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
+const kfdCandidatePageById = new Map(kfdCandidatePages.map((pageEntry) => [pageEntry.id, pageEntry]));
+const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || [];
+const kfdCandidateFormalPageByCandidateId = new Map(
+  kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
+);
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -2358,6 +2368,7 @@ const kfdPageRouteBySourcePath = new Map([
     .map((pageEntry) => [pageEntry.sourcePath || pageEntry.path, `/${pageEntry.decisionNumber}/formal/`]),
   [kfdSite.kfdCandidates.source, `${kfdCandidateIndexPath}registry.json`],
   ...kfdCandidatePages.map((pageEntry) => [pageEntry.sourcePath, pageEntry.url]),
+  ...kfdCandidateFormalPages.map((pageEntry) => [pageEntry.sourcePath, pageEntry.url]),
 ]);
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
 const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
@@ -2905,6 +2916,14 @@ writeFile(`kfd/${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdC
 writeFile(`${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdCandidateRegistry, null, 2)}\n`);
 
 for (const candidatePage of kfdCandidatePages) {
+  const candidateFormalPage = kfdCandidateFormalPageByCandidateId.get(candidatePage.id);
+  const candidateTocLinks = candidateFormalPage
+    ? [{
+        title: "Formal candidate",
+        href: candidateFormalPage.url,
+        className: "toc-related-link",
+      }]
+    : [];
   const renderedCandidate = renderDecisionMarkdown(
     rewritePackageMarkdownLinks(candidatePage.markdown, "kungfu-systems/kfd", {
       filePattern: /\.md$/,
@@ -2912,6 +2931,7 @@ for (const candidatePage of kfdCandidatePages) {
       sourcePath: candidatePage.sourcePath,
     }),
     "Candidate sections",
+    { tocLinks: candidateTocLinks },
   );
   const candidateHtml = page({
     title: `${candidatePage.title} | KFD Candidates`,
@@ -2957,6 +2977,69 @@ for (const candidatePage of kfdCandidatePages) {
   const candidateOutput = candidatePage.url.replace(/^\/+|\/+$/g, "");
   writeFile(`kfd/${candidateOutput}/index.html`, candidateHtml);
   writeFile(`${candidateOutput}/index.html`, candidateHtml);
+}
+
+for (const candidateFormalPage of kfdCandidateFormalPages) {
+  const candidatePage = kfdCandidatePageById.get(candidateFormalPage.candidateId);
+  if (!candidatePage) {
+    throw new Error(`KFD formal candidate has no declared parent: ${candidateFormalPage.candidateId}`);
+  }
+  const renderedCandidateFormal = renderDecisionMarkdown(
+    rewritePackageMarkdownLinks(candidateFormalPage.markdown, "kungfu-systems/kfd", {
+      filePattern: /\.md$|registry\.json$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: candidateFormalPage.sourcePath,
+    }),
+    "Formal candidate sections",
+  );
+  const candidateFormalHtml = page({
+    title: `${candidatePage.title} formal candidate | KFD Candidates`,
+    description: `Non-normative formal candidate for ${candidatePage.title}.`,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a href="${escapeAttr(candidatePage.url)}" aria-label="Back to ${escapeAttr(candidatePage.title)}">${escapeHtml(`Back to ${candidatePage.title}`)}</a><span class="page-kicker-state">formal candidate / ${escapeHtml(candidateFormalPage.formalCandidateStatus)}</span></p>
+        <h1>${escapeHtml(candidatePage.title)} formal candidate</h1>
+        <p class="lead">A non-normative formal model owned by the candidate source.</p>
+      </section>
+
+      <section class="doc-layout">
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(undefined, "candidate-formal", candidatePage, candidateFormalPage)}
+          ${renderedCandidateFormal.tocHtml}
+        </aside>
+        <article class="panel doc-content">
+          ${renderedCandidateFormal.html}
+        </article>
+      </section>
+
+      <section class="panel" style="margin-top: 18px;">
+        <h2>Formal candidate metadata</h2>
+        <dl class="meta">
+          <dt>Candidate</dt>
+          <dd><a href="${escapeAttr(candidatePage.url)}"><code>${escapeHtml(candidatePage.id)}</code></a></dd>
+          <dt>Stable URL</dt>
+          <dd><a href="${escapeAttr(candidateFormalPage.url)}"><code>${escapeHtml(candidateFormalPage.url)}</code></a></dd>
+          <dt>Relationship</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.relationship)}</code></dd>
+          <dt>Normative</dt>
+          <dd><code>${escapeHtml(String(candidateFormalPage.normative))}</code></dd>
+          <dt>Model status</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.formalCandidateStatus)}</code></dd>
+          <dt>Model version</dt>
+          <dd><code>${escapeHtml(String(candidateFormalPage.formalCandidateVersion))}</code></dd>
+          <dt>Authority path</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.authorityPath)}</code></dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.sourcePath)}</code></dd>
+          <dt>Package</dt>
+          <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+        </dl>
+      </section>`,
+  });
+  const candidateFormalOutput = candidateFormalPage.url.replace(/^\/+|\/+$/g, "");
+  writeFile(`kfd/${candidateFormalOutput}/index.html`, candidateFormalHtml);
+  writeFile(`${candidateFormalOutput}/index.html`, candidateFormalHtml);
 }
 
 for (const entry of kfdRegistry.entries) {
@@ -3370,6 +3453,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
     })),
+    ...kfdCandidateFormalPages.map((pageEntry) => ({
+      path: pageEntry.url,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
+    })),
     ...kfdRegistry.entries.map((entry) => ({
       path: `/${entry.number}/`,
       host: surfaceCanonicalHost("kfd"),
@@ -3445,6 +3533,7 @@ const manifest = {
       standardsContract: kfdStandards.contract,
       decisionCount: kfdRegistry.entries.length,
       candidateCount: kfdCandidatePages.length,
+      candidateFormalCount: kfdCandidateFormalPages.length,
     },
   },
 };
@@ -3514,6 +3603,7 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
+    ...kfdCandidateFormalPages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdDecisionEntries.map((entry) => entry.url),
     ...kfdDecisionEntries.map((entry) => entry.usage?.url).filter(Boolean),
     ...kfdDecisionEntries.map((entry) => entry.formal?.url).filter(Boolean),
@@ -3546,6 +3636,22 @@ const kfdAgentManifest = {
     relationship: kfdSite.kfdCandidates.relationship,
     normative: kfdSite.kfdCandidates.normative,
     entries: kfdCandidatePages.map((entry) => ({
+      formal: kfdCandidateFormalPageByCandidateId.has(entry.id)
+        ? {
+            id: kfdCandidateFormalPageByCandidateId.get(entry.id).id,
+            path: kfdCandidateFormalPageByCandidateId.get(entry.id).url,
+            url: surfaceEndpointHref(
+              "kfd",
+              kfdCandidateFormalPageByCandidateId.get(entry.id).url.replace(/^\/+/, ""),
+            ),
+            source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdCandidateFormalPageByCandidateId.get(entry.id).sourcePath}`,
+            relationship: kfdCandidateFormalPageByCandidateId.get(entry.id).relationship,
+            normative: kfdCandidateFormalPageByCandidateId.get(entry.id).normative,
+            formalCandidateVersion: kfdCandidateFormalPageByCandidateId.get(entry.id).formalCandidateVersion,
+            formalCandidateStatus: kfdCandidateFormalPageByCandidateId.get(entry.id).formalCandidateStatus,
+            authorityPath: kfdCandidateFormalPageByCandidateId.get(entry.id).authorityPath,
+          }
+        : undefined,
       id: entry.id,
       title: entry.title,
       status: entry.status,

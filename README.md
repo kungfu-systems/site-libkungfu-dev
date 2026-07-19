@@ -49,11 +49,14 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.34` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.38` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 usage and non-normative formal reference children are rendered under
 `/{number}/usage/` and `/{number}/formal/`; the decision remains their authority
 and the site does not promote a formal reference into a new decision.
+Bundle-declared formal candidate children are rendered under
+`/drafts/{id}/formal/`; their parent candidate remains the non-normative
+authority and both human and agent surfaces expose the declared relationship.
 Bundle-declared pre-number candidates are rendered under `/drafts/` with their
 non-normative status, claim boundary, and machine registry preserved.
 The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
