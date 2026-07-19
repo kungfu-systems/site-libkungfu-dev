@@ -1368,19 +1368,6 @@ ${alternates}
       line-height: 1.35;
     }
 
-    .hero-answer {
-      max-width: 820px;
-      color: var(--fg);
-      font-size: 18px;
-      line-height: 1.5;
-    }
-
-    .hero-claim-boundary {
-      max-width: 820px;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
     .badge-strip {
       max-width: 100%;
     }
@@ -2558,10 +2545,10 @@ function kfdFuturePictureHero() {
   return [
     `<p class="lead" data-kfd-future-picture="question">${inlineMarkdown(question)}</p>`,
     engineeringAnswer
-      ? `<p class="hero-answer" data-kfd-future-picture="engineering-answer">${inlineMarkdown(engineeringAnswer)}</p>`
+      ? `<p class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;" data-kfd-future-picture="engineering-answer">${inlineMarkdown(engineeringAnswer)}</p>`
       : "",
     claimBoundary
-      ? `<p class="hero-claim-boundary" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
+      ? `<p class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
       : "",
   ].filter(Boolean).join("\n");
 }

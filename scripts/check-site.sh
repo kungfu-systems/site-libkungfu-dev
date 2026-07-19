@@ -521,6 +521,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
       throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
     }
+    if (versionHtml.includes(".hero-answer {") || versionHtml.includes(".hero-claim-boundary {")) {
+      throw new Error(`immutable publication version page contains KFD-only hero styles: ${publication.id}@${version.version}`);
+    }
     for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
       if (!versionHtml.includes(`href="${href}"`)) {
         throw new Error(`immutable publication version page changed its legacy machine entry: ${publication.id}@${version.version} ${href}`);
@@ -996,6 +999,12 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
 }
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
   throw new Error("KFD homepage must render support sections");
+}
+if (
+  !kfdHomeHtml.includes('class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;"')
+  || !kfdHomeHtml.includes('class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;"')
+) {
+  throw new Error("KFD future picture must retain its scoped hero typography");
 }
 if (
   kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
