@@ -1368,6 +1368,19 @@ ${alternates}
       line-height: 1.35;
     }
 
+    .hero-answer {
+      max-width: 820px;
+      color: var(--fg);
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .hero-claim-boundary {
+      max-width: 820px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
     .badge-strip {
       max-width: 100%;
     }
@@ -2505,6 +2518,26 @@ function kfdHomepageSection(id) {
   return kfdSite.homepage.sections?.find((section) => section.id === id);
 }
 
+function kfdFuturePictureHero() {
+  const futurePicture = kfdSite.homepage.futurePicture || {};
+  const question = futurePicture.question
+    || futurePicture.pastToFuture
+    || kfdSite.homepage.lead;
+  const engineeringAnswer = futurePicture.engineeringAnswer
+    || futurePicture.kungfuPath;
+  const claimBoundary = futurePicture.claimBoundary;
+
+  return [
+    `<p class="lead" data-kfd-future-picture="question">${inlineMarkdown(question)}</p>`,
+    engineeringAnswer
+      ? `<p class="hero-answer" data-kfd-future-picture="engineering-answer">${inlineMarkdown(engineeringAnswer)}</p>`
+      : "",
+    claimBoundary
+      ? `<p class="hero-claim-boundary" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
+      : "",
+  ].filter(Boolean).join("\n");
+}
+
 function kfdHomepageSectionPanels(ids, className = "") {
   return ids
     .map((id) => kfdHomepageSection(id))
@@ -2529,7 +2562,7 @@ function kfdHomepageSectionPanels(ids, className = "") {
 }
 
 function kfdPrimaryContinuationPanels() {
-  const handled = new Set(["foundation-triad", "foundation-model", "current-candidates"]);
+  const handled = new Set(["future-picture", "foundation-triad", "foundation-model", "current-candidates"]);
   return (kfdSite.homepage.displayPlan?.primary || [])
     .filter((id) => !handled.has(id))
     .map((id) => {
@@ -2643,7 +2676,7 @@ writeFile(
     body: `<section class="hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
       <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
-      <p class="lead">${inlineMarkdown(kfdSite.homepage.lead)}</p>
+      ${kfdFuturePictureHero()}
     </section>
 
     <section class="panel" id="foundation-triad">

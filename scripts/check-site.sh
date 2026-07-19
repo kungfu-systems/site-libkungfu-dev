@@ -881,8 +881,38 @@ for (const [label, html, state] of [
   }
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
+const kfdFuturePicture = kfdSite.homepage.futurePicture || {};
+const kfdFutureQuestion = kfdFuturePicture.question
+  || kfdFuturePicture.pastToFuture
+  || kfdSite.homepage.lead;
 if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
   throw new Error("KFD production artifact must not embed robots noindex metadata");
+}
+if (
+  !kfdHomeHtml.includes('data-kfd-future-picture="question"')
+  || !kfdHomeHtml.includes(escapeHtml(kfdFutureQuestion.replace(/\*\*/g, "").slice(0, 24)))
+) {
+  throw new Error("KFD homepage must render the bundle-owned core question");
+}
+for (const [field, compatibilityField, marker] of [
+  ["engineeringAnswer", "kungfuPath", "engineering-answer"],
+  ["claimBoundary", undefined, "claim-boundary"],
+]) {
+  const value = kfdFuturePicture[field] || (compatibilityField ? kfdFuturePicture[compatibilityField] : undefined);
+  if (value && (
+    !kfdHomeHtml.includes(`data-kfd-future-picture="${marker}"`)
+    || !kfdHomeHtml.includes(escapeHtml(value))
+  )) {
+    throw new Error(`KFD homepage must render homepage.futurePicture.${field}`);
+  }
+}
+if (kfdHomeHtml.includes('data-kfd-section="future-picture"')) {
+  throw new Error("KFD homepage must not duplicate the future-picture section below the hero");
+}
+for (const sourceField of ["futurePicture.engineeringAnswer", "futurePicture.claimBoundary"]) {
+  if (!renderSiteSource.includes(sourceField)) {
+    throw new Error(`KFD renderer must explicitly consume ${sourceField}`);
+  }
 }
 if (
   !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "manifest.json"))}"`) ||
