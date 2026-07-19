@@ -1000,9 +1000,10 @@ if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision
 if (
   kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
   || !kfdHomeHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
+  || !kfdHomeHtml.includes('<div class="stack doc-content" style="margin-top: 18px;">')
   || !kfdHomeHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
 ) {
-  throw new Error("KFD foundation explanation must render bundle block Markdown as headings and fenced code");
+  throw new Error("KFD foundation explanation must render bundle block Markdown with document code-block styling");
 }
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract) {

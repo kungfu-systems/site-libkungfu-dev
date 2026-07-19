@@ -2744,7 +2744,7 @@ writeFile(
         ${foundationModelPanels(kfdSite.homepage.foundationModel.layers)}
       </div>
       <p style="margin-top: 18px;"><code>${escapeHtml(kfdSite.homepage.foundationModel.chain)}</code></p>
-      <div class="stack" style="margin-top: 18px;">
+      <div class="stack doc-content" style="margin-top: 18px;">
         ${renderMarkdownBody(kfdFoundationModelExplanationMarkdown())}
       </div>
     </section>
