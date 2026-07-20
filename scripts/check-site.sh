@@ -21,6 +21,7 @@ const { loadPublicationPackageSet, readPublicationArtifact } = require("./script
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
+  "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/core-spec-manifest.json",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -63,6 +64,7 @@ const requiredBaseFiles = [
   "dist/badges/v1/kfd-3/passed.json",
   "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
+  "dist/runtime.json",
   "dist/llms.txt",
   "dist/papers/index.html",
   "dist/papers/manifest.json",
@@ -71,10 +73,12 @@ const requiredBaseFiles = [
 ];
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
+const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+const runtimeProjection = JSON.parse(fs.readFileSync("dist/runtime.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
@@ -313,6 +317,28 @@ const paperLocks = expectedPaperPackages.map((entry) => ({
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
 }
+if (
+  runtimeSurface.contract !== "libkungfu-embeddable-runtime-surface/v1" ||
+  runtimeSurface.status !== "reference-candidate" ||
+  runtimeSurface.claimLevel !== "reference-adopter"
+) {
+  throw new Error("embeddable runtime projection contract or claim boundary mismatch");
+}
+if (
+  runtimeSurface.source.sourceCommit !== "7eeb5bd1b45492f4da27eaacbe63eddfd6245176" ||
+  runtimeSurface.source.mainlineCommit !== "462a6c16e0608e0cbf71d8d304ddd3192e79ffc3" ||
+  runtimeSurface.source.projectCutRoot !== "sha256:2c555ff848de196df32dd5ae416d2055d7a470dbc98706b3d9bbb2f8e4bc29c5" ||
+  runtimeSurface.qualification.suiteRoot !== "sha256:1e996b8c43b0b3e38630ccd58acf8a714cbc24b339d3794318347faab9057e5f"
+) {
+  throw new Error("embeddable runtime projection drifted from reviewed source, Cut, or KFD suite roots");
+}
+if (
+  runtimeSurface.packages.length !== 2 ||
+  runtimeSurface.packages.some((entry) => entry.installCommand !== null || !entry.availability.includes("source")) ||
+  runtimeSurface.quickstarts.map((entry) => entry.language).join(",") !== "Node,Python,C"
+) {
+  throw new Error("source-only package availability or C/Node/Python quickstart projection drifted");
+}
 if (core.contract !== "kungfu-spec-manifest-fixture") {
   throw new Error("core fixture contract mismatch");
 }
@@ -460,6 +486,27 @@ for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dis
 }
 if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
   throw new Error("dist manifest source boundary drifted");
+}
+if (
+  runtimeProjection.contract !== runtimeSurface.contract ||
+  runtimeProjection.canonicalHost !== expectedSurfaceHost("hub") ||
+  runtimeProjection.machineEntry !== expectedSurfaceEndpoint("hub", "runtime.json") ||
+  runtimeProjection.source?.sourceCommit !== runtimeSurface.source.sourceCommit ||
+  runtimeProjection.sourceBoundary?.siteRole !== "rendering, routing, and agent discovery"
+) {
+  throw new Error("generated runtime projection drifted from its pinned fixture or channel");
+}
+if (
+  !manifest.pages.some((entry) => (
+    entry.host === expectedSurfaceHost("hub") &&
+    entry.path === "/runtime.json" &&
+    entry.source === "src/fixtures/libkungfu-runtime-surface.json"
+  )) ||
+  manifest.upstreamFixtures.runtime?.sourceCommit !== runtimeSurface.source.sourceCommit ||
+  manifest.upstreamFixtures.runtime?.projectCutRoot !== runtimeSurface.source.projectCutRoot ||
+  manifest.upstreamFixtures.runtime?.suiteRoot !== runtimeSurface.qualification.suiteRoot
+) {
+  throw new Error("dist manifest does not bind the exact embeddable runtime projection");
 }
 if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
   throw new Error("publication package aggregation contract mismatch");
@@ -876,14 +923,32 @@ if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manif
   throw new Error("human homepage should not render machine-entry cards");
 }
 if (
-  !hubHtml.includes("Kungfu product generation, in public") ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.headline)) ||
+  !hubHtml.includes("Embed the facts layer, not another Agent UI") ||
+  !hubHtml.includes("Start with an Episode") ||
+  !hubHtml.includes("No public registry install is claimed yet") ||
+  !hubHtml.includes("KFD Runtime 100 and restart qualification") ||
+  !hubHtml.includes("reference-adopter") ||
   !hubHtml.includes(">Principles</p>") ||
   !hubHtml.includes(">First load-bearing layer</p>") ||
   !hubHtml.includes(">First complex product proof</p>") ||
   !hubHtml.includes(">Kungfu Tech</a>") ||
   !hubHtml.includes('href="https://kungfu.tech"')
 ) {
-  throw new Error("human homepage must expose the KFD -> Buildchain -> Core generation chain and future product home");
+  throw new Error("human homepage must lead with the embeddable runtime path and retain its release-trust chain");
+}
+for (const quickstart of runtimeSurface.quickstarts) {
+  const sourceHref = `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${quickstart.sourcePath}`;
+  if (!hubHtml.includes(`<pre><code>${escapeHtml(quickstart.command)}</code></pre>`) || !hubHtml.includes(`href="${escapeHtml(sourceHref)}"`)) {
+    throw new Error(`homepage quickstart must bind ${quickstart.language} to the exact reviewed source`);
+  }
+}
+if (
+  !hubHtml.includes(`href="${escapeHtml(runtimeSurface.source.pullRequest)}"`) ||
+  !hubHtml.includes('href="/runtime.json"') ||
+  hubHtml.includes("npm install @kungfu-tech/opencode-kungfu")
+) {
+  throw new Error("homepage must expose exact source and machine facts without inventing a public package install");
 }
 if (hubHtml.includes("Open product generation substrate")) {
   throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
@@ -1449,7 +1514,7 @@ grep -q 'Open developer and agent substrate hub' dist/index.html
 grep -q 'core.libkungfu.dev' dist/core/index.html
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
-grep -q 'Fixture source' dist/index.html
+grep -q 'Projection source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
