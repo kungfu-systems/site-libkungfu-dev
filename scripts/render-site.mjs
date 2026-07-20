@@ -1368,135 +1368,6 @@ ${alternates}
       line-height: 1.35;
     }
 
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .hero-action {
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-      border: 1px solid var(--accent);
-      border-radius: 999px;
-      padding: 8px 16px;
-      color: var(--soft);
-      background: var(--accent-strong);
-      font-weight: 750;
-      text-decoration: none;
-    }
-
-    .hero-action.secondary {
-      color: var(--accent-strong);
-      background: transparent;
-    }
-
-    .runtime-status {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .runtime-status .tag {
-      color: var(--fg);
-      border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
-      background: color-mix(in srgb, var(--accent) 8%, var(--soft));
-    }
-
-    .runtime-architecture {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    .runtime-layer {
-      position: relative;
-      display: grid;
-      align-content: start;
-      gap: 8px;
-      min-height: 148px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-      padding: 18px;
-    }
-
-    .runtime-layer:not(:last-child)::after {
-      content: "→";
-      position: absolute;
-      z-index: 1;
-      top: 50%;
-      right: -16px;
-      display: grid;
-      place-items: center;
-      width: 22px;
-      height: 22px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--accent-strong);
-      background: var(--bg);
-      transform: translateY(-50%);
-    }
-
-    .runtime-layer[data-runtime-layer="libkungfu"] {
-      border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 7%, var(--soft));
-    }
-
-    .runtime-layer .eyebrow {
-      font-size: 11px;
-    }
-
-    .quickstart-card {
-      display: grid;
-      align-content: start;
-      gap: 14px;
-    }
-
-    .quickstart-card pre {
-      min-width: 0;
-      margin: 0;
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: var(--code);
-      padding: 12px 14px;
-    }
-
-    .quickstart-card pre code {
-      border: 0;
-      background: transparent;
-      padding: 0;
-      white-space: pre;
-    }
-
-    .runtime-proof {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .runtime-proof div {
-      border-left: 3px solid var(--accent);
-      padding-left: 12px;
-    }
-
-    .runtime-proof strong {
-      display: block;
-      color: var(--fg);
-      font-size: 22px;
-      line-height: 1.1;
-    }
-
-    .runtime-proof span {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
     .badge-strip {
       max-width: 100%;
     }
@@ -2054,23 +1925,6 @@ ${alternates}
       .grid,
       .grid.three {
         grid-template-columns: 1fr;
-      }
-
-      .runtime-architecture,
-      .runtime-proof {
-        grid-template-columns: 1fr;
-      }
-
-      .runtime-layer {
-        min-height: 0;
-      }
-
-      .runtime-layer:not(:last-child)::after {
-        content: "↓";
-        top: auto;
-        right: 50%;
-        bottom: -16px;
-        transform: translateX(50%);
       }
 
       .meta {
@@ -2779,13 +2633,164 @@ function kfdPrimaryContinuationPanels() {
     .join("\n");
 }
 
+const runtimeHomepageStyles = `<style>
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    color: var(--soft);
+    background: var(--accent-strong);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .hero-action.secondary {
+    color: var(--accent-strong);
+    background: transparent;
+  }
+
+  .runtime-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .runtime-status .tag {
+    color: var(--fg);
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+    background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+  }
+
+  .runtime-architecture {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .runtime-layer {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 148px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 18px;
+  }
+
+  .runtime-layer:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: -16px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--accent-strong);
+    background: var(--bg);
+    transform: translateY(-50%);
+  }
+
+  .runtime-layer[data-runtime-layer="libkungfu"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, var(--soft));
+  }
+
+  .runtime-layer .eyebrow {
+    font-size: 11px;
+  }
+
+  .quickstart-card {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+  }
+
+  .quickstart-card pre {
+    min-width: 0;
+    margin: 0;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--code);
+    padding: 12px 14px;
+  }
+
+  .quickstart-card pre code {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    white-space: pre;
+  }
+
+  .runtime-proof {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .runtime-proof div {
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+  }
+
+  .runtime-proof strong {
+    display: block;
+    color: var(--fg);
+    font-size: 22px;
+    line-height: 1.1;
+  }
+
+  .runtime-proof span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 820px) {
+    .runtime-architecture,
+    .runtime-proof {
+      grid-template-columns: 1fr;
+    }
+
+    .runtime-layer {
+      min-height: 0;
+    }
+
+    .runtime-layer:not(:last-child)::after {
+      content: "↓";
+      top: auto;
+      right: 50%;
+      bottom: -16px;
+      transform: translateX(50%);
+    }
+  }
+</style>`;
+
 writeFile(
   "index.html",
   page({
     title: `${site.title} | Embeddable Agent runtime`,
     description: site.tagline,
     current: "hub",
-    body: `<section class="hero">
+    body: `${runtimeHomepageStyles}
+    <section class="hero">
       <div class="runtime-status">
         <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
         <span class="tag">claim: ${escapeHtml(runtimeSurface.claimLevel)}</span>

@@ -896,8 +896,15 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
 }
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
+const immutableFoundationPaperHtml = fs.readFileSync(
+  "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.7/index.html",
+  "utf8",
+);
 if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
   throw new Error("production artifact must not embed robots noindex metadata");
+}
+if (!hubHtml.includes(".runtime-architecture") || immutableFoundationPaperHtml.includes(".runtime-architecture")) {
+  throw new Error("embeddable runtime styles must remain homepage-local and must not mutate immutable paper HTML");
 }
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
