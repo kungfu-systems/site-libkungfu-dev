@@ -1,0 +1,107 @@
+{
+  "contract": "libkungfu-embeddable-runtime-surface/v1",
+  "schemaVersion": 1,
+  "status": "reference-candidate",
+  "claimLevel": "reference-adopter",
+  "headline": "Build your Hub. Don't rebuild the runtime.",
+  "lead": "Keep your Agent UI, models, accounts, permissions, cloud, and customer relationship. Embed libkungfu for local or worker runtime facts, Episode recovery, and portable KFD evidence.",
+  "claimBoundary": "This is a first-party reference adopter, not external vendor adoption, certification, or OpenCode endorsement.",
+  "source": {
+    "repository": "https://github.com/kungfu-systems/kungfu",
+    "pullRequest": "https://github.com/kungfu-systems/kungfu/pull/1171",
+    "sourceCommit": "7eeb5bd1b45492f4da27eaacbe63eddfd6245176",
+    "mainlineCommit": "462a6c16e0608e0cbf71d8d304ddd3192e79ffc3",
+    "projectCutRoot": "sha256:2c555ff848de196df32dd5ae416d2055d7a470dbc98706b3d9bbb2f8e4bc29c5",
+    "qualificationGuidePath": "docs/qualification/vendor-agent-hub-embedding.md",
+    "referencePackagePath": "examples/opencode-kungfu"
+  },
+  "packages": [
+    {
+      "name": "@kungfu-tech/core",
+      "role": "Node binding over the native libkungfu authority",
+      "availability": "source-candidate",
+      "installCommand": null
+    },
+    {
+      "name": "@kungfu-tech/opencode-kungfu",
+      "role": "Replaceable OpenCode reference adapter",
+      "availability": "source-only-private-package",
+      "installCommand": null
+    }
+  ],
+  "architecture": [
+    {
+      "id": "vendor-product",
+      "label": "Your Agent product",
+      "owns": "TUI, models, accounts, permissions"
+    },
+    {
+      "id": "libkungfu",
+      "label": "libkungfu",
+      "owns": "Runtime facts, Episodes, recovery"
+    },
+    {
+      "id": "kfd",
+      "label": "KFD open protocol",
+      "owns": "Portable reports and Hub exchange"
+    },
+    {
+      "id": "vendor-hub",
+      "label": "Your Hub",
+      "owns": "Cloud, workflows, customers"
+    }
+  ],
+  "quickstarts": [
+    {
+      "language": "Node",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.mjs",
+      "command": "node quickstart/episode.mjs ./runtime"
+    },
+    {
+      "language": "Python",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.py",
+      "command": "python quickstart/episode.py ./runtime"
+    },
+    {
+      "language": "C",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.c",
+      "command": "cc quickstart/episode.c -lkungfu -o episode && ./episode ./runtime"
+    }
+  ],
+  "dataBoundary": {
+    "retained": [
+      "Episode open, heartbeat, end, or abort lifecycle",
+      "Adapter-owned phase labels",
+      "Native timestamps and aggregate heartbeat counts"
+    ],
+    "dropped": [
+      "Prompts and message content",
+      "Tool arguments, outputs, and errors",
+      "Provider, model, token, and credential data"
+    ]
+  },
+  "qualification": {
+    "profile": "kfd-agent-runtime@0.1.0-alpha.1",
+    "suite": "kfd-runtime-100@0.1.0-alpha.1",
+    "suiteRoot": "sha256:1e996b8c43b0b3e38630ccd58acf8a714cbc24b339d3794318347faab9057e5f",
+    "core": "35/35",
+    "experimental": "65/65 non-normative",
+    "pairedHooks": 100,
+    "latencyMs": {
+      "p50": 1.183,
+      "p95": 2.4,
+      "p99": 3.45,
+      "max": 3.788
+    },
+    "platform": "darwin/arm64",
+    "runtime": "Node 22.22.3",
+    "vendorSurface": "OpenCode 1.18.3 public plugin hooks",
+    "recovery": "SIGKILL restart recovered one unsealed Episode; export, import, and both fsck checks passed"
+  },
+  "knownLimits": [
+    "No registry installation is claimed until public package artifacts exist.",
+    "The retained qualification observes Darwin arm64 only.",
+    "SIGKILL recovery is not physical power-loss or device-loss qualification.",
+    "The reference run used no model provider and proves no OpenCode endorsement."
+  ]
+}

@@ -45,6 +45,7 @@ test -f dist/buildchain/badges/v1/buildchain-release-passport/passed.svg
 test -f dist/badges/v1/kfd-1/passed.json
 test -f dist/buildchain/badges/v1/badge-endpoint-registry.json
 test -f dist/manifest.json
+test -f dist/runtime.json
 test -f dist/llms.txt
 test -f dist/papers/index.html
 test -f dist/papers/manifest.json

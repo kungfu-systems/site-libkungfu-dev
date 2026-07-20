@@ -1368,6 +1368,135 @@ ${alternates}
       line-height: 1.35;
     }
 
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero-action {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      padding: 8px 16px;
+      color: var(--soft);
+      background: var(--accent-strong);
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .hero-action.secondary {
+      color: var(--accent-strong);
+      background: transparent;
+    }
+
+    .runtime-status {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .runtime-status .tag {
+      color: var(--fg);
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+      background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+    }
+
+    .runtime-architecture {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .runtime-layer {
+      position: relative;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      min-height: 148px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 18px;
+    }
+
+    .runtime-layer:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      right: -16px;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent-strong);
+      background: var(--bg);
+      transform: translateY(-50%);
+    }
+
+    .runtime-layer[data-runtime-layer="libkungfu"] {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 7%, var(--soft));
+    }
+
+    .runtime-layer .eyebrow {
+      font-size: 11px;
+    }
+
+    .quickstart-card {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .quickstart-card pre {
+      min-width: 0;
+      margin: 0;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--code);
+      padding: 12px 14px;
+    }
+
+    .quickstart-card pre code {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      white-space: pre;
+    }
+
+    .runtime-proof {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .runtime-proof div {
+      border-left: 3px solid var(--accent);
+      padding-left: 12px;
+    }
+
+    .runtime-proof strong {
+      display: block;
+      color: var(--fg);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .runtime-proof span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .badge-strip {
       max-width: 100%;
     }
@@ -1927,6 +2056,23 @@ ${alternates}
         grid-template-columns: 1fr;
       }
 
+      .runtime-architecture,
+      .runtime-proof {
+        grid-template-columns: 1fr;
+      }
+
+      .runtime-layer {
+        min-height: 0;
+      }
+
+      .runtime-layer:not(:last-child)::after {
+        content: "↓";
+        top: auto;
+        right: 50%;
+        bottom: -16px;
+        transform: translateX(50%);
+      }
+
       .meta {
         grid-template-columns: 1fr;
       }
@@ -2071,6 +2217,29 @@ function mechanismStepCard(step) {
     </div>
     <p>${escapeHtml(step.summary)}</p>
     <a class="card-action" ${surfaceLinkAttrs(surface.id)}>${escapeHtml(actionLabel)}</a>
+  </article>`;
+}
+
+function runtimeSourceHref(sourcePath) {
+  return `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${sourcePath}`;
+}
+
+function runtimeArchitectureLayer(layer, index) {
+  return `<article class="runtime-layer" data-runtime-layer="${escapeAttr(layer.id)}">
+    <p class="eyebrow">0${index + 1}</p>
+    <h3>${escapeHtml(layer.label)}</h3>
+    <p>${escapeHtml(layer.owns)}</p>
+  </article>`;
+}
+
+function runtimeQuickstartCard(quickstart) {
+  return `<article class="panel quickstart-card">
+    <div>
+      <p class="eyebrow">${escapeHtml(quickstart.language)}</p>
+      <h3>Open and close one native Episode</h3>
+    </div>
+    <pre><code>${escapeHtml(quickstart.command)}</code></pre>
+    <a class="card-action" href="${escapeAttr(runtimeSourceHref(quickstart.sourcePath))}">Read the exact source</a>
   </article>`;
 }
 
@@ -2238,6 +2407,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 
 const site = readFixtureJson("site-manifest.json");
 const core = readFixtureJson("core-spec-manifest.json");
+const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
 const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
@@ -2612,12 +2782,107 @@ function kfdPrimaryContinuationPanels() {
 writeFile(
   "index.html",
   page({
-    title: `${site.title} | Open substrate hub`,
+    title: `${site.title} | Embeddable Agent runtime`,
     description: site.tagline,
     current: "hub",
     body: `<section class="hero">
-      <h1>${escapeHtml(site.homepage.headline)}</h1>
-      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
+      <div class="runtime-status">
+        <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
+        <span class="tag">claim: ${escapeHtml(runtimeSurface.claimLevel)}</span>
+        <span class="tag">${escapeHtml(runtimeSurface.qualification.platform)}</span>
+      </div>
+      <h1>${escapeHtml(runtimeSurface.headline)}</h1>
+      <p class="lead">${escapeHtml(runtimeSurface.lead)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Open the reviewed reference</a>
+        <a class="hero-action secondary" href="/runtime.json">Inspect machine facts</a>
+      </div>
+      <p><strong>Availability:</strong> source candidate. No public registry install is claimed yet.</p>
+    </section>
+
+    <section aria-labelledby="runtime-architecture-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Keep product ownership</p>
+        <h2 id="runtime-architecture-heading">Embed the facts layer, not another Agent UI</h2>
+        <p>libkungfu stays local or on your worker. KFD carries portable evidence to optional, vendor-owned Hubs.</p>
+      </div>
+      <div class="runtime-architecture">
+        ${runtimeSurface.architecture.map(runtimeArchitectureLayer).join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="quickstart-heading">
+      <div class="section-heading">
+        <p class="eyebrow">One native authority · three host languages</p>
+        <h2 id="quickstart-heading">Start with an Episode</h2>
+        <p>These commands run after building the exact source candidate. Each card links to the single reviewed implementation.</p>
+      </div>
+      <div class="grid three">
+        ${runtimeSurface.quickstarts.map(runtimeQuickstartCard).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel warning" style="margin-top: 18px;">
+      <p class="eyebrow">Package availability</p>
+      <h2>Source is ready; registry installation is not claimed</h2>
+      <div class="grid" style="margin-top: 18px;">
+        ${runtimeSurface.packages
+          .map(
+            (packageEntry) => `<div>
+          <h3><code>${escapeHtml(packageEntry.name)}</code></h3>
+          <p>${escapeHtml(packageEntry.role)}</p>
+          <p style="margin-top: 8px;"><strong>Status:</strong> ${escapeHtml(packageEntry.availability)}</p>
+        </div>`,
+          )
+          .join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="boundary-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Data and authority boundary</p>
+        <h2 id="boundary-heading">Record lifecycle evidence, not customer payloads</h2>
+      </div>
+      <div class="grid">
+        <article class="panel">
+          <h3>Retained by the reference adapter</h3>
+          <ul>${runtimeSurface.dataBoundary.retained.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+        </article>
+        <article class="panel">
+          <h3>Deliberately dropped</h3>
+          <ul>${runtimeSurface.dataBoundary.dropped.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;" aria-labelledby="evidence-heading">
+      <p class="eyebrow">Observed evidence · exact candidate</p>
+      <h2 id="evidence-heading">KFD Runtime 100 and restart qualification</h2>
+      <div class="runtime-proof">
+        <div><strong>${escapeHtml(runtimeSurface.qualification.core)}</strong><span>Core</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.experimental)}</strong><span>Experimental</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.pairedHooks)}</strong><span>paired hooks</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.latencyMs.p95)} ms</strong><span>observed p95 hook latency</span></div>
+      </div>
+      <p style="margin-top: 18px;">${escapeHtml(runtimeSurface.qualification.recovery)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(runtimeSourceHref(runtimeSurface.source.qualificationGuidePath))}">Read qualification boundary</a>
+        <a class="card-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Audit PR #1171</a>
+      </div>
+    </section>
+
+    <section class="panel warning" style="margin-top: 18px;">
+      <h2>What this does not claim</h2>
+      <p><strong>${escapeHtml(runtimeSurface.claimBoundary)}</strong></p>
+      <ul style="margin-top: 14px;">${runtimeSurface.knownLimits.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+    </section>
+
+    <section aria-labelledby="release-trust-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Release trust</p>
+        <h2 id="release-trust-heading">Why the candidate is inspectable</h2>
+        <p>KFD owns decision and conformance semantics. Buildchain binds evidence into release mechanisms. Core is the product proof.</p>
+      </div>
       <div class="visual substrate-map" aria-label="Product generation map">
         <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and Kungfu Tech carries future products.">
         <a class="map-hotspot kfd" ${surfaceLinkAttrs("kfd")} aria-label="Open KFD"></a>
@@ -2625,10 +2890,9 @@ writeFile(
         <a class="map-hotspot core" ${surfaceLinkAttrs("core")} aria-label="Open Core"></a>
         <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open ${escapeAttr(site.homepage.futureProducts.displayName)}"></a>
       </div>
-    </section>
-
-    <section class="grid three mechanism-chain">
-      ${site.homepage.chain.map(mechanismStepCard).join("\n")}
+      <div class="grid three mechanism-chain" style="margin-top: 18px;">
+        ${site.homepage.chain.map(mechanismStepCard).join("\n")}
+      </div>
     </section>
 
     <section class="panel future-products">
@@ -2639,7 +2903,7 @@ writeFile(
 
     <section class="panel warning" style="margin-top: 18px;">
       <h2>Source boundary</h2>
-      <p><strong>Fixture source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
+      <p><strong>Projection source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
     </section>`,
   }),
 );
@@ -3398,6 +3662,18 @@ for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normaliz
   );
 }
 
+const runtimeAgentProjection = {
+  ...runtimeSurface,
+  canonicalHost: surfaceCanonicalHost("hub"),
+  humanEntry: surfaceCanonicalHref("hub"),
+  machineEntry: surfaceEndpointHref("hub", "runtime.json"),
+  sourceBoundary: {
+    truthOwner: "kungfu-systems/kungfu exact public source and KFD Runtime 100 authority",
+    siteRole: "rendering, routing, and agent discovery",
+    rule: "This site projects the pinned source, qualification, and claim boundary. It does not publish packages, rerun conformance, or upgrade the claim.",
+  },
+};
+
 const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
@@ -3406,6 +3682,11 @@ const manifest = {
   sourceBoundary: site.sourceBoundary,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    {
+      path: "/runtime.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/libkungfu-runtime-surface.json",
+    },
     { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-spec-manifest.json" },
     ...publicationArchives.routes.map((route) => ({
       path: route.path,
@@ -3484,6 +3765,15 @@ const manifest = {
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
+    runtime: {
+      contract: runtimeSurface.contract,
+      status: runtimeSurface.status,
+      claimLevel: runtimeSurface.claimLevel,
+      sourceCommit: runtimeSurface.source.sourceCommit,
+      mainlineCommit: runtimeSurface.source.mainlineCommit,
+      projectCutRoot: runtimeSurface.source.projectCutRoot,
+      suiteRoot: runtimeSurface.qualification.suiteRoot,
+    },
     core: {
       contract: core.contract,
       package: core.package,
@@ -3542,6 +3832,7 @@ const manifest = {
   },
 };
 
+writeFile("runtime.json", `${JSON.stringify(runtimeAgentProjection, null, 2)}\n`);
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
 const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
@@ -3723,15 +4014,18 @@ Primary pages:
 
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
+- ${surfaceEndpointHref("hub", "runtime.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
 - ${surfaceEndpointHref("papers", "manifest.json")}
 - ${surfaceEndpointHref("papers", "registry.json")}
 
 Source boundary:
-This repository renders upstream manifests. It is not a product fact source.
-Core facts must come from @kungfu-tech/spec. Buildchain facts must come from
-the @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
+This repository renders upstream manifests and exact public source projections.
+It is not a product fact source. Embeddable runtime facts come from the pinned
+Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core facts must
+come from @kungfu-tech/spec. Buildchain facts must come from the
+@kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
 @kungfu-tech/kfd site bundle, registry, and decision documents. Publication
 archive facts must come from Buildchain publication registry data.
 `,

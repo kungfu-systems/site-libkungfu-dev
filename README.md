@@ -38,7 +38,10 @@ machines, artifact schemas, or provenance facts.
 ## Source Boundary
 
 The generated hub and core pages currently consume fixture manifests under
-`src/fixtures/`. The Buildchain page consumes the pinned npm package artifact
+`src/fixtures/`. The hub's `/runtime.json` projection pins the reviewed Kungfu
+source, Project Cut, KFD Runtime 100 suite root, package availability,
+qualification, and claim boundary; it does not publish packages or become the
+runtime/conformance authority. The Buildchain page consumes the pinned npm package artifact
 `@kungfu-tech/buildchain@2.11.13` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
@@ -49,7 +52,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.38` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.39` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 usage and non-normative formal reference children are rendered under
 `/{number}/usage/` and `/{number}/formal/`; the decision remains their authority
