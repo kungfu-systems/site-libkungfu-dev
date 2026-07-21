@@ -2078,11 +2078,48 @@ function runtimeSourceHref(sourcePath) {
   return `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${sourcePath}`;
 }
 
-function runtimeArchitectureLayer(layer, index) {
-  return `<article class="runtime-layer" data-runtime-layer="${escapeAttr(layer.id)}">
-    <p class="eyebrow">0${index + 1}</p>
-    <h3>${escapeHtml(layer.label)}</h3>
-    <p>${escapeHtml(layer.owns)}</p>
+function architectureSourceHref(source, document) {
+  return `${source.repository}/blob/${source.commit}/${document.path}`;
+}
+
+function renderActionWorldStep(step) {
+  const components = step.components?.length
+    ? `<ul class="action-components">${step.components.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>`
+    : "";
+  return `<li class="action-step" data-action-kind="${escapeAttr(step.kind)}">
+    <span class="architecture-node-label">${escapeHtml(step.label)}</span>
+    <strong>${escapeHtml(step.question)}</strong>
+    <p>${escapeHtml(step.detail)}</p>
+    ${components}
+  </li>`;
+}
+
+function renderFoundationLayer(layer) {
+  return `<article class="foundation-card" data-foundation-kind="${escapeAttr(layer.kind)}">
+    <span class="architecture-node-label">${escapeHtml(layer.label)}</span>
+    <p>${escapeHtml(layer.detail)}</p>
+  </article>`;
+}
+
+function renderHub(hub) {
+  return `<article class="hub-node" data-hub="${escapeAttr(hub.id)}">
+    <p class="eyebrow">Participant-owned control plane</p>
+    <h3>${escapeHtml(hub.label)}</h3>
+    <ol>${hub.layers.map((layer) => `<li>${escapeHtml(layer)}</li>`).join("")}</ol>
+  </article>`;
+}
+
+function renderExchangeStep(step) {
+  return `<li>
+    <strong>${escapeHtml(step.label)}</strong>
+    <span>${escapeHtml(step.detail)}</span>
+  </li>`;
+}
+
+function renderInvariant(invariant) {
+  return `<article class="invariant-card">
+    <p class="invariant-equation"><span>${escapeHtml(invariant.left)}</span><b aria-label="is not">≠</b><span>${escapeHtml(invariant.right)}</span></p>
+    <p>${escapeHtml(invariant.detail)}</p>
   </article>`;
 }
 
@@ -2672,49 +2709,270 @@ const runtimeHomepageStyles = `<style>
     background: color-mix(in srgb, var(--accent) 8%, var(--soft));
   }
 
-  .runtime-architecture {
+  .architecture-visual {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    align-items: stretch;
+    min-width: 0;
+    gap: 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--soft) 88%, var(--bg));
+    padding: clamp(18px, 3vw, 30px);
+    box-shadow: 0 20px 52px color-mix(in srgb, var(--fg) 8%, transparent);
   }
 
-  .runtime-layer {
+  .action-loop {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 22px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .action-step {
     position: relative;
     display: grid;
+    min-width: 0;
     align-content: start;
-    gap: 8px;
-    min-height: 148px;
+    gap: 9px;
+    min-height: 214px;
     border: 1px solid var(--line);
+    border-top: 4px solid var(--muted);
     border-radius: 8px;
-    background: var(--soft);
-    padding: 18px;
+    background: var(--bg);
+    padding: 15px;
   }
 
-  .runtime-layer:not(:last-child)::after {
+  .action-step:not(:last-child)::after {
     content: "→";
     position: absolute;
-    z-index: 1;
+    z-index: 2;
     top: 50%;
-    right: -16px;
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
+    right: -25px;
+    width: 26px;
     color: var(--accent-strong);
-    background: var(--bg);
+    font: 700 18px/1 monospace;
+    text-align: center;
     transform: translateY(-50%);
   }
 
-  .runtime-layer[data-runtime-layer="libkungfu"] {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 7%, var(--soft));
+  .action-step[data-action-kind="fact"] { border-top-color: #2784c7; }
+  .action-step[data-action-kind="geometry"] { border-top-color: #d69732; }
+  .action-step[data-action-kind="binding"] { border-top-color: #b16bd3; }
+  .action-step[data-action-kind="external"] { border-top-color: #7b8794; }
+  .action-step[data-action-kind="episode"] { border-top-color: #2e9d72; }
+  .action-step[data-action-kind="admission"] { border-top-color: #476dd0; }
+
+  .architecture-node-label {
+    color: var(--fg);
+    font: 700 13px/1.25 ui-monospace, SFMono-Regular, Consolas, monospace;
   }
 
-  .runtime-layer .eyebrow {
+  .action-step strong {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .action-step p,
+  .foundation-card p,
+  .hub-node li,
+  .exchange-channel span,
+  .invariant-card p,
+  .support-reason p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .action-components {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .action-components li {
+    border-left: 2px solid #d69732;
+    padding-left: 7px;
+    color: var(--fg);
     font-size: 11px;
+  }
+
+  .loop-return {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    color: var(--accent-strong);
+    font: 700 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .loop-return::before {
+    content: "";
+    width: min(320px, 45%);
+    border-top: 1px dashed var(--accent);
+  }
+
+  .authority-foundation {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .foundation-card {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    border: 1px solid var(--line);
+    border-left: 4px solid #2784c7;
+    border-radius: 7px;
+    background: var(--soft);
+    padding: 14px;
+  }
+
+  .foundation-card[data-foundation-kind="projection"] {
+    border-style: dashed;
+    border-left-style: dashed;
+    border-left-color: var(--muted);
+  }
+
+  .network-diagram {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .hub-node {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 12px;
+    border: 2px solid var(--fg);
+    border-radius: 10px;
+    background: var(--bg);
+    padding: 20px;
+  }
+
+  .hub-node h3 { margin: 0; }
+
+  .hub-node ol {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hub-node li {
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    background: var(--soft);
+    padding: 11px 12px;
+  }
+
+  .hub-node li:last-child {
+    border-bottom: 1px solid var(--line);
+    color: var(--fg);
+    font-weight: 650;
+  }
+
+  .exchange-boundary {
+    display: grid;
+    min-width: 0;
+    align-content: center;
+    gap: 12px;
+    border: 1px solid color-mix(in srgb, #8b63d9 70%, var(--line));
+    border-radius: 10px;
+    background: color-mix(in srgb, #8b63d9 8%, var(--soft));
+    padding: 16px;
+  }
+
+  .exchange-boundary > strong {
+    color: var(--fg);
+    text-align: center;
+  }
+
+  .exchange-channel {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .exchange-channel li {
+    display: grid;
+    gap: 3px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    padding: 10px;
+  }
+
+  .transport-label,
+  .protocol-limit {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: center;
+  }
+
+  .protocol-limit {
+    border: 1px dashed var(--line);
+    border-radius: 7px;
+    padding: 12px;
+  }
+
+  .invariant-strip,
+  .support-reasons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .invariant-card,
+  .support-reason {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg);
+    padding: 14px;
+  }
+
+  .invariant-equation {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg) !important;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .invariant-equation b {
+    color: #b24b4b;
+    font-size: 22px;
+  }
+
+  .support-reason strong { font-size: 14px; }
+
+  .architecture-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .architecture-sources a {
+    font-size: 13px;
+    font-weight: 650;
   }
 
   .quickstart-card {
@@ -2764,22 +3022,42 @@ const runtimeHomepageStyles = `<style>
   }
 
   @media (max-width: 820px) {
-    .runtime-architecture,
+    .architecture-visual {
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    .action-loop,
+    .authority-foundation,
+    .network-diagram,
+    .invariant-strip,
+    .support-reasons,
     .runtime-proof {
       grid-template-columns: 1fr;
     }
 
-    .runtime-layer {
+    .action-step {
       min-height: 0;
+      overflow-wrap: anywhere;
     }
 
-    .runtime-layer:not(:last-child)::after {
+    .foundation-card,
+    .hub-node,
+    .exchange-boundary,
+    .invariant-card,
+    .support-reason {
+      overflow-wrap: anywhere;
+    }
+
+    .action-step:not(:last-child)::after {
       content: "↓";
       top: auto;
       right: 50%;
-      bottom: -16px;
+      bottom: -22px;
       transform: translateX(50%);
     }
+
+    .loop-return::before { width: 35%; }
   }
 </style>`;
 
@@ -2805,14 +3083,71 @@ writeFile(
       <p><strong>Availability:</strong> source candidate. No public registry install is claimed yet.</p>
     </section>
 
-    <section aria-labelledby="runtime-architecture-heading">
+    <section aria-labelledby="action-world-heading">
       <div class="section-heading">
-        <p class="eyebrow">Keep product ownership</p>
-        <h2 id="runtime-architecture-heading">Embed the facts layer, not another Agent UI</h2>
-        <p>libkungfu stays local or on your worker. KFD carries portable evidence to optional, vendor-owned Hubs.</p>
+        <p class="eyebrow">01 · The action world</p>
+        <h2 id="action-world-heading">${escapeHtml(runtimeSurface.actionWorld.headline)}</h2>
+        <p>${escapeHtml(runtimeSurface.actionWorld.summary)}</p>
       </div>
-      <div class="runtime-architecture">
-        ${runtimeSurface.architecture.map(runtimeArchitectureLayer).join("\n")}
+      <div class="architecture-visual" aria-label="libkungfu action world architecture">
+        <ol class="action-loop">
+          ${runtimeSurface.actionWorld.steps.map(renderActionWorldStep).join("\n")}
+        </ol>
+        <div class="loop-return" aria-label="The successor Fact cut begins the next action loop">next action loop</div>
+        <div class="authority-foundation" aria-label="Runtime authority and projection layers">
+          ${runtimeSurface.actionWorld.foundation.map(renderFoundationLayer).join("\n")}
+        </div>
+      </div>
+      <div class="architecture-sources">
+        <strong>Semantic source:</strong>
+        ${runtimeSurface.architectureSources.kungfu.documents
+          .map((document) => `<a href="${escapeAttr(architectureSourceHref(runtimeSurface.architectureSources.kungfu, document))}">${escapeHtml(document.path)}</a>`)
+          .join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="hub-network-heading">
+      <div class="section-heading">
+        <p class="eyebrow">02 · The plural-Hub network</p>
+        <h2 id="hub-network-heading">${escapeHtml(runtimeSurface.hubNetwork.headline)}</h2>
+        <p>${escapeHtml(runtimeSurface.hubNetwork.summary)}</p>
+      </div>
+      <div class="architecture-visual">
+        <div class="network-diagram" aria-label="Two independently owned Agent Hubs exchanging responsibility through KFD">
+          ${renderHub(runtimeSurface.hubNetwork.hubs[0])}
+          <div class="exchange-boundary">
+            <strong>KFD responsibility boundary</strong>
+            <ol class="exchange-channel">
+              ${runtimeSurface.hubNetwork.exchange.map(renderExchangeStep).join("\n")}
+            </ol>
+            <p class="transport-label"><strong>Replaceable transport</strong><br>${escapeHtml(runtimeSurface.hubNetwork.transport)}</p>
+          </div>
+          ${renderHub(runtimeSurface.hubNetwork.hubs[1])}
+        </div>
+        <p class="protocol-limit"><strong>KFD does not own:</strong> ${escapeHtml(runtimeSurface.hubNetwork.notOwned)}</p>
+        <div class="invariant-strip" aria-label="KFD protocol invariants">
+          ${runtimeSurface.invariants.map(renderInvariant).join("\n")}
+        </div>
+      </div>
+      <div class="architecture-sources">
+        <strong>Protocol source:</strong>
+        ${runtimeSurface.architectureSources.kfd.documents
+          .map((document) => `<a href="${escapeAttr(architectureSourceHref(runtimeSurface.architectureSources.kfd, document))}">${escapeHtml(document.path)}</a>`)
+          .join("\n")}
+        <span class="tag">${escapeHtml(runtimeSurface.architectureSources.kfd.profile)}</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="hub-support-heading">
+      <div class="section-heading">
+        <p class="eyebrow">03 · Why this can support a Hub network</p>
+        <h2 id="hub-support-heading">The protocol removes shared-infrastructure assumptions.</h2>
+        <p>KFD does not need every participant to share one implementation. It preserves the minimum semantics required for independent systems to exchange responsibility without guessing.</p>
+      </div>
+      <div class="support-reasons">
+        ${runtimeSurface.hubNetwork.supportReasons
+          .map((reason) => `<article class="support-reason"><strong>${escapeHtml(reason.pressure)}</strong><p>${escapeHtml(reason.mechanism)}</p></article>`)
+          .join("\n")}
       </div>
     </section>
 
