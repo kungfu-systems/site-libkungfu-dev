@@ -9,17 +9,20 @@ importers:
   .:
     dependencies:
       '@kungfu-tech/buildchain':
-        specifier: 2.11.13
-        version: 2.11.13
+        specifier: 2.14.13
+        version: 2.14.13
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.39
-        version: 1.0.0-alpha.39
+        specifier: 1.0.0-alpha.40
+        version: 1.0.0-alpha.40
+      '@kungfu-tech/paper-episodes-to-primitives':
+        specifier: 0.1.0-alpha.2
+        version: 0.1.0-alpha.2
       '@kungfu-tech/paper-kfd-foundation-real-world-agent-work':
         specifier: 0.1.0-alpha.7
         version: 0.1.0-alpha.7
       '@kungfu-tech/paper-kungfu-product-white-paper':
-        specifier: 0.1.0-alpha.5
-        version: 0.1.0-alpha.5
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8
       '@kungfu-tech/paper-observer-declared-timelines':
         specifier: 0.1.0-alpha.8
         version: 0.1.0-alpha.8
@@ -32,23 +35,27 @@ importers:
 
 packages:
 
-  '@kungfu-tech/buildchain@2.11.13':
-    resolution: {integrity: sha512-QQQNTnEf6U1ZTLLdcrBggcSJ/6fyCmOHFIeaA1uUnBfQuLwZzNwxkFFMcY3NVWbGohE5eGXQEuUEiF9uXY8pVg==}
+  '@kungfu-tech/buildchain@2.14.13':
+    resolution: {integrity: sha512-dwbwO9SH9WZ26vnJqg9UMRsHm/78N4MRfRnzHdtut2Z6DbHri24mk9xb3YYQNJvijG4SLs519UQQ2ZGSd8ExgA==}
     engines: {node: '>=22.14.0'}
     hasBin: true
 
-  '@kungfu-tech/kfd@1.0.0-alpha.21':
-    resolution: {integrity: sha512-lsr3aJ93pUaO9gxnGBsrTJkTkvpIHPHp9Rxug7WvdS4Zkte3AdFvyCl1DgwQN+/38FAXf8fBozyGkHxxXaN7Dg==}
-
-  '@kungfu-tech/kfd@1.0.0-alpha.39':
-    resolution: {integrity: sha512-WWxo9ZUL7IGdGg4iXUoa8rMpZrQ6mwZlIW91AeNwit56dSGJImJ5RB6jTUr9k2LaOBnIlj4ro1P6wnukXal1Jw==}
+  '@kungfu-tech/kfd@1.0.0-alpha.29':
+    resolution: {integrity: sha512-gX1xWL7I2bqRkjbAuLLbkqcGdbRn6Aemdxg2y7zQZHFYPKi0Y7Su55xby++52fafX6A/ZpPZtO+9iQalqHVRxw==}
     hasBin: true
+
+  '@kungfu-tech/kfd@1.0.0-alpha.40':
+    resolution: {integrity: sha512-+15RLXm8wi4Tbd33bv1gHBsqsPtaGvSpRceZMeQ/DOLUGItLsg8L1uD64DZ0Osrs53WfJIY6Aa/kzaMtbPQ3DA==}
+    hasBin: true
+
+  '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2':
+    resolution: {integrity: sha512-D7NGY7wtV54r5w3zzlq51gOcmBHkmT8jiMoIvdIZS8QOjvHv86cs4yqZ6JCAooW6aV2h8v0mNiiMbKP59PwgZA==}
 
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7':
     resolution: {integrity: sha512-XwDf5AVlKb2HvgSOeSSGXDvmOWR2KEzTt4bZUuP3nWVmwuqohaTsQ5yYjNSEV0gv5D0HTU6CKn+mpNKAXooEtA==}
 
-  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.5':
-    resolution: {integrity: sha512-qyIRiVehKP5FuSzKFaVdhrs1955S4vvLjuMmhjXdsZISKOoI5quz3/aRkwahplqjcEJwT6pEnkTWTI2VxIUlmw==}
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.8':
+    resolution: {integrity: sha512-rpogxqTH4Ce0PjzqdlkdWNn6uSQD+dEow+DEnTs8DeFbvLFXYi6hr4vKXBoxz6oUcOEEEX0lWq20RoMuyb3HHA==}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.8':
     resolution: {integrity: sha512-68ugGvrnutyprT6IY95ArUsLPDzOBFErliGSPR6rC68HJXJnUHNFl4f5e2V2hwloicuDesVSoJvByo42yf8oHQ==}
@@ -98,18 +105,20 @@ packages:
 
 snapshots:
 
-  '@kungfu-tech/buildchain@2.11.13':
+  '@kungfu-tech/buildchain@2.14.13':
     dependencies:
-      '@kungfu-tech/kfd': 1.0.0-alpha.21
+      '@kungfu-tech/kfd': 1.0.0-alpha.29
       smol-toml: 1.7.0
 
-  '@kungfu-tech/kfd@1.0.0-alpha.21': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.29': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.39': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.40': {}
+
+  '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2': {}
 
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.7': {}
 
-  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.5': {}
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.8': {}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.8': {}
 

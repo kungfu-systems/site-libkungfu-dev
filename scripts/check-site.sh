@@ -44,6 +44,14 @@ const requiredBaseFiles = [
   "dist/kfd/index.html",
   "dist/kfd/foundation/index.html",
   "dist/foundation/index.html",
+  "dist/kfd/formal/index.html",
+  "dist/formal/index.html",
+  "dist/kfd/terminology/index.html",
+  "dist/terminology/index.html",
+  "dist/kfd/terminology.json",
+  "dist/terminology.json",
+  "dist/kfd/schemas/kfd-terminology.schema.json",
+  "dist/schemas/kfd-terminology.schema.json",
   "dist/kfd/cases/index.html",
   "dist/cases/index.html",
   "dist/kfd/manifest.json",
@@ -118,8 +126,10 @@ const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/re
 const kfdCandidateRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/drafts/registry.json", "utf8"));
 const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/cases/registry.json", "utf8"));
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
-const expectedBuildchainVersion = "2.11.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.31";
+const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
+const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
+const expectedBuildchainVersion = "2.14.13";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.40";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
@@ -399,8 +409,17 @@ if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
 if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
   throw new Error(`KFD lockfile entry must resolve to ${expectedKfdVersion}`);
 }
-if (publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" || expectedPaperPackages.length !== 3) {
-  throw new Error("publication package set must declare the three paper packages");
+const expectedPaperPackageNames = [
+  "@kungfu-tech/paper-kungfu-product-white-paper",
+  "@kungfu-tech/paper-episodes-to-primitives",
+  "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",
+  "@kungfu-tech/paper-observer-declared-timelines",
+];
+if (
+  publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" ||
+  expectedPaperPackages.map((entry) => entry.name).join(",") !== expectedPaperPackageNames.join(",")
+) {
+  throw new Error("publication package set must declare the four current paper packages in canonical order");
 }
 for (const entry of paperLocks) {
   if (packageJson.dependencies[entry.name] !== entry.version) {
@@ -630,8 +649,8 @@ if (publicationSource.kind !== "paper-packages" || publicationSource.registry.co
 if (publicationRenderedRegistry.contract !== publicationSource.registry.contract) {
   throw new Error("rendered publication registry contract mismatch");
 }
-if (publicationRenderedRegistry.publications?.length !== 3 || publicationRenderedRegistry.publications.some((entry) => entry.id === "publication-archive-fixture")) {
-  throw new Error("rendered publication registry must expose the three real papers and no fixture publication");
+if (publicationRenderedRegistry.publications?.length !== expectedPaperPackages.length || publicationRenderedRegistry.publications.some((entry) => entry.id === "publication-archive-fixture")) {
+  throw new Error("rendered publication registry must expose every declared real paper and no fixture publication");
 }
 if (publicationManifest.contract !== "libkungfu-dev-publication-archive-surface") {
   throw new Error("publication archive manifest contract mismatch");
@@ -640,7 +659,7 @@ if (
   publicationManifest.canonicalHost !== expectedSurfaceHost("papers") ||
   publicationManifest.source?.kind !== "paper-packages" ||
   publicationManifest.source?.registryContract !== publicationSource.registry.contract ||
-  publicationManifest.source?.packages?.length !== 3 ||
+  publicationManifest.source?.packages?.length !== expectedPaperPackages.length ||
   publicationManifest.source.packages.some((entry) => !entry.lockIntegrity) ||
   publicationManifest.archivePolicy?.deploymentBoundary !== "append-only immutable version prefixes"
 ) {
@@ -652,7 +671,7 @@ if (manifest.upstreamPackages.buildchain.publicationRegistry !== undefined) {
 if (
   manifest.upstreamPackages.papers?.contract !== publicationSource.registry.contract ||
   manifest.upstreamPackages.papers?.sourceKind !== "paper-packages" ||
-  manifest.upstreamPackages.papers?.packages?.length !== 3 ||
+  manifest.upstreamPackages.papers?.packages?.length !== expectedPaperPackages.length ||
   manifest.upstreamPackages.papers.packages.some((entry) => !entry.lockIntegrity)
 ) {
   throw new Error("dist manifest does not record the real paper package source boundary");
@@ -1269,6 +1288,53 @@ if (
 ) {
   throw new Error("KFD foundation page is missing source or authority metadata");
 }
+const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
+const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
+if (fs.readFileSync("dist/formal/index.html", "utf8") !== kfdFormalModelCanonicalHtml) {
+  throw new Error("KFD formal model subdomain route alias drifted: dist/formal/index.html");
+}
+if (
+  !kfdHomeHtml.includes(`href="${escapeHtml(kfdFormalModelPath)}"`)
+  || !kfdFormalModelCanonicalHtml.includes('aria-label="Formal model sections"')
+  || !kfdFormalModelCanonicalHtml.includes(`<a href="${escapeHtml(kfdFormalModelPath)}" aria-current="page">Formal model</a>`)
+  || !kfdFormalModelCanonicalHtml.includes(escapeHtml(kfdSite.formalPage.sourcePath))
+) {
+  throw new Error("KFD formal model page is missing bundle-owned content, navigation, or metadata");
+}
+const kfdTerminologyPath = `${kfdSite.terminologyPage.url.replace(/\/+$/, "")}/`;
+const kfdTerminologyCanonicalHtml = fs.readFileSync("dist/kfd/terminology/index.html", "utf8");
+if (fs.readFileSync("dist/terminology/index.html", "utf8") !== kfdTerminologyCanonicalHtml) {
+  throw new Error("KFD terminology subdomain route alias drifted: dist/terminology/index.html");
+}
+if (
+  !kfdHomeHtml.includes(`href="${escapeHtml(kfdTerminologyPath)}"`)
+  || !kfdTerminologyCanonicalHtml.includes('aria-label="Terminology sections"')
+  || !kfdTerminologyCanonicalHtml.includes(`<a href="${escapeHtml(kfdTerminologyPath)}" aria-current="page">Terminology</a>`)
+  || !kfdTerminologyCanonicalHtml.includes('href="/terminology.json"')
+  || !kfdTerminologyCanonicalHtml.includes(escapeHtml(kfdSite.terminologyPage.sourcePath))
+) {
+  throw new Error("KFD terminology page is missing bundle-owned content, navigation, contract link, or metadata");
+}
+for (const [renderedPath, expected] of [
+  ["dist/kfd/terminology.json", kfdTerminology],
+  ["dist/terminology.json", kfdTerminology],
+  ["dist/kfd/schemas/kfd-terminology.schema.json", kfdTerminologySchema],
+  ["dist/schemas/kfd-terminology.schema.json", kfdTerminologySchema],
+]) {
+  if (JSON.stringify(JSON.parse(fs.readFileSync(renderedPath, "utf8"))) !== JSON.stringify(expected)) {
+    throw new Error(`KFD terminology machine artifact drifted: ${renderedPath}`);
+  }
+}
+if (
+  kfdAgentManifest.formalModel?.path !== kfdFormalModelPath
+  || kfdAgentManifest.terminology?.path !== kfdTerminologyPath
+  || kfdAgentManifest.agentEntries?.terminology !== expectedSurfaceEndpoint("kfd", "terminology.json")
+  || kfdAgentManifest.agentEntries?.terminologySchema !== expectedSurfaceEndpoint("kfd", "schemas/kfd-terminology.schema.json")
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", kfdFormalModelPath.replace(/^\/+/, "")))
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", kfdTerminologyPath.replace(/^\/+/, "")))
+) {
+  throw new Error("KFD agent manifest is missing formal model or terminology surfaces");
+}
 const kfdCasesPath = `${kfdSite.casesPage.url.replace(/\/+$/, "")}/`;
 const kfdCasesCanonicalHtml = fs.readFileSync("dist/kfd/cases/index.html", "utf8");
 const kfdCasesAliasHtml = fs.readFileSync("dist/cases/index.html", "utf8");
@@ -1462,7 +1528,7 @@ for (const entry of kfdSite.homepage.foundationTriad.commitments) {
     throw new Error(`KFD foundation triad commitment title is missing link: ${titleLink}`);
   }
 }
-for (const layer of kfdSite.homepage.foundationModel.layers) {
+for (const layer of kfdSite.homepage.foundation.layers) {
   const match = /^KFD-(\d+)\b/.exec(layer.decision);
   if (!match) {
     throw new Error(`KFD foundation triad decision does not expose a KFD number: ${layer.decision}`);
@@ -1607,7 +1673,7 @@ for (const entry of kfdRegistry.entries) {
     if (
       !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/">Authoritative decision</a>`)
       || !formalHtml.includes(`<a href="/${escapeHtml(entry.number)}/usage/">Usage</a>`)
-      || !formalHtml.includes('href="https://github.com/kungfu-systems/kfd/blob/main/docs/formal-model.md"')
+      || !formalHtml.includes(`href="${escapeHtml(kfdFormalModelPath)}"`)
       || /href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(formalHtml)
     ) {
       throw new Error(`${label} formal reference page has unresolved package markdown links`);
@@ -1667,7 +1733,8 @@ grep -q 'Projection source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.11.13' dist/buildchain/index.html
+grep -q '2.14.13' dist/buildchain/index.html
+grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/index.html
 grep -q 'Install and Verify' dist/buildchain/index.html
 grep -q 'Use Buildchain' dist/buildchain/index.html
