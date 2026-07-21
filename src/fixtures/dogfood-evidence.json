@@ -1,0 +1,215 @@
+{
+  "schema": "kungfu.public-dogfood-evidence/v1",
+  "snapshotId": "kungfu-systems-2026-07-21T04:45:00Z",
+  "status": "observed",
+  "headline": "Kungfu is built through the same public evidence loop it exposes.",
+  "claimBoundary": "This snapshot proves public repository activity and exact retained evidence objects. It does not equate pull requests with features, GitHub accounts with Agent actors, or review-search matches with approvals.",
+  "observation": {
+    "observedAt": "2026-07-21T04:45:00Z",
+    "window": {
+      "kind": "rolling-duration",
+      "duration": "P30D",
+      "startInclusive": "2026-06-21T04:45:00Z",
+      "endInclusive": "2026-07-21T04:45:00Z",
+      "githubQualifier": "merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z"
+    }
+  },
+  "sources": {
+    "github": {
+      "organization": "kungfu-systems",
+      "visibility": "public",
+      "api": "https://api.github.com/search/issues",
+      "repository": "https://github.com/kungfu-systems",
+      "baseQuery": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public"
+    },
+    "projectCuts": {
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "gitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86",
+      "manifestGlob": ".kungfu/project-cuts/sha256/*/*/manifest.json",
+      "receiptGlob": ".kungfu/project-cuts/sha256/*/*/receipt.json"
+    }
+  },
+  "metrics": {
+    "mergedPublicPullRequests": {
+      "value": 2740,
+      "unit": "pull-requests",
+      "evidenceClass": "github-search",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public",
+      "label": "merged public PRs",
+      "limitation": "A merged PR is a work item. It may be a feature, fix, documentation, CI, release, promotion, or automation change."
+    },
+    "repositoriesWithMergedPullRequests": {
+      "value": 10,
+      "unit": "repositories",
+      "evidenceClass": "derived-from-repository-counts",
+      "label": "public repositories with merged work"
+    },
+    "authorSearchMatches": {
+      "value": 2666,
+      "unit": "pull-requests",
+      "evidenceClass": "github-search",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public author:dongkeren",
+      "label": "author-account matches",
+      "limitation": "GitHub author identity is not an Agent actor record and is not used as proof of autonomous Agent work."
+    },
+    "reviewSearchMatches": {
+      "value": 2512,
+      "unit": "pull-requests",
+      "evidenceClass": "github-search",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public reviewed-by:kungfu-origin",
+      "label": "review-account search matches",
+      "limitation": "GitHub reviewed-by search proves discoverability of reviewer participation, not that every matched review was an approval or exact-root review."
+    },
+    "projectCutTitleMatches": {
+      "value": 26,
+      "unit": "pull-requests",
+      "evidenceClass": "github-search",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public project-cut in:title",
+      "label": "merged PR titles naming Project Cut",
+      "limitation": "This title search is a visible subset, not the authoritative count of Project Cut objects."
+    },
+    "retainedPublicProjectCuts": {
+      "value": 148,
+      "unit": "project-cuts",
+      "evidenceClass": "git-tree-scan",
+      "label": "retained public Project Cuts",
+      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+    },
+    "validProjectCutReceipts": {
+      "value": 148,
+      "unit": "receipts",
+      "evidenceClass": "git-tree-scan",
+      "label": "valid retained receipts",
+      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+    },
+    "projectCutsWithEpisodeDelta": {
+      "value": 41,
+      "unit": "project-cuts",
+      "evidenceClass": "git-tree-scan",
+      "label": "Cuts with admitted Episode delta",
+      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+    },
+    "projectCutsWithExplicitEmptyEpisodeDelta": {
+      "value": 107,
+      "unit": "project-cuts",
+      "evidenceClass": "git-tree-scan",
+      "label": "Cuts declaring an empty Episode delta",
+      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+    }
+  },
+  "repositories": [
+    { "name": "kungfu", "mergedPublicPullRequests": 830 },
+    { "name": "buildchain", "mergedPublicPullRequests": 1176 },
+    { "name": "build-images", "mergedPublicPullRequests": 224 },
+    { "name": "kfd", "mergedPublicPullRequests": 189 },
+    { "name": "site-libkungfu-dev", "mergedPublicPullRequests": 89 },
+    { "name": "libnode", "mergedPublicPullRequests": 70 },
+    { "name": "paper-observer-declared-timelines", "mergedPublicPullRequests": 57 },
+    { "name": "paper-kfd-foundation-real-world-agent-work", "mergedPublicPullRequests": 52 },
+    { "name": "paper-kungfu-product-white-paper", "mergedPublicPullRequests": 46 },
+    { "name": "homebrew-tap", "mergedPublicPullRequests": 7 }
+  ],
+  "cases": [
+    {
+      "id": "three-agent-project-cut-continuation",
+      "title": "Three actors continued one exact Project Cut without a human relay",
+      "status": "qualified",
+      "evidenceClass": "retained-qualification",
+      "humanRelayCount": 0,
+      "summary": "Actor A settled and exported exact roots. Actor B independently imported, reviewed fit, and rejected six fault classes. Actor C bound the review and continuation plan into a successor Go, Episode, Atlas, Cut, and published commit.",
+      "facts": {
+        "runtimeIsolation": "actors A, B, and C used independent fresh-clone runtimes",
+        "nativeMissionControlOnly": true,
+        "atlasRepositoryWrites": 0,
+        "reviewVerdict": "fit",
+        "faultRejections": [
+          "missing-episode",
+          "stale-atlas",
+          "receipt-cut-mismatch",
+          "incomplete-parent-acceptance",
+          "project-cut-root-mismatch",
+          "post-claim-source-drift"
+        ]
+      },
+      "roots": {
+        "actorAProjectCut": "sha256:885f6db7adba465aea533517fcdeffece85a7a1f339dc5aeef708155e3c55c90",
+        "actorBReview": "sha256:b40e6aa8be9ca69e2f5764d64efd6b9e73a58dcc0bdafa1baf0c60e058d21ac9",
+        "actorBContinuationPlan": "sha256:d9ce88f66b45b5ada845f744b2bf2f2f9ca13bff3ac19c8da098849ecc889b71",
+        "actorCSuccessorEpisode": "sha256:2c4d1d984e7c9f3dfb441380fa551da676841f56fbcea8ab2dec27f1a4881f3b",
+        "actorCSuccessorAtlas": "sha256:be853f4db1d8171bef3e29e52fb0c96bed559e0e8b29171f1cd622ad2a7d9a1e",
+        "actorCSuccessorProjectCut": "sha256:bd41466469738ac0b1e0a0247fadb6f6358caab367a298f97651992d2bd0feb4"
+      },
+      "links": [
+        { "label": "Qualification directory", "url": "https://github.com/kungfu-systems/kungfu/tree/dev/v4/v4.0/framework/project-cut/qualification/three-agent-dogfood" },
+        { "label": "Settlement repair PR #983", "url": "https://github.com/kungfu-systems/kungfu/pull/983" },
+        { "label": "Qualified continuation PR #1002", "url": "https://github.com/kungfu-systems/kungfu/pull/1002" }
+      ]
+    },
+    {
+      "id": "hub-architecture-cross-repository-delivery",
+      "title": "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
+      "status": "production",
+      "evidenceClass": "cross-repository-delivery",
+      "summary": "Two site implementations were independently reviewed and promoted to production. Kungfu then retained a public Project Cut binding the exact source projection and Xinfa Atlas, with an explicit empty Episode delta because the delivery changed documentation surfaces rather than runtime behavior.",
+      "facts": {
+        "episodeDelta": "explicitly-empty",
+        "independentReviewer": "kungfu-origin",
+        "reviewState": "APPROVED",
+        "reviewedCommit": "32730287f8b063fde2b8463bde1079cf23b92006",
+        "productionUrls": [
+          "https://libkungfu.dev/",
+          "https://kungfu.tech/agent-builders/"
+        ]
+      },
+      "roots": {
+        "projectCut": "sha256:f58f9be5bb76bfa00e6c214063118df0766c58b6ff5112e02ab5bc20dca3d559",
+        "projectCutReceipt": "sha256:c96c7bbaa851fe4a82d5703aa51a62a9e8cbf1cbd659034e03756e06ce3266a9",
+        "inputAtlas": "sha256:8c8ea84f6809b2cfd8e0c16f37beedb0aa2f307a4261afd94c2f702022b1c596",
+        "sourceProjection": "sha256:f26346f1403f236e4b7c3f42eb675f10b2bc3f15891fb2891c33bf872e9ec106"
+      },
+      "links": [
+        { "label": "libkungfu.dev implementation PR #141", "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/141" },
+        { "label": "kungfu.tech implementation PR #43", "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/43" },
+        { "label": "Project Cut PR #1182", "url": "https://github.com/kungfu-systems/kungfu/pull/1182" },
+        { "label": "libkungfu.dev production PR #144", "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/144" },
+        { "label": "kungfu.tech production PR #47", "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/47" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "id": "pull-request-not-feature",
+      "statement": "A merged pull request is a work item, not a feature count."
+    },
+    {
+      "id": "author-account-not-agent-actor",
+      "statement": "A GitHub author account is not an Agent actor identity. Agent claims require public actor, Episode, receipt, or qualification evidence."
+    },
+    {
+      "id": "review-search-not-approval",
+      "statement": "A reviewed-by search match is not automatically an approval or an exact-root independent review."
+    },
+    {
+      "id": "snapshot-not-live-analytics",
+      "statement": "The values are a versioned observation at one exact time, not a live analytics service."
+    },
+    {
+      "id": "public-only",
+      "statement": "Only public GitHub results and repository evidence marked public are included."
+    }
+  ],
+  "reproduction": {
+    "requirements": [
+      "GitHub CLI with public API access",
+      "jq",
+      "a clone of kungfu-systems/kungfu for the retained Project Cut scan"
+    ],
+    "commands": [
+      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public' -f per_page=1 --jq '.total_count'",
+      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public author:dongkeren' -f per_page=1 --jq '.total_count'",
+      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public reviewed-by:kungfu-origin' -f per_page=1 --jq '.total_count'",
+      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public project-cut in:title' -f per_page=1 --jq '.total_count'",
+      "node scripts/check-dogfood-evidence.mjs --verify-live"
+    ]
+  }
+}

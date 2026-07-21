@@ -65,6 +65,11 @@
   ],
   "stableMachineEntries": [
     {
+      "label": "Public dogfood evidence",
+      "path": "/dogfood-evidence.json",
+      "purpose": "Versioned 30-day GitHub work snapshot, retained Project Cut counts, real cases, reproduction queries, and counting boundaries."
+    },
+    {
       "label": "Embeddable runtime projection",
       "path": "/runtime.json",
       "purpose": "Exact source, package availability, quickstart, KFD Runtime 100, qualification, and claim boundary."

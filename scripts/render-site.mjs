@@ -2123,6 +2123,44 @@ function renderInvariant(invariant) {
   </article>`;
 }
 
+function formatMetric(value) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function renderDogfoodMetric(metric, emphasis = false) {
+  return `<article class="dogfood-metric${emphasis ? " dogfood-metric-primary" : ""}">
+    <strong>${escapeHtml(formatMetric(metric.value))}</strong>
+    <span>${escapeHtml(metric.label)}</span>
+  </article>`;
+}
+
+function renderRepositoryBar(repository, maximum) {
+  const percentage = Math.max(1, Math.round((repository.mergedPublicPullRequests / maximum) * 100));
+  return `<li class="repo-work-row">
+    <span>${escapeHtml(repository.name)}</span>
+    <span class="repo-work-track" aria-hidden="true"><span style="width: ${percentage}%"></span></span>
+    <strong>${escapeHtml(formatMetric(repository.mergedPublicPullRequests))}</strong>
+  </li>`;
+}
+
+function renderDogfoodCase(evidenceCase, index) {
+  const rootEntries = Object.entries(evidenceCase.roots || {});
+  return `<article class="dogfood-case" id="${escapeAttr(evidenceCase.id)}">
+    <div class="case-index" aria-hidden="true">0${index + 1}</div>
+    <div class="case-copy">
+      <p class="eyebrow">${escapeHtml(evidenceCase.evidenceClass)} · ${escapeHtml(evidenceCase.status)}</p>
+      <h2>${escapeHtml(evidenceCase.title)}</h2>
+      <p>${escapeHtml(evidenceCase.summary)}</p>
+      <dl class="case-roots">
+        ${rootEntries.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd><code title="${escapeAttr(value)}">${escapeHtml(value)}</code></dd>`).join("")}
+      </dl>
+      <div class="card-actions">
+        ${evidenceCase.links.map((link) => `<a class="card-action" href="${escapeAttr(link.url)}">${escapeHtml(link.label)}</a>`).join("")}
+      </div>
+    </div>
+  </article>`;
+}
+
 function runtimeQuickstartCard(quickstart) {
   return `<article class="panel quickstart-card">
     <div>
@@ -2299,6 +2337,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 const site = readFixtureJson("site-manifest.json");
 const core = readFixtureJson("core-spec-manifest.json");
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
+const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
 const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
@@ -3061,13 +3100,268 @@ const runtimeHomepageStyles = `<style>
   }
 </style>`;
 
+const dogfoodStyles = `<style>
+  .dogfood-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 0.7fr));
+    gap: 10px;
+    margin-top: 48px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+    padding: 12px;
+  }
+
+  .dogfood-rail-intro,
+  .dogfood-metric {
+    display: grid;
+    min-width: 0;
+    align-content: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    padding: 18px;
+  }
+
+  .dogfood-rail-intro h2,
+  .dogfood-rail-intro p { margin: 0; }
+  .dogfood-rail-intro h2 { font-size: 22px; }
+  .dogfood-rail-intro a { font-weight: 750; }
+
+  .dogfood-metric strong {
+    color: var(--fg);
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .dogfood-metric span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .dogfood-metric-primary {
+    border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+    background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+  }
+
+  .dogfood-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    gap: 28px;
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 36px;
+  }
+
+  .dogfood-hero-copy {
+    display: grid;
+    gap: 18px;
+  }
+
+  .dogfood-hero-copy h1,
+  .dogfood-hero-copy p { margin: 0; }
+
+  .dogfood-hero-number {
+    display: grid;
+    justify-items: start;
+    border-left: 5px solid var(--accent);
+    padding-left: 22px;
+  }
+
+  .dogfood-hero-number strong {
+    color: var(--fg);
+    font-size: clamp(68px, 12vw, 142px);
+    line-height: 0.82;
+    letter-spacing: -0.065em;
+  }
+
+  .dogfood-hero-number span {
+    max-width: 300px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .dogfood-window {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .dogfood-window code { font-size: 12px; }
+
+  .dogfood-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dogfood-flow li {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 142px;
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 16px;
+  }
+
+  .dogfood-flow li:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    z-index: 2;
+    width: 28px;
+    color: var(--accent-strong);
+    font-weight: 800;
+    text-align: center;
+    transform: translateY(-50%);
+  }
+
+  .dogfood-flow strong { font-size: 14px; }
+  .dogfood-flow span { color: var(--muted); font-size: 13px; }
+
+  .dogfood-dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(360px, 1.15fr);
+    gap: 18px;
+  }
+
+  .dogfood-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .repo-work-list {
+    display: grid;
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .repo-work-row {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.75fr) minmax(120px, 1fr) 54px;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .repo-work-row > span:first-child { overflow-wrap: anywhere; }
+  .repo-work-row strong { text-align: right; }
+
+  .repo-work-track {
+    display: block;
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--code);
+  }
+
+  .repo-work-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+  }
+
+  .dogfood-case {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 22px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+    padding: clamp(20px, 3vw, 30px);
+  }
+
+  .case-index {
+    color: color-mix(in srgb, var(--accent) 82%, var(--fg));
+    font: 800 38px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .case-copy {
+    display: grid;
+    min-width: 0;
+    gap: 14px;
+  }
+
+  .case-copy h2,
+  .case-copy p { margin: 0; }
+
+  .case-roots {
+    display: grid;
+    grid-template-columns: minmax(130px, auto) minmax(0, 1fr);
+    gap: 8px 14px;
+    margin: 0;
+  }
+
+  .case-roots dt { color: var(--muted); font-size: 12px; }
+  .case-roots dd { min-width: 0; margin: 0; }
+  .case-roots code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .boundary-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .boundary-list li {
+    border-left: 3px solid var(--warn);
+    background: var(--bg);
+    padding: 12px 14px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 820px) {
+    .dogfood-rail,
+    .dogfood-hero,
+    .dogfood-dashboard,
+    .dogfood-metric-grid,
+    .boundary-list { grid-template-columns: 1fr; }
+
+    .dogfood-flow { grid-template-columns: 1fr; }
+    .dogfood-flow li { min-height: 0; }
+    .dogfood-flow li:not(:last-child)::after {
+      content: "↓";
+      top: auto;
+      right: 50%;
+      bottom: -21px;
+      transform: translateX(50%);
+    }
+
+    .dogfood-case { grid-template-columns: 1fr; }
+    .case-roots { grid-template-columns: 1fr; }
+    .case-roots dd + dt { margin-top: 6px; }
+    .repo-work-row { grid-template-columns: minmax(100px, 0.8fr) minmax(70px, 1fr) 48px; }
+  }
+</style>`;
+
 writeFile(
   "index.html",
   page({
     title: `${site.title} | Embeddable Agent runtime`,
     description: site.tagline,
     current: "hub",
-    body: `${runtimeHomepageStyles}
+    body: `${runtimeHomepageStyles}${dogfoodStyles}
     <section class="hero">
       <div class="runtime-status">
         <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
@@ -3149,6 +3443,18 @@ writeFile(
           .map((reason) => `<article class="support-reason"><strong>${escapeHtml(reason.pressure)}</strong><p>${escapeHtml(reason.mechanism)}</p></article>`)
           .join("\n")}
       </div>
+    </section>
+
+    <section class="dogfood-rail" aria-labelledby="dogfood-rail-heading">
+      <div class="dogfood-rail-intro">
+        <p class="eyebrow">Dogfood · public evidence</p>
+        <h2 id="dogfood-rail-heading">The substrate is building itself.</h2>
+        <p>A fixed 30-day snapshot connects public work, exact Cuts, independent review, and production delivery.</p>
+        <a href="/dogfood/">Audit the complete evidence chain</a>
+      </div>
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.mergedPublicPullRequests, true)}
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests)}
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts)}
     </section>
 
     <section aria-labelledby="quickstart-heading">
@@ -3244,6 +3550,112 @@ writeFile(
     <section class="panel warning" style="margin-top: 18px;">
       <h2>Source boundary</h2>
       <p><strong>Projection source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
+    </section>`,
+  }),
+);
+
+writeFile(
+  "dogfood/index.html",
+  page({
+    title: "Kungfu Dogfood | Public evidence",
+    description: dogfoodEvidence.headline,
+    current: "hub",
+    alternates: `  <link rel="alternate" type="application/json" title="Kungfu public dogfood evidence" href="/dogfood-evidence.json">`,
+    body: `${dogfoodStyles}
+    <section class="dogfood-hero" aria-labelledby="dogfood-title">
+      <div class="dogfood-hero-copy">
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state">public dogfood / observed</span></p>
+        <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
+        <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
+        <div class="dogfood-window">
+          <span class="tag">rolling ${escapeHtml(dogfoodEvidence.observation.window.duration)}</span>
+          <code>${escapeHtml(dogfoodEvidence.observation.window.startInclusive)}</code>
+          <span aria-hidden="true">→</span>
+          <code>${escapeHtml(dogfoodEvidence.observation.window.endInclusive)}</code>
+        </div>
+        <div class="card-actions">
+          <a class="card-action" href="/dogfood-evidence.json">Open machine-readable evidence</a>
+          <a class="card-action" href="${escapeAttr(dogfoodEvidence.sources.github.repository)}">Inspect the public organization</a>
+        </div>
+      </div>
+      <div class="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
+        <strong>${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
+        <span>${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="proof-loop-heading">
+      <div class="section-heading">
+        <p class="eyebrow">One public loop</p>
+        <h2 id="proof-loop-heading">Work becomes a claim only after it survives evidence boundaries.</h2>
+        <p>The GitHub activity count supplies scale. Project Cut and retained qualification supply meaning.</p>
+      </div>
+      <ol class="dogfood-flow">
+        <li><span class="architecture-node-label">01 · Work</span><strong>Public PR changes source, docs, CI, or release state.</strong><span>Merge is a work event, not a feature claim.</span></li>
+        <li><span class="architecture-node-label">02 · Bind</span><strong>Exact source, Atlas, policy, and accepted scope are rooted.</strong><span>Changing an input creates a different claim.</span></li>
+        <li><span class="architecture-node-label">03 · Settle</span><strong>Project Cut records Episode delta, omissions, and receipt.</strong><span>An empty Episode delta is explicit, never invented.</span></li>
+        <li><span class="architecture-node-label">04 · Review</span><strong>A different actor checks the exact claim and roots.</strong><span>Reviewer search alone is not enough.</span></li>
+        <li><span class="architecture-node-label">05 · Continue</span><strong>Close, reopen, or produce a successor Cut and release.</strong><span>The next action keeps lineage instead of rewriting history.</span></li>
+      </ol>
+    </section>
+
+    <section class="dogfood-dashboard" aria-labelledby="snapshot-heading">
+      <div>
+        <div class="section-heading">
+          <p class="eyebrow">Snapshot</p>
+          <h2 id="snapshot-heading">Scale, with the caveats attached.</h2>
+        </div>
+        <div class="dogfood-metric-grid">
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.reviewSearchMatches)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts, true)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutsWithEpisodeDelta)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutTitleMatches)}
+        </div>
+      </div>
+      <article class="panel">
+        <p class="eyebrow">Merged public PRs by repository</p>
+        <h2>Where the work landed</h2>
+        <ul class="repo-work-list">
+          ${dogfoodEvidence.repositories
+            .map((repository) => renderRepositoryBar(
+              repository,
+              Math.max(...dogfoodEvidence.repositories.map((entry) => entry.mergedPublicPullRequests)),
+            ))
+            .join("\n")}
+        </ul>
+      </article>
+    </section>
+
+    <section aria-labelledby="cases-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Auditable cases</p>
+        <h2 id="cases-heading">Two loops you can open all the way down.</h2>
+        <p>The first proves independent continuation. The second proves the architecture pages you just read were themselves delivered through Project Cut and release review.</p>
+      </div>
+      <div class="stack">
+        ${dogfoodEvidence.cases.map(renderDogfoodCase).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel warning" aria-labelledby="boundaries-heading">
+      <p class="eyebrow">Counting and attribution boundaries</p>
+      <h2 id="boundaries-heading">What these numbers do not say</h2>
+      <p>${escapeHtml(dogfoodEvidence.claimBoundary)}</p>
+      <ul class="boundary-list">
+        ${dogfoodEvidence.boundaries.map((boundary) => `<li><strong>${escapeHtml(boundary.id)}</strong><br>${escapeHtml(boundary.statement)}</li>`).join("\n")}
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="reproduce-heading">
+      <p class="eyebrow">Reproduce</p>
+      <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
+      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
+      <dl class="meta" style="margin-top: 18px;">
+        <dt>Observed at</dt><dd><code>${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
+        <dt>GitHub query</dt><dd><code>${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
+        <dt>Project Cut commit</dt><dd><a href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}"><code>${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</code></a></dd>
+        <dt>Machine route</dt><dd><a href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
+      </dl>
     </section>`,
   }),
 );
@@ -4023,6 +4435,16 @@ const manifest = {
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     {
+      path: "/dogfood/",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/dogfood-evidence.json",
+    },
+    {
+      path: "/dogfood-evidence.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/dogfood-evidence.json",
+    },
+    {
       path: "/runtime.json",
       host: surfaceCanonicalHost("hub"),
       source: "src/fixtures/libkungfu-runtime-surface.json",
@@ -4173,6 +4595,7 @@ const manifest = {
 };
 
 writeFile("runtime.json", `${JSON.stringify(runtimeAgentProjection, null, 2)}\n`);
+writeFile("dogfood-evidence.json", `${JSON.stringify(dogfoodEvidence, null, 2)}\n`);
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
 const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
@@ -4347,6 +4770,7 @@ libkungfu.dev is the open developer and agent substrate hub for Kungfu.
 
 Primary pages:
 - ${surfaceCanonicalHref("hub")}
+- ${surfaceEndpointHref("hub", "dogfood/")}
 - ${surfaceCanonicalHref("core")}
 - ${surfaceCanonicalHref("buildchain")}
 - ${surfaceCanonicalHref("kfd")}
@@ -4355,6 +4779,7 @@ Primary pages:
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
 - ${surfaceEndpointHref("hub", "runtime.json")}
+- ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
 - ${surfaceEndpointHref("papers", "manifest.json")}

@@ -5,6 +5,7 @@
   "scripts": {
     "build": "bash scripts/build-site.sh",
     "check": "bash scripts/check-site.sh",
+    "check:dogfood": "node scripts/check-dogfood-evidence.mjs",
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
