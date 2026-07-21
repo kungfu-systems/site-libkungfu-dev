@@ -5,6 +5,7 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
+node scripts/check-dogfood-evidence.mjs
 
 pnpm exec buildchain badges readme --check
 
@@ -22,6 +23,7 @@ const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/libkungfu-runtime-surface.json",
+  "src/fixtures/dogfood-evidence.json",
   "src/fixtures/core-spec-manifest.json",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -65,6 +67,8 @@ const requiredBaseFiles = [
   "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
   "dist/runtime.json",
+  "dist/dogfood/index.html",
+  "dist/dogfood-evidence.json",
   "dist/llms.txt",
   "dist/papers/index.html",
   "dist/papers/manifest.json",
@@ -74,11 +78,13 @@ const requiredBaseFiles = [
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
+const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
 const runtimeProjection = JSON.parse(fs.readFileSync("dist/runtime.json", "utf8"));
+const dogfoodProjection = JSON.parse(fs.readFileSync("dist/dogfood-evidence.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
@@ -316,6 +322,28 @@ const paperLocks = expectedPaperPackages.map((entry) => ({
 
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
+}
+if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
+  throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
+}
+const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
+for (const requiredText of [
+  dogfoodEvidence.headline,
+  dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US"),
+  "A merged pull request is a work item, not a feature count.",
+  "A GitHub author account is not an Agent actor identity.",
+  "A reviewed-by search match is not automatically an approval",
+  "Three actors continued one exact Project Cut without a human relay",
+  "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
+]) {
+  if (!dogfoodHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
+    throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
+  }
+}
+for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
+  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
+    throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
+  }
 }
 if (
   runtimeSurface.contract !== "libkungfu-embeddable-runtime-surface/v1" ||
