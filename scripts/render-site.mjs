@@ -1146,12 +1146,13 @@ ${alternates}
       --accent-strong: #0b4f4a;
       --warn: #925a16;
       --code: #eef2f3;
+${current === "core" ? `
       --core-blue: #2563eb;
       --core-violet: #7c3aed;
       --core-green: #0f766e;
       --core-amber: #b45309;
       --core-grid: rgb(15 23 42 / 0.08);
-    }
+` : ""}    }
 
     @media (prefers-color-scheme: dark) {
       :root {
@@ -1164,12 +1165,13 @@ ${alternates}
         --accent-strong: #83ded3;
         --warn: #e2b15b;
         --code: #20272d;
+${current === "core" ? `
         --core-blue: #60a5fa;
         --core-violet: #a78bfa;
         --core-green: #47c9ba;
         --core-amber: #f0b35a;
         --core-grid: rgb(226 232 240 / 0.08);
-      }
+` : ""}      }
     }
 
     * { box-sizing: border-box; }
@@ -1314,6 +1316,7 @@ ${alternates}
       height: 35%;
     }
 
+${current === "core" ? `
     .core-hero {
       gap: 24px;
     }
@@ -1649,7 +1652,7 @@ ${alternates}
       42%, 70% { opacity: 1; transform: scale(1); }
     }
 
-    .eyebrow {
+` : ""}    .eyebrow {
       margin: 0;
       color: var(--accent-strong);
       font-size: 13px;
@@ -2272,6 +2275,7 @@ ${alternates}
         grid-template-columns: 1fr;
       }
 
+${current === "core" ? `
       .grid.four {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -2294,7 +2298,7 @@ ${alternates}
         grid-template-rows: none;
       }
 
-      .meta {
+` : ""}      .meta {
         grid-template-columns: 1fr;
       }
 
@@ -2339,6 +2343,7 @@ ${alternates}
       }
     }
 
+${current === "core" ? `
     @media (max-width: 640px) {
       .core-runtime-map {
         padding: 14px;
@@ -2384,7 +2389,8 @@ ${alternates}
       }
     }
 
-    @media (max-width: 480px) {
+` : ""}    @media (max-width: 480px) {
+${current === "core" ? `
       .grid.four,
       .core-evidence-list {
         grid-template-columns: 1fr;
@@ -2394,7 +2400,7 @@ ${alternates}
         grid-template-columns: 1fr;
       }
 
-      .foundation-fields div,
+` : ""}      .foundation-fields div,
       .decision-meta {
         grid-template-columns: 1fr;
       }
@@ -2411,6 +2417,7 @@ ${alternates}
         margin-top: 8px;
       }
     }
+${current === "core" ? `
 
     @media (prefers-reduced-motion: reduce) {
       .core-journal-frame::after,
@@ -2428,7 +2435,7 @@ ${alternates}
         transform: none;
       }
     }
-  </style>
+` : ""}  </style>
 </head>
 <body>
   <header>
