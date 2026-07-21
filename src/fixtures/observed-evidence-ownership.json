@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-buildchain-observed-evidence-ownership",
+  "paths": [
+    "dogfood-evidence.json",
+    "dogfood-evidence/snapshots/*"
+  ]
+}

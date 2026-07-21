@@ -2,7 +2,11 @@
 
 ## Use The Site
 
-- Start at `https://libkungfu.dev` for the developer and agent substrate hub.
+- Start at `https://libkungfu.dev` for the embeddable Agent runtime developer
+  entry and substrate hub.
+- Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
+  package availability, quickstart, KFD Runtime 100, qualification, and
+  claim-boundary projection.
 - Use `https://core.libkungfu.dev` to understand the libkungfu runtime
   substrate: one mmap journal as retained evidence and local observation bus,
   its qualification frontiers, and the secondary spec/source contract.
@@ -26,6 +30,11 @@
   evidence-linked Core presentation bundle. The Core fixture must pin every
   runtime claim to an immutable Kungfu source ref and keep the future spec
   package handoff secondary.
+- `src/fixtures/libkungfu-runtime-surface.json` projects the exact public
+  Kungfu PR, source commit, Project Cut, quickstart paths, KFD suite root,
+  observed qualification, package availability, and known limits. The site
+  renders this projection but does not become the runtime or conformance
+  authority.
 - `src/fixtures/buildchain-badge-endpoint-registry.json` and
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain

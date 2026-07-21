@@ -19,6 +19,8 @@ for surface in core buildchain kfd papers; do
 done
 
 node scripts/render-site.mjs
+mkdir -p dist/.buildchain
+cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evidence-ownership.json
 
 test -f dist/index.html
 test -f dist/core/index.html
@@ -48,6 +50,10 @@ test -f dist/buildchain/badges/v1/buildchain-release-passport/passed.svg
 test -f dist/badges/v1/kfd-1/passed.json
 test -f dist/buildchain/badges/v1/badge-endpoint-registry.json
 test -f dist/manifest.json
+test -f dist/runtime.json
+test -f dist/dogfood/index.html
+test -f dist/dogfood-evidence.json
+test -f dist/.buildchain/observed-evidence-ownership.json
 test -f dist/llms.txt
 test -f dist/papers/index.html
 test -f dist/papers/manifest.json

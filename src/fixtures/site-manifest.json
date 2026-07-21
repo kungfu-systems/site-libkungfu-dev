@@ -4,10 +4,10 @@
   "status": "fixture",
   "canonicalHost": "libkungfu.dev",
   "title": "libkungfu.dev",
-  "tagline": "Open facts, decisions, and release mechanisms for Kungfu products.",
+  "tagline": "Embeddable Agent runtime facts, recovery, and open KFD evidence.",
   "homepage": {
-    "headline": "Kungfu product generation, in public.",
-    "lead": "Kungfu products are meant to be generated from standing decisions, executable release mechanisms, and declared product facts. libkungfu.dev is the human and agent-readable map of that chain.",
+    "headline": "Build your Hub. Don't rebuild the runtime.",
+    "lead": "libkungfu is the embeddable local or worker runtime substrate for Agent products. Keep your interface, models, accounts, permissions, cloud, and customers; add durable runtime facts, Episode recovery, and portable KFD evidence.",
     "chain": [
       {
         "surface": "kfd",
@@ -64,6 +64,16 @@
     }
   ],
   "stableMachineEntries": [
+    {
+      "label": "Public dogfood evidence",
+      "path": "/dogfood-evidence.json",
+      "purpose": "Versioned 30-day GitHub work snapshot, retained Project Cut counts, real cases, reproduction queries, and counting boundaries."
+    },
+    {
+      "label": "Embeddable runtime projection",
+      "path": "/runtime.json",
+      "purpose": "Exact source, package availability, quickstart, KFD Runtime 100, qualification, and claim boundary."
+    },
     {
       "label": "Agent index",
       "path": "/llms.txt",

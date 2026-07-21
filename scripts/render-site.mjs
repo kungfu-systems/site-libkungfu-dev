@@ -1713,19 +1713,6 @@ ${alternates}
       line-height: 1.35;
     }
 
-    .hero-answer {
-      max-width: 820px;
-      color: var(--fg);
-      font-size: 18px;
-      line-height: 1.5;
-    }
-
-    .hero-claim-boundary {
-      max-width: 820px;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
     .badge-strip {
       max-width: 100%;
     }
@@ -2525,6 +2512,170 @@ function mechanismStepCard(step) {
   </article>`;
 }
 
+function runtimeSourceHref(sourcePath) {
+  return `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${sourcePath}`;
+}
+
+function architectureSourceHref(source, document) {
+  return `${source.repository}/blob/${source.commit}/${document.path}`;
+}
+
+function renderActionWorldStep(step) {
+  const components = step.components?.length
+    ? `<ul class="action-components">${step.components.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>`
+    : "";
+  return `<li class="action-step" data-action-kind="${escapeAttr(step.kind)}">
+    <span class="architecture-node-label">${escapeHtml(step.label)}</span>
+    <strong>${escapeHtml(step.question)}</strong>
+    <p>${escapeHtml(step.detail)}</p>
+    ${components}
+  </li>`;
+}
+
+function renderFoundationLayer(layer) {
+  return `<article class="foundation-card" data-foundation-kind="${escapeAttr(layer.kind)}">
+    <span class="architecture-node-label">${escapeHtml(layer.label)}</span>
+    <p>${escapeHtml(layer.detail)}</p>
+  </article>`;
+}
+
+function renderHub(hub) {
+  return `<article class="hub-node" data-hub="${escapeAttr(hub.id)}">
+    <p class="eyebrow">Participant-owned control plane</p>
+    <h3>${escapeHtml(hub.label)}</h3>
+    <ol>${hub.layers.map((layer) => `<li>${escapeHtml(layer)}</li>`).join("")}</ol>
+  </article>`;
+}
+
+function renderExchangeStep(step) {
+  return `<li>
+    <strong>${escapeHtml(step.label)}</strong>
+    <span>${escapeHtml(step.detail)}</span>
+  </li>`;
+}
+
+function renderInvariant(invariant) {
+  return `<article class="invariant-card">
+    <p class="invariant-equation"><span>${escapeHtml(invariant.left)}</span><b aria-label="is not">≠</b><span>${escapeHtml(invariant.right)}</span></p>
+    <p>${escapeHtml(invariant.detail)}</p>
+  </article>`;
+}
+
+function formatMetric(value) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function renderDogfoodMetric(metric, emphasis = false) {
+  return `<article class="dogfood-metric${emphasis ? " dogfood-metric-primary" : ""}">
+    <strong>${escapeHtml(formatMetric(metric.value))}</strong>
+    <span>${escapeHtml(metric.label)}</span>
+  </article>`;
+}
+
+function renderRepositoryBar(repository, maximum) {
+  const percentage = Math.max(1, Math.round((repository.mergedPublicPullRequests / maximum) * 100));
+  return `<li class="repo-work-row">
+    <span>${escapeHtml(repository.name)}</span>
+    <span class="repo-work-track" aria-hidden="true"><span style="width: ${percentage}%"></span></span>
+    <strong>${escapeHtml(formatMetric(repository.mergedPublicPullRequests))}</strong>
+  </li>`;
+}
+
+function renderDogfoodCase(evidenceCase, index) {
+  const rootEntries = Object.entries(evidenceCase.roots || {});
+  return `<article class="dogfood-case" id="${escapeAttr(evidenceCase.id)}">
+    <div class="case-index" aria-hidden="true">0${index + 1}</div>
+    <div class="case-copy">
+      <p class="eyebrow">${escapeHtml(evidenceCase.evidenceClass)} · ${escapeHtml(evidenceCase.status)}</p>
+      <h2>${escapeHtml(evidenceCase.title)}</h2>
+      <p>${escapeHtml(evidenceCase.summary)}</p>
+      <dl class="case-roots">
+        ${rootEntries.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd><code title="${escapeAttr(value)}">${escapeHtml(value)}</code></dd>`).join("")}
+      </dl>
+      <div class="card-actions">
+        ${evidenceCase.links.map((link) => `<a class="card-action" href="${escapeAttr(link.url)}">${escapeHtml(link.label)}</a>`).join("")}
+      </div>
+    </div>
+  </article>`;
+}
+
+function dogfoodLiveProjectionScript() {
+  return `<script>
+  (() => {
+    const number = new Intl.NumberFormat("en-US");
+    const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+    const render = (evidence) => {
+      document.documentElement.dataset.dogfoodSnapshot = evidence.snapshotId;
+      setText("dogfood-state", "public dogfood / latest observed");
+      setText("dogfood-window-start", evidence.observation.window.startInclusive);
+      setText("dogfood-window-end", evidence.observation.window.endInclusive);
+      setText("dogfood-pr-total", number.format(evidence.metrics.mergedPublicPullRequests.value));
+      setText("dogfood-pr-caption", evidence.metrics.mergedPublicPullRequests.label + " across " + number.format(evidence.metrics.repositoriesWithMergedPullRequests.value) + " repositories");
+      setText("dogfood-observed-at", evidence.observation.observedAt);
+      setText("dogfood-query", evidence.sources.github.baseQuery);
+      const cut = document.getElementById("dogfood-cut");
+      if (cut) {
+        cut.textContent = evidence.sources.projectCuts.gitCommit;
+        cut.href = evidence.sources.projectCuts.repository + "/tree/" + evidence.sources.projectCuts.gitCommit + "/.kungfu/project-cuts";
+      }
+      const metrics = document.getElementById("dogfood-live-metrics");
+      if (metrics) {
+        metrics.replaceChildren(...[
+          ["reviewSearchMatches", false],
+          ["retainedPublicProjectCuts", true],
+          ["projectCutsWithEpisodeDelta", false],
+          ["projectCutTitleMatches", false],
+        ].map(([key, primary]) => {
+          const article = document.createElement("article");
+          article.className = "dogfood-metric" + (primary ? " dogfood-metric-primary" : "");
+          const strong = document.createElement("strong");
+          strong.textContent = number.format(evidence.metrics[key].value);
+          const span = document.createElement("span");
+          span.textContent = evidence.metrics[key].label;
+          article.append(strong, span);
+          return article;
+        }));
+      }
+      const repositories = document.getElementById("dogfood-live-repositories");
+      if (repositories) {
+        const maximum = Math.max(1, ...evidence.repositories.map((entry) => entry.mergedPublicPullRequests));
+        repositories.replaceChildren(...evidence.repositories.map((entry) => {
+          const row = document.createElement("li");
+          row.className = "repo-work-row";
+          const name = document.createElement("span");
+          name.textContent = entry.name;
+          const track = document.createElement("span");
+          track.className = "repo-work-track";
+          track.setAttribute("aria-hidden", "true");
+          const bar = document.createElement("span");
+          bar.style.width = Math.max(1, Math.round(entry.mergedPublicPullRequests / maximum * 100)) + "%";
+          track.append(bar);
+          const value = document.createElement("strong");
+          value.textContent = number.format(entry.mergedPublicPullRequests);
+          row.append(name, track, value);
+          return row;
+        }));
+      }
+    };
+    fetch("/dogfood-evidence.json", { cache: "no-store" })
+      .then((response) => { if (!response.ok) throw new Error("evidence fetch failed"); return response.json(); })
+      .then(render)
+      .catch(() => setText("dogfood-state", "public dogfood / retained fallback"));
+  })();
+  </script>`;
+}
+
+function runtimeQuickstartCard(quickstart) {
+  return `<article class="panel quickstart-card">
+    <div>
+      <p class="eyebrow">${escapeHtml(quickstart.language)}</p>
+      <h3>Open and close one native Episode</h3>
+    </div>
+    <pre><code>${escapeHtml(quickstart.command)}</code></pre>
+    <a class="card-action" href="${escapeAttr(runtimeSourceHref(quickstart.sourcePath))}">Read the exact source</a>
+  </article>`;
+}
+
 function listPanels(items) {
   return items
     .map(
@@ -2648,10 +2799,15 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
-function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate) {
+function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate, currentCandidateFormal) {
   const currentNumber = currentEntry ? String(currentEntry.number) : undefined;
-  const candidateLinks = currentPage === "candidate" && currentCandidate
-    ? `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}" aria-current="page">${escapeHtml(currentCandidate.title)}</a>`
+  const candidateLinks = currentCandidate
+    ? [
+        `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}"${currentPage === "candidate" ? ' aria-current="page"' : ""}>${escapeHtml(currentCandidate.title)}</a>`,
+        currentPage === "candidate-formal" && currentCandidateFormal
+          ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(currentCandidateFormal.url)}" aria-current="page">Formal candidate</a>`
+          : "",
+      ].join("")
     : "";
   const links = kfdRegistry.entries
     .map((entry) => {
@@ -2684,6 +2840,8 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 
 const site = readFixtureJson("site-manifest.json");
 const core = readFixtureJson("core-runtime-surface.json");
+const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
+const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
 const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
@@ -2780,6 +2938,11 @@ const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [S
 const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
 const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
+const kfdCandidatePageById = new Map(kfdCandidatePages.map((pageEntry) => [pageEntry.id, pageEntry]));
+const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || [];
+const kfdCandidateFormalPageByCandidateId = new Map(
+  kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
+);
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -2807,6 +2970,7 @@ const kfdPageRouteBySourcePath = new Map([
     .map((pageEntry) => [pageEntry.sourcePath || pageEntry.path, `/${pageEntry.decisionNumber}/formal/`]),
   [kfdSite.kfdCandidates.source, `${kfdCandidateIndexPath}registry.json`],
   ...kfdCandidatePages.map((pageEntry) => [pageEntry.sourcePath, pageEntry.url]),
+  ...kfdCandidateFormalPages.map((pageEntry) => [pageEntry.sourcePath, pageEntry.url]),
 ]);
 const buildchainPageBySourcePath = new Map(buildchainSite.pages.map((pageEntry) => [pageEntry.sourcePath, pageEntry]));
 const buildchainPageByRoute = new Map(buildchainSite.pages.map((pageEntry) => [normalizeBuildchainRoute(pageEntry.route), pageEntry]));
@@ -2967,6 +3131,23 @@ function kfdHomepageSection(id) {
   return kfdSite.homepage.sections?.find((section) => section.id === id);
 }
 
+function kfdFoundationModelExplanationMarkdown() {
+  const explanation = kfdSite.homepage.foundationModel.explanation || [];
+  const sectionMarkdown = kfdHomepageSection("foundation-model")?.markdown || "";
+  const firstParagraph = explanation[0] || "";
+  const marker = firstParagraph.includes(":")
+    ? `${firstParagraph.split(":", 1)[0]}:`
+    : firstParagraph.slice(0, 48);
+  const explanationOffset = marker ? sectionMarkdown.indexOf(marker) : -1;
+  if (explanation.length === 0) {
+    return "";
+  }
+  if (explanationOffset < 0) {
+    throw new Error("KFD foundation explanation is missing from its bundle-owned Markdown section");
+  }
+  return sectionMarkdown.slice(explanationOffset);
+}
+
 function kfdFuturePictureHero() {
   const futurePicture = kfdSite.homepage.futurePicture || {};
   const question = futurePicture.question
@@ -2979,10 +3160,10 @@ function kfdFuturePictureHero() {
   return [
     `<p class="lead" data-kfd-future-picture="question">${inlineMarkdown(question)}</p>`,
     engineeringAnswer
-      ? `<p class="hero-answer" data-kfd-future-picture="engineering-answer">${inlineMarkdown(engineeringAnswer)}</p>`
+      ? `<p class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;" data-kfd-future-picture="engineering-answer">${inlineMarkdown(engineeringAnswer)}</p>`
       : "",
     claimBoundary
-      ? `<p class="hero-claim-boundary" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
+      ? `<p class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
       : "",
   ].filter(Boolean).join("\n");
 }
@@ -3043,15 +3224,826 @@ function kfdPrimaryContinuationPanels() {
     .join("\n");
 }
 
+const runtimeHomepageStyles = `<style>
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    color: var(--soft);
+    background: var(--accent-strong);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .hero-action.secondary {
+    color: var(--accent-strong);
+    background: transparent;
+  }
+
+  .runtime-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .runtime-status .tag {
+    color: var(--fg);
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+    background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+  }
+
+  .architecture-visual {
+    display: grid;
+    min-width: 0;
+    gap: 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--soft) 88%, var(--bg));
+    padding: clamp(18px, 3vw, 30px);
+    box-shadow: 0 20px 52px color-mix(in srgb, var(--fg) 8%, transparent);
+  }
+
+  .action-loop {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 22px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .action-step {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 9px;
+    min-height: 214px;
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--muted);
+    border-radius: 8px;
+    background: var(--bg);
+    padding: 15px;
+  }
+
+  .action-step:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: -25px;
+    width: 26px;
+    color: var(--accent-strong);
+    font: 700 18px/1 monospace;
+    text-align: center;
+    transform: translateY(-50%);
+  }
+
+  .action-step[data-action-kind="fact"] { border-top-color: #2784c7; }
+  .action-step[data-action-kind="geometry"] { border-top-color: #d69732; }
+  .action-step[data-action-kind="binding"] { border-top-color: #b16bd3; }
+  .action-step[data-action-kind="external"] { border-top-color: #7b8794; }
+  .action-step[data-action-kind="episode"] { border-top-color: #2e9d72; }
+  .action-step[data-action-kind="admission"] { border-top-color: #476dd0; }
+
+  .architecture-node-label {
+    color: var(--fg);
+    font: 700 13px/1.25 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .action-step strong {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .action-step p,
+  .foundation-card p,
+  .hub-node li,
+  .exchange-channel span,
+  .invariant-card p,
+  .support-reason p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .action-components {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .action-components li {
+    border-left: 2px solid #d69732;
+    padding-left: 7px;
+    color: var(--fg);
+    font-size: 11px;
+  }
+
+  .loop-return {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    color: var(--accent-strong);
+    font: 700 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .loop-return::before {
+    content: "";
+    width: min(320px, 45%);
+    border-top: 1px dashed var(--accent);
+  }
+
+  .authority-foundation {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .foundation-card {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    border: 1px solid var(--line);
+    border-left: 4px solid #2784c7;
+    border-radius: 7px;
+    background: var(--soft);
+    padding: 14px;
+  }
+
+  .foundation-card[data-foundation-kind="projection"] {
+    border-style: dashed;
+    border-left-style: dashed;
+    border-left-color: var(--muted);
+  }
+
+  .network-diagram {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .hub-node {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 12px;
+    border: 2px solid var(--fg);
+    border-radius: 10px;
+    background: var(--bg);
+    padding: 20px;
+  }
+
+  .hub-node h3 { margin: 0; }
+
+  .hub-node ol {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hub-node li {
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    background: var(--soft);
+    padding: 11px 12px;
+  }
+
+  .hub-node li:last-child {
+    border-bottom: 1px solid var(--line);
+    color: var(--fg);
+    font-weight: 650;
+  }
+
+  .exchange-boundary {
+    display: grid;
+    min-width: 0;
+    align-content: center;
+    gap: 12px;
+    border: 1px solid color-mix(in srgb, #8b63d9 70%, var(--line));
+    border-radius: 10px;
+    background: color-mix(in srgb, #8b63d9 8%, var(--soft));
+    padding: 16px;
+  }
+
+  .exchange-boundary > strong {
+    color: var(--fg);
+    text-align: center;
+  }
+
+  .exchange-channel {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .exchange-channel li {
+    display: grid;
+    gap: 3px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    padding: 10px;
+  }
+
+  .transport-label,
+  .protocol-limit {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: center;
+  }
+
+  .protocol-limit {
+    border: 1px dashed var(--line);
+    border-radius: 7px;
+    padding: 12px;
+  }
+
+  .invariant-strip,
+  .support-reasons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .invariant-card,
+  .support-reason {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg);
+    padding: 14px;
+  }
+
+  .invariant-equation {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg) !important;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .invariant-equation b {
+    color: #b24b4b;
+    font-size: 22px;
+  }
+
+  .support-reason strong { font-size: 14px; }
+
+  .architecture-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .architecture-sources a {
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .quickstart-card {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+  }
+
+  .quickstart-card pre {
+    min-width: 0;
+    margin: 0;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--code);
+    padding: 12px 14px;
+  }
+
+  .quickstart-card pre code {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    white-space: pre;
+  }
+
+  .runtime-proof {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .runtime-proof div {
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+  }
+
+  .runtime-proof strong {
+    display: block;
+    color: var(--fg);
+    font-size: 22px;
+    line-height: 1.1;
+  }
+
+  .runtime-proof span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 820px) {
+    .architecture-visual {
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    .action-loop,
+    .authority-foundation,
+    .network-diagram,
+    .invariant-strip,
+    .support-reasons,
+    .runtime-proof {
+      grid-template-columns: 1fr;
+    }
+
+    .action-step {
+      min-height: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .foundation-card,
+    .hub-node,
+    .exchange-boundary,
+    .invariant-card,
+    .support-reason {
+      overflow-wrap: anywhere;
+    }
+
+    .action-step:not(:last-child)::after {
+      content: "↓";
+      top: auto;
+      right: 50%;
+      bottom: -22px;
+      transform: translateX(50%);
+    }
+
+    .loop-return::before { width: 35%; }
+  }
+</style>`;
+
+const dogfoodStyles = `<style>
+  .dogfood-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 0.7fr));
+    gap: 10px;
+    margin-top: 48px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+    padding: 12px;
+  }
+
+  .dogfood-rail-intro,
+  .dogfood-metric {
+    display: grid;
+    min-width: 0;
+    align-content: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    padding: 18px;
+  }
+
+  .dogfood-rail-intro h2,
+  .dogfood-rail-intro p { margin: 0; }
+  .dogfood-rail-intro h2 { font-size: 22px; }
+  .dogfood-rail-intro a { font-weight: 750; }
+
+  .dogfood-metric strong {
+    color: var(--fg);
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .dogfood-metric span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .dogfood-metric-primary {
+    border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+    background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+  }
+
+  .dogfood-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    gap: 28px;
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 36px;
+  }
+
+  .dogfood-hero-copy {
+    display: grid;
+    gap: 18px;
+  }
+
+  .dogfood-hero-copy h1,
+  .dogfood-hero-copy p { margin: 0; }
+
+  .dogfood-hero-number {
+    display: grid;
+    justify-items: start;
+    border-left: 5px solid var(--accent);
+    padding-left: 22px;
+  }
+
+  .dogfood-hero-number strong {
+    color: var(--fg);
+    font-size: clamp(68px, 12vw, 142px);
+    line-height: 0.82;
+    letter-spacing: -0.065em;
+  }
+
+  .dogfood-hero-number span {
+    max-width: 300px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .dogfood-window {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .dogfood-window code { font-size: 12px; }
+
+  .dogfood-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dogfood-flow li {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 142px;
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 16px;
+  }
+
+  .dogfood-flow li:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    z-index: 2;
+    width: 28px;
+    color: var(--accent-strong);
+    font-weight: 800;
+    text-align: center;
+    transform: translateY(-50%);
+  }
+
+  .dogfood-flow strong { font-size: 14px; }
+  .dogfood-flow span { color: var(--muted); font-size: 13px; }
+
+  .dogfood-dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(360px, 1.15fr);
+    gap: 18px;
+  }
+
+  .dogfood-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .repo-work-list {
+    display: grid;
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .repo-work-row {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.75fr) minmax(120px, 1fr) 54px;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .repo-work-row > span:first-child { overflow-wrap: anywhere; }
+  .repo-work-row strong { text-align: right; }
+
+  .repo-work-track {
+    display: block;
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--code);
+  }
+
+  .repo-work-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+  }
+
+  .dogfood-case {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 22px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+    padding: clamp(20px, 3vw, 30px);
+  }
+
+  .case-index {
+    color: color-mix(in srgb, var(--accent) 82%, var(--fg));
+    font: 800 38px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .case-copy {
+    display: grid;
+    min-width: 0;
+    gap: 14px;
+  }
+
+  .case-copy h2,
+  .case-copy p { margin: 0; }
+
+  .case-roots {
+    display: grid;
+    grid-template-columns: minmax(130px, auto) minmax(0, 1fr);
+    gap: 8px 14px;
+    margin: 0;
+  }
+
+  .case-roots dt { color: var(--muted); font-size: 12px; }
+  .case-roots dd { min-width: 0; margin: 0; }
+  .case-roots code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .boundary-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .boundary-list li {
+    border-left: 3px solid var(--warn);
+    background: var(--bg);
+    padding: 12px 14px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 820px) {
+    .dogfood-rail,
+    .dogfood-hero,
+    .dogfood-dashboard,
+    .dogfood-metric-grid,
+    .boundary-list { grid-template-columns: 1fr; }
+
+    .dogfood-flow { grid-template-columns: 1fr; }
+    .dogfood-flow li { min-height: 0; }
+    .dogfood-flow li:not(:last-child)::after {
+      content: "↓";
+      top: auto;
+      right: 50%;
+      bottom: -21px;
+      transform: translateX(50%);
+    }
+
+    .dogfood-case { grid-template-columns: 1fr; }
+    .case-roots { grid-template-columns: 1fr; }
+    .case-roots dd + dt { margin-top: 6px; }
+    .repo-work-row { grid-template-columns: minmax(100px, 0.8fr) minmax(70px, 1fr) 48px; }
+  }
+</style>`;
+
 writeFile(
   "index.html",
   page({
-    title: `${site.title} | Open substrate hub`,
+    title: `${site.title} | Embeddable Agent runtime`,
     description: site.tagline,
     current: "hub",
-    body: `<section class="hero">
-      <h1>${escapeHtml(site.homepage.headline)}</h1>
-      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
+    body: `${runtimeHomepageStyles}${dogfoodStyles}
+    <section class="hero">
+      <div class="runtime-status">
+        <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
+        <span class="tag">claim: ${escapeHtml(runtimeSurface.claimLevel)}</span>
+        <span class="tag">${escapeHtml(runtimeSurface.qualification.platform)}</span>
+      </div>
+      <h1>${escapeHtml(runtimeSurface.headline)}</h1>
+      <p class="lead">${escapeHtml(runtimeSurface.lead)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Open the reviewed reference</a>
+        <a class="hero-action secondary" href="/runtime.json">Inspect machine facts</a>
+      </div>
+      <p><strong>Availability:</strong> source candidate. No public registry install is claimed yet.</p>
+    </section>
+
+    <section aria-labelledby="action-world-heading">
+      <div class="section-heading">
+        <p class="eyebrow">01 · The action world</p>
+        <h2 id="action-world-heading">${escapeHtml(runtimeSurface.actionWorld.headline)}</h2>
+        <p>${escapeHtml(runtimeSurface.actionWorld.summary)}</p>
+      </div>
+      <div class="architecture-visual" aria-label="libkungfu action world architecture">
+        <ol class="action-loop">
+          ${runtimeSurface.actionWorld.steps.map(renderActionWorldStep).join("\n")}
+        </ol>
+        <div class="loop-return" aria-label="The successor Fact cut begins the next action loop">next action loop</div>
+        <div class="authority-foundation" aria-label="Runtime authority and projection layers">
+          ${runtimeSurface.actionWorld.foundation.map(renderFoundationLayer).join("\n")}
+        </div>
+      </div>
+      <div class="architecture-sources">
+        <strong>Semantic source:</strong>
+        ${runtimeSurface.architectureSources.kungfu.documents
+          .map((document) => `<a href="${escapeAttr(architectureSourceHref(runtimeSurface.architectureSources.kungfu, document))}">${escapeHtml(document.path)}</a>`)
+          .join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="hub-network-heading">
+      <div class="section-heading">
+        <p class="eyebrow">02 · The plural-Hub network</p>
+        <h2 id="hub-network-heading">${escapeHtml(runtimeSurface.hubNetwork.headline)}</h2>
+        <p>${escapeHtml(runtimeSurface.hubNetwork.summary)}</p>
+      </div>
+      <div class="architecture-visual">
+        <div class="network-diagram" aria-label="Two independently owned Agent Hubs exchanging responsibility through KFD">
+          ${renderHub(runtimeSurface.hubNetwork.hubs[0])}
+          <div class="exchange-boundary">
+            <strong>KFD responsibility boundary</strong>
+            <ol class="exchange-channel">
+              ${runtimeSurface.hubNetwork.exchange.map(renderExchangeStep).join("\n")}
+            </ol>
+            <p class="transport-label"><strong>Replaceable transport</strong><br>${escapeHtml(runtimeSurface.hubNetwork.transport)}</p>
+          </div>
+          ${renderHub(runtimeSurface.hubNetwork.hubs[1])}
+        </div>
+        <p class="protocol-limit"><strong>KFD does not own:</strong> ${escapeHtml(runtimeSurface.hubNetwork.notOwned)}</p>
+        <div class="invariant-strip" aria-label="KFD protocol invariants">
+          ${runtimeSurface.invariants.map(renderInvariant).join("\n")}
+        </div>
+      </div>
+      <div class="architecture-sources">
+        <strong>Protocol source:</strong>
+        ${runtimeSurface.architectureSources.kfd.documents
+          .map((document) => `<a href="${escapeAttr(architectureSourceHref(runtimeSurface.architectureSources.kfd, document))}">${escapeHtml(document.path)}</a>`)
+          .join("\n")}
+        <span class="tag">${escapeHtml(runtimeSurface.architectureSources.kfd.profile)}</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="hub-support-heading">
+      <div class="section-heading">
+        <p class="eyebrow">03 · Why this can support a Hub network</p>
+        <h2 id="hub-support-heading">The protocol removes shared-infrastructure assumptions.</h2>
+        <p>KFD does not need every participant to share one implementation. It preserves the minimum semantics required for independent systems to exchange responsibility without guessing.</p>
+      </div>
+      <div class="support-reasons">
+        ${runtimeSurface.hubNetwork.supportReasons
+          .map((reason) => `<article class="support-reason"><strong>${escapeHtml(reason.pressure)}</strong><p>${escapeHtml(reason.mechanism)}</p></article>`)
+          .join("\n")}
+      </div>
+    </section>
+
+    <section class="dogfood-rail" aria-labelledby="dogfood-rail-heading">
+      <div class="dogfood-rail-intro">
+        <p class="eyebrow">Dogfood · public evidence</p>
+        <h2 id="dogfood-rail-heading">The substrate is building itself.</h2>
+        <p>A fixed 30-day snapshot connects public work, exact Cuts, independent review, and production delivery.</p>
+        <a href="/dogfood/">Audit the complete evidence chain</a>
+      </div>
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.mergedPublicPullRequests, true)}
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests)}
+      ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts)}
+    </section>
+
+    <section aria-labelledby="quickstart-heading">
+      <div class="section-heading">
+        <p class="eyebrow">One native authority · three host languages</p>
+        <h2 id="quickstart-heading">Start with an Episode</h2>
+        <p>These commands run after building the exact source candidate. Each card links to the single reviewed implementation.</p>
+      </div>
+      <div class="grid three">
+        ${runtimeSurface.quickstarts.map(runtimeQuickstartCard).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel warning" style="margin-top: 18px;">
+      <p class="eyebrow">Package availability</p>
+      <h2>Source is ready; registry installation is not claimed</h2>
+      <div class="grid" style="margin-top: 18px;">
+        ${runtimeSurface.packages
+          .map(
+            (packageEntry) => `<div>
+          <h3><code>${escapeHtml(packageEntry.name)}</code></h3>
+          <p>${escapeHtml(packageEntry.role)}</p>
+          <p style="margin-top: 8px;"><strong>Status:</strong> ${escapeHtml(packageEntry.availability)}</p>
+        </div>`,
+          )
+          .join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="boundary-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Data and authority boundary</p>
+        <h2 id="boundary-heading">Record lifecycle evidence, not customer payloads</h2>
+      </div>
+      <div class="grid">
+        <article class="panel">
+          <h3>Retained by the reference adapter</h3>
+          <ul>${runtimeSurface.dataBoundary.retained.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+        </article>
+        <article class="panel">
+          <h3>Deliberately dropped</h3>
+          <ul>${runtimeSurface.dataBoundary.dropped.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;" aria-labelledby="evidence-heading">
+      <p class="eyebrow">Observed evidence · exact candidate</p>
+      <h2 id="evidence-heading">KFD Runtime 100 and restart qualification</h2>
+      <div class="runtime-proof">
+        <div><strong>${escapeHtml(runtimeSurface.qualification.core)}</strong><span>Core</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.experimental)}</strong><span>Experimental</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.pairedHooks)}</strong><span>paired hooks</span></div>
+        <div><strong>${escapeHtml(runtimeSurface.qualification.latencyMs.p95)} ms</strong><span>observed p95 hook latency</span></div>
+      </div>
+      <p style="margin-top: 18px;">${escapeHtml(runtimeSurface.qualification.recovery)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(runtimeSourceHref(runtimeSurface.source.qualificationGuidePath))}">Read qualification boundary</a>
+        <a class="card-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Audit PR #1171</a>
+      </div>
+    </section>
+
+    <section class="panel warning" style="margin-top: 18px;">
+      <h2>What this does not claim</h2>
+      <p><strong>${escapeHtml(runtimeSurface.claimBoundary)}</strong></p>
+      <ul style="margin-top: 14px;">${runtimeSurface.knownLimits.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+    </section>
+
+    <section aria-labelledby="release-trust-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Release trust</p>
+        <h2 id="release-trust-heading">Why the candidate is inspectable</h2>
+        <p>KFD owns decision and conformance semantics. Buildchain binds evidence into release mechanisms. Core is the product proof.</p>
+      </div>
       <div class="visual substrate-map" aria-label="Product generation map">
         <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and Kungfu Tech carries future products.">
         <a class="map-hotspot kfd" ${surfaceLinkAttrs("kfd")} aria-label="Open KFD"></a>
@@ -3059,10 +4051,9 @@ writeFile(
         <a class="map-hotspot core" ${surfaceLinkAttrs("core")} aria-label="Open Core"></a>
         <a class="map-hotspot products" href="${escapeAttr(site.homepage.futureProducts.url)}" aria-label="Open ${escapeAttr(site.homepage.futureProducts.displayName)}"></a>
       </div>
-    </section>
-
-    <section class="grid three mechanism-chain">
-      ${site.homepage.chain.map(mechanismStepCard).join("\n")}
+      <div class="grid three mechanism-chain" style="margin-top: 18px;">
+        ${site.homepage.chain.map(mechanismStepCard).join("\n")}
+      </div>
     </section>
 
     <section class="panel future-products">
@@ -3073,7 +4064,7 @@ writeFile(
 
     <section class="panel warning" style="margin-top: 18px;">
       <h2>Source boundary</h2>
-      <p><strong>Fixture source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
+      <p><strong>Projection source:</strong> ${escapeHtml(site.sourceBoundary.rule)}</p>
     </section>`,
   }),
 );
@@ -3104,6 +4095,113 @@ const coreAgentManifest = {
     full: surfaceEndpointHref("core", "llms-full.txt"),
   },
 };
+
+writeFile(
+  "dogfood/index.html",
+  page({
+    title: "Kungfu Dogfood | Public evidence",
+    description: dogfoodEvidence.headline,
+    current: "hub",
+    alternates: `  <link rel="alternate" type="application/json" title="Kungfu public dogfood evidence" href="/dogfood-evidence.json">`,
+    body: `${dogfoodStyles}
+    <section class="dogfood-hero" aria-labelledby="dogfood-title">
+      <div class="dogfood-hero-copy">
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / retained fallback</span></p>
+        <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
+        <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
+        <div class="dogfood-window">
+          <span class="tag">rolling ${escapeHtml(dogfoodEvidence.observation.window.duration)}</span>
+          <code id="dogfood-window-start">${escapeHtml(dogfoodEvidence.observation.window.startInclusive)}</code>
+          <span aria-hidden="true">→</span>
+          <code id="dogfood-window-end">${escapeHtml(dogfoodEvidence.observation.window.endInclusive)}</code>
+        </div>
+        <div class="card-actions">
+          <a class="card-action" href="/dogfood-evidence.json">Open machine-readable evidence</a>
+          <a class="card-action" href="${escapeAttr(dogfoodEvidence.sources.github.repository)}">Inspect the public organization</a>
+        </div>
+      </div>
+      <div class="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
+        <strong id="dogfood-pr-total">${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
+        <span id="dogfood-pr-caption">${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="proof-loop-heading">
+      <div class="section-heading">
+        <p class="eyebrow">One public loop</p>
+        <h2 id="proof-loop-heading">Work becomes a claim only after it survives evidence boundaries.</h2>
+        <p>The GitHub activity count supplies scale. Project Cut and retained qualification supply meaning.</p>
+      </div>
+      <ol class="dogfood-flow">
+        <li><span class="architecture-node-label">01 · Work</span><strong>Public PR changes source, docs, CI, or release state.</strong><span>Merge is a work event, not a feature claim.</span></li>
+        <li><span class="architecture-node-label">02 · Bind</span><strong>Exact source, Atlas, policy, and accepted scope are rooted.</strong><span>Changing an input creates a different claim.</span></li>
+        <li><span class="architecture-node-label">03 · Settle</span><strong>Project Cut records Episode delta, omissions, and receipt.</strong><span>An empty Episode delta is explicit, never invented.</span></li>
+        <li><span class="architecture-node-label">04 · Review</span><strong>A different actor checks the exact claim and roots.</strong><span>Reviewer search alone is not enough.</span></li>
+        <li><span class="architecture-node-label">05 · Continue</span><strong>Close, reopen, or produce a successor Cut and release.</strong><span>The next action keeps lineage instead of rewriting history.</span></li>
+      </ol>
+    </section>
+
+    <section class="dogfood-dashboard" aria-labelledby="snapshot-heading">
+      <div>
+        <div class="section-heading">
+          <p class="eyebrow">Snapshot</p>
+          <h2 id="snapshot-heading">Scale, with the caveats attached.</h2>
+        </div>
+        <div class="dogfood-metric-grid" id="dogfood-live-metrics">
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.reviewSearchMatches)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts, true)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutsWithEpisodeDelta)}
+          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutTitleMatches)}
+        </div>
+      </div>
+      <article class="panel">
+        <p class="eyebrow">Merged public PRs by repository</p>
+        <h2>Where the work landed</h2>
+        <ul class="repo-work-list" id="dogfood-live-repositories">
+          ${dogfoodEvidence.repositories
+            .map((repository) => renderRepositoryBar(
+              repository,
+              Math.max(...dogfoodEvidence.repositories.map((entry) => entry.mergedPublicPullRequests)),
+            ))
+            .join("\n")}
+        </ul>
+      </article>
+    </section>
+
+    <section aria-labelledby="cases-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Auditable cases</p>
+        <h2 id="cases-heading">Two loops you can open all the way down.</h2>
+        <p>The first proves independent continuation. The second proves the architecture pages you just read were themselves delivered through Project Cut and release review.</p>
+      </div>
+      <div class="stack">
+        ${dogfoodEvidence.cases.map(renderDogfoodCase).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel warning" aria-labelledby="boundaries-heading">
+      <p class="eyebrow">Counting and attribution boundaries</p>
+      <h2 id="boundaries-heading">What these numbers do not say</h2>
+      <p>${escapeHtml(dogfoodEvidence.claimBoundary)}</p>
+      <ul class="boundary-list">
+        ${dogfoodEvidence.boundaries.map((boundary) => `<li><strong>${escapeHtml(boundary.id)}</strong><br>${escapeHtml(boundary.statement)}</li>`).join("\n")}
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="reproduce-heading">
+      <p class="eyebrow">Reproduce</p>
+      <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
+      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
+      <dl class="meta" style="margin-top: 18px;">
+        <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
+        <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
+        <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
+        <dt>Machine route</dt><dd><a href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
+      </dl>
+    </section>
+    ${dogfoodLiveProjectionScript()}`,
+  }),
+);
 
 writeFile(
   "core/index.html",
@@ -3333,8 +4431,8 @@ writeFile(
         ${foundationModelPanels(kfdSite.homepage.foundationModel.layers)}
       </div>
       <p style="margin-top: 18px;"><code>${escapeHtml(kfdSite.homepage.foundationModel.chain)}</code></p>
-      <div class="stack" style="margin-top: 18px;">
-        ${kfdSite.homepage.foundationModel.explanation.map((text) => `<p>${inlineMarkdown(text)}</p>`).join("\n")}
+      <div class="stack doc-content" style="margin-top: 18px;">
+        ${renderMarkdownBody(kfdFoundationModelExplanationMarkdown())}
       </div>
     </section>
 
@@ -3522,6 +4620,14 @@ writeFile(`kfd/${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdC
 writeFile(`${kfdCandidateIndexOutput}/registry.json`, `${JSON.stringify(kfdCandidateRegistry, null, 2)}\n`);
 
 for (const candidatePage of kfdCandidatePages) {
+  const candidateFormalPage = kfdCandidateFormalPageByCandidateId.get(candidatePage.id);
+  const candidateTocLinks = candidateFormalPage
+    ? [{
+        title: "Formal candidate",
+        href: candidateFormalPage.url,
+        className: "toc-related-link",
+      }]
+    : [];
   const renderedCandidate = renderDecisionMarkdown(
     rewritePackageMarkdownLinks(candidatePage.markdown, "kungfu-systems/kfd", {
       filePattern: /\.md$/,
@@ -3529,6 +4635,7 @@ for (const candidatePage of kfdCandidatePages) {
       sourcePath: candidatePage.sourcePath,
     }),
     "Candidate sections",
+    { tocLinks: candidateTocLinks },
   );
   const candidateHtml = page({
     title: `${candidatePage.title} | KFD Candidates`,
@@ -3574,6 +4681,69 @@ for (const candidatePage of kfdCandidatePages) {
   const candidateOutput = candidatePage.url.replace(/^\/+|\/+$/g, "");
   writeFile(`kfd/${candidateOutput}/index.html`, candidateHtml);
   writeFile(`${candidateOutput}/index.html`, candidateHtml);
+}
+
+for (const candidateFormalPage of kfdCandidateFormalPages) {
+  const candidatePage = kfdCandidatePageById.get(candidateFormalPage.candidateId);
+  if (!candidatePage) {
+    throw new Error(`KFD formal candidate has no declared parent: ${candidateFormalPage.candidateId}`);
+  }
+  const renderedCandidateFormal = renderDecisionMarkdown(
+    rewritePackageMarkdownLinks(candidateFormalPage.markdown, "kungfu-systems/kfd", {
+      filePattern: /\.md$|registry\.json$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: candidateFormalPage.sourcePath,
+    }),
+    "Formal candidate sections",
+  );
+  const candidateFormalHtml = page({
+    title: `${candidatePage.title} formal candidate | KFD Candidates`,
+    description: `Non-normative formal candidate for ${candidatePage.title}.`,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a href="${escapeAttr(candidatePage.url)}" aria-label="Back to ${escapeAttr(candidatePage.title)}">${escapeHtml(`Back to ${candidatePage.title}`)}</a><span class="page-kicker-state">formal candidate / ${escapeHtml(candidateFormalPage.formalCandidateStatus)}</span></p>
+        <h1>${escapeHtml(candidatePage.title)} formal candidate</h1>
+        <p class="lead">A non-normative formal model owned by the candidate source.</p>
+      </section>
+
+      <section class="doc-layout">
+        <aside class="doc-sidebar">
+          ${kfdDecisionNav(undefined, "candidate-formal", candidatePage, candidateFormalPage)}
+          ${renderedCandidateFormal.tocHtml}
+        </aside>
+        <article class="panel doc-content">
+          ${renderedCandidateFormal.html}
+        </article>
+      </section>
+
+      <section class="panel" style="margin-top: 18px;">
+        <h2>Formal candidate metadata</h2>
+        <dl class="meta">
+          <dt>Candidate</dt>
+          <dd><a href="${escapeAttr(candidatePage.url)}"><code>${escapeHtml(candidatePage.id)}</code></a></dd>
+          <dt>Stable URL</dt>
+          <dd><a href="${escapeAttr(candidateFormalPage.url)}"><code>${escapeHtml(candidateFormalPage.url)}</code></a></dd>
+          <dt>Relationship</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.relationship)}</code></dd>
+          <dt>Normative</dt>
+          <dd><code>${escapeHtml(String(candidateFormalPage.normative))}</code></dd>
+          <dt>Model status</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.formalCandidateStatus)}</code></dd>
+          <dt>Model version</dt>
+          <dd><code>${escapeHtml(String(candidateFormalPage.formalCandidateVersion))}</code></dd>
+          <dt>Authority path</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.authorityPath)}</code></dd>
+          <dt>Source path</dt>
+          <dd><code>${escapeHtml(candidateFormalPage.sourcePath)}</code></dd>
+          <dt>Package</dt>
+          <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+        </dl>
+      </section>`,
+  });
+  const candidateFormalOutput = candidateFormalPage.url.replace(/^\/+|\/+$/g, "");
+  writeFile(`kfd/${candidateFormalOutput}/index.html`, candidateFormalHtml);
+  writeFile(`${candidateFormalOutput}/index.html`, candidateFormalHtml);
 }
 
 for (const entry of kfdRegistry.entries) {
@@ -3928,6 +5098,18 @@ for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normaliz
   );
 }
 
+const runtimeAgentProjection = {
+  ...runtimeSurface,
+  canonicalHost: surfaceCanonicalHost("hub"),
+  humanEntry: surfaceCanonicalHref("hub"),
+  machineEntry: surfaceEndpointHref("hub", "runtime.json"),
+  sourceBoundary: {
+    truthOwner: "kungfu-systems/kungfu exact public source and KFD Runtime 100 authority",
+    siteRole: "rendering, routing, and agent discovery",
+    rule: "This site projects the pinned source, qualification, and claim boundary. It does not publish packages, rerun conformance, or upgrade the claim.",
+  },
+};
+
 const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
@@ -3936,6 +5118,21 @@ const manifest = {
   sourceBoundary: site.sourceBoundary,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    {
+      path: "/dogfood/",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/dogfood-evidence.json",
+    },
+    {
+      path: "/dogfood-evidence.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/dogfood-evidence.json",
+    },
+    {
+      path: "/runtime.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/libkungfu-runtime-surface.json",
+    },
     { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/manifest.json", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/llms.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
@@ -3990,6 +5187,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
     })),
+    ...kfdCandidateFormalPages.map((pageEntry) => ({
+      path: pageEntry.url,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
+    })),
     ...kfdRegistry.entries.map((entry) => ({
       path: `/${entry.number}/`,
       host: surfaceCanonicalHost("kfd"),
@@ -4012,6 +5214,15 @@ const manifest = {
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
+    runtime: {
+      contract: runtimeSurface.contract,
+      status: runtimeSurface.status,
+      claimLevel: runtimeSurface.claimLevel,
+      sourceCommit: runtimeSurface.source.sourceCommit,
+      mainlineCommit: runtimeSurface.source.mainlineCommit,
+      projectCutRoot: runtimeSurface.source.projectCutRoot,
+      suiteRoot: runtimeSurface.qualification.suiteRoot,
+    },
     core: {
       contract: core.contract,
       status: core.status,
@@ -4073,10 +5284,13 @@ const manifest = {
       standardsContract: kfdStandards.contract,
       decisionCount: kfdRegistry.entries.length,
       candidateCount: kfdCandidatePages.length,
+      candidateFormalCount: kfdCandidateFormalPages.length,
     },
   },
 };
 
+writeFile("runtime.json", `${JSON.stringify(runtimeAgentProjection, null, 2)}\n`);
+writeFile("dogfood-evidence.json", `${JSON.stringify(dogfoodEvidence, null, 2)}\n`);
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
 const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
@@ -4142,6 +5356,7 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
+    ...kfdCandidateFormalPages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdDecisionEntries.map((entry) => entry.url),
     ...kfdDecisionEntries.map((entry) => entry.usage?.url).filter(Boolean),
     ...kfdDecisionEntries.map((entry) => entry.formal?.url).filter(Boolean),
@@ -4174,6 +5389,22 @@ const kfdAgentManifest = {
     relationship: kfdSite.kfdCandidates.relationship,
     normative: kfdSite.kfdCandidates.normative,
     entries: kfdCandidatePages.map((entry) => ({
+      formal: kfdCandidateFormalPageByCandidateId.has(entry.id)
+        ? {
+            id: kfdCandidateFormalPageByCandidateId.get(entry.id).id,
+            path: kfdCandidateFormalPageByCandidateId.get(entry.id).url,
+            url: surfaceEndpointHref(
+              "kfd",
+              kfdCandidateFormalPageByCandidateId.get(entry.id).url.replace(/^\/+/, ""),
+            ),
+            source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdCandidateFormalPageByCandidateId.get(entry.id).sourcePath}`,
+            relationship: kfdCandidateFormalPageByCandidateId.get(entry.id).relationship,
+            normative: kfdCandidateFormalPageByCandidateId.get(entry.id).normative,
+            formalCandidateVersion: kfdCandidateFormalPageByCandidateId.get(entry.id).formalCandidateVersion,
+            formalCandidateStatus: kfdCandidateFormalPageByCandidateId.get(entry.id).formalCandidateStatus,
+            authorityPath: kfdCandidateFormalPageByCandidateId.get(entry.id).authorityPath,
+          }
+        : undefined,
       id: entry.id,
       title: entry.title,
       status: entry.status,
@@ -4234,6 +5465,7 @@ libkungfu.dev is the open developer and agent substrate hub for Kungfu.
 
 Primary pages:
 - ${surfaceCanonicalHref("hub")}
+- ${surfaceEndpointHref("hub", "dogfood/")}
 - ${surfaceCanonicalHref("core")}
 - ${surfaceCanonicalHref("buildchain")}
 - ${surfaceCanonicalHref("kfd")}
@@ -4241,6 +5473,8 @@ Primary pages:
 
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
+- ${surfaceEndpointHref("hub", "runtime.json")}
+- ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
 - ${surfaceEndpointHref("core", "manifest.json")}
@@ -4256,8 +5490,9 @@ ${core.homepage.claimBoundary}
 
 Source boundary:
 This repository renders pinned upstream evidence, manifests, and packages. It
-is not a product fact source.
-Core runtime claims are pinned to exact Kungfu evidence while the future spec
+is not a product fact source. Embeddable runtime facts come from the pinned
+Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core mmap and
+recovery claims are pinned to exact Kungfu evidence while the future spec
 handoff remains a secondary fixture. Buildchain facts must come from the
 @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
 @kungfu-tech/kfd site bundle, registry, and decision documents. Publication

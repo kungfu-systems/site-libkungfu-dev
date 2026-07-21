@@ -34,6 +34,15 @@
       "cloudfrontDistribution": "EXWVGLVVXGURT",
       "roleArn": "arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions",
       "status": "active"
+    },
+    "observedEvidence": {
+      "url": "https://libkungfu.dev/dogfood-evidence.json",
+      "immutableUrlPattern": "https://libkungfu.dev/dogfood-evidence/snapshots/{snapshotId}.json",
+      "bucket": "libkungfu-dev-site-727884401362-us-east-1",
+      "cloudfrontDistribution": "EXWVGLVVXGURT",
+      "roleArn": "arn:aws:iam::727884401362:role/site-libkungfu-dev-evidence-github-actions",
+      "environment": "production-evidence",
+      "status": "active"
     }
   }
 }

@@ -1,0 +1,313 @@
+{
+  "contract": "libkungfu-embeddable-runtime-surface/v1",
+  "schemaVersion": 1,
+  "status": "reference-candidate",
+  "claimLevel": "reference-adopter",
+  "headline": "Build your Hub. Don't rebuild the runtime.",
+  "lead": "Keep your Agent UI, models, accounts, permissions, cloud, and customer relationship. Embed libkungfu for local or worker runtime facts, Episode recovery, and portable KFD evidence.",
+  "claimBoundary": "This is a first-party reference adopter, not external vendor adoption, certification, or OpenCode endorsement.",
+  "source": {
+    "repository": "https://github.com/kungfu-systems/kungfu",
+    "pullRequest": "https://github.com/kungfu-systems/kungfu/pull/1171",
+    "sourceCommit": "7eeb5bd1b45492f4da27eaacbe63eddfd6245176",
+    "mainlineCommit": "462a6c16e0608e0cbf71d8d304ddd3192e79ffc3",
+    "projectCutRoot": "sha256:2c555ff848de196df32dd5ae416d2055d7a470dbc98706b3d9bbb2f8e4bc29c5",
+    "qualificationGuidePath": "docs/qualification/vendor-agent-hub-embedding.md",
+    "referencePackagePath": "examples/opencode-kungfu"
+  },
+  "architectureSources": {
+    "projectionRule": "The site owns visual composition only. Kungfu owns Fact-Episode-Action runtime semantics; KFD owns cross-Hub protocol semantics.",
+    "kungfu": {
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "commit": "1f3893fae1a7a666d8abe736cd9563128f48549b",
+      "documents": [
+        {
+          "path": "docs/architecture/fact-episode-action-runtime.md",
+          "sha256": "5f7add43ae9fdc504680ee71067f64db2a7c47a4586c36585a7537b4b9ae95e5",
+          "owns": "Fact, Episode, Action Geometry, journal authority, and projection boundaries"
+        },
+        {
+          "path": "docs/concepts/system-overview.md",
+          "sha256": "c9819bbfdb24b57e870bbef53935a6c7aae1a5e69e9be71b2ab2cb8b1f191495",
+          "owns": "libkungfu system overview and data-plane summary"
+        }
+      ]
+    },
+    "kfd": {
+      "repository": "https://github.com/kungfu-systems/kfd",
+      "commit": "35915676330696f888c73c154f431c99f37c19ec",
+      "profile": "kfd-agent-hub@0.1.0-alpha.1",
+      "manifestDigest": "sha256:649ec7531d4c879846b8207a94e21844d573f0c07a422b9fa3f921bfa65d05a3",
+      "documents": [
+        {
+          "path": "protocols/agent-hub/README.md",
+          "sha256": "2a3ac987d280a5baaacde7ddfb01cdce22a094b09709d1ff4d9a2329060b1140",
+          "owns": "Topology-neutral cross-Hub responsibility exchange semantics"
+        },
+        {
+          "path": "protocols/agent-hub/implementer-guide.md",
+          "sha256": "95fbb4afbebc9105443dc1254bfac7aad166d61169feaad957780848f2f66b18",
+          "owns": "Minimal Hub implementation and receive algorithm"
+        }
+      ]
+    }
+  },
+  "actionWorld": {
+    "headline": "How libkungfu turns action into an inspectable world",
+    "summary": "libkungfu does not model everything. It preserves the coordinates needed to act without losing intent, evidence, authority, or continuity.",
+    "steps": [
+      {
+        "id": "fact-cut-before",
+        "kind": "fact",
+        "label": "Fact Cut N",
+        "question": "What is admitted now?",
+        "detail": "A rooted view of accepted state, not every observed or proposed claim."
+      },
+      {
+        "id": "action-geometry",
+        "kind": "geometry",
+        "label": "Action Geometry",
+        "question": "Why, from what view, under whose authority?",
+        "detail": "Pursuit preserves intent. Atlas preserves the declared perspective and sources. Warrant bounds permission.",
+        "components": ["Pursuit · why", "Atlas · what is known", "Warrant · what is allowed"]
+      },
+      {
+        "id": "action-binding",
+        "kind": "binding",
+        "label": "ActionBinding",
+        "question": "Which exact inputs authorize this candidate action?",
+        "detail": "An immutable intersection receipt over the Fact cut, Pursuit, Atlas, Warrant, action, and resource."
+      },
+      {
+        "id": "act",
+        "kind": "external",
+        "label": "Act",
+        "question": "What crosses into the real world?",
+        "detail": "The runtime may invoke tools or external systems, but success signals do not settle meaning."
+      },
+      {
+        "id": "episode",
+        "kind": "episode",
+        "label": "Episode",
+        "question": "What actually happened?",
+        "detail": "Causal occurrence, artifacts, receipts, consequences, recovery state, and verification roots."
+      },
+      {
+        "id": "admission",
+        "kind": "admission",
+        "label": "Inspect + admit",
+        "question": "Which consequences become Facts?",
+        "detail": "Local policy evaluates evidence and admits, rejects, degrades, or conflicts new claims."
+      },
+      {
+        "id": "fact-cut-after",
+        "kind": "fact",
+        "label": "Fact Cut N+1",
+        "question": "What may safely happen next?",
+        "detail": "The successor cut begins the next action loop without rewriting prior occurrence."
+      }
+    ],
+    "foundation": [
+      {
+        "id": "journal",
+        "kind": "authority",
+        "label": "Append-only journal authority",
+        "detail": "Typed identity, admission, order, causality, lifecycle, Cuts, refs, and receipts."
+      },
+      {
+        "id": "content-store",
+        "kind": "authority",
+        "label": "Content-addressed bodies",
+        "detail": "Immutable bytes become usable evidence only when a journal-committed root verifies them."
+      },
+      {
+        "id": "projections",
+        "kind": "projection",
+        "label": "Rebuildable projections",
+        "detail": "SQLite, CLI, GUI, JSON, Python, and Node views add access, never hidden authority."
+      }
+    ]
+  },
+  "hubNetwork": {
+    "headline": "KFD connects plural Hubs without becoming their control plane",
+    "summary": "Each Hub keeps its product, identity, policy, storage, models, and customer relationship. KFD standardizes only the responsibility exchange boundary.",
+    "hubs": [
+      {
+        "id": "hub-a",
+        "label": "Hub A · libkungfu adopter",
+        "layers": [
+          "Vendor product · UI, models, accounts",
+          "Local policy · identity, authority, admission",
+          "libkungfu · Facts, Episodes, recovery",
+          "KFD adapter · exchange store and verdict writer"
+        ]
+      },
+      {
+        "id": "hub-b",
+        "label": "Hub B · independent implementation",
+        "layers": [
+          "Participant product · UX and workflows",
+          "Local policy · identity, authority, admission",
+          "Any conforming runtime and evidence store",
+          "KFD adapter · exchange store and verdict writer"
+        ]
+      }
+    ],
+    "exchange": [
+      {
+        "id": "negotiate",
+        "label": "Negotiate",
+        "detail": "Select one exact profile version and the safe capability intersection."
+      },
+      {
+        "id": "propose",
+        "label": "Propose",
+        "detail": "Send rooted responsibility, causality, Warrant, disclosure, and payload commitments."
+      },
+      {
+        "id": "deliver",
+        "label": "Deliver",
+        "detail": "A replaceable binding returns transport evidence only."
+      },
+      {
+        "id": "assess",
+        "label": "Assess locally",
+        "detail": "The receiver verifies, detects conflicts, applies policy, and writes its own rooted verdict."
+      }
+    ],
+    "transport": "Local call · IPC · file · HTTP · gRPC · message bus · removable media",
+    "notOwned": "No global identity provider, Hub registry, database, transport, clock, or mandatory KFD cloud.",
+    "supportReasons": [
+      {
+        "pressure": "Different Hub internals",
+        "mechanism": "Exact profile coordinates and capability intersection"
+      },
+      {
+        "pressure": "No shared trust root",
+        "mechanism": "Receiver-owned admission and non-amplifying Warrants"
+      },
+      {
+        "pressure": "Retries, delay, and offline work",
+        "mechanism": "Content roots, predecessor causality, and idempotency keys"
+      },
+      {
+        "pressure": "Divergent state",
+        "mechanism": "Visible conflict roots and append-only successor exchanges"
+      },
+      {
+        "pressure": "Private or incomplete context",
+        "mechanism": "Typed partial, redacted, reference-only, or withheld disclosure"
+      },
+      {
+        "pressure": "Vendor and transport exit",
+        "mechanism": "Binding-neutral payload digests and export/import"
+      }
+    ]
+  },
+  "invariants": [
+    {
+      "left": "Delivery",
+      "right": "Admission",
+      "detail": "A receipt proves bytes arrived; the receiver still owns the verdict."
+    },
+    {
+      "left": "Occurrence",
+      "right": "Completion",
+      "detail": "An Episode happened; success remains an independently assessed claim."
+    },
+    {
+      "left": "Authentication",
+      "right": "Authority",
+      "detail": "Controlling an identity does not prove permission, truth, or fact admission."
+    }
+  ],
+  "packages": [
+    {
+      "name": "@kungfu-tech/core",
+      "role": "Node binding over the native libkungfu authority",
+      "availability": "source-candidate",
+      "installCommand": null
+    },
+    {
+      "name": "@kungfu-tech/opencode-kungfu",
+      "role": "Replaceable OpenCode reference adapter",
+      "availability": "source-only-private-package",
+      "installCommand": null
+    }
+  ],
+  "architecture": [
+    {
+      "id": "vendor-product",
+      "label": "Your Agent product",
+      "owns": "TUI, models, accounts, permissions"
+    },
+    {
+      "id": "libkungfu",
+      "label": "libkungfu",
+      "owns": "Runtime facts, Episodes, recovery"
+    },
+    {
+      "id": "kfd",
+      "label": "KFD open protocol",
+      "owns": "Portable reports and Hub exchange"
+    },
+    {
+      "id": "vendor-hub",
+      "label": "Your Hub",
+      "owns": "Cloud, workflows, customers"
+    }
+  ],
+  "quickstarts": [
+    {
+      "language": "Node",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.mjs",
+      "command": "node quickstart/episode.mjs ./runtime"
+    },
+    {
+      "language": "Python",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.py",
+      "command": "python quickstart/episode.py ./runtime"
+    },
+    {
+      "language": "C",
+      "sourcePath": "examples/opencode-kungfu/quickstart/episode.c",
+      "command": "cc quickstart/episode.c -lkungfu -o episode && ./episode ./runtime"
+    }
+  ],
+  "dataBoundary": {
+    "retained": [
+      "Episode open, heartbeat, end, or abort lifecycle",
+      "Adapter-owned phase labels",
+      "Native timestamps and aggregate heartbeat counts"
+    ],
+    "dropped": [
+      "Prompts and message content",
+      "Tool arguments, outputs, and errors",
+      "Provider, model, token, and credential data"
+    ]
+  },
+  "qualification": {
+    "profile": "kfd-agent-runtime@0.1.0-alpha.1",
+    "suite": "kfd-runtime-100@0.1.0-alpha.1",
+    "suiteRoot": "sha256:1e996b8c43b0b3e38630ccd58acf8a714cbc24b339d3794318347faab9057e5f",
+    "core": "35/35",
+    "experimental": "65/65 non-normative",
+    "pairedHooks": 100,
+    "latencyMs": {
+      "p50": 1.183,
+      "p95": 2.4,
+      "p99": 3.45,
+      "max": 3.788
+    },
+    "platform": "darwin/arm64",
+    "runtime": "Node 22.22.3",
+    "vendorSurface": "OpenCode 1.18.3 public plugin hooks",
+    "recovery": "SIGKILL restart recovered one unsealed Episode; export, import, and both fsck checks passed"
+  },
+  "knownLimits": [
+    "No registry installation is claimed until public package artifacts exist.",
+    "The retained qualification observes Darwin arm64 only.",
+    "SIGKILL recovery is not physical power-loss or device-loss qualification.",
+    "The reference run used no model provider and proves no OpenCode endorsement."
+  ]
+}

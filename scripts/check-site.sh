@@ -5,6 +5,7 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
+node scripts/check-dogfood-evidence.mjs
 
 pnpm exec buildchain badges readme --check
 
@@ -22,6 +23,8 @@ const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-runtime-surface.json",
+  "src/fixtures/libkungfu-runtime-surface.json",
+  "src/fixtures/dogfood-evidence.json",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
@@ -66,6 +69,9 @@ const requiredBaseFiles = [
   "dist/badges/v1/kfd-3/passed.json",
   "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
+  "dist/runtime.json",
+  "dist/dogfood/index.html",
+  "dist/dogfood-evidence.json",
   "dist/llms.txt",
   "dist/papers/index.html",
   "dist/papers/manifest.json",
@@ -76,9 +82,13 @@ const requiredBaseFiles = [
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-runtime-surface.json", "utf8"));
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
+const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
+const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+const runtimeProjection = JSON.parse(fs.readFileSync("dist/runtime.json", "utf8"));
+const dogfoodProjection = JSON.parse(fs.readFileSync("dist/dogfood-evidence.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
@@ -116,6 +126,10 @@ const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [S
 const kfdFormalPages = kfdSite.decisionPages?.formalPages?.pages || [];
 const kfdFormalPageByDecisionNumber = new Map(kfdFormalPages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
 const kfdCandidatePages = kfdSite.candidatePages?.pages || [];
+const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || [];
+const kfdCandidateFormalPageByCandidateId = new Map(
+  kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
+);
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -128,6 +142,13 @@ const requiredFiles = [
     `dist/kfd/drafts/${entry.id}/index.html`,
     `dist/drafts/${entry.id}/index.html`,
   ]),
+  ...kfdCandidateFormalPages.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+|\/+$/g, "");
+    return [
+      `dist/kfd/${output}/index.html`,
+      `dist/${output}/index.html`,
+    ];
+  }),
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
@@ -306,6 +327,63 @@ const paperLocks = expectedPaperPackages.map((entry) => ({
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
 }
+if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
+  throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
+}
+const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
+for (const requiredText of [
+  dogfoodEvidence.headline,
+  dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US"),
+  "A merged pull request is a work item, not a feature count.",
+  "A GitHub author account is not an Agent actor identity.",
+  "A reviewed-by search match is not automatically an approval",
+  "Three actors continued one exact Project Cut without a human relay",
+  "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
+]) {
+  if (!dogfoodHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
+    throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
+  }
+}
+for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
+  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
+    throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
+  }
+}
+if (
+  runtimeSurface.contract !== "libkungfu-embeddable-runtime-surface/v1" ||
+  runtimeSurface.status !== "reference-candidate" ||
+  runtimeSurface.claimLevel !== "reference-adopter"
+) {
+  throw new Error("embeddable runtime projection contract or claim boundary mismatch");
+}
+if (
+  runtimeSurface.source.sourceCommit !== "7eeb5bd1b45492f4da27eaacbe63eddfd6245176" ||
+  runtimeSurface.source.mainlineCommit !== "462a6c16e0608e0cbf71d8d304ddd3192e79ffc3" ||
+  runtimeSurface.source.projectCutRoot !== "sha256:2c555ff848de196df32dd5ae416d2055d7a470dbc98706b3d9bbb2f8e4bc29c5" ||
+  runtimeSurface.qualification.suiteRoot !== "sha256:1e996b8c43b0b3e38630ccd58acf8a714cbc24b339d3794318347faab9057e5f"
+) {
+  throw new Error("embeddable runtime projection drifted from reviewed source, Cut, or KFD suite roots");
+}
+if (
+  runtimeSurface.packages.length !== 2 ||
+  runtimeSurface.packages.some((entry) => entry.installCommand !== null || !entry.availability.includes("source")) ||
+  runtimeSurface.quickstarts.map((entry) => entry.language).join(",") !== "Node,Python,C"
+) {
+  throw new Error("source-only package availability or C/Node/Python quickstart projection drifted");
+}
+if (
+  runtimeSurface.architectureSources?.kungfu?.commit !== "1f3893fae1a7a666d8abe736cd9563128f48549b" ||
+  runtimeSurface.architectureSources?.kfd?.commit !== "35915676330696f888c73c154f431c99f37c19ec" ||
+  runtimeSurface.architectureSources?.kfd?.profile !== "kfd-agent-hub@0.1.0-alpha.1" ||
+  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:649ec7531d4c879846b8207a94e21844d573f0c07a422b9fa3f921bfa65d05a3" ||
+  runtimeSurface.actionWorld?.steps?.length !== 7 ||
+  runtimeSurface.actionWorld?.foundation?.length !== 3 ||
+  runtimeSurface.hubNetwork?.hubs?.length !== 2 ||
+  runtimeSurface.hubNetwork?.exchange?.length !== 4 ||
+  runtimeSurface.invariants?.map((entry) => `${entry.left}!=${entry.right}`).join(",") !== "Delivery!=Admission,Occurrence!=Completion,Authentication!=Authority"
+) {
+  throw new Error("architecture projection drifted from its exact Kungfu/KFD sources or visual contract");
+}
 if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
   throw new Error("core fixture contract mismatch");
 }
@@ -393,6 +471,31 @@ if (
 ) {
   throw new Error("KFD site bundle must expose governed non-normative candidate pages");
 }
+if (
+  kfdSite.candidatePages?.formalPages?.relationship !== "formal-candidate-child-of-candidate"
+  || kfdSite.candidatePages?.formalPages?.normative !== false
+  || !Array.isArray(kfdCandidateFormalPages)
+  || kfdCandidateFormalPages.length === 0
+) {
+  throw new Error("KFD site bundle must expose governed non-normative formal candidate pages");
+}
+for (const formalPage of kfdCandidateFormalPages) {
+  const parent = kfdCandidatePages.find((candidate) => candidate.id === formalPage.candidateId);
+  const registryEntry = kfdCandidateRegistry.candidates?.find((candidate) => candidate.id === formalPage.candidateId);
+  if (
+    !parent
+    || formalPage.parentPath !== parent.sourcePath
+    || formalPage.parentUrl !== parent.url
+    || formalPage.relationship !== kfdSite.candidatePages.formalPages.relationship
+    || formalPage.normative !== false
+    || registryEntry?.formalReference?.path !== formalPage.sourcePath
+    || registryEntry?.formalReference?.version !== formalPage.formalCandidateVersion
+    || registryEntry?.formalReference?.status !== formalPage.formalCandidateStatus
+    || registryEntry?.formalReference?.authorityPath !== formalPage.authorityPath
+  ) {
+    throw new Error(`KFD formal candidate contract mismatch: ${formalPage.id}`);
+  }
+}
 for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock.json"]) {
   if (fs.existsSync(legacyBuildchainPath)) {
     throw new Error(`${legacyBuildchainPath} must not be kept at repository root; use .buildchain/ instead`);
@@ -432,6 +535,27 @@ for (const [name, generatedManifest] of [
 }
 if (manifest.sourceBoundary.truthOwner !== "upstream-evidence-and-manifests") {
   throw new Error("dist manifest source boundary drifted");
+}
+if (
+  runtimeProjection.contract !== runtimeSurface.contract ||
+  runtimeProjection.canonicalHost !== expectedSurfaceHost("hub") ||
+  runtimeProjection.machineEntry !== expectedSurfaceEndpoint("hub", "runtime.json") ||
+  runtimeProjection.source?.sourceCommit !== runtimeSurface.source.sourceCommit ||
+  runtimeProjection.sourceBoundary?.siteRole !== "rendering, routing, and agent discovery"
+) {
+  throw new Error("generated runtime projection drifted from its pinned fixture or channel");
+}
+if (
+  !manifest.pages.some((entry) => (
+    entry.host === expectedSurfaceHost("hub") &&
+    entry.path === "/runtime.json" &&
+    entry.source === "src/fixtures/libkungfu-runtime-surface.json"
+  )) ||
+  manifest.upstreamFixtures.runtime?.sourceCommit !== runtimeSurface.source.sourceCommit ||
+  manifest.upstreamFixtures.runtime?.projectCutRoot !== runtimeSurface.source.projectCutRoot ||
+  manifest.upstreamFixtures.runtime?.suiteRoot !== runtimeSurface.qualification.suiteRoot
+) {
+  throw new Error("dist manifest does not bind the exact embeddable runtime projection");
 }
 if (
   core.contract !== "libkungfu-core-runtime-surface-fixture"
@@ -559,6 +683,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     const versionHtml = fs.readFileSync(versionIndex, "utf8");
     if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
       throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
+    }
+    if (versionHtml.includes(".hero-answer {") || versionHtml.includes(".hero-claim-boundary {")) {
+      throw new Error(`immutable publication version page contains KFD-only hero styles: ${publication.id}@${version.version}`);
     }
     for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
       if (!versionHtml.includes(`href="${href}"`)) {
@@ -781,6 +908,18 @@ for (const candidate of kfdCandidatePages) {
     throw new Error(`dist manifest does not record KFD candidate: ${candidate.id}`);
   }
 }
+for (const formalCandidate of kfdCandidateFormalPages) {
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === formalCandidate.url
+        && page.source.endsWith(`/${formalCandidate.sourcePath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD formal candidate: ${formalCandidate.id}`);
+  }
+}
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
 }
@@ -811,6 +950,7 @@ if (
   throw new Error("KFD agent manifest case registry mismatch");
 }
 for (const candidate of kfdAgentManifest.candidates.entries) {
+  const formalCandidate = kfdCandidateFormalPageByCandidateId.get(candidate.id);
   if (
     candidate.relationship !== kfdSite.candidatePages.relationship
     || candidate.normative !== false
@@ -818,6 +958,21 @@ for (const candidate of kfdAgentManifest.candidates.entries) {
     || !kfdAgentManifest.readOrder.includes(candidate.url)
   ) {
     throw new Error(`KFD agent manifest is missing candidate facts for ${candidate.id}`);
+  }
+  if (
+    formalCandidate
+    && (
+      candidate.formal?.path !== formalCandidate.url
+      || candidate.formal?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${formalCandidate.sourcePath}`
+      || candidate.formal?.relationship !== formalCandidate.relationship
+      || candidate.formal?.normative !== false
+      || candidate.formal?.formalCandidateVersion !== formalCandidate.formalCandidateVersion
+      || candidate.formal?.formalCandidateStatus !== formalCandidate.formalCandidateStatus
+      || candidate.formal?.authorityPath !== formalCandidate.authorityPath
+      || !kfdAgentManifest.readOrder.includes(candidate.formal?.url)
+    )
+  ) {
+    throw new Error(`KFD agent manifest is missing formal candidate facts for ${candidate.id}`);
   }
 }
 for (const entry of kfdAgentManifest.decisions) {
@@ -857,8 +1012,15 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
 }
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
+const immutableFoundationPaperHtml = fs.readFileSync(
+  "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.7/index.html",
+  "utf8",
+);
 if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
   throw new Error("production artifact must not embed robots noindex metadata");
+}
+if (!hubHtml.includes(".architecture-visual") || immutableFoundationPaperHtml.includes(".architecture-visual")) {
+  throw new Error("embeddable runtime styles must remain homepage-local and must not mutate immutable paper HTML");
 }
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
@@ -884,14 +1046,48 @@ if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manif
   throw new Error("human homepage should not render machine-entry cards");
 }
 if (
-  !hubHtml.includes("Kungfu product generation, in public") ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.headline)) ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.actionWorld.headline)) ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.hubNetwork.headline)) ||
+  !hubHtml.includes("KFD responsibility boundary") ||
+  !hubHtml.includes("Delivery") ||
+  !hubHtml.includes("Admission") ||
+  !hubHtml.includes("Occurrence") ||
+  !hubHtml.includes("Completion") ||
+  !hubHtml.includes("Authentication") ||
+  !hubHtml.includes("Authority") ||
+  !hubHtml.includes("Start with an Episode") ||
+  !hubHtml.includes("No public registry install is claimed yet") ||
+  !hubHtml.includes("KFD Runtime 100 and restart qualification") ||
+  !hubHtml.includes("reference-adopter") ||
   !hubHtml.includes(">Principles</p>") ||
   !hubHtml.includes(">First load-bearing layer</p>") ||
   !hubHtml.includes(">Runtime substrate proof</p>") ||
   !hubHtml.includes(">Kungfu Tech</a>") ||
   !hubHtml.includes('href="https://kungfu.tech"')
 ) {
-  throw new Error("human homepage must expose the KFD -> Buildchain -> Core generation chain and future product home");
+  throw new Error("human homepage must lead with the embeddable runtime path and retain its release-trust chain");
+}
+for (const source of [runtimeSurface.architectureSources.kungfu, runtimeSurface.architectureSources.kfd]) {
+  for (const document of source.documents) {
+    const href = `${source.repository}/blob/${source.commit}/${document.path}`;
+    if (!hubHtml.includes(`href="${escapeHtml(href)}"`)) {
+      throw new Error(`homepage architecture must link its exact semantic source: ${document.path}`);
+    }
+  }
+}
+for (const quickstart of runtimeSurface.quickstarts) {
+  const sourceHref = `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${quickstart.sourcePath}`;
+  if (!hubHtml.includes(`<pre><code>${escapeHtml(quickstart.command)}</code></pre>`) || !hubHtml.includes(`href="${escapeHtml(sourceHref)}"`)) {
+    throw new Error(`homepage quickstart must bind ${quickstart.language} to the exact reviewed source`);
+  }
+}
+if (
+  !hubHtml.includes(`href="${escapeHtml(runtimeSurface.source.pullRequest)}"`) ||
+  !hubHtml.includes('href="/runtime.json"') ||
+  hubHtml.includes("npm install @kungfu-tech/opencode-kungfu")
+) {
+  throw new Error("homepage must expose exact source and machine facts without inventing a public package install");
 }
 if (hubHtml.includes("Open product generation substrate")) {
   throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
@@ -1007,6 +1203,20 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
 }
 if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
   throw new Error("KFD homepage must render support sections");
+}
+if (
+  !kfdHomeHtml.includes('class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;"')
+  || !kfdHomeHtml.includes('class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;"')
+) {
+  throw new Error("KFD future picture must retain its scoped hero typography");
+}
+if (
+  kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
+  || !kfdHomeHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
+  || !kfdHomeHtml.includes('<div class="stack doc-content" style="margin-top: 18px;">')
+  || !kfdHomeHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
+) {
+  throw new Error("KFD foundation explanation must render bundle block Markdown with document code-block styling");
 }
 const rendererContract = kfdSite.homepage.rendererContract;
 if (!rendererContract) {
@@ -1172,6 +1382,52 @@ for (const candidate of kfdCandidatePages) {
   }
   if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(candidateCanonicalHtml)) {
     throw new Error(`KFD candidate page has unresolved package markdown links: ${candidate.id}`);
+  }
+  const formalCandidate = kfdCandidateFormalPageByCandidateId.get(candidate.id);
+  if (
+    formalCandidate
+    && !candidateCanonicalHtml.includes(
+      `<a class="toc-related-link" href="${escapeHtml(formalCandidate.url)}">Formal candidate</a>`,
+    )
+  ) {
+    throw new Error(`KFD candidate page is missing its formal child navigation: ${candidate.id}`);
+  }
+}
+for (const formalCandidate of kfdCandidateFormalPages) {
+  const parent = kfdCandidatePages.find((candidate) => candidate.id === formalCandidate.candidateId);
+  const output = formalCandidate.url.replace(/^\/+|\/+$/g, "");
+  const formalCanonicalHtml = fs.readFileSync(`dist/kfd/${output}/index.html`, "utf8");
+  const formalAliasHtml = fs.readFileSync(`dist/${output}/index.html`, "utf8");
+  if (formalAliasHtml !== formalCanonicalHtml) {
+    throw new Error(`KFD formal candidate alias drifted: ${formalCandidate.id}`);
+  }
+  if (
+    !formalCanonicalHtml.includes('aria-label="Formal candidate sections"')
+    || !formalCanonicalHtml.includes(
+      `<span class="page-kicker-state">formal candidate / ${escapeHtml(formalCandidate.formalCandidateStatus)}</span>`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a href="${escapeHtml(parent.url)}" aria-label="Back to ${escapeHtml(parent.title)}">`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a class="doc-nav-child" href="${escapeHtml(parent.url)}">${escapeHtml(parent.title)}</a>`,
+    )
+    || !formalCanonicalHtml.includes(
+      `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeHtml(formalCandidate.url)}" aria-current="page">Formal candidate</a>`,
+    )
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.relationship))
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.sourcePath))
+    || !formalCanonicalHtml.includes(escapeHtml(formalCandidate.authorityPath))
+    || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.normative))}</code>`)
+    || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.formalCandidateVersion))}</code>`)
+    || !formalCanonicalHtml.includes(`href="${escapeHtml(parent.url)}"`)
+    || !formalCanonicalHtml.includes('href="/7/formal/"')
+    || !formalCanonicalHtml.includes('href="/drafts/registry.json"')
+  ) {
+    throw new Error(`KFD formal candidate page is missing declared facts or navigation: ${formalCandidate.id}`);
+  }
+  if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(formalCanonicalHtml)) {
+    throw new Error(`KFD formal candidate page has unresolved package markdown links: ${formalCandidate.id}`);
   }
 }
 if (!kfdHomeHtml.includes("Adoption boundary")) {
@@ -1404,7 +1660,7 @@ grep -q 'libkungfu-core-runtime-surface' dist/core/manifest.json
 grep -q 'Record once. Observe live. Recover from evidence.' dist/core/llms.txt
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
-grep -q 'Fixture source' dist/index.html
+grep -q 'Projection source' dist/index.html
 grep -q 'pinned release artifacts' dist/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html

@@ -38,13 +38,16 @@ machines, artifact schemas, or provenance facts.
 
 ## Source Boundary
 
-The generated hub page consumes a fixture manifest under `src/fixtures/`.
-The Core page consumes `core-runtime-surface.json`, an evidence-linked
-presentation fixture whose runtime claims are pinned to one exact Kungfu
-source ref. It owns the homepage hierarchy and wording, not the runtime facts;
-the previous `@kungfu-tech/spec` placeholder remains a secondary source
-contract inside that fixture instead of determining the homepage. The
-Buildchain page consumes the pinned npm package artifact
+The generated hub page consumes fixture manifests under `src/fixtures/`. Its
+`/runtime.json` projection pins the reviewed Kungfu source, Project Cut, KFD
+Runtime 100 suite root, package availability, qualification, and claim
+boundary; it does not publish packages or become the runtime/conformance
+authority. The Core page consumes `core-runtime-surface.json`, an
+evidence-linked presentation fixture whose mmap and recovery claims are pinned
+to one exact Kungfu source ref. It owns the homepage hierarchy and wording, not
+the runtime facts; the previous `@kungfu-tech/spec` placeholder remains a
+secondary source contract inside that fixture instead of determining the
+homepage. The Buildchain page consumes the pinned npm package artifact
 `@kungfu-tech/buildchain@2.11.13` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
@@ -55,11 +58,14 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.34` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.39` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 usage and non-normative formal reference children are rendered under
 `/{number}/usage/` and `/{number}/formal/`; the decision remains their authority
 and the site does not promote a formal reference into a new decision.
+Bundle-declared formal candidate children are rendered under
+`/drafts/{id}/formal/`; their parent candidate remains the non-normative
+authority and both human and agent surfaces expose the declared relationship.
 Bundle-declared pre-number candidates are rendered under `/drafts/` with their
 non-normative status, claim boundary, and machine registry preserved.
 The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
