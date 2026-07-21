@@ -21,8 +21,8 @@
       },
       {
         "surface": "core",
-        "role": "First complex product proof",
-        "summary": "Core is the first complex product family built with Buildchain and shaped by KFD principles. Future products should be legible through the same mechanism."
+        "role": "Runtime substrate proof",
+        "summary": "Core shows how libkungfu turns runtime events into retained, observable evidence while keeping visibility, durability, and authority boundaries explicit."
       }
     ],
     "futureProducts": {
@@ -33,18 +33,18 @@
     }
   },
   "sourceBoundary": {
-    "truthOwner": "upstream-manifests",
+    "truthOwner": "upstream-evidence-and-manifests",
     "siteRole": "visual routing and rendering",
-    "rule": "The site may render product narrative and navigation, but core specs, CLI parameters, workflow inputs, release state machines, schemas, and evidence facts must come from upstream manifests."
+    "rule": "The site may render product narrative and navigation, but runtime claims must bind to immutable upstream evidence, while core specs, CLI parameters, workflow inputs, release state machines, schemas, and release facts must come from upstream manifests or pinned packages."
   },
   "surfaces": [
     {
       "id": "core",
       "host": "core.libkungfu.dev",
       "path": "/core/",
-      "label": "Core substrate",
-      "summary": "libkungfu, yijinjing, runtime fact ledger, spec, schema registry, vectors, and stable docs URLs.",
-      "source": "kungfu -> @kungfu-tech/spec -> site-libkungfu-dev"
+      "label": "Runtime substrate",
+      "summary": "One mmap journal as retained evidence and the local observation bus, with explicit visibility, durability, recovery, and authority boundaries.",
+      "source": "pinned Kungfu evidence -> Core runtime surface fixture -> site-libkungfu-dev"
     },
     {
       "id": "buildchain",

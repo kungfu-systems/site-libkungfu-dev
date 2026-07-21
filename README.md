@@ -23,8 +23,9 @@ machines, artifact schemas, or provenance facts.
 ## Surfaces
 
 - `https://libkungfu.dev` is the open developer and agent substrate hub.
-- `https://core.libkungfu.dev` presents libkungfu, yijinjing, runtime fact
-  ledger, spec, schema registry, vectors, and stable docs URLs.
+- `https://core.libkungfu.dev` presents the libkungfu runtime substrate: the
+  mmap journal as retained evidence and local observation bus, its explicit
+  visibility/durability boundaries, and the secondary spec/source contract.
 - `https://buildchain.libkungfu.dev` presents Buildchain as the Kungfu CI/CD and
   release-governance product surface.
 - `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
@@ -37,11 +38,16 @@ machines, artifact schemas, or provenance facts.
 
 ## Source Boundary
 
-The generated hub and core pages currently consume fixture manifests under
-`src/fixtures/`. The hub's `/runtime.json` projection pins the reviewed Kungfu
-source, Project Cut, KFD Runtime 100 suite root, package availability,
-qualification, and claim boundary; it does not publish packages or become the
-runtime/conformance authority. The Buildchain page consumes the pinned npm package artifact
+The generated hub page consumes fixture manifests under `src/fixtures/`. Its
+`/runtime.json` projection pins the reviewed Kungfu source, Project Cut, KFD
+Runtime 100 suite root, package availability, qualification, and claim
+boundary; it does not publish packages or become the runtime/conformance
+authority. The Core page consumes `core-runtime-surface.json`, an
+evidence-linked presentation fixture whose mmap and recovery claims are pinned
+to one exact Kungfu source ref. It owns the homepage hierarchy and wording, not
+the runtime facts; the previous `@kungfu-tech/spec` placeholder remains a
+secondary source contract inside that fixture instead of determining the
+homepage. The Buildchain page consumes the pinned npm package artifact
 `@kungfu-tech/buildchain@2.11.13` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
@@ -71,16 +77,19 @@ papers appear on this site.
 Expected upstream flow:
 
 ```text
-kungfu -> @kungfu-tech/spec -> site-libkungfu-dev -> core.libkungfu.dev
+kungfu evidence -> evidence-linked Core surface fixture -> core.libkungfu.dev
+kungfu -> future @kungfu-tech/spec or Core site bundle -> replace the fixture source contract
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain badge endpoint registry -> site-libkungfu-dev -> buildchain.libkungfu.dev/badges/v1
 paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 ```
 
-Do not hand-write upstream facts in this repository. When more upstream
-packages publish real manifests, replace the remaining fixture inputs with
-pinned package artifacts.
+Do not invent upstream facts in this repository. Until Kungfu publishes a Core
+site bundle, every runtime claim in the temporary Core fixture must cite an
+immutable Kungfu source ref, preserve its qualification/non-claim boundary,
+and appear identically in the Core human and machine surfaces. Replace that
+fixture with a pinned package artifact when the upstream bundle exists.
 
 ## KFD Compliance
 

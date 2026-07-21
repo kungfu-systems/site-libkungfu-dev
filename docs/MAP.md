@@ -7,8 +7,9 @@
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
-- Use `https://core.libkungfu.dev` for libkungfu, yijinjing, runtime fact
-  ledger, specs, schemas, vectors, and stable docs URLs.
+- Use `https://core.libkungfu.dev` to understand the libkungfu runtime
+  substrate: one mmap journal as retained evidence and local observation bus,
+  its qualification frontiers, and the secondary spec/source contract.
 - Use `https://buildchain.libkungfu.dev` for Buildchain release-governance and
   deployment-operation facts.
 - Use `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.svg` for
@@ -20,11 +21,15 @@
 - Use `https://papers.libkungfu.dev` for publication archive registry pages:
   human paper entries, PDFs, mutable latest routes, immutable version artifact
   prefixes, and agent-readable archive manifests.
-- Use `/llms.txt` and `/manifest.json` as stable machine entries.
+- Use `/llms.txt` and `/manifest.json` as stable machine entries on each owning
+  surface, including the Core subdomain.
 
 ## Work In This Repository
 
-- `src/fixtures/` contains temporary contract fixtures for hub/core.
+- `src/fixtures/` contains temporary contract fixtures for the hub and an
+  evidence-linked Core presentation bundle. The Core fixture must pin every
+  runtime claim to an immutable Kungfu source ref and keep the future spec
+  package handoff secondary.
 - `src/fixtures/libkungfu-runtime-surface.json` projects the exact public
   Kungfu PR, source commit, Project Cut, quickstart paths, KFD suite root,
   observed qualification, package availability, and known limits. The site

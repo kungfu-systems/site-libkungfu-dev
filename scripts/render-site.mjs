@@ -1146,6 +1146,11 @@ ${alternates}
       --accent-strong: #0b4f4a;
       --warn: #925a16;
       --code: #eef2f3;
+      --core-blue: #2563eb;
+      --core-violet: #7c3aed;
+      --core-green: #0f766e;
+      --core-amber: #b45309;
+      --core-grid: rgb(15 23 42 / 0.08);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -1159,6 +1164,11 @@ ${alternates}
         --accent-strong: #83ded3;
         --warn: #e2b15b;
         --code: #20272d;
+        --core-blue: #60a5fa;
+        --core-violet: #a78bfa;
+        --core-green: #47c9ba;
+        --core-amber: #f0b35a;
+        --core-grid: rgb(226 232 240 / 0.08);
       }
     }
 
@@ -1302,6 +1312,341 @@ ${alternates}
       top: 26.667%;
       width: 17.708%;
       height: 35%;
+    }
+
+    .core-hero {
+      gap: 24px;
+    }
+
+    .core-hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(560px, 1.25fr);
+      gap: 36px;
+      align-items: center;
+    }
+
+    .core-hero-copy {
+      display: grid;
+      gap: 22px;
+    }
+
+    .core-hero h1 {
+      max-width: 680px;
+      font-size: clamp(44px, 5vw, 68px);
+    }
+
+    .core-runtime-map {
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--core-blue) 32%, var(--line));
+      border-radius: 18px;
+      background:
+        linear-gradient(var(--core-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--core-grid) 1px, transparent 1px),
+        color-mix(in srgb, var(--soft) 94%, var(--core-blue));
+      background-size: 28px 28px;
+      padding: 18px;
+      box-shadow: 0 24px 60px rgb(15 23 42 / 0.08);
+    }
+
+    .core-runtime-map figcaption {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .core-runtime-map figcaption::after {
+      content: "implemented substrate";
+      border: 1px solid color-mix(in srgb, var(--core-green) 44%, var(--line));
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--core-green);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .core-runtime-flow {
+      display: grid;
+      grid-template-columns: minmax(112px, 0.72fr) 42px minmax(176px, 1fr) 42px minmax(180px, 1.2fr);
+      align-items: center;
+      min-height: 320px;
+    }
+
+    .core-runtime-node {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--soft) 94%, transparent);
+      padding: 14px;
+      box-shadow: 0 10px 24px rgb(15 23 42 / 0.06);
+    }
+
+    .core-runtime-node strong,
+    .core-runtime-node span {
+      display: block;
+    }
+
+    .core-runtime-node strong {
+      color: var(--fg);
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .core-runtime-node span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .core-writer-node {
+      border-color: color-mix(in srgb, var(--core-violet) 48%, var(--line));
+    }
+
+    .core-journal-node {
+      display: grid;
+      gap: 12px;
+      border-color: color-mix(in srgb, var(--core-blue) 52%, var(--line));
+      background: color-mix(in srgb, var(--soft) 88%, var(--core-blue));
+      padding: 16px;
+    }
+
+    .core-journal-qualifier {
+      color: var(--core-blue) !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 700;
+    }
+
+    .core-journal-frames {
+      display: grid;
+      gap: 6px;
+    }
+
+    .core-journal-frame {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--core-blue) 28%, var(--line));
+      border-radius: 7px;
+      background: var(--soft);
+      padding: 6px 8px;
+      color: var(--muted);
+      font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .core-journal-frame::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--core-blue) 22%, transparent), transparent);
+      transform: translateX(-110%);
+      animation: core-frame-publish 5.2s ease-in-out infinite;
+    }
+
+    .core-journal-frame:nth-child(2)::after { animation-delay: 0.45s; }
+    .core-journal-frame:nth-child(3)::after { animation-delay: 0.9s; }
+    .core-journal-frame:nth-child(4)::after { animation-delay: 1.35s; }
+
+    .core-flow-link {
+      position: relative;
+      height: 2px;
+      background: linear-gradient(90deg, var(--core-violet), var(--core-blue), var(--core-green));
+      background-size: 220% 100%;
+      animation: core-flow-shift 4.8s linear infinite;
+    }
+
+    .core-flow-link::after {
+      position: absolute;
+      top: 50%;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid var(--core-green);
+      border-right: 2px solid var(--core-green);
+      content: "";
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .core-flow-link span {
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.2;
+      text-align: center;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .core-reader-stack {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .core-reader-node {
+      min-height: 124px;
+      border-color: color-mix(in srgb, var(--core-green) 36%, var(--line));
+    }
+
+    .core-reader-node::before {
+      display: block;
+      width: 7px;
+      height: 7px;
+      margin-bottom: 10px;
+      border-radius: 999px;
+      background: var(--core-green);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--core-green) 13%, transparent);
+      content: "";
+      animation: core-reader-pulse 4.8s ease-in-out infinite;
+    }
+
+    .core-reader-node:nth-child(2)::before { animation-delay: 0.35s; }
+    .core-reader-node:nth-child(3)::before { animation-delay: 0.7s; }
+    .core-reader-node:nth-child(4)::before { animation-delay: 1.05s; }
+
+    .core-reader-status {
+      color: var(--core-green) !important;
+      font-size: 9px !important;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .core-outcome-grid {
+      grid-template-rows: auto auto;
+    }
+
+    .core-outcome-card {
+      display: grid;
+      grid-row: span 2;
+      grid-template-rows: subgrid;
+      gap: 10px;
+      border-top: 3px solid var(--core-blue);
+    }
+
+    .core-semantic-boundary {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+      gap: 28px;
+      margin-top: 18px;
+      border-color: color-mix(in srgb, var(--core-violet) 36%, var(--line));
+    }
+
+    .core-invariant-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .core-invariant-list li {
+      margin: 0;
+      border-left: 3px solid var(--core-violet);
+      padding: 7px 10px;
+      background: color-mix(in srgb, var(--core-violet) 6%, var(--soft));
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .core-frontier-card {
+      border-top: 3px solid var(--line);
+    }
+
+    .core-frontier-card[data-status="implemented"] {
+      border-top-color: var(--core-green);
+    }
+
+    .core-frontier-card[data-status="candidate-qualified"] {
+      border-top-color: var(--core-amber);
+    }
+
+    .core-frontier-status {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .core-qualification {
+      margin-top: 18px;
+    }
+
+    .core-evidence-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .core-evidence-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .core-evidence-list a {
+      display: block;
+      font-weight: 700;
+    }
+
+    .core-evidence-list code {
+      display: block;
+      margin-top: 7px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .core-source-contract {
+      margin-top: 18px;
+    }
+
+    .core-source-contract summary {
+      cursor: pointer;
+      color: var(--fg);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .core-source-contract[open] summary {
+      margin-bottom: 18px;
+    }
+
+    @keyframes core-frame-publish {
+      0%, 18% { transform: translateX(-110%); }
+      48%, 100% { transform: translateX(110%); }
+    }
+
+    @keyframes core-flow-shift {
+      to { background-position: -220% 0; }
+    }
+
+    @keyframes core-reader-pulse {
+      0%, 20%, 100% { opacity: 0.45; transform: scale(0.8); }
+      42%, 70% { opacity: 1; transform: scale(1); }
     }
 
     .eyebrow {
@@ -1927,6 +2272,28 @@ ${alternates}
         grid-template-columns: 1fr;
       }
 
+      .grid.four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .core-hero-layout,
+      .core-semantic-boundary {
+        grid-template-columns: 1fr;
+      }
+
+      .core-hero h1 {
+        max-width: 760px;
+      }
+
+      .core-outcome-grid {
+        grid-template-rows: none;
+      }
+
+      .core-outcome-card {
+        grid-row: auto;
+        grid-template-rows: none;
+      }
+
       .meta {
         grid-template-columns: 1fr;
       }
@@ -1972,7 +2339,61 @@ ${alternates}
       }
     }
 
+    @media (max-width: 640px) {
+      .core-runtime-map {
+        padding: 14px;
+      }
+
+      .core-runtime-map figcaption {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .core-runtime-flow {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        min-height: 0;
+      }
+
+      .core-flow-link {
+        width: 2px;
+        height: 34px;
+        justify-self: center;
+        background: linear-gradient(180deg, var(--core-violet), var(--core-blue), var(--core-green));
+        background-size: 100% 220%;
+      }
+
+      .core-flow-link::after {
+        top: auto;
+        right: 50%;
+        bottom: -1px;
+        border-top: 0;
+        border-bottom: 2px solid var(--core-green);
+        transform: translateX(50%) rotate(45deg);
+      }
+
+      .core-flow-link span {
+        top: 50%;
+        bottom: auto;
+        left: 12px;
+        transform: translateY(-50%);
+      }
+
+      .core-reader-node {
+        min-height: 0;
+      }
+    }
+
     @media (max-width: 480px) {
+      .grid.four,
+      .core-evidence-list {
+        grid-template-columns: 1fr;
+      }
+
+      .core-reader-stack {
+        grid-template-columns: 1fr;
+      }
+
       .foundation-fields div,
       .decision-meta {
         grid-template-columns: 1fr;
@@ -1988,6 +2409,23 @@ ${alternates}
 
       .decision-meta dd + dt {
         margin-top: 8px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .core-journal-frame::after,
+      .core-flow-link,
+      .core-reader-node::before {
+        animation: none;
+      }
+
+      .core-journal-frame::after {
+        display: none;
+      }
+
+      .core-reader-node::before {
+        opacity: 1;
+        transform: none;
       }
     }
   </style>
@@ -2401,7 +2839,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 }
 
 const site = readFixtureJson("site-manifest.json");
-const core = readFixtureJson("core-spec-manifest.json");
+const core = readFixtureJson("core-runtime-surface.json");
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
 const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
@@ -2447,6 +2885,17 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 }
 if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("unexpected KFD site bundle contract");
+}
+if (
+  core.contract !== "libkungfu-core-runtime-surface-fixture"
+  || core.status !== "evidence-linked-fixture"
+  || !core.sourceRef
+  || !core.homepage?.headline
+  || !core.architecture?.journal
+  || !Array.isArray(core.evidence)
+  || !core.sourceContract
+) {
+  throw new Error("unexpected Core runtime surface fixture");
 }
 const buildchainMachineArtifacts = Array.from(
   new Set([
@@ -3620,6 +4069,33 @@ writeFile(
   }),
 );
 
+const coreAgentManifest = {
+  schemaVersion: 1,
+  contract: "libkungfu-core-runtime-surface",
+  ...surfaceTimestampPolicy,
+  canonicalHost: surfaceCanonicalHost("core"),
+  source: {
+    kind: "evidence-linked-fixture",
+    path: "src/fixtures/core-runtime-surface.json",
+    contract: core.contract,
+    repository: core.sourceRepository,
+    ref: core.sourceRef,
+  },
+  homepage: core.homepage,
+  architecture: core.architecture,
+  outcomes: core.outcomes,
+  semanticBoundary: core.semanticBoundary,
+  frontiers: core.frontiers,
+  qualificationBoundary: core.qualificationBoundary,
+  evidence: core.evidence,
+  sourceContract: core.sourceContract,
+  machineEntries: {
+    manifest: surfaceEndpointHref("core", "manifest.json"),
+    llms: surfaceEndpointHref("core", "llms.txt"),
+    full: surfaceEndpointHref("core", "llms-full.txt"),
+  },
+};
+
 writeFile(
   "dogfood/index.html",
   page({
@@ -3730,39 +4206,180 @@ writeFile(
 writeFile(
   "core/index.html",
   page({
-    title: "core.libkungfu.dev | Core substrate",
-    description: "libkungfu, yijinjing, runtime fact ledger, specs, schemas, and conformance vectors.",
+    title: "core.libkungfu.dev | Runtime substrate",
+    description: core.homepage.lead,
     current: "core",
-    body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Core substrate</span></p>
-      <h1>${escapeHtml(core.surfaceHost)}</h1>
-      <p class="lead">Generated surface for libkungfu, yijinjing, runtime fact ledger specs, schema registry, and conformance vectors.</p>
+    preserveRelativeMachineEntries: true,
+    body: `<section class="hero core-hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Runtime substrate</span></p>
+      <div class="core-hero-layout">
+        <div class="core-hero-copy">
+          <p class="eyebrow">${escapeHtml(core.homepage.kicker)}</p>
+          <h1>${escapeHtml(core.homepage.headline)}</h1>
+          <p class="lead">${escapeHtml(core.homepage.lead)}</p>
+        </div>
+
+        <figure class="core-runtime-map" aria-labelledby="core-runtime-map-title">
+          <figcaption id="core-runtime-map-title">${escapeHtml(core.architecture.label)}</figcaption>
+          <div class="core-runtime-flow">
+            <div class="core-runtime-node core-writer-node">
+              <strong>${escapeHtml(core.architecture.writer.label)}</strong>
+              <span>${escapeHtml(core.architecture.writer.detail)}</span>
+            </div>
+            <div class="core-flow-link" aria-hidden="true"><span>append once</span></div>
+            <div class="core-runtime-node core-journal-node">
+              <div>
+                <strong>${escapeHtml(core.architecture.journal.label)}</strong>
+                <span>${escapeHtml(core.architecture.journal.detail)}</span>
+                <span class="core-journal-qualifier">${escapeHtml(core.architecture.journal.qualifier)}</span>
+              </div>
+              <div class="core-journal-frames" aria-label="Example runtime frame classes">
+                ${core.architecture.journal.frames
+                  .map((frame) => `<div class="core-journal-frame">${escapeHtml(frame)}</div>`)
+                  .join("")}
+              </div>
+            </div>
+            <div class="core-flow-link" aria-hidden="true"><span>read same frames</span></div>
+            <div class="core-reader-stack">
+              ${core.architecture.readers
+                .map(
+                  (reader) => `<div class="core-runtime-node core-reader-node" data-reader="${escapeAttr(reader.id)}">
+                    <strong>${escapeHtml(reader.label)}</strong>
+                    <span>${escapeHtml(reader.detail)}</span>
+                    <span class="core-reader-status">${escapeHtml(reader.status)}</span>
+                  </div>`,
+                )
+                .join("")}
+            </div>
+          </div>
+        </figure>
+      </div>
+      <p class="hero-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(core.homepage.claimBoundary)}</p>
     </section>
 
-    <section class="panel">
-      <h2>Current fixture manifest</h2>
-      <dl class="meta">
+    <section aria-labelledby="core-outcomes-heading">
+      <p class="eyebrow">Why mmap matters to an Agent Hub</p>
+      <h2 id="core-outcomes-heading" class="section-heading">The evidence path is already the observation path.</h2>
+      <div class="grid three core-outcome-grid">
+        ${core.outcomes
+          .map(
+            (outcome) => `<article class="panel core-outcome-card">
+              <h3>${escapeHtml(outcome.title)}</h3>
+              <p>${escapeHtml(outcome.summary)}</p>
+            </article>`,
+          )
+          .join("")}
+      </div>
+    </section>
+
+    <section class="panel core-semantic-boundary">
+      <div>
+        <p class="eyebrow">Runtime evidence × KFD semantics</p>
+        <h2>${escapeHtml(core.semanticBoundary.heading)}</h2>
+        <p>${escapeHtml(core.semanticBoundary.body)}</p>
+        <a class="card-action" href="${escapeAttr(core.semanticBoundary.kfdUrl)}">Read the KFD boundary</a>
+      </div>
+      <ul class="core-invariant-list">
+        ${core.semanticBoundary.invariants.map((invariant) => `<li>${escapeHtml(invariant)}</li>`).join("")}
+      </ul>
+    </section>
+
+    <section aria-labelledby="core-frontiers-heading">
+      <p class="eyebrow section-heading">One stream, explicit frontiers</p>
+      <h2 id="core-frontiers-heading">Visibility is not durability.</h2>
+      <div class="grid four" style="margin-top: 18px;">
+        ${core.frontiers
+          .map(
+            (frontier) => `<article class="panel core-frontier-card" data-status="${escapeAttr(frontier.status)}">
+              <p class="core-frontier-status">${escapeHtml(frontier.status)}</p>
+              <h3><code>${escapeHtml(frontier.label)}</code></h3>
+              <p>${escapeHtml(frontier.summary)}</p>
+            </article>`,
+          )
+          .join("")}
+      </div>
+    </section>
+
+    <section class="panel core-qualification">
+      <p class="eyebrow">Evidence boundary</p>
+      <h2>${escapeHtml(core.qualificationBoundary.heading)}</h2>
+      <ul>${core.qualificationBoundary.claims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+      <ul class="core-evidence-list" aria-label="Pinned runtime evidence">
+        ${core.evidence
+          .map(
+            (entry) => `<li>
+              <span class="tag">${escapeHtml(entry.status)}</span>
+              <a href="${escapeAttr(entry.sourceUrl)}">${escapeHtml(entry.label)}</a>
+              <code>${escapeHtml(entry.sourcePath)}</code>
+            </li>`,
+          )
+          .join("")}
+      </ul>
+    </section>
+
+    <details class="panel core-source-contract">
+      <summary>${escapeHtml(core.sourceContract.heading)}</summary>
+      <p>${escapeHtml(core.sourceContract.summary)}</p>
+      <dl class="meta" style="margin-top: 18px;">
         <dt>Package</dt>
-        <dd><code>${escapeHtml(core.package)}</code></dd>
+        <dd><code>${escapeHtml(core.sourceContract.package)}</code></dd>
         <dt>Source repository</dt>
         <dd><a href="${escapeAttr(core.sourceRepository)}">${escapeHtml(core.sourceRepository)}</a></dd>
-        <dt>Spec version</dt>
-        <dd><code>${escapeHtml(core.currentSpec.specVersion)}</code></dd>
+        <dt>Pinned evidence ref</dt>
+        <dd><code>${escapeHtml(core.sourceRef)}</code></dd>
+        <dt>Spec fixture</dt>
+        <dd><code>${escapeHtml(core.sourceContract.currentSpec.specVersion)}</code></dd>
         <dt>docs_url</dt>
-        <dd><code>${escapeHtml(core.currentSpec.docsUrl)}</code></dd>
+        <dd><code>${escapeHtml(core.sourceContract.currentSpec.docsUrl)}</code></dd>
       </dl>
-    </section>
-
-    <section class="grid three" style="margin-top: 18px;">
-      ${listPanels(core.sections)}
-    </section>
-
-    <section class="panel" style="margin-top: 18px;">
-      <h2>Machine fields expected from upstream</h2>
-      <ul>${core.machineFields.map((field) => `<li><code>${escapeHtml(field)}</code></li>`).join("")}</ul>
-    </section>`,
+      <div class="grid three" style="margin-top: 18px;">
+        ${listPanels(core.sourceContract.sections)}
+      </div>
+      <h3 style="margin-top: 18px;">Machine fields expected from upstream</h3>
+      <ul>${core.sourceContract.machineFields.map((field) => `<li><code>${escapeHtml(field)}</code></li>`).join("")}</ul>
+    </details>`,
   }),
 );
+
+writeFile("core/manifest.json", `${JSON.stringify(coreAgentManifest, null, 2)}\n`);
+writeFile(
+  "core/llms.txt",
+  `# ${surfaceCanonicalHost("core")}
+
+${core.homepage.headline}
+
+${core.homepage.lead}
+
+Mechanism:
+${core.architecture.writer.label} -> ${core.architecture.journal.label} -> ${core.architecture.readers.map((reader) => reader.label).join(" / ")}
+
+Why it matters:
+${core.outcomes.map((outcome) => `- ${outcome.title}: ${outcome.summary}`).join("\n")}
+
+Frontiers:
+${core.frontiers.map((frontier) => `- ${frontier.label} [${frontier.status}]: ${frontier.summary}`).join("\n")}
+
+Semantic boundary:
+${core.semanticBoundary.heading}
+${core.semanticBoundary.body}
+${core.semanticBoundary.invariants.map((invariant) => `- ${invariant}`).join("\n")}
+
+Claim boundary:
+${core.homepage.claimBoundary}
+
+Qualification boundary:
+${core.qualificationBoundary.claims.map((claim) => `- ${claim}`).join("\n")}
+
+Pinned evidence:
+${core.evidence.map((entry) => `- ${entry.label} [${entry.status}]: ${entry.sourceUrl}`).join("\n")}
+
+Machine entries:
+- ${surfaceEndpointHref("core", "manifest.json")}
+- ${surfaceEndpointHref("core", "llms.txt")}
+- ${surfaceEndpointHref("core", "llms-full.txt")}
+`,
+);
+writeFile("core/llms-full.txt", `# core.libkungfu.dev full agent index\n\n${JSON.stringify(coreAgentManifest, null, 2)}\n`);
 
 writeFile(
   "kfd/index.html",
@@ -4516,7 +5133,10 @@ const manifest = {
       host: surfaceCanonicalHost("hub"),
       source: "src/fixtures/libkungfu-runtime-surface.json",
     },
-    { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-spec-manifest.json" },
+    { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
+    { path: "/manifest.json", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
+    { path: "/llms.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
+    { path: "/llms-full.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     ...publicationArchives.routes.map((route) => ({
       path: route.path,
       host: route.host,
@@ -4605,8 +5225,16 @@ const manifest = {
     },
     core: {
       contract: core.contract,
-      package: core.package,
-      docsUrlPattern: core.docsUrlPattern,
+      status: core.status,
+      sourceRepository: core.sourceRepository,
+      sourceRef: core.sourceRef,
+      surfaceManifest: surfaceEndpointHref("core", "manifest.json"),
+      evidence: core.evidence,
+      sourceContract: {
+        package: core.sourceContract.package,
+        status: core.sourceContract.status,
+        docsUrlPattern: core.sourceContract.docsUrlPattern,
+      },
     },
   },
   upstreamPackages: {
@@ -4849,14 +5477,23 @@ Machine entries:
 - ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
+- ${surfaceEndpointHref("core", "manifest.json")}
+- ${surfaceEndpointHref("core", "llms.txt")}
 - ${surfaceEndpointHref("papers", "manifest.json")}
 - ${surfaceEndpointHref("papers", "registry.json")}
 
+Core runtime mechanism:
+${core.architecture.writer.label} -> ${core.architecture.journal.label} -> ${core.architecture.readers.map((reader) => reader.label).join(" / ")}
+
+Core claim boundary:
+${core.homepage.claimBoundary}
+
 Source boundary:
-This repository renders upstream manifests and exact public source projections.
-It is not a product fact source. Embeddable runtime facts come from the pinned
-Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core facts must
-come from @kungfu-tech/spec. Buildchain facts must come from the
+This repository renders pinned upstream evidence, manifests, and packages. It
+is not a product fact source. Embeddable runtime facts come from the pinned
+Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core mmap and
+recovery claims are pinned to exact Kungfu evidence while the future spec
+handoff remains a secondary fixture. Buildchain facts must come from the
 @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
 @kungfu-tech/kfd site bundle, registry, and decision documents. Publication
 archive facts must come from Buildchain publication registry data.
