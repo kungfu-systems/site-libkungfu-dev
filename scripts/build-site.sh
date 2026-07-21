@@ -22,6 +22,9 @@ node scripts/render-site.mjs
 
 test -f dist/index.html
 test -f dist/core/index.html
+test -f dist/core/manifest.json
+test -f dist/core/llms.txt
+test -f dist/core/llms-full.txt
 test -f dist/buildchain/index.html
 test -f dist/kfd/index.html
 for number in $(node -e 'const fs=require("fs"); const registry=JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json","utf8")); console.log(registry.entries.map((entry)=>entry.number).join("\n"));'); do

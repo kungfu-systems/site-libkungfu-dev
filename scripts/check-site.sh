@@ -21,7 +21,7 @@ const { loadPublicationPackageSet, readPublicationArtifact } = require("./script
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
-  "src/fixtures/core-spec-manifest.json",
+  "src/fixtures/core-runtime-surface.json",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
@@ -34,6 +34,9 @@ const requiredBaseFiles = [
   "pnpm-lock.yaml",
   "dist/index.html",
   "dist/core/index.html",
+  "dist/core/manifest.json",
+  "dist/core/llms.txt",
+  "dist/core/llms-full.txt",
   "dist/buildchain/index.html",
   "dist/kfd/index.html",
   "dist/kfd/foundation/index.html",
@@ -71,7 +74,8 @@ const requiredBaseFiles = [
 ];
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
-const core = JSON.parse(fs.readFileSync("src/fixtures/core-spec-manifest.json", "utf8"));
+const core = JSON.parse(fs.readFileSync("src/fixtures/core-runtime-surface.json", "utf8"));
+const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
@@ -302,7 +306,7 @@ const paperLocks = expectedPaperPackages.map((entry) => ({
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
 }
-if (core.contract !== "kungfu-spec-manifest-fixture") {
+if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
   throw new Error("core fixture contract mismatch");
 }
 if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVersion) {
@@ -411,7 +415,11 @@ for (const [channel, lock, expectedRef] of [
     throw new Error(`.buildchain ${channel} contract lock must record the accepted floating Buildchain ${expectedRef} contract`);
   }
 }
-for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dist/kfd/manifest.json", kfdAgentManifest]]) {
+for (const [name, generatedManifest] of [
+  ["dist/manifest.json", manifest],
+  ["dist/core/manifest.json", coreManifest],
+  ["dist/kfd/manifest.json", kfdAgentManifest],
+]) {
   if (!generatedManifest.generatedAt || !generatedManifest.timestampPolicy || generatedManifest.reproducible !== true) {
     throw new Error(`${name} must expose Buildchain surface timestamp and reproducibility policy`);
   }
@@ -422,8 +430,75 @@ for (const [name, generatedManifest] of [["dist/manifest.json", manifest], ["dis
     throw new Error(`${name} must not expose epoch generatedAt when timestampPolicy=ci-injected`);
   }
 }
-if (manifest.sourceBoundary.truthOwner !== "upstream-manifests") {
+if (manifest.sourceBoundary.truthOwner !== "upstream-evidence-and-manifests") {
   throw new Error("dist manifest source boundary drifted");
+}
+if (
+  core.contract !== "libkungfu-core-runtime-surface-fixture"
+  || core.status !== "evidence-linked-fixture"
+  || !/^[0-9a-f]{40}$/.test(core.sourceRef)
+  || core.sourceContract?.status !== "fixture"
+) {
+  throw new Error("Core runtime fixture must preserve its evidence-linked and secondary source-contract boundaries");
+}
+if (
+  coreManifest.contract !== "libkungfu-core-runtime-surface"
+  || coreManifest.canonicalHost !== expectedSurfaceHost("core")
+  || coreManifest.source?.path !== "src/fixtures/core-runtime-surface.json"
+  || coreManifest.source?.ref !== core.sourceRef
+  || JSON.stringify(coreManifest.homepage) !== JSON.stringify(core.homepage)
+  || JSON.stringify(coreManifest.architecture) !== JSON.stringify(core.architecture)
+  || JSON.stringify(coreManifest.outcomes) !== JSON.stringify(core.outcomes)
+  || JSON.stringify(coreManifest.frontiers) !== JSON.stringify(core.frontiers)
+  || JSON.stringify(coreManifest.qualificationBoundary) !== JSON.stringify(core.qualificationBoundary)
+) {
+  throw new Error("Core human and machine runtime surface facts drifted");
+}
+for (const [field, file] of [
+  ["manifest", "manifest.json"],
+  ["llms", "llms.txt"],
+  ["full", "llms-full.txt"],
+]) {
+  if (coreManifest.machineEntries?.[field] !== expectedSurfaceEndpoint("core", file)) {
+    throw new Error(`Core machine entry drifted: ${field}`);
+  }
+}
+for (const evidence of core.evidence || []) {
+  if (
+    !evidence.sourcePath
+    || !evidence.sourceUrl?.startsWith(`${core.sourceRepository}/blob/${core.sourceRef}/`)
+    || !evidence.sourceUrl.endsWith(evidence.sourcePath)
+  ) {
+    throw new Error(`Core evidence is not pinned to the declared source ref: ${evidence.id}`);
+  }
+}
+const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
+const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
+for (const expectedText of [
+  core.homepage.headline,
+  core.homepage.lead,
+  core.homepage.claimBoundary,
+  core.architecture.writer.label,
+  core.architecture.journal.label,
+  ...core.architecture.readers.map((reader) => reader.label),
+  ...core.outcomes.flatMap((outcome) => [outcome.title, outcome.summary]),
+  ...core.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
+  core.semanticBoundary.heading,
+  core.semanticBoundary.body,
+  ...core.semanticBoundary.invariants,
+  ...core.qualificationBoundary.claims,
+]) {
+  if (!coreHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core human and agent entries do not share the runtime mechanism: ${expectedText}`);
+  }
+}
+if (
+  !coreHtml.includes('<figure class="core-runtime-map" aria-labelledby="core-runtime-map-title">')
+  || !coreHtml.includes('<details class="panel core-source-contract">')
+  || !renderSiteSource.includes("@media (prefers-reduced-motion: reduce)")
+  || /\bzero[- ]cost\b|\bcrash-proof\b|\balways survives\b|\bproduction-qualified HA\b/i.test(coreHtml)
+) {
+  throw new Error("Core runtime visual, secondary source contract, reduced-motion path, or claim language drifted");
 }
 if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
   throw new Error("publication package aggregation contract mismatch");
@@ -812,7 +887,7 @@ if (
   !hubHtml.includes("Kungfu product generation, in public") ||
   !hubHtml.includes(">Principles</p>") ||
   !hubHtml.includes(">First load-bearing layer</p>") ||
-  !hubHtml.includes(">First complex product proof</p>") ||
+  !hubHtml.includes(">Runtime substrate proof</p>") ||
   !hubHtml.includes(">Kungfu Tech</a>") ||
   !hubHtml.includes('href="https://kungfu.tech"')
 ) {
@@ -856,7 +931,7 @@ for (const [className, href, label] of [
 }
 for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   ["Hub", hubHtml, "/manifest.json", "/llms.txt", "/llms-full.txt"],
-  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), expectedSurfaceEndpoint("hub", "manifest.json"), expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "/manifest.json", "/llms.txt", "/llms-full.txt"],
   ["Buildchain", buildchainHomeHtml, expectedSurfaceEndpoint("hub", "manifest.json"), expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["Papers", papersIndex, "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
@@ -868,7 +943,7 @@ for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   }
 }
 for (const [label, html, state] of [
-  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Core substrate"],
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Runtime substrate"],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
@@ -1320,6 +1395,13 @@ NODE
 grep -q 'libkungfu.dev' dist/index.html
 grep -q 'Open developer and agent substrate hub' dist/index.html
 grep -q 'core.libkungfu.dev' dist/core/index.html
+grep -q 'Record once. Observe live. Recover from evidence.' dist/core/index.html
+grep -q 'Append-only mmap Episode journal' dist/core/index.html
+grep -q 'Storage is the bus' dist/core/index.html
+grep -q 'Visibility is not durability.' dist/core/index.html
+grep -q 'Spec and source contract' dist/core/index.html
+grep -q 'libkungfu-core-runtime-surface' dist/core/manifest.json
+grep -q 'Record once. Observe live. Recover from evidence.' dist/core/llms.txt
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
 grep -q 'Fixture source' dist/index.html

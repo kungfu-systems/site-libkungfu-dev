@@ -1,0 +1,181 @@
+{
+  "contract": "libkungfu-core-runtime-surface-fixture",
+  "schemaVersion": 1,
+  "status": "evidence-linked-fixture",
+  "surfaceHost": "core.libkungfu.dev",
+  "sourceRepository": "https://github.com/kungfu-systems/kungfu",
+  "sourceRef": "89e7f0d88374370ebd14669d7db11f1f16d2ebab",
+  "homepage": {
+    "kicker": "libkungfu runtime substrate",
+    "headline": "Record once. Observe live. Recover from evidence.",
+    "lead": "libkungfu publishes typed runtime frames into an append-only memory-mapped journal. Hub interfaces, supervisors, replay readers, and co-located workers can inspect the same retained stream without adding a broker or a duplicate event pipeline to the writer path.",
+    "claimBoundary": "The shared-memory publish protocol and multi-process reader path are implemented. Hub-specific payload capture, broad end-to-end performance qualification, durable production ingest, replication, and HA remain separately qualified capabilities."
+  },
+  "architecture": {
+    "label": "One journal, four local views",
+    "writer": {
+      "label": "Agent worker",
+      "detail": "Appends action, lifecycle, and telemetry frames once."
+    },
+    "journal": {
+      "label": "Append-only mmap Episode journal",
+      "detail": "One published frame stream is retained evidence and the local reader bus.",
+      "qualifier": "single writer · many local readers",
+      "frames": ["action", "tool I/O", "tokens", "telemetry"]
+    },
+    "readers": [
+      {
+        "id": "live-tail",
+        "label": "Hub live tail",
+        "detail": "Observe published frames without a second event pipeline.",
+        "status": "integration pattern"
+      },
+      {
+        "id": "supervisor",
+        "label": "Supervisor",
+        "detail": "Read heartbeat and progress without interrupting the worker.",
+        "status": "integration pattern"
+      },
+      {
+        "id": "rewind",
+        "label": "Rewind + replay",
+        "detail": "Reopen retained evidence at a qualified frontier.",
+        "status": "implemented in qualified slices"
+      },
+      {
+        "id": "fanout",
+        "label": "Local readers",
+        "detail": "Fan out one published stream to co-located consumers.",
+        "status": "implemented substrate"
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "title": "Storage is the bus",
+      "summary": "The journal is not copied into a second transport just to become observable. Retained frames are the local read surface."
+    },
+    {
+      "title": "Observation stays off the writer path",
+      "summary": "Readers attach to published mmap pages, so each observer does not require a new writer-side copy or broker hop."
+    },
+    {
+      "title": "Recovery starts from retained truth",
+      "summary": "After failure, resume from the last qualified published or durable frontier and classify any unacknowledged tail explicitly."
+    }
+  ],
+  "semanticBoundary": {
+    "heading": "Frames record what happened. Policy decides what it means.",
+    "body": "The journal carries ordered evidence. KFD and each Hub's local policy define authority, admission, completion, and what may safely happen next.",
+    "invariants": [
+      "Delivery is not admission.",
+      "Occurrence is not completion.",
+      "Authentication is not authority."
+    ],
+    "kfdUrl": "https://kfd.libkungfu.dev/"
+  },
+  "frontiers": [
+    {
+      "id": "visible",
+      "label": "visible",
+      "status": "implemented",
+      "summary": "A complete frame is published and available to declared live readers."
+    },
+    {
+      "id": "durable-group",
+      "label": "durable_group",
+      "status": "candidate-qualified",
+      "summary": "A frame is at or below a selected batch durable watermark. Production durable ingest remains disabled."
+    },
+    {
+      "id": "durable-sync",
+      "label": "durable_sync",
+      "status": "candidate-qualified",
+      "summary": "Required data and metadata cross a named local durability barrier. Production durable ingest remains disabled."
+    },
+    {
+      "id": "replicated",
+      "label": "replicated",
+      "status": "future",
+      "summary": "A separate replication policy acknowledges the frame; this is not a current implementation target."
+    }
+  ],
+  "qualificationBoundary": {
+    "heading": "What this page claims — and what it does not",
+    "claims": [
+      "The mmap MAP_SHARED publish barrier is implemented for a single writer and multiple cross-process readers.",
+      "The production mapping profile currently qualifies visibility; durable requests remain fail-closed unless a named candidate path is selected.",
+      "The current reference Hub adapter carries lifecycle metadata, not prompt, tool, token, provider payloads, or private journal bytes.",
+      "The wider visible typed-agent and multi-reader product surfaces remain separate end-to-end admission work."
+    ]
+  },
+  "evidence": [
+    {
+      "id": "publish-barrier",
+      "status": "implemented",
+      "label": "Cross-process publish barrier",
+      "sourcePath": "docs/adr/ADR-0001-yijinjing-publish-barrier.md",
+      "sourceUrl": "https://github.com/kungfu-systems/kungfu/blob/89e7f0d88374370ebd14669d7db11f1f16d2ebab/docs/adr/ADR-0001-yijinjing-publish-barrier.md"
+    },
+    {
+      "id": "durability",
+      "status": "mixed",
+      "label": "Durability and crash-recovery boundary",
+      "sourcePath": "docs/qualification/durability-and-crash-recovery.md",
+      "sourceUrl": "https://github.com/kungfu-systems/kungfu/blob/89e7f0d88374370ebd14669d7db11f1f16d2ebab/docs/qualification/durability-and-crash-recovery.md"
+    },
+    {
+      "id": "performance",
+      "status": "component-qualified",
+      "label": "mmap performance qualification",
+      "sourcePath": "docs/qualification/mmap-performance.md",
+      "sourceUrl": "https://github.com/kungfu-systems/kungfu/blob/89e7f0d88374370ebd14669d7db11f1f16d2ebab/docs/qualification/mmap-performance.md"
+    },
+    {
+      "id": "hub-payload",
+      "status": "current-reference-boundary",
+      "label": "Vendor Agent Hub embedding boundary",
+      "sourcePath": "docs/qualification/vendor-agent-hub-embedding.md",
+      "sourceUrl": "https://github.com/kungfu-systems/kungfu/blob/89e7f0d88374370ebd14669d7db11f1f16d2ebab/docs/qualification/vendor-agent-hub-embedding.md"
+    }
+  ],
+  "sourceContract": {
+    "heading": "Spec and source contract",
+    "summary": "This secondary fixture preserves the future @kungfu-tech/spec handoff without making a placeholder package the homepage narrative.",
+    "status": "fixture",
+    "package": "@kungfu-tech/spec",
+    "docsUrlPattern": "https://core.libkungfu.dev/spec/{specVersion}/",
+    "currentSpec": {
+      "specVersion": "1.0-fixture",
+      "packageVersion": "0.0.0-fixture",
+      "sourceRef": "fixture",
+      "docsUrl": "https://core.libkungfu.dev/spec/1.0-fixture/"
+    },
+    "sections": [
+      {
+        "id": "runtime-fact-ledger",
+        "title": "Runtime fact ledger",
+        "summary": "Event-stream facts, provenance, captured boundaries, and replay anchors for local runtimes."
+      },
+      {
+        "id": "yijinjing",
+        "title": "Yijinjing core",
+        "summary": "Static core boundary for the runtime fact ledger substrate."
+      },
+      {
+        "id": "schemas",
+        "title": "Schema registry",
+        "summary": "Versioned schemas and conformance vectors generated from the Kungfu core source."
+      }
+    ],
+    "machineFields": [
+      "docs_url",
+      "spec_version",
+      "package_version",
+      "source_ref",
+      "schema_registry",
+      "conformance_vectors",
+      "release_provenance"
+    ]
+  }
+}
