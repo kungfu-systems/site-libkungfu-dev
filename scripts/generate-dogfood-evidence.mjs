@@ -117,8 +117,8 @@ const manifest = {
   contract: "kungfu-buildchain-observed-evidence-bundle",
   snapshot: { id: evidence.snapshotId, observedAt },
   publication: {
-    immutable: { source: `snapshots/${evidence.snapshotId}.json`, key: `dogfood-evidence/snapshots/${evidence.snapshotId}.json`, sha256: hash(snapshotFile), contentType: "application/json" },
-    latest: { source: "latest.json", key: "dogfood-evidence.json", sha256: hash(latestFile), contentType: "application/json" },
+    immutable: { source: `snapshots/${evidence.snapshotId}.json`, key: `production/dogfood-evidence/snapshots/${evidence.snapshotId}.json`, sha256: hash(snapshotFile), contentType: "application/json" },
+    latest: { source: "latest.json", key: "production/dogfood-evidence.json", sha256: hash(latestFile), contentType: "application/json" },
     invalidationPaths: ["/dogfood-evidence.json", "/dogfood/*"],
   },
 };
