@@ -4,6 +4,10 @@ import fs from "node:fs";
 const outputs = JSON.parse(fs.readFileSync("infra/outputs.json", "utf8"));
 const buildchainToml = fs.readFileSync(".buildchain/buildchain.toml", "utf8");
 const workflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+const observedEvidenceWorkflow = fs.readFileSync(
+  ".github/workflows/dogfood-evidence-patrol.yml",
+  "utf8",
+);
 const stableCanaryWorkflow = fs.readFileSync(
   ".github/workflows/buildchain-stable-canary.yml",
   "utf8",
@@ -162,5 +166,30 @@ for (const channel of ["preview", "staging", "production"]) {
     throw new Error(`${channel} workflow role ARN is not wired to infra outputs`);
   }
 }
+
+const observedEvidence = outputs.channels?.observedEvidence;
+if (!observedEvidence || observedEvidence.status !== "active") {
+  throw new Error("infra outputs observedEvidence channel must be active");
+}
+for (const expected of [
+  observedEvidence.bucket,
+  observedEvidence.cloudfrontDistribution,
+  observedEvidence.roleArn,
+  observedEvidence.environment,
+]) {
+  if (!expected || !observedEvidenceWorkflow.includes(expected)) {
+    throw new Error(`observed-evidence workflow is not wired to infra output ${expected}`);
+  }
+}
+expectEqual(
+  observedEvidence.url,
+  "https://libkungfu.dev/dogfood-evidence.json",
+  "observed-evidence latest URL",
+);
+expectEqual(
+  observedEvidence.immutableUrlPattern,
+  "https://libkungfu.dev/dogfood-evidence/snapshots/{snapshotId}.json",
+  "observed-evidence immutable URL pattern",
+);
 
 console.log("infra outputs checks passed");
