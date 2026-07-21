@@ -1,0 +1,16 @@
+{
+  "mergedPublicPullRequests": 12,
+  "authorSearchMatches": 9,
+  "reviewSearchMatches": 8,
+  "projectCutTitleMatches": 3,
+  "repositories": [
+    {
+      "name": "kungfu",
+      "mergedPublicPullRequests": 7
+    },
+    {
+      "name": "buildchain",
+      "mergedPublicPullRequests": 5
+    }
+  ]
+}

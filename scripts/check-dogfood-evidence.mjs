@@ -5,7 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 const repoRoot = process.cwd();
-const fixturePath = path.join(repoRoot, "src", "fixtures", "dogfood-evidence.json");
+const fileIndex = process.argv.indexOf("--file");
+const fixturePath = fileIndex === -1
+  ? path.join(repoRoot, "src", "fixtures", "dogfood-evidence.json")
+  : path.resolve(process.argv[fileIndex + 1]);
 const evidence = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 const verifyLive = process.argv.includes("--verify-live");
 

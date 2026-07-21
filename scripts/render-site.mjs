@@ -2161,6 +2161,72 @@ function renderDogfoodCase(evidenceCase, index) {
   </article>`;
 }
 
+function dogfoodLiveProjectionScript() {
+  return `<script>
+  (() => {
+    const number = new Intl.NumberFormat("en-US");
+    const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+    const render = (evidence) => {
+      document.documentElement.dataset.dogfoodSnapshot = evidence.snapshotId;
+      setText("dogfood-state", "public dogfood / latest observed");
+      setText("dogfood-window-start", evidence.observation.window.startInclusive);
+      setText("dogfood-window-end", evidence.observation.window.endInclusive);
+      setText("dogfood-pr-total", number.format(evidence.metrics.mergedPublicPullRequests.value));
+      setText("dogfood-pr-caption", evidence.metrics.mergedPublicPullRequests.label + " across " + number.format(evidence.metrics.repositoriesWithMergedPullRequests.value) + " repositories");
+      setText("dogfood-observed-at", evidence.observation.observedAt);
+      setText("dogfood-query", evidence.sources.github.baseQuery);
+      const cut = document.getElementById("dogfood-cut");
+      if (cut) {
+        cut.textContent = evidence.sources.projectCuts.gitCommit;
+        cut.href = evidence.sources.projectCuts.repository + "/tree/" + evidence.sources.projectCuts.gitCommit + "/.kungfu/project-cuts";
+      }
+      const metrics = document.getElementById("dogfood-live-metrics");
+      if (metrics) {
+        metrics.replaceChildren(...[
+          ["reviewSearchMatches", false],
+          ["retainedPublicProjectCuts", true],
+          ["projectCutsWithEpisodeDelta", false],
+          ["projectCutTitleMatches", false],
+        ].map(([key, primary]) => {
+          const article = document.createElement("article");
+          article.className = "dogfood-metric" + (primary ? " dogfood-metric-primary" : "");
+          const strong = document.createElement("strong");
+          strong.textContent = number.format(evidence.metrics[key].value);
+          const span = document.createElement("span");
+          span.textContent = evidence.metrics[key].label;
+          article.append(strong, span);
+          return article;
+        }));
+      }
+      const repositories = document.getElementById("dogfood-live-repositories");
+      if (repositories) {
+        const maximum = Math.max(1, ...evidence.repositories.map((entry) => entry.mergedPublicPullRequests));
+        repositories.replaceChildren(...evidence.repositories.map((entry) => {
+          const row = document.createElement("li");
+          row.className = "repo-work-row";
+          const name = document.createElement("span");
+          name.textContent = entry.name;
+          const track = document.createElement("span");
+          track.className = "repo-work-track";
+          track.setAttribute("aria-hidden", "true");
+          const bar = document.createElement("span");
+          bar.style.width = Math.max(1, Math.round(entry.mergedPublicPullRequests / maximum * 100)) + "%";
+          track.append(bar);
+          const value = document.createElement("strong");
+          value.textContent = number.format(entry.mergedPublicPullRequests);
+          row.append(name, track, value);
+          return row;
+        }));
+      }
+    };
+    fetch("/dogfood-evidence.json", { cache: "no-store" })
+      .then((response) => { if (!response.ok) throw new Error("evidence fetch failed"); return response.json(); })
+      .then(render)
+      .catch(() => setText("dogfood-state", "public dogfood / retained fallback"));
+  })();
+  </script>`;
+}
+
 function runtimeQuickstartCard(quickstart) {
   return `<article class="panel quickstart-card">
     <div>
@@ -3564,14 +3630,14 @@ writeFile(
     body: `${dogfoodStyles}
     <section class="dogfood-hero" aria-labelledby="dogfood-title">
       <div class="dogfood-hero-copy">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state">public dogfood / observed</span></p>
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / retained fallback</span></p>
         <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
         <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
         <div class="dogfood-window">
           <span class="tag">rolling ${escapeHtml(dogfoodEvidence.observation.window.duration)}</span>
-          <code>${escapeHtml(dogfoodEvidence.observation.window.startInclusive)}</code>
+          <code id="dogfood-window-start">${escapeHtml(dogfoodEvidence.observation.window.startInclusive)}</code>
           <span aria-hidden="true">→</span>
-          <code>${escapeHtml(dogfoodEvidence.observation.window.endInclusive)}</code>
+          <code id="dogfood-window-end">${escapeHtml(dogfoodEvidence.observation.window.endInclusive)}</code>
         </div>
         <div class="card-actions">
           <a class="card-action" href="/dogfood-evidence.json">Open machine-readable evidence</a>
@@ -3579,8 +3645,8 @@ writeFile(
         </div>
       </div>
       <div class="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
-        <strong>${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
-        <span>${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
+        <strong id="dogfood-pr-total">${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
+        <span id="dogfood-pr-caption">${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
       </div>
     </section>
 
@@ -3605,7 +3671,7 @@ writeFile(
           <p class="eyebrow">Snapshot</p>
           <h2 id="snapshot-heading">Scale, with the caveats attached.</h2>
         </div>
-        <div class="dogfood-metric-grid">
+        <div class="dogfood-metric-grid" id="dogfood-live-metrics">
           ${renderDogfoodMetric(dogfoodEvidence.metrics.reviewSearchMatches)}
           ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts, true)}
           ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutsWithEpisodeDelta)}
@@ -3615,7 +3681,7 @@ writeFile(
       <article class="panel">
         <p class="eyebrow">Merged public PRs by repository</p>
         <h2>Where the work landed</h2>
-        <ul class="repo-work-list">
+        <ul class="repo-work-list" id="dogfood-live-repositories">
           ${dogfoodEvidence.repositories
             .map((repository) => renderRepositoryBar(
               repository,
@@ -3651,12 +3717,13 @@ writeFile(
       <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
       <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
       <dl class="meta" style="margin-top: 18px;">
-        <dt>Observed at</dt><dd><code>${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
-        <dt>GitHub query</dt><dd><code>${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
-        <dt>Project Cut commit</dt><dd><a href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}"><code>${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</code></a></dd>
+        <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
+        <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
+        <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
         <dt>Machine route</dt><dd><a href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
       </dl>
-    </section>`,
+    </section>
+    ${dogfoodLiveProjectionScript()}`,
   }),
 );
 

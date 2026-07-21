@@ -1,0 +1,32 @@
+name: Dogfood Evidence Patrol
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  refresh:
+    uses: kungfu-systems/buildchain/.github/workflows/patrol-observed-evidence.yml@v2
+    with:
+      buildchain-ref: v2
+      build-command: >-
+        node scripts/generate-dogfood-evidence.mjs
+        --kungfu-dir .observed-evidence/source
+        --output-dir .buildchain/observed-evidence
+      verify-command: >-
+        node scripts/check-dogfood-evidence.mjs
+        --file .buildchain/observed-evidence/latest.json
+      artifact-path: .buildchain/observed-evidence
+      manifest-path: .buildchain/observed-evidence/manifest.json
+      evidence-source-repository: kungfu-systems/kungfu
+      evidence-source-ref: dev/v4/v4.0
+      evidence-source-path: .observed-evidence/source
+      production-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-evidence-github-actions
+      production-bucket: libkungfu-dev-site-727884401362-us-east-1
+      cloudfront-distribution: EXWVGLVVXGURT
+      production-environment: production-evidence
