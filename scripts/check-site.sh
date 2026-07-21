@@ -339,6 +339,19 @@ if (
 ) {
   throw new Error("source-only package availability or C/Node/Python quickstart projection drifted");
 }
+if (
+  runtimeSurface.architectureSources?.kungfu?.commit !== "1f3893fae1a7a666d8abe736cd9563128f48549b" ||
+  runtimeSurface.architectureSources?.kfd?.commit !== "35915676330696f888c73c154f431c99f37c19ec" ||
+  runtimeSurface.architectureSources?.kfd?.profile !== "kfd-agent-hub@0.1.0-alpha.1" ||
+  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:649ec7531d4c879846b8207a94e21844d573f0c07a422b9fa3f921bfa65d05a3" ||
+  runtimeSurface.actionWorld?.steps?.length !== 7 ||
+  runtimeSurface.actionWorld?.foundation?.length !== 3 ||
+  runtimeSurface.hubNetwork?.hubs?.length !== 2 ||
+  runtimeSurface.hubNetwork?.exchange?.length !== 4 ||
+  runtimeSurface.invariants?.map((entry) => `${entry.left}!=${entry.right}`).join(",") !== "Delivery!=Admission,Occurrence!=Completion,Authentication!=Authority"
+) {
+  throw new Error("architecture projection drifted from its exact Kungfu/KFD sources or visual contract");
+}
 if (core.contract !== "kungfu-spec-manifest-fixture") {
   throw new Error("core fixture contract mismatch");
 }
@@ -903,7 +916,7 @@ const immutableFoundationPaperHtml = fs.readFileSync(
 if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
   throw new Error("production artifact must not embed robots noindex metadata");
 }
-if (!hubHtml.includes(".runtime-architecture") || immutableFoundationPaperHtml.includes(".runtime-architecture")) {
+if (!hubHtml.includes(".architecture-visual") || immutableFoundationPaperHtml.includes(".architecture-visual")) {
   throw new Error("embeddable runtime styles must remain homepage-local and must not mutate immutable paper HTML");
 }
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
@@ -931,7 +944,15 @@ if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manif
 }
 if (
   !hubHtml.includes(escapeHtml(runtimeSurface.headline)) ||
-  !hubHtml.includes("Embed the facts layer, not another Agent UI") ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.actionWorld.headline)) ||
+  !hubHtml.includes(escapeHtml(runtimeSurface.hubNetwork.headline)) ||
+  !hubHtml.includes("KFD responsibility boundary") ||
+  !hubHtml.includes("Delivery") ||
+  !hubHtml.includes("Admission") ||
+  !hubHtml.includes("Occurrence") ||
+  !hubHtml.includes("Completion") ||
+  !hubHtml.includes("Authentication") ||
+  !hubHtml.includes("Authority") ||
   !hubHtml.includes("Start with an Episode") ||
   !hubHtml.includes("No public registry install is claimed yet") ||
   !hubHtml.includes("KFD Runtime 100 and restart qualification") ||
@@ -943,6 +964,14 @@ if (
   !hubHtml.includes('href="https://kungfu.tech"')
 ) {
   throw new Error("human homepage must lead with the embeddable runtime path and retain its release-trust chain");
+}
+for (const source of [runtimeSurface.architectureSources.kungfu, runtimeSurface.architectureSources.kfd]) {
+  for (const document of source.documents) {
+    const href = `${source.repository}/blob/${source.commit}/${document.path}`;
+    if (!hubHtml.includes(`href="${escapeHtml(href)}"`)) {
+      throw new Error(`homepage architecture must link its exact semantic source: ${document.path}`);
+    }
+  }
 }
 for (const quickstart of runtimeSurface.quickstarts) {
   const sourceHref = `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${quickstart.sourcePath}`;
