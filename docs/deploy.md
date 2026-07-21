@@ -70,7 +70,7 @@ paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungf
 For now, the hub and Core still use `src/fixtures/` as explicit contract
 fixtures. The Core presentation fixture pins runtime claims to an immutable
 Kungfu source ref and keeps the future spec-package contract secondary.
-Buildchain uses the pinned `@kungfu-tech/buildchain@2.11.13` npm package and its
+Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.13` npm package and its
 exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
 its exported site bundle. Papers use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable

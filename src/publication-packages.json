@@ -4,7 +4,11 @@
   "packages": [
     {
       "name": "@kungfu-tech/paper-kungfu-product-white-paper",
-      "version": "0.1.0-alpha.5"
+      "version": "0.1.0-alpha.8"
+    },
+    {
+      "name": "@kungfu-tech/paper-episodes-to-primitives",
+      "version": "0.1.0-alpha.2"
     },
     {
       "name": "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",

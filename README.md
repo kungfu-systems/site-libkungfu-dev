@@ -48,7 +48,7 @@ to one exact Kungfu source ref. It owns the homepage hierarchy and wording, not
 the runtime facts; the previous `@kungfu-tech/spec` placeholder remains a
 secondary source contract inside that fixture instead of determining the
 homepage. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.11.13` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.14.13` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -58,9 +58,12 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.39` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.40` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
-usage and non-normative formal reference children are rendered under
+foundation, formal-model, and terminology references are rendered as first-class
+pages; the terminology contract and schema remain available as machine-readable
+JSON endpoints. Bundle-declared usage and non-normative formal reference
+children are rendered under
 `/{number}/usage/` and `/{number}/formal/`; the decision remains their authority
 and the site does not promote a formal reference into a new decision.
 Bundle-declared formal candidate children are rendered under
@@ -145,7 +148,7 @@ runs through the floating Buildchain `@v2-alpha` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.11.13` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.14.13` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 
