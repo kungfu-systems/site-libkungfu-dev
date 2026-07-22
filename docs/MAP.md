@@ -2,15 +2,17 @@
 
 ## Use The Site
 
-- Start at `https://libkungfu.dev` for the embeddable Agent runtime developer
-  entry and substrate hub.
+- Start at `https://libkungfu.dev` for the site-owned builder proposition and
+  guided continuity-stack synthesis.
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
 - Use `https://core.libkungfu.dev` to understand the libkungfu runtime
   substrate: one mmap journal as retained evidence and local observation bus,
   its qualification frontiers, and the secondary spec/source contract.
-- Use `https://buildchain.libkungfu.dev` for Buildchain release-governance and
+- Use `https://buildchain.libkungfu.dev` to see how KFD-3 value surfaces and
+  KFD-2 trust evidence become one release-bound Hub admission surface, then
+  descend into Buildchain-owned Release Passport, release-governance, and
   deployment-operation facts.
 - Use `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.svg` for
   Buildchain-owned hosted README badges and
@@ -23,6 +25,26 @@
   prefixes, and agent-readable archive manifests.
 - Use `/llms.txt` and `/manifest.json` as stable machine entries on each owning
   surface, including the Core subdomain.
+
+## Reading Layers
+
+The stable reading order is:
+
+1. **First-screen proposition** — site-owned audience framing and reason to
+   continue.
+2. **Guided synthesis** — site-owned, non-normative connections across cited
+   Kungfu, KFD, and Buildchain facts.
+3. **Upstream authority** — exact runtime semantics, protocol decisions,
+   commands, workflows, schemas, and release facts.
+4. **Machine evidence** — source refs, versions, digests, qualification,
+   claim boundaries, and stable routes.
+
+On the hub, read the continuity stack before the detailed action-world and
+plural-Hub diagrams. On Core and KFD, the first screen states the reader
+question and links directly to the package- or fixture-owned authority below
+it. On Buildchain, read the KFD-2/3 trust loop, Builder Hub value, ecosystem
+boundary, and Hub-ownership promise before the package-owned mechanism. No
+down-level content is removed by this ordering.
 
 ## Work In This Repository
 
@@ -50,6 +72,8 @@
   package artifacts.
 - `scripts/build-site.sh` writes `dist/`.
 - `scripts/check-site.sh` enforces basic policy and source-boundary checks.
+- `docs/versioning.md` registers the KFD-1 impact classes and reader/machine
+  faces for site changes.
 - `.buildchain/buildchain.toml` declares the web-surface channels and deployment planning
   targets.
 
@@ -71,9 +95,17 @@ any Kungfu-standard site bundle can be rendered by the same governed renderer.
 
 ## Source Boundary
 
-This repository renders upstream facts. It does not author the spec, CLI,
-workflow, release model, KFD decision text, schemas, or artifact evidence
-facts.
+This repository authors the reader contract, not the technical contract. It
+owns first-screen framing, cross-surface synthesis, reading order, progressive
+disclosure, navigation, visual composition, and routing. It does not author or
+reinterpret the spec, runtime semantics, CLI, workflow, release model, KFD
+decision text, schemas, qualification, or artifact evidence facts.
+
+Every technical clause in site-authored synthesis must declare a claim class
+and cite an exact entry in
+`src/fixtures/site-manifest.json#readerContract.sources`. The checker validates
+those source refs against the pinned Kungfu commit and installed KFD and
+Buildchain package documents, then verifies human/agent projection parity.
 
 Publication archive pages are renderer-owned, but archive facts are not. The
 site consumes each exact paper package for canonical reader, latest, immutable

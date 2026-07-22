@@ -8,6 +8,8 @@
   "homepage": {
     "headline": "Build your Hub. Don't rebuild the runtime.",
     "lead": "libkungfu is the embeddable local or worker runtime substrate for Agent products. Keep your interface, models, accounts, permissions, cloud, and customers; add durable runtime facts, Episode recovery, and portable KFD evidence.",
+    "claimClass": "site-synthesis",
+    "sourceRefs": ["kungfu-action-runtime", "kfd-agent-hub-profile"],
     "chain": [
       {
         "surface": "kfd",
@@ -34,8 +36,390 @@
   },
   "sourceBoundary": {
     "truthOwner": "upstream-evidence-and-manifests",
-    "siteRole": "visual routing and rendering",
-    "rule": "The site may render product narrative and navigation, but runtime claims must bind to immutable upstream evidence, while core specs, CLI parameters, workflow inputs, release state machines, schemas, and release facts must come from upstream manifests or pinned packages."
+    "siteRole": "reader contract, guided synthesis, visual composition, routing, and rendering",
+    "rule": "The site owns first-screen framing, cross-surface synthesis, reading order, progressive disclosure, navigation, and visual composition. Every technical or release claim must bind to immutable upstream evidence or a pinned package; core specs, KFD semantics, CLI parameters, workflow inputs, release state machines, schemas, and provenance remain upstream-owned."
+  },
+  "readerContract": {
+    "contract": "libkungfu-dev-reader-contract/v1",
+    "owner": "site-libkungfu-dev",
+    "promise": "Orient first, synthesize second, hand off to upstream authority third, and expose machine evidence throughout.",
+    "layers": [
+      {
+        "id": "first-screen",
+        "label": "First-screen proposition",
+        "owner": "site-libkungfu-dev",
+        "purpose": "Answer why this surface matters to its intended reader before status, registry, or implementation detail."
+      },
+      {
+        "id": "guided-synthesis",
+        "label": "Guided synthesis",
+        "owner": "site-libkungfu-dev",
+        "purpose": "Connect facts across Kungfu, KFD, and Buildchain without turning the synthesis into a new normative source."
+      },
+      {
+        "id": "upstream-authority",
+        "label": "Upstream authority",
+        "owner": "kungfu-systems/kungfu, @kungfu-tech/kfd, and @kungfu-tech/buildchain",
+        "purpose": "Supply runtime semantics, protocol decisions, schemas, commands, workflows, and release facts."
+      },
+      {
+        "id": "machine-evidence",
+        "label": "Machine evidence",
+        "owner": "upstream authorities projected by site-libkungfu-dev",
+        "purpose": "Expose exact sources, versions, digests, qualification, claim boundaries, and stable routes for independent inspection."
+      }
+    ],
+    "claimClasses": [
+      {
+        "id": "site-synthesis",
+        "meaning": "A reader-oriented connection across cited upstream facts; non-normative."
+      },
+      {
+        "id": "upstream-fact",
+        "meaning": "A statement owned by an exact upstream source."
+      },
+      {
+        "id": "reference-implementation",
+        "meaning": "Observed or qualified behavior of Kungfu as one implementation, not proof of ecosystem adoption."
+      },
+      {
+        "id": "future-picture",
+        "meaning": "A direction or interoperability possibility, not a present deployment claim."
+      },
+      {
+        "id": "non-claim",
+        "meaning": "An explicit limit on what the site, profile, or implementation proves."
+      }
+    ],
+    "sources": [
+      {
+        "id": "kungfu-action-runtime",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "1f3893fae1a7a666d8abe736cd9563128f48549b",
+        "path": "docs/architecture/fact-episode-action-runtime.md",
+        "sha256": "5f7add43ae9fdc504680ee71067f64db2a7c47a4586c36585a7537b4b9ae95e5"
+      },
+      {
+        "id": "kungfu-project-cut-loop",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "1f3893fae1a7a666d8abe736cd9563128f48549b",
+        "path": "docs/concepts/project-cut-product-loop.md",
+        "sha256": "edc59fbaf5ecfc1417bb7296695345c7589c55899f737c07775a6b3e0216b6f4"
+      },
+      {
+        "id": "kfd-2",
+        "owner": "@kungfu-tech/kfd",
+        "kind": "package-document",
+        "package": "@kungfu-tech/kfd",
+        "version": "1.0.0-alpha.41",
+        "path": "decisions/KFD-2.md",
+        "sha256": "026ed1d23fbb45fd5b3163962ce736a757e383230af09556c8fb4b56f5e802b5"
+      },
+      {
+        "id": "kfd-3",
+        "owner": "@kungfu-tech/kfd",
+        "kind": "package-document",
+        "package": "@kungfu-tech/kfd",
+        "version": "1.0.0-alpha.41",
+        "path": "decisions/KFD-3.md",
+        "sha256": "5691761dcab21fcdeaf748655f20f61de74b906cd9f5cd03459131fd78082f83"
+      },
+      {
+        "id": "kfd-7",
+        "owner": "@kungfu-tech/kfd",
+        "kind": "package-document",
+        "package": "@kungfu-tech/kfd",
+        "version": "1.0.0-alpha.41",
+        "path": "decisions/KFD-7.md",
+        "sha256": "df5be3a5f49cbeabc2cac684326fd0356a96645151786b49e8b938f823493456"
+      },
+      {
+        "id": "kfd-agent-hub-profile",
+        "owner": "@kungfu-tech/kfd",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kfd",
+        "ref": "35915676330696f888c73c154f431c99f37c19ec",
+        "path": "protocols/agent-hub/README.md",
+        "sha256": "2a3ac987d280a5baaacde7ddfb01cdce22a094b09709d1ff4d9a2329060b1140"
+      },
+      {
+        "id": "buildchain-release-passport",
+        "owner": "@kungfu-tech/buildchain",
+        "kind": "package-document",
+        "package": "@kungfu-tech/buildchain",
+        "version": "2.14.14-alpha.4",
+        "path": "docs/release-passport.md",
+        "sha256": "f10d2f0f9cc694976b2a1d2a61195ed155c1bc24c964de1551475882e8197c92"
+      },
+      {
+        "id": "buildchain-kfd-support",
+        "owner": "@kungfu-tech/buildchain",
+        "kind": "package-document",
+        "package": "@kungfu-tech/buildchain",
+        "version": "2.14.14-alpha.4",
+        "path": "docs/kfd-support.md",
+        "sha256": "ab15de33a1a9e292b6da74c00b8b96b7c46330d0553a454d1de4c24c672fc025"
+      }
+    ],
+    "guidedSynthesis": {
+      "heading": "Long-running Agent work needs a continuity stack, not one longer session.",
+      "lead": "A session is a useful interaction boundary. It is not enough to preserve admitted state, causal experience, continuing responsibility, or an accepted project result across agents, machines, repositories, and days.",
+      "conceptualChain": [
+        {
+          "id": "ontology",
+          "label": "Fact + Episode",
+          "role": "State and worldline",
+          "summary": "A Fact Cut preserves admitted state. An Episode preserves the causal worldline that actually occurred between cuts.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["kungfu-action-runtime", "kfd-7"]
+        },
+        {
+          "id": "responsibility",
+          "label": "Pursuit + Atlas + Warrant",
+          "role": "Action coordinates",
+          "summary": "Direction, declared perspective, and bounded authority remain independently addressable before action is treated as responsible.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["kungfu-action-runtime", "kfd-7"]
+        },
+        {
+          "id": "work-topology",
+          "label": "Initiative + Assignment",
+          "role": "Work topology",
+          "summary": "The Agent Work profile organizes continuing change and bounded responsibility without redefining the lower cross-domain coordinates.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["kungfu-project-cut-loop"]
+        },
+        {
+          "id": "settlement",
+          "label": "Settlement → Project Cut",
+          "role": "Accepted project state",
+          "summary": "Evidence crosses the admission boundary only through explicit settlement; the resulting Project Cut states what the project has officially become.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["kungfu-project-cut-loop"]
+        }
+      ],
+      "supplyChain": {
+        "heading": "The Agent supply chain separates product ownership from portable trust.",
+        "summary": "Hub vendors keep the commercially valuable product layer. KFD defines portable cooperation boundaries, libkungfu preserves local runtime facts and Episodes, and Buildchain binds shipped claims to exact artifacts.",
+        "steps": [
+          {
+            "label": "Hub",
+            "owner": "Each vendor",
+            "summary": "UI, models, accounts, billing, cloud, policy, and customer relationships remain with the Hub owner.",
+            "claimClass": "site-synthesis",
+            "sourceRefs": ["kfd-agent-hub-profile", "kfd-3"]
+          },
+          {
+            "label": "KFD",
+            "owner": "Open protocol",
+            "summary": "Independent Hubs can exchange bounded responsibility without adopting one control plane or one mandatory cloud.",
+            "claimClass": "future-picture",
+            "sourceRefs": ["kfd-agent-hub-profile"]
+          },
+          {
+            "label": "libkungfu",
+            "owner": "Local runtime",
+            "summary": "The reference runtime preserves admitted Facts, causal Episodes, recovery, and inspectable projections below the Hub product.",
+            "claimClass": "reference-implementation",
+            "sourceRefs": ["kungfu-action-runtime"]
+          },
+          {
+            "label": "Buildchain",
+            "owner": "Release trust",
+            "summary": "Release passports keep product claims congruent with exact source, artifacts, verification, provenance, and promotion evidence.",
+            "claimClass": "upstream-fact",
+            "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2"]
+          }
+        ],
+        "nonClaim": "The KFD Agent Hub profile is alpha. It defines an interoperability contract; it does not prove external vendor adoption, plural-Hub deployment, stable certification, or an industry standard.",
+        "claimClass": "non-claim",
+        "sourceRefs": ["kfd-agent-hub-profile"]
+      },
+      "hubConsequence": {
+        "heading": "The protocol removes shared-infrastructure assumptions.",
+        "summary": "KFD does not require every participant to share one implementation. It preserves the minimum responsibility semantics needed for independent systems to cooperate without guessing.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["kfd-agent-hub-profile", "kfd-3"]
+      }
+    },
+    "surfaceSynthesis": {
+      "buildchain": {
+        "heading": "Buildchain turns release work into a Hub admission surface.",
+        "lead": "A Hub can accept more capability without inheriting blind trust. Buildchain turns a Builder's public offer and its supporting facts into one release-bound surface that the Hub can evaluate under its own policy.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+        "trustLoop": {
+          "heading": "KFD-3 declares the value. KFD-2 makes it trustable. Buildchain binds both to the release.",
+          "summary": "Discovery alone leaves a Hub with marketing claims. Evidence alone leaves useful capability hidden in private release machinery. The two become an adoption surface only when the offer and its trust boundary travel together.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3"],
+          "steps": [
+            {
+              "id": "declare",
+              "label": "KFD-3",
+              "role": "Declare the offer",
+              "summary": "The Builder exposes what the product can do, why it is useful, which public surfaces carry it, and which choices and constraints apply.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-3", "buildchain-kfd-support"]
+            },
+            {
+              "id": "assess",
+              "label": "KFD-2",
+              "role": "Assess reliance",
+              "summary": "Each important value claim binds to inspectable facts, checked evidence, assurance responsibility, known gaps, and residual risk.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-2", "buildchain-kfd-support"]
+            },
+            {
+              "id": "bind",
+              "label": "Buildchain",
+              "role": "Bind the exact release",
+              "summary": "The Release Passport keeps the claim congruent with exact source, artifacts, verification, provenance, and promotion evidence.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support"]
+            },
+            {
+              "id": "admit",
+              "label": "Builder Hub",
+              "role": "Keep the verdict local",
+              "summary": "The receiving Hub evaluates that exact release under its own identity, authority, policy, and risk boundary; discovery or delivery never forces admission.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-2"]
+            }
+          ]
+        },
+        "hubValue": {
+          "heading": "What a Builder Hub gains",
+          "summary": "Buildchain lowers the marginal cost of extending a Hub without turning a third-party integration into an invisible transfer of trust or product control.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+          "outcomes": [
+            {
+              "label": "More capability, less blind trust",
+              "summary": "Expand the capability supply while keeping important reliance claims inspectable and bounded.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-2", "kfd-3"]
+            },
+            {
+              "label": "Reusable admission",
+              "summary": "Evaluate a declared capability and its evidence instead of reconstructing a bespoke trust story for every integration.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-kfd-support", "kfd-2", "kfd-3"]
+            },
+            {
+              "label": "Reviewable evolution",
+              "summary": "Treat an update as a new exact release and evidence coordinate that can be reassessed, explained, or rolled back.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-release-passport", "kfd-2"]
+            },
+            {
+              "label": "The moat stays above",
+              "summary": "Share the trust substrate while differentiating through models, policy, user experience, distribution, and the customer relationship.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-3"]
+            }
+          ]
+        },
+        "ecosystemEffect": {
+          "heading": "A portable trust surface can compound across an ecosystem.",
+          "summary": "When Builders publish the same release-bound capability and trust facts that Hubs can evaluate locally, one integration can become reusable supply instead of a one-off bilateral trust exercise.",
+          "claimClass": "future-picture",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+          "steps": [
+            {
+              "label": "Publish once per release",
+              "summary": "A Builder declares public capability surfaces and their evidence against one exact artifact coordinate.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support"]
+            },
+            {
+              "label": "Assess under local policy",
+              "summary": "Each Hub keeps its own acceptance verdict; compatibility never transfers approval, authority, or responsibility.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-2"]
+            },
+            {
+              "label": "Compound reusable supply",
+              "summary": "More release-bound offers can lower the marginal cost of publishing and admitting capabilities across independently owned Hubs.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["kfd-3", "kfd-agent-hub-profile"]
+            }
+          ],
+          "nonClaim": "This is the ecosystem effect enabled by the contract, not evidence of a present network effect. The KFD Agent Hub profile is alpha and does not prove external adoption, plural-Hub deployment, stable certification, or an industry standard.",
+          "nonClaimClass": "non-claim",
+          "nonClaimSourceRefs": ["kfd-agent-hub-profile"]
+        },
+        "ownershipBoundary": {
+          "heading": "Your Hub remains yours.",
+          "summary": "Buildchain is a public release-trust layer below the Hub product. It does not become the Hub, a marketplace, a global identity provider, a mandatory cloud, or a channel into the Builder's customer relationship.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "kfd-agent-hub-profile"],
+          "retainedByHub": [
+            "Users and customer relationships",
+            "Accounts and billing",
+            "Models and Agents",
+            "UI and product experience",
+            "Cloud and storage",
+            "Identity and policy",
+            "Admission and revocation"
+          ]
+        }
+      }
+    },
+    "surfacePaths": [
+      {
+        "id": "hub",
+        "audience": "Agent product builders",
+        "question": "How do you add durable Agent continuity without giving up your Hub?",
+        "promise": "Keep the product and customer relationship. Adopt only the portable runtime and cooperation layers you need.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["kungfu-action-runtime", "kfd-agent-hub-profile"],
+        "authorityLabel": "See the continuity stack",
+        "authorityHref": "#continuity-stack",
+        "evidenceLabel": "Inspect machine facts",
+        "evidenceHref": "/runtime.json"
+      },
+      {
+        "id": "core",
+        "audience": "Runtime builders",
+        "question": "What survives when the session ends?",
+        "promise": "Start with the local evidence path, then descend into its exact runtime mechanism, qualification boundary, and pinned sources.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["kungfu-action-runtime"],
+        "authorityLabel": "See the runtime mechanism",
+        "authorityHref": "#core-authority",
+        "evidenceLabel": "Inspect the manifest",
+        "evidenceHref": "/manifest.json"
+      },
+      {
+        "id": "kfd",
+        "audience": "Protocol builders",
+        "question": "How can independent systems cooperate without sharing a control plane?",
+        "promise": "Start with KFD's continuity question and adoption boundary, then descend into the numbered authority, schemas, and exact decision text.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["kfd-3", "kfd-7", "kfd-agent-hub-profile"],
+        "authorityLabel": "Read KFD's answer",
+        "authorityHref": "#kfd-authority",
+        "evidenceLabel": "Inspect the manifest",
+        "evidenceHref": "/manifest.json"
+      },
+      {
+        "id": "buildchain",
+        "audience": "Agent product and Hub builders",
+        "question": "How can your Hub accept more capability without inheriting blind trust?",
+        "promise": "Bind KFD-3 value surfaces and KFD-2 trust evidence to exact releases while keeping your product, customer relationship, and local admission policy.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+        "authorityLabel": "See the KFD-2/3 trust loop",
+        "authorityHref": "#buildchain-trust-loop",
+        "evidenceLabel": "Inspect the shipped mechanism",
+        "evidenceHref": "#buildchain-authority"
+      }
+    ]
   },
   "surfaces": [
     {
