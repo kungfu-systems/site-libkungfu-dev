@@ -1,12 +1,16 @@
 # site-libkungfu-dev
 
-This repository renders the `libkungfu.dev` developer and agent substrate hub.
+This repository owns the reader contract and renders the `libkungfu.dev`
+developer and agent substrate hub.
 
 ## Product Use
 
 - Use `docs/MAP.md` for the site map and stable machine entry points.
 - Use `/llms.txt` and `/manifest.json` in the generated artifact for agent
   consumption.
+- Use `src/fixtures/site-manifest.json#readerContract` as the site-owned
+  contract for first-screen framing, audience, cross-surface synthesis, reading
+  order, progressive disclosure, navigation, and visual composition.
 
 ## Development
 
@@ -38,9 +42,20 @@ This repository renders the `libkungfu.dev` developer and agent substrate hub.
 
 ## Boundary
 
-This repository may own rendering, navigation, and page structure. It must not
-hand-write core spec facts, Buildchain CLI facts, workflow inputs, release state
-machines, artifact schemas, or provenance facts.
+This repository owns first-screen propositions, audience framing,
+cross-surface synthesis, reading order, progressive disclosure, navigation,
+visual composition, rendering, and page structure. Site-authored synthesis is
+non-normative and must cite exact upstream sources.
+
+This repository must not hand-write or reinterpret core runtime semantics, KFD
+decisions or protocol semantics, Buildchain CLI facts, workflow inputs, release
+state machines, artifact schemas, qualification results, or provenance facts.
+Those remain owned by pinned upstream evidence, manifests, and packages.
+
+Generated human pages, `/llms.txt`, `/manifest.json`, and stable machine
+entries must expose the same reader layers, claim classes, source references,
+claim boundaries, and down-level authority routes. A concise first screen may
+hide detail, but it may not delete the upstream content or strengthen a claim.
 
 The repository itself is a Kungfu product surface. Treat changes here as work
 governed by the current KFD registry: keep source boundaries explicit, expose
