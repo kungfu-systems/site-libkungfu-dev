@@ -1322,7 +1322,7 @@ const hubHtml = fs.readFileSync("dist/index.html", "utf8");
 const hubDetailHtml = fs.readFileSync("dist/architecture/index.html", "utf8");
 const hubLlms = fs.readFileSync("dist/llms.txt", "utf8");
 const immutableFoundationPaperHtml = fs.readFileSync(
-  "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.7/index.html",
+  "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
   "utf8",
 );
 if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
