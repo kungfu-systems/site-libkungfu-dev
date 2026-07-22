@@ -879,7 +879,11 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (versionHtml.includes("--core-blue:") || versionHtml.includes(".core-runtime-map {")) {
       throw new Error(`immutable publication version page contains Core-only runtime styles: ${publication.id}@${version.version}`);
     }
-    if (versionHtml.includes(".reader-orientation {") || versionHtml.includes(".reader-supply-chain {")) {
+    if (
+      versionHtml.includes(".reader-orientation {")
+      || versionHtml.includes(".reader-supply-chain {")
+      || versionHtml.includes(".page-kicker > * {")
+    ) {
       throw new Error(`immutable publication version page contains site reader-contract styles: ${publication.id}@${version.version}`);
     }
     for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
