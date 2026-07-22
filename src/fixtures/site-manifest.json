@@ -115,7 +115,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.41",
+        "version": "1.0.0-alpha.42",
         "path": "decisions/KFD-2.md",
         "sha256": "026ed1d23fbb45fd5b3163962ce736a757e383230af09556c8fb4b56f5e802b5"
       },
@@ -124,7 +124,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.41",
+        "version": "1.0.0-alpha.42",
         "path": "decisions/KFD-3.md",
         "sha256": "5691761dcab21fcdeaf748655f20f61de74b906cd9f5cd03459131fd78082f83"
       },
@@ -133,7 +133,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.41",
+        "version": "1.0.0-alpha.42",
         "path": "decisions/KFD-7.md",
         "sha256": "df5be3a5f49cbeabc2cac684326fd0356a96645151786b49e8b938f823493456"
       },

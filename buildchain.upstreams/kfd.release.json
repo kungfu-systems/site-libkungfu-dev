@@ -7,7 +7,7 @@
     "node": "site-libkungfu-dev",
     "repository": "kungfu-systems/site-libkungfu-dev"
   },
-  "lockSha256": "eda3dca9cceb3e05c43290982ea18ddba2712d98bc9e6f7b071982d1227c352d",
+  "lockSha256": "5070b1eef1b3583060fd2b2ae70e6279c18bc5f9752338ef30aa991be9e702eb",
   "propagation": {
     "channelMap": {
       "alpha": "alpha",
@@ -24,16 +24,16 @@
     "channel": "alpha",
     "node": "kfd",
     "package": {
-      "integrity": "sha512-e+iIuvsijDLSFotb3gPKqwn649lLGRX3xEWOwn7xfBeu8L8kvw5RPRznJ4xKVM+NYCrfYCRVmUzpJI58k97C+Q==",
+      "integrity": "sha512-bl3xQwdhpBZPplemrFnBIq7O/xRu+HurQhNOhOlx/+8blFVQF3m9UFNXri04i+pxbQNXMtZbNtqMyegZeIcEMw==",
       "name": "@kungfu-tech/kfd",
-      "version": "1.0.0-alpha.41"
+      "version": "1.0.0-alpha.42"
     },
     "releasePassport": {
-      "sha256": "1cf63c39dff036741b7ef39ce8c3401a0f7368777ef5e2ea6d4697e6b87ebcbe",
-      "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.41/buildchain.release.json"
+      "sha256": "18f0d2321b88b37ceeb8822a6949e351b8d28f3c2f1f23a9081742de18a81199",
+      "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.42/buildchain.release.json"
     },
     "repository": "kungfu-systems/kfd",
-    "sourceSha": "abb7aa868021b18fe268acbe7b3efea49428ffaf",
-    "tag": "v1.0.0-alpha.41"
+    "sourceSha": "03deef6bbc6e2ac8aecfedc76f17f6c74a72b878",
+    "tag": "v1.0.0-alpha.42"
   }
 }
