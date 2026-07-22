@@ -23,6 +23,7 @@ mkdir -p dist/.buildchain
 cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evidence-ownership.json
 
 test -f dist/index.html
+test -f dist/404.html
 test -f dist/architecture/index.html
 test -f dist/core/index.html
 test -f dist/core/runtime/index.html

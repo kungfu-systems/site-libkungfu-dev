@@ -37,6 +37,7 @@ const requiredBaseFiles = [
   ".buildchain/contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
+  "dist/404.html",
   "dist/architecture/index.html",
   "dist/core/index.html",
   "dist/core/runtime/index.html",
@@ -93,6 +94,11 @@ const requiredBaseFiles = [
   "dist/papers/registry.json",
   "dist/papers/llms.txt",
 ];
+
+const notFoundPage = fs.readFileSync("dist/404.html", "utf8");
+if (!notFoundPage.includes('<meta name="robots" content="noindex">') || !notFoundPage.includes('href="/"')) {
+  throw new Error("dist/404.html must be noindex and link to the site root");
+}
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const core = JSON.parse(fs.readFileSync("src/fixtures/core-runtime-surface.json", "utf8"));
