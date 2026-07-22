@@ -4,4 +4,4 @@ minimumReleaseAgeExclude:
   - "@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2"
   - "@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.6 || 0.1.0-alpha.7 || 0.1.0-alpha.8"
   - "@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.1 || 0.1.0-alpha.2 || 0.1.0-alpha.5 || 0.1.0-alpha.8 || 0.1.0-alpha.10"
-  - "@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.4 || 0.1.0-alpha.8"
+  - "@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.4 || 0.1.0-alpha.8 || 0.1.0-alpha.9"
