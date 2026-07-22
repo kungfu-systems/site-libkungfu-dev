@@ -1797,7 +1797,7 @@ ${current === "core" ? `
     .section-heading {
       margin: 48px 0 18px;
     }
-
+${current === "papers" ? "" : `
     .reader-orientation {
       display: grid;
       gap: 18px;
@@ -1959,7 +1959,7 @@ ${current === "core" ? `
       font-size: 12px;
       line-height: 1.5;
     }
-
+`}
     .panel {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -2451,13 +2451,13 @@ ${current === "core" ? `
       .grid.three {
         grid-template-columns: 1fr;
       }
-
+${current === "papers" ? "" : `
       .reader-chain,
       .reader-layer-strip,
       .reader-supply-grid {
         grid-template-columns: 1fr;
       }
-
+`}
 ${current === "core" ? `
       .grid.four {
         grid-template-columns: repeat(2, minmax(0, 1fr));
