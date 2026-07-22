@@ -154,6 +154,15 @@
         "version": "2.14.13",
         "path": "docs/release-passport.md",
         "sha256": "f10d2f0f9cc694976b2a1d2a61195ed155c1bc24c964de1551475882e8197c92"
+      },
+      {
+        "id": "buildchain-kfd-support",
+        "owner": "@kungfu-tech/buildchain",
+        "kind": "package-document",
+        "package": "@kungfu-tech/buildchain",
+        "version": "2.14.13",
+        "path": "docs/kfd-support.md",
+        "sha256": "ab15de33a1a9e292b6da74c00b8b96b7c46330d0553a454d1de4c24c672fc025"
       }
     ],
     "guidedSynthesis": {
@@ -223,7 +232,7 @@
             "owner": "Release trust",
             "summary": "Release passports keep product claims congruent with exact source, artifacts, verification, provenance, and promotion evidence.",
             "claimClass": "upstream-fact",
-            "sourceRefs": ["buildchain-release-passport", "kfd-2"]
+            "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2"]
           }
         ],
         "nonClaim": "The KFD Agent Hub profile is alpha. It defines an interoperability contract; it does not prove external vendor adoption, plural-Hub deployment, stable certification, or an industry standard.",
@@ -235,6 +244,130 @@
         "summary": "KFD does not require every participant to share one implementation. It preserves the minimum responsibility semantics needed for independent systems to cooperate without guessing.",
         "claimClass": "site-synthesis",
         "sourceRefs": ["kfd-agent-hub-profile", "kfd-3"]
+      }
+    },
+    "surfaceSynthesis": {
+      "buildchain": {
+        "heading": "Buildchain turns release work into a Hub admission surface.",
+        "lead": "A Hub can accept more capability without inheriting blind trust. Buildchain turns a Builder's public offer and its supporting facts into one release-bound surface that the Hub can evaluate under its own policy.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+        "trustLoop": {
+          "heading": "KFD-3 declares the value. KFD-2 makes it trustable. Buildchain binds both to the release.",
+          "summary": "Discovery alone leaves a Hub with marketing claims. Evidence alone leaves useful capability hidden in private release machinery. The two become an adoption surface only when the offer and its trust boundary travel together.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3"],
+          "steps": [
+            {
+              "id": "declare",
+              "label": "KFD-3",
+              "role": "Declare the offer",
+              "summary": "The Builder exposes what the product can do, why it is useful, which public surfaces carry it, and which choices and constraints apply.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-3", "buildchain-kfd-support"]
+            },
+            {
+              "id": "assess",
+              "label": "KFD-2",
+              "role": "Assess reliance",
+              "summary": "Each important value claim binds to inspectable facts, checked evidence, assurance responsibility, known gaps, and residual risk.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-2", "buildchain-kfd-support"]
+            },
+            {
+              "id": "bind",
+              "label": "Buildchain",
+              "role": "Bind the exact release",
+              "summary": "The Release Passport keeps the claim congruent with exact source, artifacts, verification, provenance, and promotion evidence.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support"]
+            },
+            {
+              "id": "admit",
+              "label": "Builder Hub",
+              "role": "Keep the verdict local",
+              "summary": "The receiving Hub evaluates that exact release under its own identity, authority, policy, and risk boundary; discovery or delivery never forces admission.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-2"]
+            }
+          ]
+        },
+        "hubValue": {
+          "heading": "What a Builder Hub gains",
+          "summary": "Buildchain lowers the marginal cost of extending a Hub without turning a third-party integration into an invisible transfer of trust or product control.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+          "outcomes": [
+            {
+              "label": "More capability, less blind trust",
+              "summary": "Expand the capability supply while keeping important reliance claims inspectable and bounded.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-2", "kfd-3"]
+            },
+            {
+              "label": "Reusable admission",
+              "summary": "Evaluate a declared capability and its evidence instead of reconstructing a bespoke trust story for every integration.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-kfd-support", "kfd-2", "kfd-3"]
+            },
+            {
+              "label": "Reviewable evolution",
+              "summary": "Treat an update as a new exact release and evidence coordinate that can be reassessed, explained, or rolled back.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["buildchain-release-passport", "kfd-2"]
+            },
+            {
+              "label": "The moat stays above",
+              "summary": "Share the trust substrate while differentiating through models, policy, user experience, distribution, and the customer relationship.",
+              "claimClass": "site-synthesis",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-3"]
+            }
+          ]
+        },
+        "ecosystemEffect": {
+          "heading": "A portable trust surface can compound across an ecosystem.",
+          "summary": "When Builders publish the same release-bound capability and trust facts that Hubs can evaluate locally, one integration can become reusable supply instead of a one-off bilateral trust exercise.",
+          "claimClass": "future-picture",
+          "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+          "steps": [
+            {
+              "label": "Publish once per release",
+              "summary": "A Builder declares public capability surfaces and their evidence against one exact artifact coordinate.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support"]
+            },
+            {
+              "label": "Assess under local policy",
+              "summary": "Each Hub keeps its own acceptance verdict; compatibility never transfers approval, authority, or responsibility.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["kfd-agent-hub-profile", "kfd-2"]
+            },
+            {
+              "label": "Compound reusable supply",
+              "summary": "More release-bound offers can lower the marginal cost of publishing and admitting capabilities across independently owned Hubs.",
+              "claimClass": "future-picture",
+              "sourceRefs": ["kfd-3", "kfd-agent-hub-profile"]
+            }
+          ],
+          "nonClaim": "This is the ecosystem effect enabled by the contract, not evidence of a present network effect. The KFD Agent Hub profile is alpha and does not prove external adoption, plural-Hub deployment, stable certification, or an industry standard.",
+          "nonClaimClass": "non-claim",
+          "nonClaimSourceRefs": ["kfd-agent-hub-profile"]
+        },
+        "ownershipBoundary": {
+          "heading": "Your Hub remains yours.",
+          "summary": "Buildchain is a public release-trust layer below the Hub product. It does not become the Hub, a marketplace, a global identity provider, a mandatory cloud, or a channel into the Builder's customer relationship.",
+          "claimClass": "site-synthesis",
+          "sourceRefs": ["buildchain-release-passport", "kfd-agent-hub-profile"],
+          "retainedByHub": [
+            "Users and customer relationships",
+            "Accounts and billing",
+            "Models and Agents",
+            "UI and product experience",
+            "Cloud and storage",
+            "Identity and policy",
+            "Admission and revocation"
+          ]
+        }
       }
     },
     "surfacePaths": [
@@ -276,15 +409,15 @@
       },
       {
         "id": "buildchain",
-        "audience": "Release builders",
-        "question": "How does a shipped claim stay bound to the exact artifact?",
-        "promise": "Start with the release-passport mechanism, then descend into the package-owned workflows, commands, schemas, and provenance facts.",
+        "audience": "Agent product and Hub builders",
+        "question": "How can your Hub accept more capability without inheriting blind trust?",
+        "promise": "Bind KFD-3 value surfaces and KFD-2 trust evidence to exact releases while keeping your product, customer relationship, and local admission policy.",
         "claimClass": "site-synthesis",
-        "sourceRefs": ["buildchain-release-passport", "kfd-2"],
-        "authorityLabel": "See the release mechanism",
-        "authorityHref": "#buildchain-authority",
-        "evidenceLabel": "Inspect the site manifest",
-        "evidenceHref": "https://libkungfu.dev/manifest.json"
+        "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
+        "authorityLabel": "See the KFD-2/3 trust loop",
+        "authorityHref": "#buildchain-trust-loop",
+        "evidenceLabel": "Inspect the shipped mechanism",
+        "evidenceHref": "#buildchain-authority"
       }
     ]
   },

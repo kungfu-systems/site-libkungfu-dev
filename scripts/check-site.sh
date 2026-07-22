@@ -352,8 +352,9 @@ if (
   || readerContract.owner !== "site-libkungfu-dev"
   || readerContract.layers?.map((entry) => entry.id).join(",") !== "first-screen,guided-synthesis,upstream-authority,machine-evidence"
   || readerContract.surfacePaths?.map((entry) => entry.id).join(",") !== "hub,core,kfd,buildchain"
+  || !readerContract.surfaceSynthesis?.buildchain
 ) {
-  throw new Error("site reader contract is missing its stable owner, four layers, or primary surface paths");
+  throw new Error("site reader contract is missing its stable owner, four layers, primary surface paths, or Buildchain synthesis");
 }
 if (
   site.sourceBoundary.siteRole !== "reader contract, guided synthesis, visual composition, routing, and rendering"
@@ -415,7 +416,7 @@ for (const source of readerContract.sources) {
   }
   throw new Error(`reader contract source kind is unsupported: ${source.kind}`);
 }
-const readerClaims = [
+const rootReaderClaims = [
   ...readerContract.guidedSynthesis.conceptualChain,
   ...readerContract.guidedSynthesis.supplyChain.steps,
   {
@@ -428,6 +429,26 @@ const readerClaims = [
     summary: readerContract.guidedSynthesis.supplyChain.nonClaim,
   },
 ];
+const buildchainSynthesis = readerContract.surfaceSynthesis.buildchain;
+const buildchainReaderClaims = [
+  {
+    ...buildchainSynthesis,
+    summary: buildchainSynthesis.lead,
+  },
+  buildchainSynthesis.trustLoop,
+  ...buildchainSynthesis.trustLoop.steps,
+  buildchainSynthesis.hubValue,
+  ...buildchainSynthesis.hubValue.outcomes,
+  buildchainSynthesis.ecosystemEffect,
+  ...buildchainSynthesis.ecosystemEffect.steps,
+  {
+    claimClass: buildchainSynthesis.ecosystemEffect.nonClaimClass,
+    sourceRefs: buildchainSynthesis.ecosystemEffect.nonClaimSourceRefs,
+    summary: buildchainSynthesis.ecosystemEffect.nonClaim,
+  },
+  buildchainSynthesis.ownershipBoundary,
+];
+const readerClaims = [...rootReaderClaims, ...buildchainReaderClaims];
 for (const claim of readerClaims) {
   if (!readerClaimClassIds.has(claim.claimClass) || !Array.isArray(claim.sourceRefs) || claim.sourceRefs.length === 0) {
     throw new Error(`reader synthesis claim is missing a class or source: ${claim.summary}`);
@@ -1263,10 +1284,45 @@ for (const layer of readerContract.layers) {
     throw new Error(`human and agent entries must share reader layer: ${layer.label}`);
   }
 }
-for (const claim of readerClaims) {
+for (const claim of rootReaderClaims) {
   if (!hubHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
     throw new Error(`human and agent entries must share reader synthesis: ${claim.summary}`);
   }
+}
+for (const claim of buildchainReaderClaims) {
+  if (!buildchainHomeHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
+    throw new Error(`Buildchain human and agent entries must share reader synthesis: ${claim.summary}`);
+  }
+}
+for (const retainedCapability of buildchainSynthesis.ownershipBoundary.retainedByHub) {
+  if (!buildchainHomeHtml.includes(escapeHtml(retainedCapability)) || !hubLlms.includes(retainedCapability)) {
+    throw new Error(`Buildchain human and agent entries must preserve Hub ownership: ${retainedCapability}`);
+  }
+}
+const buildchainReaderOrder = [
+  readerContract.surfacePaths.find((entry) => entry.id === "buildchain").question,
+  buildchainSynthesis.heading,
+  buildchainSynthesis.trustLoop.heading,
+  buildchainSynthesis.hubValue.heading,
+  buildchainSynthesis.ecosystemEffect.heading,
+  buildchainSynthesis.ownershipBoundary.heading,
+  buildchainSite.homepage.title,
+];
+let previousBuildchainReaderPosition = -1;
+for (const marker of buildchainReaderOrder) {
+  const position = buildchainHomeHtml.indexOf(escapeHtml(marker), previousBuildchainReaderPosition + 1);
+  if (position <= previousBuildchainReaderPosition) {
+    throw new Error(`Buildchain reader order drifted at: ${marker}`);
+  }
+  previousBuildchainReaderPosition = position;
+}
+if (
+  !buildchainHomeHtml.includes('id="buildchain-trust-loop"')
+  || !buildchainHomeHtml.includes('data-claim-class="future-picture"')
+  || !buildchainHomeHtml.includes('data-claim-class="non-claim"')
+  || buildchainHomeHtml.indexOf("Install and Verify") < buildchainHomeHtml.indexOf(buildchainSynthesis.ownershipBoundary.heading)
+) {
+  throw new Error("Buildchain must show its trust loop, future boundary, and Hub ownership before package-owned install detail");
 }
 for (const source of readerContract.sources) {
   let href;

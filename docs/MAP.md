@@ -10,7 +10,9 @@
 - Use `https://core.libkungfu.dev` to understand the libkungfu runtime
   substrate: one mmap journal as retained evidence and local observation bus,
   its qualification frontiers, and the secondary spec/source contract.
-- Use `https://buildchain.libkungfu.dev` for Buildchain release-governance and
+- Use `https://buildchain.libkungfu.dev` to see how KFD-3 value surfaces and
+  KFD-2 trust evidence become one release-bound Hub admission surface, then
+  descend into Buildchain-owned Release Passport, release-governance, and
   deployment-operation facts.
 - Use `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.svg` for
   Buildchain-owned hosted README badges and
@@ -38,9 +40,11 @@ The stable reading order is:
    claim boundaries, and stable routes.
 
 On the hub, read the continuity stack before the detailed action-world and
-plural-Hub diagrams. On Core, KFD, and Buildchain, the first screen states the
-reader question and links directly to the package- or fixture-owned authority
-below it. No down-level content is removed by this ordering.
+plural-Hub diagrams. On Core and KFD, the first screen states the reader
+question and links directly to the package- or fixture-owned authority below
+it. On Buildchain, read the KFD-2/3 trust loop, Builder Hub value, ecosystem
+boundary, and Hub-ownership promise before the package-owned mechanism. No
+down-level content is removed by this ordering.
 
 ## Work In This Repository
 

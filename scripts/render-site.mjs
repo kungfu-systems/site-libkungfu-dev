@@ -1688,7 +1688,13 @@ ${current === "core" ? `
       align-items: center;
       justify-content: space-between;
       gap: 8px 16px;
+      min-width: 0;
       width: 100%;
+    }
+
+    .page-kicker > * {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .page-kicker-state {
@@ -1800,6 +1806,7 @@ ${current === "core" ? `
 ${current === "papers" ? "" : `
     .reader-orientation {
       display: grid;
+      min-width: 0;
       gap: 18px;
       margin-bottom: 48px;
       border-bottom: 1px solid var(--line);
@@ -1808,6 +1815,7 @@ ${current === "papers" ? "" : `
 
     .reader-orientation h1 {
       max-width: 900px;
+      overflow-wrap: anywhere;
     }
 
     .reader-orientation .lead {
@@ -1958,6 +1966,117 @@ ${current === "papers" ? "" : `
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
+    }
+
+    .buildchain-reader-story {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 48px;
+    }
+
+    .buildchain-story-panel {
+      display: grid;
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--soft) 90%, var(--bg));
+      padding: clamp(20px, 3vw, 30px);
+    }
+
+    .buildchain-story-panel > header {
+      display: grid;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+    }
+
+    .buildchain-story-panel > header p,
+    .buildchain-story-card p,
+    .buildchain-ownership p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .buildchain-trust-loop,
+    .buildchain-value-grid,
+    .buildchain-ecosystem-loop {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .buildchain-trust-loop,
+    .buildchain-value-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .buildchain-ecosystem-loop {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .buildchain-story-card {
+      position: relative;
+      display: grid;
+      min-width: 0;
+      align-content: start;
+      gap: 9px;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--accent);
+      border-radius: 8px;
+      background: var(--bg);
+      padding: 16px;
+    }
+
+    .buildchain-trust-loop .buildchain-story-card:not(:last-child)::after,
+    .buildchain-ecosystem-loop .buildchain-story-card:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      right: -19px;
+      width: 24px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent-strong);
+      text-align: center;
+      transform: translateY(-50%);
+    }
+
+    .buildchain-value-grid .buildchain-story-card {
+      border-top-color: var(--accent-strong);
+    }
+
+    .buildchain-ecosystem-loop .buildchain-story-card {
+      border-top-color: var(--warn);
+    }
+
+    .buildchain-ownership {
+      border-color: color-mix(in srgb, var(--accent) 65%, var(--line));
+      background: color-mix(in srgb, var(--accent) 8%, var(--soft));
+    }
+
+    .buildchain-ownership-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .buildchain-ownership-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg);
+      padding: 7px 11px;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 700;
     }
 `}
     .panel {
@@ -2454,8 +2573,26 @@ ${current === "papers" ? "" : `
 ${current === "papers" ? "" : `
       .reader-chain,
       .reader-layer-strip,
-      .reader-supply-grid {
+      .reader-supply-grid,
+      .buildchain-trust-loop,
+      .buildchain-value-grid,
+      .buildchain-ecosystem-loop {
         grid-template-columns: 1fr;
+      }
+
+      .buildchain-trust-loop .buildchain-story-card:not(:last-child)::after,
+      .buildchain-ecosystem-loop .buildchain-story-card:not(:last-child)::after {
+        content: "↓";
+        top: auto;
+        right: 50%;
+        bottom: -19px;
+        transform: translateX(50%);
+      }
+
+      .page-kicker-state {
+        width: 100%;
+        margin-left: 0;
+        text-align: left;
       }
 `}
 ${current === "core" ? `
@@ -3531,6 +3668,78 @@ function renderContinuityStack() {
       </div>
       <p class="reader-claim-boundary" data-claim-class="${escapeAttr(supplyChain.claimClass)}"><strong>Claim boundary:</strong> ${escapeHtml(supplyChain.nonClaim)} ${renderReaderSources(supplyChain.sourceRefs)}</p>
     </div>
+  </section>`;
+}
+
+function renderBuildchainReaderSynthesis() {
+  const synthesis = site.readerContract.surfaceSynthesis.buildchain;
+  const trustLoop = synthesis.trustLoop;
+  const hubValue = synthesis.hubValue;
+  const ecosystemEffect = synthesis.ecosystemEffect;
+  const ownershipBoundary = synthesis.ownershipBoundary;
+  const storyCard = (entry) => `<li class="buildchain-story-card" data-claim-class="${escapeAttr(entry.claimClass)}">
+    ${entry.role ? `<p class="reader-card-role">${escapeHtml(entry.role)}</p>` : ""}
+    <h4>${escapeHtml(entry.label)}</h4>
+    <p>${escapeHtml(entry.summary)}</p>
+    ${renderReaderSources(entry.sourceRefs)}
+  </li>`;
+
+  return `<section class="buildchain-reader-story" aria-labelledby="buildchain-reader-heading">
+    <div class="section-heading">
+      <p class="eyebrow">01 · Guided synthesis · site-owned</p>
+      <h2 id="buildchain-reader-heading">${escapeHtml(synthesis.heading)}</h2>
+      <p>${escapeHtml(synthesis.lead)}</p>
+      ${renderReaderSources(synthesis.sourceRefs)}
+    </div>
+
+    <section class="buildchain-story-panel" id="buildchain-trust-loop" aria-labelledby="buildchain-trust-loop-heading" data-claim-class="${escapeAttr(trustLoop.claimClass)}">
+      <header>
+        <p class="eyebrow">02 · KFD-2 × KFD-3</p>
+        <h3 id="buildchain-trust-loop-heading">${escapeHtml(trustLoop.heading)}</h3>
+        <p>${escapeHtml(trustLoop.summary)}</p>
+        ${renderReaderSources(trustLoop.sourceRefs)}
+      </header>
+      <ol class="buildchain-trust-loop" aria-label="KFD-3 value, KFD-2 trust, Buildchain release binding, and local Hub admission">
+        ${trustLoop.steps.map(storyCard).join("\n")}
+      </ol>
+    </section>
+
+    <section class="buildchain-story-panel" aria-labelledby="buildchain-hub-value-heading" data-claim-class="${escapeAttr(hubValue.claimClass)}">
+      <header>
+        <p class="eyebrow">03 · Builder Hub value</p>
+        <h3 id="buildchain-hub-value-heading">${escapeHtml(hubValue.heading)}</h3>
+        <p>${escapeHtml(hubValue.summary)}</p>
+        ${renderReaderSources(hubValue.sourceRefs)}
+      </header>
+      <ol class="buildchain-value-grid" aria-label="Strategic outcomes for a Builder Hub">
+        ${hubValue.outcomes.map(storyCard).join("\n")}
+      </ol>
+    </section>
+
+    <section class="buildchain-story-panel" aria-labelledby="buildchain-ecosystem-heading" data-claim-class="${escapeAttr(ecosystemEffect.claimClass)}">
+      <header>
+        <p class="eyebrow">04 · Ecosystem effect · future picture</p>
+        <h3 id="buildchain-ecosystem-heading">${escapeHtml(ecosystemEffect.heading)}</h3>
+        <p>${escapeHtml(ecosystemEffect.summary)}</p>
+        ${renderReaderSources(ecosystemEffect.sourceRefs)}
+      </header>
+      <ol class="buildchain-ecosystem-loop" aria-label="Potential ecosystem effect from portable release trust">
+        ${ecosystemEffect.steps.map(storyCard).join("\n")}
+      </ol>
+      <p class="reader-claim-boundary" data-claim-class="${escapeAttr(ecosystemEffect.nonClaimClass)}"><strong>Claim boundary:</strong> ${escapeHtml(ecosystemEffect.nonClaim)} ${renderReaderSources(ecosystemEffect.nonClaimSourceRefs)}</p>
+    </section>
+
+    <section class="buildchain-story-panel buildchain-ownership" aria-labelledby="buildchain-ownership-heading" data-claim-class="${escapeAttr(ownershipBoundary.claimClass)}">
+      <header>
+        <p class="eyebrow">05 · Product boundary</p>
+        <h3 id="buildchain-ownership-heading">${escapeHtml(ownershipBoundary.heading)}</h3>
+        <p>${escapeHtml(ownershipBoundary.summary)}</p>
+        ${renderReaderSources(ownershipBoundary.sourceRefs)}
+      </header>
+      <ul class="buildchain-ownership-list" aria-label="Capabilities and relationships retained by the Hub owner">
+        ${ownershipBoundary.retainedByHub.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("\n")}
+      </ul>
+    </section>
   </section>`;
 }
 
@@ -5324,7 +5533,9 @@ writeFile(
     description: buildchainPageDescription(),
     current: "buildchain",
     body: `${renderReaderOrientation("buildchain", "Buildchain product surface")}
+    ${renderBuildchainReaderSynthesis()}
     <section class="hero" id="buildchain-authority">
+      <p class="eyebrow">06 · Upstream authority · @kungfu-tech/buildchain</p>
       <h2 class="authority-title">${escapeHtml(buildchainSite.homepage.title)}</h2>
       <div class="lead badge-strip">${renderBuildchainLead(buildchainHomepageCopy.lead)}</div>
       <div class="stack">
@@ -5947,6 +6158,19 @@ Agent supply chain:
 ${site.readerContract.guidedSynthesis.supplyChain.summary}
 ${site.readerContract.guidedSynthesis.supplyChain.steps.map((entry) => `- ${entry.label} [${entry.owner}; ${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
 - Claim boundary [non-claim]: ${site.readerContract.guidedSynthesis.supplyChain.nonClaim}
+
+Buildchain reader synthesis:
+${site.readerContract.surfaceSynthesis.buildchain.heading}
+${site.readerContract.surfaceSynthesis.buildchain.lead}
+- ${site.readerContract.surfaceSynthesis.buildchain.trustLoop.heading} [${site.readerContract.surfaceSynthesis.buildchain.trustLoop.claimClass}]: ${site.readerContract.surfaceSynthesis.buildchain.trustLoop.summary} Sources: ${site.readerContract.surfaceSynthesis.buildchain.trustLoop.sourceRefs.join(", ")}
+${site.readerContract.surfaceSynthesis.buildchain.trustLoop.steps.map((entry) => `- ${entry.label} / ${entry.role} [${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
+- ${site.readerContract.surfaceSynthesis.buildchain.hubValue.heading} [${site.readerContract.surfaceSynthesis.buildchain.hubValue.claimClass}]: ${site.readerContract.surfaceSynthesis.buildchain.hubValue.summary} Sources: ${site.readerContract.surfaceSynthesis.buildchain.hubValue.sourceRefs.join(", ")}
+${site.readerContract.surfaceSynthesis.buildchain.hubValue.outcomes.map((entry) => `- ${entry.label} [${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
+- ${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.heading} [${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.claimClass}]: ${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.summary} Sources: ${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.sourceRefs.join(", ")}
+${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.steps.map((entry) => `- ${entry.label} [${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
+- Claim boundary [${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.nonClaimClass}]: ${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.nonClaim} Sources: ${site.readerContract.surfaceSynthesis.buildchain.ecosystemEffect.nonClaimSourceRefs.join(", ")}
+- ${site.readerContract.surfaceSynthesis.buildchain.ownershipBoundary.heading} [${site.readerContract.surfaceSynthesis.buildchain.ownershipBoundary.claimClass}]: ${site.readerContract.surfaceSynthesis.buildchain.ownershipBoundary.summary} Sources: ${site.readerContract.surfaceSynthesis.buildchain.ownershipBoundary.sourceRefs.join(", ")}
+- Retained by the Hub: ${site.readerContract.surfaceSynthesis.buildchain.ownershipBoundary.retainedByHub.join("; ")}
 
 Surface reading paths:
 ${site.readerContract.surfacePaths.map((entry) => `- ${entry.id} / ${entry.audience}: ${entry.question} ${entry.promise}`).join("\n")}
