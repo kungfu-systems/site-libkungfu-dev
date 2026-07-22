@@ -47,8 +47,10 @@ or future picture into a present ecosystem claim.
 - `https://core.libkungfu.dev` presents the libkungfu runtime substrate: the
   mmap journal as retained evidence and local observation bus, its explicit
   visibility/durability boundaries, and the secondary spec/source contract.
-- `https://buildchain.libkungfu.dev` presents Buildchain as the Kungfu CI/CD and
-  release-governance product surface.
+- `https://buildchain.libkungfu.dev` explains how KFD-3 value surfaces and
+  KFD-2 trust evidence become release-bound facts that a Builder Hub can
+  evaluate under its own admission policy, then hands readers to Buildchain's
+  package-owned CI/CD, Release Passport, and release-governance facts.
 - `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
   decision registry, standards metadata, schemas, and stable decision pages.
 - `https://papers.libkungfu.dev` presents Kungfu product and research papers,
