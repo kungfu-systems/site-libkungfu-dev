@@ -3767,6 +3767,7 @@ const dogfoodStyles = `<style>
     display: grid;
     align-content: start;
     gap: 8px;
+    margin: 0;
     min-height: 142px;
     border: 1px solid var(--line);
     border-top: 4px solid var(--accent);
