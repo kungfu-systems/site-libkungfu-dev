@@ -67,6 +67,9 @@ preview_url_pattern = "https://papers-{alias}.preview.libkungfu.dev"
 
 [deploy.preview]
 adapter = "aws-s3-cloudfront"
+cache_control_default = "public,max-age=300"
+cache_control_mutable = "public,max-age=60,must-revalidate"
+cache_control_immutable = "public,max-age=31536000,immutable"
 directory_index_rewrite = "external"
 bucket = "libkungfu-dev-preview-727884401362-us-east-1"
 cloudfront_distribution = "E23JLOB98N6R7U"
@@ -76,6 +79,9 @@ secret_refs = ["AWS_ROLE_ARN"]
 
 [deploy.staging]
 adapter = "aws-s3-cloudfront"
+cache_control_default = "public,max-age=3600"
+cache_control_mutable = "public,max-age=300,must-revalidate"
+cache_control_immutable = "public,max-age=31536000,immutable"
 directory_index_rewrite = "external"
 bucket = "libkungfu-dev-staging-727884401362-us-east-1"
 cloudfront_distribution = "E1B23YHEY9RCE0"
@@ -85,6 +91,9 @@ secret_refs = ["AWS_ROLE_ARN"]
 
 [deploy.production]
 adapter = "aws-s3-cloudfront"
+cache_control_default = "public,max-age=86400"
+cache_control_mutable = "public,max-age=300,must-revalidate"
+cache_control_immutable = "public,max-age=31536000,immutable"
 directory_index_rewrite = "external"
 bucket = "libkungfu-dev-site-727884401362-us-east-1"
 cloudfront_distribution = "EXWVGLVVXGURT"
