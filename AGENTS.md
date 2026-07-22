@@ -56,6 +56,11 @@ Generated human pages, `/llms.txt`, `/manifest.json`, and stable machine
 entries must expose the same reader layers, claim classes, source references,
 claim boundaries, and down-level authority routes. A concise first screen may
 hide detail, but it may not delete the upstream content or strengthen a claim.
+Keep the primary homepages bounded and route complete detail to their stable
+depth owners: `/architecture/`, Core `/runtime/`, Buildchain `/mechanism/`, KFD
+`/decisions/`, and Papers `/archive/`. Do not render the same complete detail on
+both the overview and its depth page; `scripts/check-site.sh` owns the homepage
+word budgets and required detail-route assertions.
 
 The repository itself is a Kungfu product surface. Treat changes here as work
 governed by the current KFD registry: keep source boundaries explicit, expose

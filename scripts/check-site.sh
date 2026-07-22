@@ -37,12 +37,16 @@ const requiredBaseFiles = [
   ".buildchain/contract-lock.json",
   "pnpm-lock.yaml",
   "dist/index.html",
+  "dist/architecture/index.html",
   "dist/core/index.html",
+  "dist/core/runtime/index.html",
   "dist/core/manifest.json",
   "dist/core/llms.txt",
   "dist/core/llms-full.txt",
   "dist/buildchain/index.html",
+  "dist/buildchain/mechanism/index.html",
   "dist/kfd/index.html",
+  "dist/kfd/decisions/index.html",
   "dist/kfd/foundation/index.html",
   "dist/foundation/index.html",
   "dist/kfd/formal/index.html",
@@ -63,6 +67,7 @@ const requiredBaseFiles = [
   "dist/buildchain/assets/favicon.svg",
   "dist/kfd/assets/favicon.svg",
   "dist/papers/assets/favicon.svg",
+  "dist/papers/archive/index.html",
   "dist/badges/v1/badge-endpoint-registry.json",
   "dist/badges/v1/kfd-1/passed.svg",
   "dist/badges/v1/kfd-2/passed.svg",
@@ -776,36 +781,56 @@ for (const evidence of core.evidence || []) {
   }
 }
 const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
+const coreDetailHtml = fs.readFileSync("dist/core/runtime/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
 const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
-if (!coreLlms.includes(coreReaderPath.question) || !coreLlms.includes(coreReaderPath.promise)) {
+if (
+  !coreHtml.includes(escapeHtml(coreReaderPath.question))
+  || !coreHtml.includes(escapeHtml(coreReaderPath.promise))
+  || !coreLlms.includes(coreReaderPath.question)
+  || !coreLlms.includes(coreReaderPath.promise)
+) {
   throw new Error("Core human and agent entries must share the site-owned reader path");
 }
 for (const expectedText of [
   core.homepage.headline,
   core.homepage.lead,
   core.homepage.claimBoundary,
+  ...core.outcomes.flatMap((outcome) => [outcome.title, outcome.summary]),
+]) {
+  if (!coreHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core overview and agent entry do not share the essential runtime claim: ${expectedText}`);
+  }
+}
+for (const expectedText of [
   core.architecture.writer.label,
   core.architecture.journal.label,
   ...core.architecture.readers.map((reader) => reader.label),
-  ...core.outcomes.flatMap((outcome) => [outcome.title, outcome.summary]),
   ...core.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
   core.semanticBoundary.heading,
   core.semanticBoundary.body,
   ...core.semanticBoundary.invariants,
   ...core.qualificationBoundary.claims,
 ]) {
-  if (!coreHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
-    throw new Error(`Core human and agent entries do not share the runtime mechanism: ${expectedText}`);
+  if (!coreDetailHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core detail and agent entries do not share the runtime mechanism: ${expectedText}`);
   }
 }
 if (
-  !coreHtml.includes('<figure class="core-runtime-map" aria-labelledby="core-runtime-map-title">')
-  || !coreHtml.includes('<details class="panel core-source-contract">')
+  !coreDetailHtml.includes('<figure class="core-runtime-map" aria-labelledby="core-runtime-map-title">')
+  || !coreDetailHtml.includes('<details class="panel core-source-contract">')
   || !renderSiteSource.includes("@media (prefers-reduced-motion: reduce)")
-  || /\bzero[- ]cost\b|\bcrash-proof\b|\balways survives\b|\bproduction-qualified HA\b/i.test(coreHtml)
+  || /\bzero[- ]cost\b|\bcrash-proof\b|\balways survives\b|\bproduction-qualified HA\b/i.test(coreDetailHtml)
 ) {
   throw new Error("Core runtime visual, secondary source contract, reduced-motion path, or claim language drifted");
+}
+if (
+  coreHtml.includes('<figure class="core-runtime-map"')
+  || coreHtml.includes("Visibility is not durability.")
+  || coreHtml.includes('<details class="panel core-source-contract">')
+  || !coreHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("core", "runtime/"))}" data-local-href="/core/runtime/"`)
+) {
+  throw new Error("Core overview must stay bounded and route complete mechanics to /runtime/");
 }
 if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
   throw new Error("publication package aggregation contract mismatch");
@@ -924,6 +949,7 @@ for (const publication of publicationRenderedRegistry.publications || []) {
   }
 }
 const papersIndex = fs.readFileSync("dist/papers/index.html", "utf8");
+const papersArchiveHtml = fs.readFileSync("dist/papers/archive/index.html", "utf8");
 let previousPaperCardPosition = -1;
 for (const publication of publicationRenderedRegistry.publications) {
   if (!papersIndex.includes(escapeHtml(publication.title))) {
@@ -933,27 +959,41 @@ for (const publication of publicationRenderedRegistry.publications) {
   if (paperCardPosition <= previousPaperCardPosition) {
     throw new Error(`papers index card order drifted at publication: ${publication.id}`);
   }
+  if (!papersArchiveHtml.includes(escapeHtml(publication.title))) {
+    throw new Error(`papers archive evidence page missing publication: ${publication.id}`);
+  }
   previousPaperCardPosition = paperCardPosition;
 }
 if (papersIndex.includes("Publication Archive Fixture") || !papersIndex.includes("Kungfu Papers")) {
   throw new Error("papers index must be human-first and free of fixture content");
 }
+if (
+  !papersIndex.includes(`href="${escapeHtml(expectedSurfaceEndpoint("papers", "archive/"))}"`)
+  || papersIndex.includes("<dt>source</dt>")
+  || !papersArchiveHtml.includes("Publication evidence")
+  || !papersArchiveHtml.includes("must not delete or overwrite files under a declared immutable version prefix")
+  || !publicationManifest.routes.some((route) => route.path === "/archive/" && route.host === expectedSurfaceHost("papers"))
+) {
+  throw new Error("Papers overview must route publication evidence to the bounded /archive/ page");
+}
 if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) {
   throw new Error(`dist manifest does not record Buildchain ${expectedBuildchainVersion}`);
 }
 const buildchainHomeHtml = fs.readFileSync("dist/buildchain/index.html", "utf8");
+const buildchainDetailHtml = fs.readFileSync("dist/buildchain/mechanism/index.html", "utf8");
+const kfdDetailHtml = fs.readFileSync("dist/kfd/decisions/index.html", "utf8");
 const expectedBuildchainBadgeHost = expectedSurfaceEndpoint("buildchain", "badges/v1/");
-if (!buildchainHomeHtml.includes('class="lead badge-strip"')) {
-  throw new Error("Buildchain homepage must render the README badge block as a badge strip");
+if (!buildchainDetailHtml.includes('class="lead badge-strip"')) {
+  throw new Error("Buildchain mechanism page must render the README badge block as a badge strip");
 }
 if (
-  !buildchainHomeHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}kfd-1/passed.svg`)}"`) ||
-  !buildchainHomeHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}buildchain-release-passport/passed.svg`)}"`)
+  !buildchainDetailHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}kfd-1/passed.svg`)}"`) ||
+  !buildchainDetailHtml.includes(`<img src="${escapeHtml(`${expectedBuildchainBadgeHost}buildchain-release-passport/passed.svg`)}"`)
 ) {
-  throw new Error("Buildchain homepage badges must render as channel-aware image tags");
+  throw new Error("Buildchain mechanism badges must render as channel-aware image tags");
 }
-if (buildchainHomeHtml.includes("<!-- buildchain:badges:") || buildchainHomeHtml.includes("[![KFD-1:")) {
-  throw new Error("Buildchain homepage must not expose raw README badge markdown");
+if (buildchainDetailHtml.includes("<!-- buildchain:badges:") || buildchainDetailHtml.includes("[![KFD-1:")) {
+  throw new Error("Buildchain mechanism page must not expose raw README badge markdown");
 }
 const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
 const expectedBadgeIds = [
@@ -1227,6 +1267,7 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
 }
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
+const hubDetailHtml = fs.readFileSync("dist/architecture/index.html", "utf8");
 const hubLlms = fs.readFileSync("dist/llms.txt", "utf8");
 const immutableFoundationPaperHtml = fs.readFileSync(
   "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.7/index.html",
@@ -1264,9 +1305,7 @@ if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manif
 const readerOrder = [
   escapeHtml(site.homepage.headline),
   escapeHtml(readerContract.guidedSynthesis.heading),
-  escapeHtml(runtimeSurface.actionWorld.headline),
-  escapeHtml(runtimeSurface.hubNetwork.headline),
-  "The protocol removes shared-infrastructure assumptions.",
+  "The complete architecture now lives one level down.",
 ];
 let previousReaderPosition = -1;
 for (const marker of readerOrder) {
@@ -1277,11 +1316,15 @@ for (const marker of readerOrder) {
   previousReaderPosition = position;
 }
 if (
-  hubHtml.indexOf('class="runtime-status"') < hubHtml.indexOf(escapeHtml(runtimeSurface.actionWorld.headline))
-  || !hubHtml.includes("Your Hub stays yours.")
+  !hubHtml.includes("Your Hub stays yours.")
   || !hubHtml.includes(escapeHtml(readerContract.guidedSynthesis.supplyChain.steps[0].summary))
+  || !hubHtml.includes('href="/architecture/"')
+  || hubHtml.includes(escapeHtml(runtimeSurface.actionWorld.headline))
+  || hubHtml.includes(escapeHtml(runtimeSurface.hubNetwork.headline))
+  || hubHtml.includes("Start with an Episode")
+  || hubHtml.includes("KFD Runtime 100 and restart qualification")
 ) {
-  throw new Error("homepage first screen must keep runtime status down-level and preserve the Hub ownership promise");
+  throw new Error("homepage must preserve the Hub promise while routing detailed architecture one level down");
 }
 for (const layer of readerContract.layers) {
   if (!hubHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
@@ -1289,13 +1332,13 @@ for (const layer of readerContract.layers) {
   }
 }
 for (const claim of rootReaderClaims) {
-  if (!hubHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
+  if (![hubHtml, hubDetailHtml].some((html) => html.includes(escapeHtml(claim.summary))) || !hubLlms.includes(claim.summary)) {
     throw new Error(`human and agent entries must share reader synthesis: ${claim.summary}`);
   }
 }
 for (const claim of buildchainReaderClaims) {
-  if (!buildchainHomeHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
-    throw new Error(`Buildchain human and agent entries must share reader synthesis: ${claim.summary}`);
+  if (!buildchainDetailHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
+    throw new Error(`Buildchain detail and agent entries must share reader synthesis: ${claim.summary}`);
   }
 }
 for (const retainedCapability of buildchainSynthesis.ownershipBoundary.retainedByHub) {
@@ -1304,7 +1347,6 @@ for (const retainedCapability of buildchainSynthesis.ownershipBoundary.retainedB
   }
 }
 const buildchainReaderOrder = [
-  readerContract.surfacePaths.find((entry) => entry.id === "buildchain").question,
   buildchainSynthesis.heading,
   buildchainSynthesis.trustLoop.heading,
   buildchainSynthesis.hubValue.heading,
@@ -1314,7 +1356,7 @@ const buildchainReaderOrder = [
 ];
 let previousBuildchainReaderPosition = -1;
 for (const marker of buildchainReaderOrder) {
-  const position = buildchainHomeHtml.indexOf(escapeHtml(marker), previousBuildchainReaderPosition + 1);
+  const position = buildchainDetailHtml.indexOf(escapeHtml(marker), previousBuildchainReaderPosition + 1);
   if (position <= previousBuildchainReaderPosition) {
     throw new Error(`Buildchain reader order drifted at: ${marker}`);
   }
@@ -1324,28 +1366,35 @@ if (
   !buildchainHomeHtml.includes('id="buildchain-trust-loop"')
   || !buildchainHomeHtml.includes('data-claim-class="future-picture"')
   || !buildchainHomeHtml.includes('data-claim-class="non-claim"')
-  || buildchainHomeHtml.indexOf("Install and Verify") < buildchainHomeHtml.indexOf(buildchainSynthesis.ownershipBoundary.heading)
+  || !buildchainHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("buildchain", "mechanism/"))}" data-local-href="/buildchain/mechanism/"`)
+  || buildchainHomeHtml.includes("Install and Verify")
+  || buildchainHomeHtml.includes("CLI command registry")
 ) {
-  throw new Error("Buildchain must show its trust loop, future boundary, and Hub ownership before package-owned install detail");
+  throw new Error("Buildchain overview must preserve the trust loop and Hub boundary while routing package detail to /mechanism/");
 }
 for (const source of readerContract.sources) {
   let href;
+  let localHref;
   if (source.kind === "git-document") {
     href = `${source.repository}/blob/${source.ref}/${source.path}`;
   } else if (source.package === "@kungfu-tech/kfd") {
     const match = /^decisions\/KFD-(\d+)\.md$/.exec(source.path);
     href = match ? expectedSurfaceEndpoint("kfd", `${match[1]}/`) : undefined;
+    localHref = match ? `/${match[1]}/` : undefined;
   } else if (source.package === "@kungfu-tech/buildchain") {
     const match = /^docs\/(.+)\.md$/.exec(source.path);
     href = match ? expectedSurfaceEndpoint("buildchain", `docs/${match[1]}/`) : undefined;
   }
-  if (!href || !hubHtml.includes(`href="${escapeHtml(href)}"`)) {
-    throw new Error(`homepage reader synthesis is missing its exact source link: ${source.id}`);
+  if (!href || ![hubDetailHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+    html.includes(`href="${escapeHtml(href)}"`)
+    || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
+  ))) {
+    throw new Error(`human detail surfaces are missing the exact source link: ${source.id}`);
   }
 }
 for (const [label, html, pathEntry, authorityMarker] of [
   ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), core.homepage.headline],
-  ["Buildchain", buildchainHomeHtml, readerContract.surfacePaths.find((entry) => entry.id === "buildchain"), buildchainSite.homepage.title],
+  ["Buildchain", buildchainHomeHtml, readerContract.surfacePaths.find((entry) => entry.id === "buildchain"), buildchainSynthesis.heading],
 ]) {
   const questionPosition = html.indexOf(escapeHtml(pathEntry.question));
   const authorityPosition = html.indexOf(escapeHtml(authorityMarker), questionPosition + 1);
@@ -1354,53 +1403,52 @@ for (const [label, html, pathEntry, authorityMarker] of [
   }
 }
 if (
-  !hubHtml.includes(escapeHtml(runtimeSurface.headline)) ||
-  !hubHtml.includes(escapeHtml(runtimeSurface.actionWorld.headline)) ||
-  !hubHtml.includes(escapeHtml(runtimeSurface.hubNetwork.headline)) ||
-  !hubHtml.includes("KFD responsibility boundary") ||
-  !hubHtml.includes("Delivery") ||
-  !hubHtml.includes("Admission") ||
-  !hubHtml.includes("Occurrence") ||
-  !hubHtml.includes("Completion") ||
-  !hubHtml.includes("Authentication") ||
-  !hubHtml.includes("Authority") ||
-  !hubHtml.includes("Start with an Episode") ||
-  !hubHtml.includes("No public registry install is claimed yet") ||
-  !hubHtml.includes("KFD Runtime 100 and restart qualification") ||
-  !hubHtml.includes("reference-adopter") ||
-  !hubHtml.includes(">Principles</p>") ||
-  !hubHtml.includes(">First load-bearing layer</p>") ||
-  !hubHtml.includes(">Runtime substrate proof</p>") ||
-  !hubHtml.includes(">Kungfu Tech</a>") ||
-  !hubHtml.includes('href="https://kungfu.tech"')
+  !hubDetailHtml.includes(escapeHtml(runtimeSurface.actionWorld.headline)) ||
+  !hubDetailHtml.includes(escapeHtml(runtimeSurface.hubNetwork.headline)) ||
+  !hubDetailHtml.includes("KFD responsibility boundary") ||
+  !hubDetailHtml.includes("Delivery") ||
+  !hubDetailHtml.includes("Admission") ||
+  !hubDetailHtml.includes("Occurrence") ||
+  !hubDetailHtml.includes("Completion") ||
+  !hubDetailHtml.includes("Authentication") ||
+  !hubDetailHtml.includes("Authority") ||
+  !hubDetailHtml.includes("Start with an Episode") ||
+  !hubDetailHtml.includes("No public registry install is claimed yet") ||
+  !hubDetailHtml.includes("KFD Runtime 100 and restart qualification") ||
+  !hubDetailHtml.includes("reference-adopter") ||
+  !hubDetailHtml.includes(">Principles</p>") ||
+  !hubDetailHtml.includes(">First load-bearing layer</p>") ||
+  !hubDetailHtml.includes(">Runtime substrate proof</p>") ||
+  !hubDetailHtml.includes(">Kungfu Tech</a>") ||
+  !hubDetailHtml.includes('href="https://kungfu.tech"')
 ) {
-  throw new Error("human homepage must lead with the embeddable runtime path and retain its release-trust chain");
+  throw new Error("architecture detail must retain the complete embeddable runtime and release-trust chain");
 }
 for (const source of [runtimeSurface.architectureSources.kungfu, runtimeSurface.architectureSources.kfd]) {
   for (const document of source.documents) {
     const href = `${source.repository}/blob/${source.commit}/${document.path}`;
-    if (!hubHtml.includes(`href="${escapeHtml(href)}"`)) {
-      throw new Error(`homepage architecture must link its exact semantic source: ${document.path}`);
+    if (!hubDetailHtml.includes(`href="${escapeHtml(href)}"`)) {
+      throw new Error(`architecture detail must link its exact semantic source: ${document.path}`);
     }
   }
 }
 for (const quickstart of runtimeSurface.quickstarts) {
   const sourceHref = `${runtimeSurface.source.repository}/blob/${runtimeSurface.source.sourceCommit}/${quickstart.sourcePath}`;
-  if (!hubHtml.includes(`<pre><code>${escapeHtml(quickstart.command)}</code></pre>`) || !hubHtml.includes(`href="${escapeHtml(sourceHref)}"`)) {
-    throw new Error(`homepage quickstart must bind ${quickstart.language} to the exact reviewed source`);
+  if (!hubDetailHtml.includes(`<pre><code>${escapeHtml(quickstart.command)}</code></pre>`) || !hubDetailHtml.includes(`href="${escapeHtml(sourceHref)}"`)) {
+    throw new Error(`architecture quickstart must bind ${quickstart.language} to the exact reviewed source`);
   }
 }
 if (
-  !hubHtml.includes(`href="${escapeHtml(runtimeSurface.source.pullRequest)}"`) ||
-  !hubHtml.includes('href="/runtime.json"') ||
-  hubHtml.includes("npm install @kungfu-tech/opencode-kungfu")
+  !hubDetailHtml.includes(`href="${escapeHtml(runtimeSurface.source.pullRequest)}"`) ||
+  !hubDetailHtml.includes('href="/runtime.json"') ||
+  hubDetailHtml.includes("npm install @kungfu-tech/opencode-kungfu")
 ) {
-  throw new Error("homepage must expose exact source and machine facts without inventing a public package install");
+  throw new Error("architecture detail must expose exact source and machine facts without inventing a public package install");
 }
 if (hubHtml.includes("Open product generation substrate")) {
   throw new Error("homepage should not render a page-kicker eyebrow because it has no parent page");
 }
-if (/<a\b[^>]*\shref="\/(?:kfd|buildchain|core)\/"/.test(hubHtml)) {
+if (/<a\b[^>]*\shref="\/(?:kfd|buildchain|core)\/"/.test(hubDetailHtml)) {
   throw new Error("homepage cross-surface links must use channel surface hosts; local paths are only allowed as data-local-href fallbacks");
 }
 for (const [surfaceId, actionLabel] of [
@@ -1416,8 +1464,8 @@ for (const [surfaceId, actionLabel] of [
   const href = expectedSurfaceHref(surfaceId);
   const titleLink = `<h3><a href="${escapeHtml(href)}" data-local-href="${escapeHtml(surfacePaths[surfaceId])}">${escapeHtml(surface.label)}</a></h3>`;
   const actionLink = `<a class="card-action" href="${escapeHtml(href)}" data-local-href="${escapeHtml(surfacePaths[surfaceId])}">${escapeHtml(actionLabel)}</a>`;
-  if (!hubHtml.includes(titleLink) || !hubHtml.includes(actionLink)) {
-    throw new Error(`homepage mechanism card must link to ${href}`);
+  if (!hubDetailHtml.includes(titleLink) || !hubDetailHtml.includes(actionLink)) {
+    throw new Error(`architecture mechanism card must link to ${href}`);
   }
 }
 for (const [className, href, label] of [
@@ -1429,8 +1477,8 @@ for (const [className, href, label] of [
   const surfacePaths = { kfd: "/kfd/", buildchain: "/buildchain/", core: "/core/" };
   const localHref = surfacePaths[className] ? ` data-local-href="${escapeHtml(surfacePaths[className])}"` : "";
   const hotspot = `<a class="map-hotspot ${className}" href="${escapeHtml(href)}"${localHref} aria-label="${escapeHtml(label)}"></a>`;
-  if (!hubHtml.includes(hotspot)) {
-    throw new Error(`homepage substrate map is missing hotspot: ${hotspot}`);
+  if (!hubDetailHtml.includes(hotspot)) {
+    throw new Error(`architecture substrate map is missing hotspot: ${hotspot}`);
   }
 }
 for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
@@ -1461,6 +1509,26 @@ for (const [label, html, state] of [
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
 const kfdLlms = fs.readFileSync("dist/kfd/llms.txt", "utf8");
+const visibleWordCount = (html) => html
+  .replace(/<style[\s\S]*?<\/style>/gi, " ")
+  .replace(/<script[\s\S]*?<\/script>/gi, " ")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/&(?:[a-z]+|#\d+);/gi, " ")
+  .trim()
+  .split(/\s+/)
+  .filter(Boolean).length;
+for (const [label, html, maximum] of [
+  ["Hub", hubHtml, 650],
+  ["Core", coreHtml, 350],
+  ["Buildchain", buildchainHomeHtml, 550],
+  ["KFD", kfdHomeHtml, 400],
+  ["Papers", papersIndex, 350],
+]) {
+  const count = visibleWordCount(html);
+  if (count > maximum) {
+    throw new Error(`${label} overview exceeds its progressive-disclosure budget: ${count} > ${maximum} words`);
+  }
+}
 const kfdReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "kfd");
 const kfdQuestionPosition = kfdHomeHtml.indexOf(escapeHtml(kfdReaderPath.question));
 const kfdAuthorityPosition = kfdHomeHtml.indexOf(escapeHtml(kfdSite.homepage.title), kfdQuestionPosition + 1);
@@ -1518,12 +1586,19 @@ for (const sectionId of kfdSite.homepage.displayPlan.support) {
   if (!section) {
     throw new Error(`KFD displayPlan references missing homepage section: ${sectionId}`);
   }
-  if (!kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdHomeHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
-    throw new Error(`KFD homepage did not render support section: ${sectionId}`);
+  if (!kfdDetailHtml.includes(`data-kfd-section="${escapeHtml(sectionId)}"`) || !kfdDetailHtml.includes(`<h2>${escapeHtml(section.title)}</h2>`)) {
+    throw new Error(`KFD decisions page did not render support section: ${sectionId}`);
   }
 }
-if (!kfdHomeHtml.includes("Agent Quickstart") || !kfdHomeHtml.includes("Decision metadata")) {
-  throw new Error("KFD homepage must render support sections");
+if (
+  !kfdDetailHtml.includes("Agent Quickstart")
+  || !kfdDetailHtml.includes("Decision metadata")
+  || kfdHomeHtml.includes("Agent Quickstart")
+  || kfdHomeHtml.includes("Decision metadata")
+  || kfdHomeHtml.includes("Current decisions")
+  || !kfdHomeHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "decisions/"))}" data-local-href="/kfd/decisions/"`)
+) {
+  throw new Error("KFD overview must route complete standards and metadata to /decisions/");
 }
 if (
   !kfdHomeHtml.includes('class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;"')
@@ -1532,10 +1607,10 @@ if (
   throw new Error("KFD future picture must retain its scoped hero typography");
 }
 if (
-  kfdHomeHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
-  || !kfdHomeHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
-  || !kfdHomeHtml.includes('<div class="stack doc-content" style="margin-top: 18px;">')
-  || !kfdHomeHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
+  kfdDetailHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
+  || !kfdDetailHtml.includes('<h3 id="why-kfd-4-is-the-first-derived-operator"')
+  || !kfdDetailHtml.includes('<div class="stack doc-content" style="margin-top: 18px;">')
+  || !kfdDetailHtml.includes('<pre><code class="language-text">KFD-1 makes timelines evidentiary.')
 ) {
   throw new Error("KFD foundation explanation must render bundle block Markdown with document code-block styling");
 }
@@ -1549,7 +1624,7 @@ if (kfdHomeHtml.includes("<h2>Machine facts</h2>") || kfdHomeHtml.includes(`<dd>
 if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`)) {
   throw new Error("KFD renderer contract must not render as ordinary homepage content");
 }
-if (kfdHomeHtml.includes('href="docs/')) {
+if (kfdHomeHtml.includes('href="docs/') || kfdDetailHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
 }
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
@@ -1558,11 +1633,11 @@ const kfdFoundationAliasHtml = fs.readFileSync("dist/foundation/index.html", "ut
 if (kfdFoundationAliasHtml !== kfdFoundationCanonicalHtml) {
   throw new Error("KFD foundation subdomain route alias drifted: dist/foundation/index.html");
 }
-if (!kfdHomeHtml.includes(`href="${escapeHtml(kfdFoundationPath)}"`)) {
-  throw new Error(`KFD homepage is missing the bundle-owned foundation route: ${kfdFoundationPath}`);
+if (!kfdDetailHtml.includes(`href="${escapeHtml(kfdFoundationPath)}"`)) {
+  throw new Error(`KFD decisions page is missing the bundle-owned foundation route: ${kfdFoundationPath}`);
 }
-if (kfdHomeHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/docs/foundation-model.md")) {
-  throw new Error("KFD homepage must route the foundation model to the rendered site page, not GitHub");
+if (kfdDetailHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/docs/foundation-model.md")) {
+  throw new Error("KFD decisions page must route the foundation model to the rendered site page, not GitHub");
 }
 const foundationHeadings = [...kfdSite.foundationPage.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
 if (
@@ -1593,7 +1668,7 @@ if (fs.readFileSync("dist/formal/index.html", "utf8") !== kfdFormalModelCanonica
   throw new Error("KFD formal model subdomain route alias drifted: dist/formal/index.html");
 }
 if (
-  !kfdHomeHtml.includes(`href="${escapeHtml(kfdFormalModelPath)}"`)
+  !kfdDetailHtml.includes(`href="${escapeHtml(kfdFormalModelPath)}"`)
   || !kfdFormalModelCanonicalHtml.includes('aria-label="Formal model sections"')
   || !kfdFormalModelCanonicalHtml.includes(`<a href="${escapeHtml(kfdFormalModelPath)}" aria-current="page">Formal model</a>`)
   || !kfdFormalModelCanonicalHtml.includes(escapeHtml(kfdSite.formalPage.sourcePath))
@@ -1606,7 +1681,7 @@ if (fs.readFileSync("dist/terminology/index.html", "utf8") !== kfdTerminologyCan
   throw new Error("KFD terminology subdomain route alias drifted: dist/terminology/index.html");
 }
 if (
-  !kfdHomeHtml.includes(`href="${escapeHtml(kfdTerminologyPath)}"`)
+  !kfdDetailHtml.includes(`href="${escapeHtml(kfdTerminologyPath)}"`)
   || !kfdTerminologyCanonicalHtml.includes('aria-label="Terminology sections"')
   || !kfdTerminologyCanonicalHtml.includes(`<a href="${escapeHtml(kfdTerminologyPath)}" aria-current="page">Terminology</a>`)
   || !kfdTerminologyCanonicalHtml.includes('href="/terminology.json"')
@@ -1640,8 +1715,8 @@ const kfdCasesAliasHtml = fs.readFileSync("dist/cases/index.html", "utf8");
 if (kfdCasesAliasHtml !== kfdCasesCanonicalHtml) {
   throw new Error("KFD cases subdomain route alias drifted: dist/cases/index.html");
 }
-if (!kfdHomeHtml.includes(`href="${escapeHtml(kfdCasesPath)}"`)) {
-  throw new Error(`KFD homepage is missing the bundle-owned cases route: ${kfdCasesPath}`);
+if (!kfdDetailHtml.includes(`href="${escapeHtml(kfdCasesPath)}"`)) {
+  throw new Error(`KFD decisions page is missing the bundle-owned cases route: ${kfdCasesPath}`);
 }
 const casesHeadings = [...kfdSite.casesPage.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
 if (
@@ -1677,28 +1752,28 @@ if (kfdCandidateIndexAliasHtml !== kfdCandidateIndexCanonicalHtml) {
   throw new Error("KFD candidate index alias drifted: dist/drafts/index.html");
 }
 if (
-  !kfdHomeHtml.includes(`href="${escapeHtml(kfdCandidateIndexPath)}"`)
-  || kfdHomeHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/drafts/action-state-separation.md")
+  !kfdDetailHtml.includes(`href="${escapeHtml(kfdCandidateIndexPath)}"`)
+  || kfdDetailHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/drafts/action-state-separation.md")
 ) {
-  throw new Error("KFD homepage must route candidates to rendered site pages");
+  throw new Error("KFD decisions page must route candidates to rendered site pages");
 }
-const currentDecisionsPosition = kfdHomeHtml.indexOf('id="current-decisions"');
-const currentCandidatesPosition = kfdHomeHtml.indexOf('data-kfd-section="current-candidates"');
+const currentDecisionsPosition = kfdDetailHtml.indexOf('id="current-decisions"');
+const currentCandidatesPosition = kfdDetailHtml.indexOf('data-kfd-section="current-candidates"');
 if (
   currentDecisionsPosition < 0
   || currentCandidatesPosition < currentDecisionsPosition
-  || !kfdHomeHtml.slice(currentDecisionsPosition, currentCandidatesPosition).includes(
+  || !kfdDetailHtml.slice(currentDecisionsPosition, currentCandidatesPosition).includes(
     '<p class="eyebrow">numbered authority</p>',
   )
-  || !kfdHomeHtml.slice(currentCandidatesPosition).includes(
+  || !kfdDetailHtml.slice(currentCandidatesPosition).includes(
     '<p class="eyebrow">non-normative</p>',
   )
 ) {
-  throw new Error("KFD homepage must place non-normative candidates after numbered authority");
+  throw new Error("KFD decisions page must place non-normative candidates after numbered authority");
 }
-const decisionMetadataPosition = kfdHomeHtml.indexOf('data-kfd-section="decision-metadata"');
-const decisionMetadataEnd = kfdHomeHtml.indexOf("</section>", decisionMetadataPosition);
-const decisionMetadataHtml = kfdHomeHtml.slice(decisionMetadataPosition, decisionMetadataEnd);
+const decisionMetadataPosition = kfdDetailHtml.indexOf('data-kfd-section="decision-metadata"');
+const decisionMetadataEnd = kfdDetailHtml.indexOf("</section>", decisionMetadataPosition);
+const decisionMetadataHtml = kfdDetailHtml.slice(decisionMetadataPosition, decisionMetadataEnd);
 for (const expectedLink of [
   'href="https://github.com/kungfu-systems/kfd"',
   'href="#current-decisions"',
@@ -1798,8 +1873,8 @@ for (const formalCandidate of kfdCandidateFormalPages) {
     throw new Error(`KFD formal candidate page has unresolved package markdown links: ${formalCandidate.id}`);
   }
 }
-if (!kfdHomeHtml.includes("Adoption boundary")) {
-  throw new Error("KFD homepage must render the adoption boundary");
+if (!kfdDetailHtml.includes("Adoption boundary")) {
+  throw new Error("KFD decisions page must render the adoption boundary");
 }
 for (const entry of kfdRegistry.entries) {
   const number = String(entry.number);
@@ -1812,8 +1887,8 @@ for (const entry of kfdRegistry.entries) {
     expectedLinks.push(`<a class="card-action secondary" href="/${escapeHtml(number)}/usage/">Usage notes</a>`);
   }
   for (const expectedLink of expectedLinks) {
-    if (!kfdHomeHtml.includes(expectedLink)) {
-      throw new Error(`KFD homepage is missing current decision navigation: ${expectedLink}`);
+    if (!kfdDetailHtml.includes(expectedLink)) {
+      throw new Error(`KFD decisions page is missing current decision navigation: ${expectedLink}`);
     }
   }
 }
@@ -1834,15 +1909,15 @@ for (const layer of kfdSite.homepage.foundation.layers) {
   }
   const number = match[1];
   const href = `href="/${number}/"`;
-  if (!kfdHomeHtml.includes(href)) {
-    throw new Error(`KFD home page is missing decision link: ${href}`);
+  if (!kfdDetailHtml.includes(href)) {
+    throw new Error(`KFD decisions page is missing decision link: ${href}`);
   }
   const titleLink = `<h3><a href="/${number}/">${escapeHtml(layer.layer)}</a></h3>`;
-  if (!kfdHomeHtml.includes(titleLink)) {
+  if (!kfdDetailHtml.includes(titleLink)) {
     throw new Error(`KFD foundation triad title is missing link: ${titleLink}`);
   }
   const decisionLink = `<dd><p><a href="/${number}/">${escapeHtml(layer.decision)}</a></p></dd>`;
-  if (!kfdHomeHtml.includes(decisionLink)) {
+  if (!kfdDetailHtml.includes(decisionLink)) {
     throw new Error(`KFD foundation triad decision label is missing link: ${decisionLink}`);
   }
 }
@@ -2020,44 +2095,44 @@ grep -q 'libkungfu.dev' dist/index.html
 grep -q 'Open developer and agent substrate hub' dist/index.html
 grep -q 'core.libkungfu.dev' dist/core/index.html
 grep -q 'Record once. Observe live. Recover from evidence.' dist/core/index.html
-grep -q 'Append-only mmap Episode journal' dist/core/index.html
-grep -q 'Storage is the bus' dist/core/index.html
-grep -q 'Visibility is not durability.' dist/core/index.html
-grep -q 'Spec and source contract' dist/core/index.html
+grep -q 'Append-only mmap Episode journal' dist/core/runtime/index.html
+grep -q 'Storage is the bus' dist/core/runtime/index.html
+grep -q 'Visibility is not durability.' dist/core/runtime/index.html
+grep -q 'Spec and source contract' dist/core/runtime/index.html
 grep -q 'libkungfu-core-runtime-surface' dist/core/manifest.json
 grep -q 'Record once. Observe live. Recover from evidence.' dist/core/llms.txt
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
-grep -q 'Projection source' dist/index.html
-grep -q 'pinned release artifacts' dist/index.html
+grep -q 'Projection source' dist/architecture/index.html
+grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
-grep -q '@kungfu-tech/buildchain' dist/buildchain/index.html
-grep -q '2.14.13' dist/buildchain/index.html
+grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
+grep -q '2.14.13' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
-grep -q 'Bundle facts' dist/buildchain/index.html
-grep -q 'Install and Verify' dist/buildchain/index.html
-grep -q 'Use Buildchain' dist/buildchain/index.html
-grep -q 'Site Fact Source' dist/buildchain/index.html
-grep -q 'class="doc-global-nav"' dist/buildchain/index.html
-grep -q 'homepage-content-contract' dist/buildchain/index.html
-grep -q 'Buildchain Release Passport' dist/buildchain/index.html
-grep -q 'CLI command registry' dist/buildchain/index.html
-grep -q 'workflow-registry.json' dist/buildchain/index.html
-grep -q 'buildchain.release.json' dist/buildchain/index.html
+grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
+grep -q 'Install and Verify' dist/buildchain/mechanism/index.html
+grep -q 'Use Buildchain' dist/buildchain/mechanism/index.html
+grep -q 'Site Fact Source' dist/buildchain/mechanism/index.html
+grep -q 'class="doc-global-nav"' dist/buildchain/mechanism/index.html
+grep -q 'homepage-content-contract' dist/buildchain/mechanism/index.html
+grep -q 'Buildchain Release Passport' dist/buildchain/mechanism/index.html
+grep -q 'CLI command registry' dist/buildchain/mechanism/index.html
+grep -q 'workflow-registry.json' dist/buildchain/mechanism/index.html
+grep -q 'buildchain.release.json' dist/buildchain/mechanism/index.html
 grep -q '@kungfu-tech/kfd' dist/kfd/manifest.json
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
-grep -q 'non-drifting facts' dist/kfd/index.html
+grep -q 'non-drifting facts' dist/kfd/decisions/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
 grep -q 'KFD-4' dist/kfd/4/index.html
-if grep -q '0.0.0-fixture' dist/buildchain/index.html; then
+if grep -q '0.0.0-fixture' dist/buildchain/mechanism/index.html; then
   echo "error: Buildchain page still contains fixture version" >&2
   exit 1
 fi
-if grep -q 'Documentation pages\|Explore all Buildchain pages' dist/buildchain/index.html; then
-  echo "error: Buildchain homepage should use the sidebar navigation instead of child-page card sections" >&2
+if grep -q 'Documentation pages\|Explore all Buildchain pages' dist/buildchain/mechanism/index.html; then
+  echo "error: Buildchain mechanism page should use the sidebar navigation instead of child-page card sections" >&2
   exit 1
 fi
-grep -q 'docs_url' dist/core/index.html
+grep -q 'docs_url' dist/core/runtime/index.html
 grep -q 'llms-full.txt' dist/llms.txt
 
 echo "site-libkungfu-dev checks passed"

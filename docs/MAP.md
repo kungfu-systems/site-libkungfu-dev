@@ -1,28 +1,51 @@
+---
+status: active
+period: ongoing
+theme: site-reader-contract
+doc_type: reference
+source_level: local-files
+confidence: high
+sensitivity: public
+evidence_grade: A
+review_state: self-reviewed
+last_reviewed: 2026-07-22
+ai_provenance:
+  model_family: GPT-5
+  product: Codex
+  generated_at: 2026-07-22
+  limits: No access to hidden model build or checkpoint identifiers.
+---
+
 # site-libkungfu-dev Map
 
 ## Use The Site
 
 - Start at `https://libkungfu.dev` for the site-owned builder proposition and
   guided continuity-stack synthesis.
+- Continue to `https://libkungfu.dev/architecture/` for the detailed action
+  world, plural-Hub topology, quickstarts, qualification, release-trust map,
+  and source boundary.
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
 - Use `https://core.libkungfu.dev` to understand the libkungfu runtime
-  substrate: one mmap journal as retained evidence and local observation bus,
-  its qualification frontiers, and the secondary spec/source contract.
+  proposition and outcomes; use `https://core.libkungfu.dev/runtime/` for the
+  complete mmap journal, readers, qualification frontiers, semantic boundary,
+  and secondary spec/source contract.
 - Use `https://buildchain.libkungfu.dev` to see how KFD-3 value surfaces and
-  KFD-2 trust evidence become one release-bound Hub admission surface, then
-  descend into Buildchain-owned Release Passport, release-governance, and
-  deployment-operation facts.
+  KFD-2 trust evidence become one release-bound Hub admission surface; use
+  `https://buildchain.libkungfu.dev/mechanism/` for Buildchain-owned Release
+  Passport, CLI, workflow, release-governance, and deployment-operation facts.
 - Use `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.svg` for
   Buildchain-owned hosted README badges and
   `https://buildchain.libkungfu.dev/badges/v1/{badge}/{state}.json` for the
   matching Shields-compatible payload.
-- Use `https://kfd.libkungfu.dev` for Kung Fu Decisions, KFD-owned standard
-  metadata, schemas, and stable decision pages.
-- Use `https://papers.libkungfu.dev` for publication archive registry pages:
-  human paper entries, PDFs, mutable latest routes, immutable version artifact
-  prefixes, and agent-readable archive manifests.
+- Use `https://kfd.libkungfu.dev` for the KFD continuity question and foundation
+  triad; use `https://kfd.libkungfu.dev/decisions/` for KFD-owned standard
+  metadata, schemas, candidates, and stable decision navigation.
+- Use `https://papers.libkungfu.dev` for the paper reading shelf and PDF-first
+  entries; use `https://papers.libkungfu.dev/archive/` for source revisions,
+  versions, immutable artifact prefixes, passports, and archive manifests.
 - Use `/llms.txt` and `/manifest.json` as stable machine entries on each owning
   surface, including the Core subdomain.
 
@@ -39,12 +62,11 @@ The stable reading order is:
 4. **Machine evidence** — source refs, versions, digests, qualification,
    claim boundaries, and stable routes.
 
-On the hub, read the continuity stack before the detailed action-world and
-plural-Hub diagrams. On Core and KFD, the first screen states the reader
-question and links directly to the package- or fixture-owned authority below
-it. On Buildchain, read the KFD-2/3 trust loop, Builder Hub value, ecosystem
-boundary, and Hub-ownership promise before the package-owned mechanism. No
-down-level content is removed by this ordering.
+Each primary homepage stops after the proposition, minimum synthesis, and one
+clear continuation choice. Detailed action-world, runtime, package, decision,
+and publication-evidence content lives at the stable depth routes listed above.
+No down-level content is removed: the overview chooses what a first-time reader
+must understand, while the depth page preserves the complete cited authority.
 
 ## Work In This Repository
 
