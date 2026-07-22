@@ -15,10 +15,31 @@
 Source for the planned Kungfu developer and agent substrate hub at
 `https://libkungfu.dev`.
 
-This repository is a rendering layer. It may own visual structure, routing,
-homepage narrative, and static generation code, but it must not become a second
-source of truth for core specs, CLI flags, workflow inputs, release state
-machines, artifact schemas, or provenance facts.
+This repository owns the site's reader contract: first-screen propositions,
+audience framing, cross-surface synthesis, reading order, progressive
+disclosure, navigation, visual composition, and static generation. It is not a
+second source of truth for runtime semantics, KFD decisions, CLI flags,
+workflow inputs, release state machines, artifact schemas, qualification, or
+provenance facts.
+
+## Reader Contract
+
+Every primary surface follows the same four-layer reading model:
+
+1. a site-owned first screen answers why the surface matters to its reader;
+2. site-owned guided synthesis connects the relevant Kungfu, KFD, and
+   Buildchain facts without becoming normative;
+3. pinned upstream pages and packages remain the technical authority; and
+4. manifests, agent indexes, source refs, versions, digests, qualification,
+   and claim boundaries expose the machine evidence.
+
+The human pages, `/llms.txt`, `/manifest.json`, and surface manifests must carry
+the same reader paths and claim boundaries. Every site-authored technical
+synthesis clause must cite a source from
+`src/fixtures/site-manifest.json#readerContract.sources`. Progressive
+disclosure may move detail down-level; it may not delete upstream content,
+break a stable route, or upgrade an alpha contract, reference implementation,
+or future picture into a present ecosystem claim.
 
 ## Surfaces
 
@@ -38,7 +59,9 @@ machines, artifact schemas, or provenance facts.
 
 ## Source Boundary
 
-The generated hub page consumes fixture manifests under `src/fixtures/`. Its
+The site owns how readers enter and traverse the evidence, while upstream
+projects own what the evidence means. The generated hub page consumes fixture
+manifests under `src/fixtures/`. Its
 `/runtime.json` projection pins the reviewed Kungfu source, Project Cut, KFD
 Runtime 100 suite root, package availability, qualification, and claim
 boundary; it does not publish packages or become the runtime/conformance

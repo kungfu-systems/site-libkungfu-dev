@@ -16,7 +16,7 @@
     "referencePackagePath": "examples/opencode-kungfu"
   },
   "architectureSources": {
-    "projectionRule": "The site owns visual composition only. Kungfu owns Fact-Episode-Action runtime semantics; KFD owns cross-Hub protocol semantics.",
+    "projectionRule": "The site owns reader framing, non-normative synthesis, navigation, and visual composition. Kungfu owns Fact-Episode-Action runtime semantics; KFD owns cross-Hub protocol semantics.",
     "kungfu": {
       "repository": "https://github.com/kungfu-systems/kungfu",
       "commit": "1f3893fae1a7a666d8abe736cd9563128f48549b",
@@ -25,6 +25,11 @@
           "path": "docs/architecture/fact-episode-action-runtime.md",
           "sha256": "5f7add43ae9fdc504680ee71067f64db2a7c47a4586c36585a7537b4b9ae95e5",
           "owns": "Fact, Episode, Action Geometry, journal authority, and projection boundaries"
+        },
+        {
+          "path": "docs/concepts/project-cut-product-loop.md",
+          "sha256": "edc59fbaf5ecfc1417bb7296695345c7589c55899f737c07775a6b3e0216b6f4",
+          "owns": "Initiative, Assignment, settlement, Project Cut, and progressive disclosure"
         },
         {
           "path": "docs/concepts/system-overview.md",

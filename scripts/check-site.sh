@@ -25,6 +25,7 @@ const requiredBaseFiles = [
   "src/fixtures/core-runtime-surface.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
+  "docs/versioning.md",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
   "src/fixtures/buildchain-badge-endpoint-registry.json",
@@ -337,6 +338,119 @@ const paperLocks = expectedPaperPackages.map((entry) => ({
 if (site.contract !== "libkungfu-dev-site-manifest-fixture") {
   throw new Error("site fixture contract mismatch");
 }
+const versioningPolicy = fs.readFileSync("docs/versioning.md", "utf8");
+if (
+  !versioningPolicy.includes("libkungfu-dev-reader-contract/v1")
+  || !versioningPolicy.includes("| 2026-07-22 | open-minor | `site-manifest/v1` |")
+  || !versioningPolicy.includes("while preserving all existing routes, upstream content, and claim boundaries")
+) {
+  throw new Error("KFD-1 version review must register the additive reader-contract impact");
+}
+const readerContract = site.readerContract;
+if (
+  readerContract?.contract !== "libkungfu-dev-reader-contract/v1"
+  || readerContract.owner !== "site-libkungfu-dev"
+  || readerContract.layers?.map((entry) => entry.id).join(",") !== "first-screen,guided-synthesis,upstream-authority,machine-evidence"
+  || readerContract.surfacePaths?.map((entry) => entry.id).join(",") !== "hub,core,kfd,buildchain"
+) {
+  throw new Error("site reader contract is missing its stable owner, four layers, or primary surface paths");
+}
+if (
+  site.sourceBoundary.siteRole !== "reader contract, guided synthesis, visual composition, routing, and rendering"
+  || !site.sourceBoundary.rule.includes("Every technical or release claim must bind")
+  || !site.sourceBoundary.rule.includes("remain upstream-owned")
+) {
+  throw new Error("site source boundary must separate reader-contract ownership from upstream fact authority");
+}
+const readerClaimClassIds = new Set(readerContract.claimClasses.map((entry) => entry.id));
+const expectedReaderClaimClasses = [
+  "site-synthesis",
+  "upstream-fact",
+  "reference-implementation",
+  "future-picture",
+  "non-claim",
+];
+for (const claimClass of expectedReaderClaimClasses) {
+  if (!readerClaimClassIds.has(claimClass)) {
+    throw new Error(`reader contract missing claim class: ${claimClass}`);
+  }
+}
+const readerSourceById = new Map(readerContract.sources.map((entry) => [entry.id, entry]));
+if (readerSourceById.size !== readerContract.sources.length) {
+  throw new Error("reader contract source ids must be unique");
+}
+const packageAuthority = new Map([
+  ["@kungfu-tech/kfd", kfdPackage],
+  ["@kungfu-tech/buildchain", buildchainPackage],
+]);
+const architectureAuthority = [
+  runtimeSurface.architectureSources.kungfu,
+  runtimeSurface.architectureSources.kfd,
+];
+for (const source of readerContract.sources) {
+  if (!source.id || !source.owner || !source.path || !/^[0-9a-f]{64}$/.test(source.sha256 || "")) {
+    throw new Error(`reader contract source is incomplete: ${source.id || "unknown"}`);
+  }
+  if (source.kind === "package-document") {
+    const authorityPackage = packageAuthority.get(source.package);
+    const packagePath = `node_modules/${source.package}/${source.path}`;
+    if (!authorityPackage || authorityPackage.version !== source.version || !fs.existsSync(packagePath)) {
+      throw new Error(`reader contract package source is not pinned to an installed authority: ${source.id}`);
+    }
+    if (sha256File(packagePath) !== `sha256:${source.sha256}`) {
+      throw new Error(`reader contract package source digest drifted: ${source.id}`);
+    }
+    continue;
+  }
+  if (source.kind === "git-document") {
+    const authority = architectureAuthority.find((entry) => (
+      entry.repository === source.repository
+      && entry.commit === source.ref
+      && entry.documents.some((document) => document.path === source.path && document.sha256 === source.sha256)
+    ));
+    if (!authority) {
+      throw new Error(`reader contract git source is not bound by the runtime architecture fixture: ${source.id}`);
+    }
+    continue;
+  }
+  throw new Error(`reader contract source kind is unsupported: ${source.kind}`);
+}
+const readerClaims = [
+  ...readerContract.guidedSynthesis.conceptualChain,
+  ...readerContract.guidedSynthesis.supplyChain.steps,
+  {
+    ...readerContract.guidedSynthesis.hubConsequence,
+    summary: readerContract.guidedSynthesis.hubConsequence.summary,
+  },
+  {
+    claimClass: readerContract.guidedSynthesis.supplyChain.claimClass,
+    sourceRefs: readerContract.guidedSynthesis.supplyChain.sourceRefs,
+    summary: readerContract.guidedSynthesis.supplyChain.nonClaim,
+  },
+];
+for (const claim of readerClaims) {
+  if (!readerClaimClassIds.has(claim.claimClass) || !Array.isArray(claim.sourceRefs) || claim.sourceRefs.length === 0) {
+    throw new Error(`reader synthesis claim is missing a class or source: ${claim.summary}`);
+  }
+  for (const sourceRef of claim.sourceRefs) {
+    if (!readerSourceById.has(sourceRef)) {
+      throw new Error(`reader synthesis claim references an unknown source: ${sourceRef}`);
+    }
+  }
+  if (claim.summary && renderSiteSource.includes(claim.summary)) {
+    throw new Error(`reader synthesis must come from the governed fixture, not renderer prose: ${claim.summary}`);
+  }
+}
+for (const entry of [site.homepage, ...readerContract.surfacePaths]) {
+  if (!readerClaimClassIds.has(entry.claimClass) || !Array.isArray(entry.sourceRefs) || entry.sourceRefs.length === 0) {
+    throw new Error(`reader framing is missing a claim class or source: ${entry.headline || entry.id}`);
+  }
+  for (const sourceRef of entry.sourceRefs) {
+    if (!readerSourceById.has(sourceRef)) {
+      throw new Error(`reader framing references an unknown source: ${sourceRef}`);
+    }
+  }
+}
 if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
   throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
 }
@@ -397,6 +511,13 @@ if (
   !/\.action-step\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)
 ) {
   throw new Error("architecture projection drifted from its exact Kungfu/KFD sources, card alignment, or visual contract");
+}
+if (
+  !runtimeSurface.architectureSources.projectionRule.includes("reader framing")
+  || !runtimeSurface.architectureSources.projectionRule.includes("Kungfu owns Fact-Episode-Action runtime semantics")
+  || !runtimeSurface.architectureSources.projectionRule.includes("KFD owns cross-Hub protocol semantics")
+) {
+  throw new Error("runtime projection rule must separate site reader ownership from Kungfu and KFD semantic authority");
 }
 if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
   throw new Error("core fixture contract mismatch");
@@ -565,12 +686,17 @@ for (const [name, generatedManifest] of [
 if (manifest.sourceBoundary.truthOwner !== "upstream-evidence-and-manifests") {
   throw new Error("dist manifest source boundary drifted");
 }
+if (JSON.stringify(manifest.readerContract) !== JSON.stringify(readerContract)) {
+  throw new Error("dist manifest must preserve the complete site-owned reader contract");
+}
 if (
   runtimeProjection.contract !== runtimeSurface.contract ||
   runtimeProjection.canonicalHost !== expectedSurfaceHost("hub") ||
   runtimeProjection.machineEntry !== expectedSurfaceEndpoint("hub", "runtime.json") ||
   runtimeProjection.source?.sourceCommit !== runtimeSurface.source.sourceCommit ||
-  runtimeProjection.sourceBoundary?.siteRole !== "rendering, routing, and agent discovery"
+  runtimeProjection.sourceBoundary?.siteRole !== site.sourceBoundary.siteRole ||
+  runtimeProjection.readerContract?.contract !== readerContract.contract ||
+  JSON.stringify(runtimeProjection.readerContract?.guidedSynthesis) !== JSON.stringify(readerContract.guidedSynthesis)
 ) {
   throw new Error("generated runtime projection drifted from its pinned fixture or channel");
 }
@@ -599,6 +725,9 @@ if (
   || coreManifest.canonicalHost !== expectedSurfaceHost("core")
   || coreManifest.source?.path !== "src/fixtures/core-runtime-surface.json"
   || coreManifest.source?.ref !== core.sourceRef
+  || coreManifest.readerContract?.contract !== readerContract.contract
+  || coreManifest.readerContract?.path?.id !== "core"
+  || JSON.stringify(coreManifest.readerContract?.layers) !== JSON.stringify(readerContract.layers)
   || JSON.stringify(coreManifest.homepage) !== JSON.stringify(core.homepage)
   || JSON.stringify(coreManifest.architecture) !== JSON.stringify(core.architecture)
   || JSON.stringify(coreManifest.outcomes) !== JSON.stringify(core.outcomes)
@@ -627,6 +756,10 @@ for (const evidence of core.evidence || []) {
 }
 const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
+const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
+if (!coreLlms.includes(coreReaderPath.question) || !coreLlms.includes(coreReaderPath.promise)) {
+  throw new Error("Core human and agent entries must share the site-owned reader path");
+}
 for (const expectedText of [
   core.homepage.headline,
   core.homepage.lead,
@@ -967,6 +1100,16 @@ for (const formalCandidate of kfdCandidateFormalPages) {
 if (kfdAgentManifest.contract !== "kfd-agent-surface") {
   throw new Error("KFD agent manifest contract mismatch");
 }
+if (kfdAgentManifest.sourceBoundary?.siteRole !== site.sourceBoundary.siteRole) {
+  throw new Error("KFD agent manifest must distinguish site reader ownership from KFD fact authority");
+}
+if (
+  kfdAgentManifest.readerContract?.contract !== readerContract.contract
+  || kfdAgentManifest.readerContract?.path?.id !== "kfd"
+  || JSON.stringify(kfdAgentManifest.readerContract?.layers) !== JSON.stringify(readerContract.layers)
+) {
+  throw new Error("KFD agent manifest must preserve the site-owned reader path and four layers");
+}
 if (
   kfdAgentManifest.canonicalHost !== expectedSurfaceHost("kfd") ||
   kfdAgentManifest.humanEntry !== expectedSurfaceHref("kfd") ||
@@ -1056,6 +1199,7 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
   throw new Error("rendered KFD standards contract mismatch");
 }
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
+const hubLlms = fs.readFileSync("dist/llms.txt", "utf8");
 const immutableFoundationPaperHtml = fs.readFileSync(
   "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.7/index.html",
   "utf8",
@@ -1088,6 +1232,63 @@ if (!hubHtml.includes("Public collaboration starts on") || !hubHtml.includes('hr
 }
 if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manifest</h3>")) {
   throw new Error("human homepage should not render machine-entry cards");
+}
+const readerOrder = [
+  escapeHtml(site.homepage.headline),
+  escapeHtml(readerContract.guidedSynthesis.heading),
+  escapeHtml(runtimeSurface.actionWorld.headline),
+  escapeHtml(runtimeSurface.hubNetwork.headline),
+  "The protocol removes shared-infrastructure assumptions.",
+];
+let previousReaderPosition = -1;
+for (const marker of readerOrder) {
+  const position = hubHtml.indexOf(marker);
+  if (position <= previousReaderPosition) {
+    throw new Error(`homepage reader order drifted at: ${marker}`);
+  }
+  previousReaderPosition = position;
+}
+if (
+  hubHtml.indexOf('class="runtime-status"') < hubHtml.indexOf(escapeHtml(runtimeSurface.actionWorld.headline))
+  || !hubHtml.includes("Your Hub stays yours.")
+  || !hubHtml.includes(escapeHtml(readerContract.guidedSynthesis.supplyChain.steps[0].summary))
+) {
+  throw new Error("homepage first screen must keep runtime status down-level and preserve the Hub ownership promise");
+}
+for (const layer of readerContract.layers) {
+  if (!hubHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
+    throw new Error(`human and agent entries must share reader layer: ${layer.label}`);
+  }
+}
+for (const claim of readerClaims) {
+  if (!hubHtml.includes(escapeHtml(claim.summary)) || !hubLlms.includes(claim.summary)) {
+    throw new Error(`human and agent entries must share reader synthesis: ${claim.summary}`);
+  }
+}
+for (const source of readerContract.sources) {
+  let href;
+  if (source.kind === "git-document") {
+    href = `${source.repository}/blob/${source.ref}/${source.path}`;
+  } else if (source.package === "@kungfu-tech/kfd") {
+    const match = /^decisions\/KFD-(\d+)\.md$/.exec(source.path);
+    href = match ? expectedSurfaceEndpoint("kfd", `${match[1]}/`) : undefined;
+  } else if (source.package === "@kungfu-tech/buildchain") {
+    const match = /^docs\/(.+)\.md$/.exec(source.path);
+    href = match ? expectedSurfaceEndpoint("buildchain", `docs/${match[1]}/`) : undefined;
+  }
+  if (!href || !hubHtml.includes(`href="${escapeHtml(href)}"`)) {
+    throw new Error(`homepage reader synthesis is missing its exact source link: ${source.id}`);
+  }
+}
+for (const [label, html, pathEntry, authorityMarker] of [
+  ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), core.homepage.headline],
+  ["Buildchain", buildchainHomeHtml, readerContract.surfacePaths.find((entry) => entry.id === "buildchain"), buildchainSite.homepage.title],
+]) {
+  const questionPosition = html.indexOf(escapeHtml(pathEntry.question));
+  const authorityPosition = html.indexOf(escapeHtml(authorityMarker), questionPosition + 1);
+  if (questionPosition < 0 || authorityPosition <= questionPosition || !html.includes(`data-reader-surface="${escapeHtml(pathEntry.id)}"`)) {
+    throw new Error(`${label} must present the site-owned reader question before upstream authority`);
+  }
 }
 if (
   !hubHtml.includes(escapeHtml(runtimeSurface.headline)) ||
@@ -1196,6 +1397,19 @@ for (const [label, html, state] of [
   }
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
+const kfdLlms = fs.readFileSync("dist/kfd/llms.txt", "utf8");
+const kfdReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "kfd");
+const kfdQuestionPosition = kfdHomeHtml.indexOf(escapeHtml(kfdReaderPath.question));
+const kfdAuthorityPosition = kfdHomeHtml.indexOf(escapeHtml(kfdSite.homepage.title), kfdQuestionPosition + 1);
+if (
+  kfdQuestionPosition < 0
+  || kfdAuthorityPosition <= kfdQuestionPosition
+  || !kfdHomeHtml.includes('data-reader-surface="kfd"')
+  || !kfdLlms.includes(kfdReaderPath.question)
+  || !kfdLlms.includes(kfdReaderPath.promise)
+) {
+  throw new Error("KFD must present the site-owned reader question before bundle-owned authority in human and agent entries");
+}
 const kfdFuturePicture = kfdSite.homepage.futurePicture || {};
 const kfdFutureQuestion = kfdFuturePicture.question
   || kfdFuturePicture.pastToFuture

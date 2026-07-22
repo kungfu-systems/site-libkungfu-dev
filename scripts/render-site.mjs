@@ -1348,7 +1348,7 @@ ${current === "core" ? `
       gap: 22px;
     }
 
-    .core-hero h1 {
+    .core-hero .authority-title {
       max-width: 680px;
       font-size: clamp(44px, 5vw, 68px);
     }
@@ -1796,6 +1796,168 @@ ${current === "core" ? `
 
     .section-heading {
       margin: 48px 0 18px;
+    }
+
+    .reader-orientation {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 48px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 42px;
+    }
+
+    .reader-orientation h1 {
+      max-width: 900px;
+    }
+
+    .reader-orientation .lead {
+      max-width: 820px;
+    }
+
+    .authority-title {
+      max-width: 820px;
+      font-size: clamp(34px, 4.2vw, 56px);
+      line-height: 1.04;
+    }
+
+    .reader-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .reader-action {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: var(--accent-strong);
+      color: var(--soft);
+      padding: 7px 15px;
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .reader-action.secondary {
+      background: transparent;
+      color: var(--accent-strong);
+    }
+
+    .reader-chain {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-auto-rows: 1fr;
+      gap: 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .reader-layer-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .reader-layer-strip li {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      border-bottom: 2px solid var(--accent);
+      padding: 0 2px 10px;
+    }
+
+    .reader-layer-strip strong {
+      font-size: 12px;
+    }
+
+    .reader-layer-strip span {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .reader-card,
+    .reader-supply-card {
+      display: grid;
+      min-width: 0;
+      align-content: start;
+      gap: 10px;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--accent);
+      border-radius: 9px;
+      background: var(--soft);
+      padding: 17px;
+    }
+
+    .reader-card p,
+    .reader-supply-card p,
+    .reader-supply-chain > div > p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .reader-card-role {
+      color: var(--accent-strong) !important;
+      font-size: 11px !important;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .reader-sources {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px 8px;
+      margin-top: auto;
+      padding-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .reader-sources > span {
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    .reader-supply-chain {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--soft) 88%, var(--bg));
+      padding: clamp(18px, 3vw, 28px);
+    }
+
+    .reader-supply-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .reader-supply-card {
+      border-top-width: 1px;
+      background: var(--bg);
+      padding: 14px;
+    }
+
+    .reader-claim-boundary {
+      margin: 0;
+      border-left: 3px solid var(--warn);
+      background: var(--bg);
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .panel {
@@ -2290,6 +2452,12 @@ ${current === "core" ? `
         grid-template-columns: 1fr;
       }
 
+      .reader-chain,
+      .reader-layer-strip,
+      .reader-supply-grid {
+        grid-template-columns: 1fr;
+      }
+
 ${current === "core" ? `
       .grid.four {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2300,7 +2468,7 @@ ${current === "core" ? `
         grid-template-columns: 1fr;
       }
 
-      .core-hero h1 {
+      .core-hero .authority-title {
         max-width: 760px;
       }
 
@@ -3265,6 +3433,107 @@ function kfdPrimaryContinuationPanels() {
     .join("\n");
 }
 
+function readerPath(surfaceId) {
+  const pathEntry = site.readerContract.surfacePaths.find((entry) => entry.id === surfaceId);
+  if (!pathEntry) {
+    throw new Error(`reader contract is missing surface path: ${surfaceId}`);
+  }
+  return pathEntry;
+}
+
+function readerSource(sourceId) {
+  const source = site.readerContract.sources.find((entry) => entry.id === sourceId);
+  if (!source) {
+    throw new Error(`reader contract references unknown source: ${sourceId}`);
+  }
+  return source;
+}
+
+function readerSourceHref(source) {
+  if (source.kind === "git-document") {
+    return `${source.repository}/blob/${source.ref}/${source.path}`;
+  }
+  const kfdDecision = /^decisions\/KFD-(\d+)\.md$/.exec(source.path);
+  if (source.package === "@kungfu-tech/kfd" && kfdDecision) {
+    return surfaceEndpointHref("kfd", `${kfdDecision[1]}/`);
+  }
+  const buildchainDocument = /^docs\/(.+)\.md$/.exec(source.path);
+  if (source.package === "@kungfu-tech/buildchain" && buildchainDocument) {
+    return surfaceEndpointHref("buildchain", `docs/${buildchainDocument[1]}/`);
+  }
+  throw new Error(`reader contract source has no public route: ${source.id}`);
+}
+
+function renderReaderSources(sourceRefs) {
+  return `<span class="reader-sources"><span>Sources</span>${sourceRefs
+    .map((sourceId) => {
+      const source = readerSource(sourceId);
+      return `<a href="${escapeAttr(readerSourceHref(source))}">${escapeHtml(source.id)}</a>`;
+    })
+    .join("")}</span>`;
+}
+
+function renderReaderOrientation(surfaceId, stateLabel) {
+  const pathEntry = readerPath(surfaceId);
+  return `<section class="reader-orientation" data-reader-surface="${escapeAttr(surfaceId)}">
+    <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">${escapeHtml(stateLabel)}</span></p>
+    <p class="eyebrow">Start here · ${escapeHtml(pathEntry.audience)}</p>
+    <h1>${escapeHtml(pathEntry.question)}</h1>
+    <p class="lead">${escapeHtml(pathEntry.promise)}</p>
+    <div class="reader-actions">
+      <a class="reader-action" href="${escapeAttr(pathEntry.authorityHref)}">${escapeHtml(pathEntry.authorityLabel)}</a>
+      <a class="reader-action secondary" href="${escapeAttr(pathEntry.evidenceHref)}">${escapeHtml(pathEntry.evidenceLabel)}</a>
+    </div>
+  </section>`;
+}
+
+function renderContinuityStack() {
+  const synthesis = site.readerContract.guidedSynthesis;
+  const supplyChain = synthesis.supplyChain;
+  return `<section id="continuity-stack" aria-labelledby="continuity-stack-heading">
+    <div class="section-heading">
+      <p class="eyebrow">01 · Guided synthesis · site-owned</p>
+      <h2 id="continuity-stack-heading">${escapeHtml(synthesis.heading)}</h2>
+      <p>${escapeHtml(synthesis.lead)}</p>
+    </div>
+    <ol class="reader-layer-strip" aria-label="Reader contract layers">
+      ${site.readerContract.layers.map((entry) => `<li><strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.owner)}</span></li>`).join("\n")}
+    </ol>
+    <ol class="reader-chain" aria-label="Continuity stack from Fact and Episode to Project Cut">
+      ${synthesis.conceptualChain
+        .map(
+          (entry) => `<li class="reader-card" data-claim-class="${escapeAttr(entry.claimClass)}">
+            <p class="reader-card-role">${escapeHtml(entry.role)}</p>
+            <h3>${escapeHtml(entry.label)}</h3>
+            <p>${escapeHtml(entry.summary)}</p>
+            ${renderReaderSources(entry.sourceRefs)}
+          </li>`,
+        )
+        .join("\n")}
+    </ol>
+    <div class="reader-supply-chain" aria-labelledby="reader-supply-chain-heading">
+      <div>
+        <p class="eyebrow">Agent supply chain</p>
+        <h3 id="reader-supply-chain-heading">${escapeHtml(supplyChain.heading)}</h3>
+        <p>${escapeHtml(supplyChain.summary)}</p>
+      </div>
+      <div class="reader-supply-grid">
+        ${supplyChain.steps
+          .map(
+            (entry) => `<article class="reader-supply-card" data-claim-class="${escapeAttr(entry.claimClass)}">
+              <p class="reader-card-role">${escapeHtml(entry.owner)}</p>
+              <h4>${escapeHtml(entry.label)}</h4>
+              <p>${escapeHtml(entry.summary)}</p>
+              ${renderReaderSources(entry.sourceRefs)}
+            </article>`,
+          )
+          .join("\n")}
+      </div>
+      <p class="reader-claim-boundary" data-claim-class="${escapeAttr(supplyChain.claimClass)}"><strong>Claim boundary:</strong> ${escapeHtml(supplyChain.nonClaim)} ${renderReaderSources(supplyChain.sourceRefs)}</p>
+    </div>
+  </section>`;
+}
+
 const runtimeHomepageStyles = `<style>
   .hero-actions {
     display: flex;
@@ -3923,25 +4192,28 @@ writeFile(
     current: "hub",
     body: `${runtimeHomepageStyles}${dogfoodStyles}
     <section class="hero">
-      <div class="runtime-status">
-        <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
-        <span class="tag">claim: ${escapeHtml(runtimeSurface.claimLevel)}</span>
-        <span class="tag">${escapeHtml(runtimeSurface.qualification.platform)}</span>
-      </div>
-      <h1>${escapeHtml(runtimeSurface.headline)}</h1>
-      <p class="lead">${escapeHtml(runtimeSurface.lead)}</p>
+      <p class="eyebrow">Start here · ${escapeHtml(readerPath("hub").audience)}</p>
+      <h1>${escapeHtml(site.homepage.headline)}</h1>
+      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
+      <p><strong>Your Hub stays yours.</strong> ${escapeHtml(site.readerContract.guidedSynthesis.supplyChain.steps[0].summary)}</p>
       <div class="hero-actions">
-        <a class="hero-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Open the reviewed reference</a>
-        <a class="hero-action secondary" href="/runtime.json">Inspect machine facts</a>
+        <a class="hero-action" href="${escapeAttr(readerPath("hub").authorityHref)}">${escapeHtml(readerPath("hub").authorityLabel)}</a>
+        <a class="hero-action secondary" ${surfaceLinkAttrs("core")}>Open Core runtime</a>
       </div>
-      <p><strong>Availability:</strong> source candidate. No public registry install is claimed yet.</p>
     </section>
+
+    ${renderContinuityStack()}
 
     <section aria-labelledby="action-world-heading">
       <div class="section-heading">
-        <p class="eyebrow">01 · The action world</p>
+        <p class="eyebrow">02 · Upstream authority · Kungfu</p>
         <h2 id="action-world-heading">${escapeHtml(runtimeSurface.actionWorld.headline)}</h2>
         <p>${escapeHtml(runtimeSurface.actionWorld.summary)}</p>
+        <div class="runtime-status" style="margin-top: 12px;">
+          <span class="tag">${escapeHtml(runtimeSurface.status)}</span>
+          <span class="tag">claim: ${escapeHtml(runtimeSurface.claimLevel)}</span>
+          <span class="tag">${escapeHtml(runtimeSurface.qualification.platform)}</span>
+        </div>
       </div>
       <div class="architecture-visual" aria-label="libkungfu action world architecture">
         <ol class="action-loop">
@@ -3962,7 +4234,7 @@ writeFile(
 
     <section aria-labelledby="hub-network-heading">
       <div class="section-heading">
-        <p class="eyebrow">02 · The plural-Hub network</p>
+        <p class="eyebrow">03 · Upstream authority · KFD</p>
         <h2 id="hub-network-heading">${escapeHtml(runtimeSurface.hubNetwork.headline)}</h2>
         <p>${escapeHtml(runtimeSurface.hubNetwork.summary)}</p>
       </div>
@@ -3994,9 +4266,10 @@ writeFile(
 
     <section aria-labelledby="hub-support-heading">
       <div class="section-heading">
-        <p class="eyebrow">03 · Why this can support a Hub network</p>
-        <h2 id="hub-support-heading">The protocol removes shared-infrastructure assumptions.</h2>
-        <p>KFD does not need every participant to share one implementation. It preserves the minimum semantics required for independent systems to exchange responsibility without guessing.</p>
+        <p class="eyebrow">04 · Guided consequence</p>
+        <h2 id="hub-support-heading">${escapeHtml(site.readerContract.guidedSynthesis.hubConsequence.heading)}</h2>
+        <p>${escapeHtml(site.readerContract.guidedSynthesis.hubConsequence.summary)}</p>
+        ${renderReaderSources(site.readerContract.guidedSynthesis.hubConsequence.sourceRefs)}
       </div>
       <div class="support-reasons">
         ${runtimeSurface.hubNetwork.supportReasons
@@ -4026,11 +4299,16 @@ writeFile(
       <div class="grid three">
         ${runtimeSurface.quickstarts.map(runtimeQuickstartCard).join("\n")}
       </div>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(runtimeSurface.source.pullRequest)}">Open the reviewed reference</a>
+        <a class="card-action" href="/runtime.json">Inspect machine facts</a>
+      </div>
     </section>
 
     <section class="panel warning" style="margin-top: 18px;">
       <p class="eyebrow">Package availability</p>
       <h2>Source is ready; registry installation is not claimed</h2>
+      <p>No public registry install is claimed yet. Use the exact reviewed source candidate for evaluation.</p>
       <div class="grid" style="margin-top: 18px;">
         ${runtimeSurface.packages
           .map(
@@ -4087,7 +4365,6 @@ writeFile(
       <div class="section-heading">
         <p class="eyebrow">Release trust</p>
         <h2 id="release-trust-heading">Why the candidate is inspectable</h2>
-        <p>KFD owns decision and conformance semantics. Buildchain binds evidence into release mechanisms. Core is the product proof.</p>
       </div>
       <div class="visual substrate-map" aria-label="Product generation map">
         <img src="/assets/substrate-flow.svg" alt="KFD defines principles, Buildchain makes them executable, Core proves them in a complex product, and Kungfu Tech carries future products.">
@@ -4125,6 +4402,13 @@ const coreAgentManifest = {
     contract: core.contract,
     repository: core.sourceRepository,
     ref: core.sourceRef,
+  },
+  readerContract: {
+    contract: site.readerContract.contract,
+    owner: site.readerContract.owner,
+    path: readerPath("core"),
+    layers: site.readerContract.layers,
+    sourceBoundary: site.sourceBoundary,
   },
   homepage: core.homepage,
   architecture: core.architecture,
@@ -4255,12 +4539,12 @@ writeFile(
     description: core.homepage.lead,
     current: "core",
     preserveRelativeMachineEntries: true,
-    body: `<section class="hero core-hero">
-      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Runtime substrate</span></p>
+    body: `${renderReaderOrientation("core", "Runtime substrate")}
+    <section class="hero core-hero" id="core-authority">
       <div class="core-hero-layout">
         <div class="core-hero-copy">
           <p class="eyebrow">${escapeHtml(core.homepage.kicker)}</p>
-          <h1>${escapeHtml(core.homepage.headline)}</h1>
+          <h2 class="authority-title">${escapeHtml(core.homepage.headline)}</h2>
           <p class="lead">${escapeHtml(core.homepage.lead)}</p>
         </div>
 
@@ -4391,6 +4675,11 @@ writeFile(
   "core/llms.txt",
   `# ${surfaceCanonicalHost("core")}
 
+Reader contract: ${site.readerContract.contract}
+Audience: ${readerPath("core").audience}
+Question: ${readerPath("core").question}
+Promise: ${readerPath("core").promise}
+
 ${core.homepage.headline}
 
 ${core.homepage.lead}
@@ -4433,9 +4722,9 @@ writeFile(
     description: kfdPackage.description,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
-      <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
+    body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
+    <section class="hero" id="kfd-authority">
+      <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
       ${kfdFuturePictureHero()}
     </section>
 
@@ -5034,9 +5323,9 @@ writeFile(
     title: "buildchain.libkungfu.dev | Buildchain surface",
     description: buildchainPageDescription(),
     current: "buildchain",
-    body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Buildchain product surface</span></p>
-      <h1>${escapeHtml(buildchainSite.homepage.title)}</h1>
+    body: `${renderReaderOrientation("buildchain", "Buildchain product surface")}
+    <section class="hero" id="buildchain-authority">
+      <h2 class="authority-title">${escapeHtml(buildchainSite.homepage.title)}</h2>
       <div class="lead badge-strip">${renderBuildchainLead(buildchainHomepageCopy.lead)}</div>
       <div class="stack">
         ${buildchainHomepageCopy.mechanismSummary.map((entry) => `<p>${escapeHtml(entry)}</p>`).join("\n")}
@@ -5213,10 +5502,17 @@ const runtimeAgentProjection = {
   canonicalHost: surfaceCanonicalHost("hub"),
   humanEntry: surfaceCanonicalHref("hub"),
   machineEntry: surfaceEndpointHref("hub", "runtime.json"),
+  readerContract: {
+    contract: site.readerContract.contract,
+    owner: site.readerContract.owner,
+    path: readerPath("hub"),
+    guidedSynthesis: site.readerContract.guidedSynthesis,
+    sources: site.readerContract.sources,
+  },
   sourceBoundary: {
     truthOwner: "kungfu-systems/kungfu exact public source and KFD Runtime 100 authority",
-    siteRole: "rendering, routing, and agent discovery",
-    rule: "This site projects the pinned source, qualification, and claim boundary. It does not publish packages, rerun conformance, or upgrade the claim.",
+    siteRole: site.sourceBoundary.siteRole,
+    rule: "This site owns reader framing and synthesis, then projects the pinned source, qualification, and claim boundary. It does not publish packages, rerun conformance, fork upstream meaning, or upgrade the claim.",
   },
 };
 
@@ -5226,6 +5522,7 @@ const manifest = {
   ...surfaceTimestampPolicy,
   canonicalHost: surfaceCanonicalHost("hub"),
   sourceBoundary: site.sourceBoundary,
+  readerContract: site.readerContract,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     {
@@ -5470,10 +5767,17 @@ const kfdAgentManifest = {
     terminology: surfaceEndpointHref("kfd", "terminology.json"),
     terminologySchema: surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
   },
+  readerContract: {
+    contract: site.readerContract.contract,
+    owner: site.readerContract.owner,
+    path: readerPath("kfd"),
+    layers: site.readerContract.layers,
+    sourceBoundary: site.sourceBoundary,
+  },
   sourceBoundary: {
     truthOwner: "@kungfu-tech/kfd",
-    siteRole: "rendering, routing, and agent discovery",
-    rule: "KFD facts, registry entries, standards metadata, and decision text come from the pinned @kungfu-tech/kfd package. This site may expose and render them, but must not fork their meaning.",
+    siteRole: site.sourceBoundary.siteRole,
+    rule: "KFD facts, registry entries, standards metadata, and decision text come from the pinned @kungfu-tech/kfd package. This site owns their reader framing and may expose and render them, but must not fork their meaning.",
   },
   package: {
     name: kfdPackage.name,
@@ -5593,6 +5897,11 @@ writeFile(
 
 Kung Fu Decisions (KFD) is the kungfu-systems decision registry surface.
 
+Reader contract: ${site.readerContract.contract}
+Audience: ${readerPath("kfd").audience}
+Question: ${readerPath("kfd").question}
+Promise: ${readerPath("kfd").promise}
+
 Human entry:
 - ${surfaceCanonicalHref("kfd")}
 
@@ -5611,8 +5920,8 @@ ${kfdAgentManifest.readOrder.map((entry) => `- ${entry}`).join("\n")}
 
 Source boundary:
 KFD facts, registry entries, standards metadata, and decision text come from
-@kungfu-tech/kfd@${kfdPackage.version}. site-libkungfu-dev renders and exposes
-them, but does not own or fork their meaning.
+@kungfu-tech/kfd@${kfdPackage.version}. site-libkungfu-dev owns reader framing
+and renders and exposes those facts, but does not own or fork their meaning.
 `,
 );
 
@@ -5621,6 +5930,26 @@ writeFile(
   `# ${surfaceCanonicalHost("hub")}
 
 libkungfu.dev is the open developer and agent substrate hub for Kungfu.
+
+Reader contract: ${site.readerContract.contract}
+${site.readerContract.promise}
+
+Reader layers:
+${site.readerContract.layers.map((entry) => `- ${entry.label} [${entry.owner}]: ${entry.purpose}`).join("\n")}
+
+Guided synthesis:
+${site.readerContract.guidedSynthesis.heading}
+${site.readerContract.guidedSynthesis.lead}
+${site.readerContract.guidedSynthesis.conceptualChain.map((entry) => `- ${entry.label} [${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
+- ${site.readerContract.guidedSynthesis.hubConsequence.heading} [${site.readerContract.guidedSynthesis.hubConsequence.claimClass}]: ${site.readerContract.guidedSynthesis.hubConsequence.summary} Sources: ${site.readerContract.guidedSynthesis.hubConsequence.sourceRefs.join(", ")}
+
+Agent supply chain:
+${site.readerContract.guidedSynthesis.supplyChain.summary}
+${site.readerContract.guidedSynthesis.supplyChain.steps.map((entry) => `- ${entry.label} [${entry.owner}; ${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}
+- Claim boundary [non-claim]: ${site.readerContract.guidedSynthesis.supplyChain.nonClaim}
+
+Surface reading paths:
+${site.readerContract.surfacePaths.map((entry) => `- ${entry.id} / ${entry.audience}: ${entry.question} ${entry.promise}`).join("\n")}
 
 Primary pages:
 - ${surfaceCanonicalHref("hub")}
@@ -5648,8 +5977,8 @@ Core claim boundary:
 ${core.homepage.claimBoundary}
 
 Source boundary:
-This repository renders pinned upstream evidence, manifests, and packages. It
-is not a product fact source. Embeddable runtime facts come from the pinned
+This repository owns the reader contract and renders pinned upstream evidence,
+manifests, and packages. It is not a product fact source. Embeddable runtime facts come from the pinned
 Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core mmap and
 recovery claims are pinned to exact Kungfu evidence while the future spec
 handoff remains a secondary fixture. Buildchain facts must come from the
