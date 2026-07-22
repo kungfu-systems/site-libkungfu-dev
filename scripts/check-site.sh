@@ -1326,9 +1326,15 @@ if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("
   throw new Error("human header brand must link to the canonical hub and expose a local fallback");
 }
 if (
-  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a></nav>`)
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
 ) {
-  throw new Error("human header navigation must use canonical surface hosts with local fallbacks");
+  throw new Error("human header navigation must use canonical surface hosts, local fallbacks, and the Kungfu main-site return link");
+}
+for (const path of ["index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
+  const html = fs.readFileSync(`dist/${path}`, "utf8");
+  if (!html.includes(`<a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a>`)) {
+    throw new Error(`${path} header must expose the Kungfu main-site return link`);
+  }
 }
 if (hubHtml.includes(">Hub</a>")) {
   throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
