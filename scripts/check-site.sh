@@ -354,6 +354,9 @@ for (const requiredText of [
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
 }
+if (!/\.dogfood-flow li\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)) {
+  throw new Error("dogfood flow cards must reset inherited list margins");
+}
 for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
   if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
     throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
