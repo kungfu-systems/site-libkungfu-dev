@@ -8,6 +8,12 @@
 [![KFD-5: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-5/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-6: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-6/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![KFD-7: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-7/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-8: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-8/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-9: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-9/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-10: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-10/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-11: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-11/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-12: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-12/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
+[![KFD-13: planned](https://buildchain.libkungfu.dev/badges/v1/kfd-13/planned.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Release Passport: declared](https://buildchain.libkungfu.dev/badges/v1/buildchain-release-passport/declared.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/releases/latest/download/buildchain.release.json)
 [![Buildchain Web Surface](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml/badge.svg)](https://github.com/kungfu-systems/site-libkungfu-dev/actions/workflows/buildchain-web-surface.yml)
 <!-- buildchain:badges:end -->
@@ -41,6 +47,12 @@ disclosure may move detail down-level; it may not delete upstream content,
 break a stable route, or upgrade an alpha contract, reference implementation,
 or future picture into a present ecosystem claim.
 
+The five-layer Agent Supply Chain composition comes from the pinned product
+white-paper package. Buildchain and KFD package bundles remain authoritative
+for their own mechanics; the runtime fixture remains source-bound to Kungfu.
+This renderer publishes the shared composition at `/agent-supply-chain.json`
+and keeps its human homepage projection aligned with that machine contract.
+
 ## Surfaces
 
 - `https://libkungfu.dev` is the open developer and agent substrate hub.
@@ -73,7 +85,7 @@ to one exact Kungfu source ref. It owns the homepage hierarchy and wording, not
 the runtime facts; the previous `@kungfu-tech/spec` placeholder remains a
 secondary source contract inside that fixture instead of determining the
 homepage. The Buildchain page consumes the pinned npm package artifact
-`@kungfu-tech/buildchain@2.14.13` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@2.14.14-alpha.4` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -83,7 +95,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.40` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.41` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -173,7 +185,7 @@ runs through the floating Buildchain `@v2-alpha` workflow ref and checks
 Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.14.13` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@2.14.14-alpha.4` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 

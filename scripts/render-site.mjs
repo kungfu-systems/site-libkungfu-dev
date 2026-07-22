@@ -3184,6 +3184,9 @@ const buildchainArtifactSchemas = readPackageJson("@kungfu-tech/buildchain/site/
 const buildchainProductMechanism = readPackageJson("@kungfu-tech/buildchain/site/product-mechanism.json");
 const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/site/release-provenance.json");
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
+const whitePaperPackageRoot = packageRoot("@kungfu-tech/paper-kungfu-product-white-paper");
+const whitePaperEvidence = readJsonFile(path.join(whitePaperPackageRoot, "site", "evidence-site.json"));
+const agentSupplyChain = whitePaperEvidence.agentSupplyChain;
 const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdTerminology = readPackageJson("@kungfu-tech/kfd/terminology.json");
@@ -3202,8 +3205,8 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "2.14.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.40";
+const expectedBuildchainVersion = "2.14.14-alpha.4";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
@@ -3220,6 +3223,25 @@ if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
 }
 if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("unexpected KFD site bundle contract");
+}
+if (
+  agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
+  || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"
+  || agentSupplyChain.maturityVocabulary?.join(",") !== "proved-now,enabled-by-protocol,not-claimed"
+  || agentSupplyChain.notClaimed?.includes("two independent production Hubs") !== true
+  || agentSupplyChain.notClaimed?.includes("external vendor adoption or endorsement") !== true
+  || !agentSupplyChain.vendorNextAction?.includes("30-day assessment")
+  || agentSupplyChain.layers.some((layer) => !layer.owner || !layer.input || !layer.output)
+  || agentSupplyChain.layers.some((layer) => !layer.evidenceCoordinates?.length || !layer.knownLimits?.length)
+) {
+  throw new Error("unexpected Agent Supply Chain narrative contract");
+}
+const buildchainSupplyLayer = agentSupplyChain.layers.find((layer) => layer.id === "buildchain");
+if (
+  buildchainProductMechanism.agentSupplyChain?.order !== buildchainSupplyLayer.order
+  || buildchainProductMechanism.agentSupplyChain?.statusClass !== buildchainSupplyLayer.statusClass
+) {
+  throw new Error("Buildchain and white-paper Agent Supply Chain facts drifted");
 }
 if (
   core.contract !== "libkungfu-core-runtime-surface-fixture"
@@ -4415,6 +4437,24 @@ writeFile(
     </section>
 
     ${renderContinuityStack()}
+
+    <section aria-labelledby="agent-supply-chain-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Agent Supply Chain</p>
+        <h2 id="agent-supply-chain-heading">Five responsibilities. Independent owners. One inspectable path.</h2>
+        <p>${escapeHtml(agentSupplyChain.categoryStatement)}</p>
+      </div>
+      <div class="support-reasons">
+        ${agentSupplyChain.layers
+          .map((layer) => `<article class="support-reason"><strong>${escapeHtml(`${String(layer.order).padStart(2, "0")} · ${layer.id}`)}</strong><p><strong>Owner:</strong> ${escapeHtml(layer.owner)}</p><p>${escapeHtml(layer.statement)}</p><p><strong>Input:</strong> ${escapeHtml(layer.input)}</p><p><strong>Output:</strong> ${escapeHtml(layer.output)}</p><p><strong>Known limit:</strong> ${escapeHtml(layer.knownLimits[0])}</p><p><code>${escapeHtml(layer.evidenceCoordinates[0])}</code></p><span class="tag">${escapeHtml(layer.statusClass)}</span></article>`)
+          .join("\n")}
+      </div>
+      <p class="protocol-limit"><strong>Claim boundary:</strong> ${escapeHtml(agentSupplyChain.claimBoundary)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="/agent-supply-chain.json">Inspect machine contract</a>
+        <a class="hero-action secondary" href="${escapeAttr(agentSupplyChain.layers[4].humanRoute)}">Open the Hub profile</a>
+      </div>
+    </section>
 
     <section aria-labelledby="action-world-heading">
       <div class="section-heading">
@@ -5713,6 +5753,7 @@ for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normaliz
 
 const runtimeAgentProjection = {
   ...runtimeSurface,
+  agentSupplyChain,
   canonicalHost: surfaceCanonicalHost("hub"),
   humanEntry: surfaceCanonicalHref("hub"),
   machineEntry: surfaceEndpointHref("hub", "runtime.json"),
@@ -5753,6 +5794,11 @@ const manifest = {
       path: "/runtime.json",
       host: surfaceCanonicalHost("hub"),
       source: "src/fixtures/libkungfu-runtime-surface.json",
+    },
+    {
+      path: "/agent-supply-chain.json",
+      host: surfaceCanonicalHost("hub"),
+      source: `@kungfu-tech/paper-kungfu-product-white-paper@${whitePaperEvidence.source.packageVersion}/site/evidence-site.json`,
     },
     { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/manifest.json", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
@@ -5931,6 +5977,7 @@ const manifest = {
 };
 
 writeFile("runtime.json", `${JSON.stringify(runtimeAgentProjection, null, 2)}\n`);
+writeFile("agent-supply-chain.json", `${JSON.stringify(agentSupplyChain, null, 2)}\n`);
 writeFile("dogfood-evidence.json", `${JSON.stringify(dogfoodEvidence, null, 2)}\n`);
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -6189,6 +6236,7 @@ Primary pages:
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
 - ${surfaceEndpointHref("hub", "runtime.json")}
+- ${surfaceEndpointHref("hub", "agent-supply-chain.json")}
 - ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
@@ -6202,6 +6250,15 @@ ${core.architecture.writer.label} -> ${core.architecture.journal.label} -> ${cor
 
 Core claim boundary:
 ${core.homepage.claimBoundary}
+
+Agent Supply Chain:
+${agentSupplyChain.layers.map((layer) => `${layer.order}. ${layer.id} [${layer.statusClass}] - ${layer.statement}`).join("\n")}
+
+Claim boundary:
+${agentSupplyChain.claimBoundary}
+
+Vendor next action:
+${agentSupplyChain.vendorNextAction}
 
 Source boundary:
 This repository owns the reader contract and renders pinned upstream evidence,
