@@ -115,7 +115,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.40",
+        "version": "1.0.0-alpha.41",
         "path": "decisions/KFD-2.md",
         "sha256": "026ed1d23fbb45fd5b3163962ce736a757e383230af09556c8fb4b56f5e802b5"
       },
@@ -124,7 +124,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.40",
+        "version": "1.0.0-alpha.41",
         "path": "decisions/KFD-3.md",
         "sha256": "5691761dcab21fcdeaf748655f20f61de74b906cd9f5cd03459131fd78082f83"
       },
@@ -133,9 +133,9 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.40",
+        "version": "1.0.0-alpha.41",
         "path": "decisions/KFD-7.md",
-        "sha256": "a493e22e527dcd74fa8e3afc73e33e08f7d09e20e596689f2b550c071ac8efc0"
+        "sha256": "df5be3a5f49cbeabc2cac684326fd0356a96645151786b49e8b938f823493456"
       },
       {
         "id": "kfd-agent-hub-profile",
@@ -151,7 +151,7 @@
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "2.14.13",
+        "version": "2.14.14-alpha.4",
         "path": "docs/release-passport.md",
         "sha256": "f10d2f0f9cc694976b2a1d2a61195ed155c1bc24c964de1551475882e8197c92"
       },
@@ -160,7 +160,7 @@
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "2.14.13",
+        "version": "2.14.14-alpha.4",
         "path": "docs/kfd-support.md",
         "sha256": "ab15de33a1a9e292b6da74c00b8b96b7c46330d0553a454d1de4c24c672fc025"
       }

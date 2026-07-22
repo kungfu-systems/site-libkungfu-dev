@@ -84,6 +84,7 @@ const requiredBaseFiles = [
   "dist/badges/v1/buildchain-release-passport/passed.json",
   "dist/manifest.json",
   "dist/runtime.json",
+  "dist/agent-supply-chain.json",
   "dist/dogfood/index.html",
   "dist/dogfood-evidence.json",
   "dist/llms.txt",
@@ -102,6 +103,7 @@ const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packag
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
 const runtimeProjection = JSON.parse(fs.readFileSync("dist/runtime.json", "utf8"));
+const agentSupplyChain = JSON.parse(fs.readFileSync("dist/agent-supply-chain.json", "utf8"));
 const dogfoodProjection = JSON.parse(fs.readFileSync("dist/dogfood-evidence.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
@@ -134,8 +136,8 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "2.14.13";
-const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.40";
+const expectedBuildchainVersion = "2.14.14-alpha.4";
+const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
@@ -508,6 +510,44 @@ if (
   runtimeSurface.claimLevel !== "reference-adopter"
 ) {
   throw new Error("embeddable runtime projection contract or claim boundary mismatch");
+}
+if (
+  agentSupplyChain.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
+  || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"
+  || agentSupplyChain.notClaimed?.includes("two independent production Hubs") !== true
+  || agentSupplyChain.notClaimed?.includes("external vendor adoption or endorsement") !== true
+  || !agentSupplyChain.vendorNextAction?.includes("30-day assessment")
+  || agentSupplyChain.layers.some((layer) => !layer.owner || !layer.input || !layer.output)
+  || agentSupplyChain.layers.some((layer) => !layer.evidenceCoordinates?.length || !layer.knownLimits?.length)
+  || JSON.stringify(runtimeProjection.agentSupplyChain) !== JSON.stringify(agentSupplyChain)
+) {
+  throw new Error("Agent Supply Chain human and machine contract drifted");
+}
+const agentSupplyChainHtml = fs.readFileSync("dist/index.html", "utf8");
+const agentSupplyChainDetailHtml = fs.readFileSync("dist/architecture/index.html", "utf8");
+for (const requiredText of [
+  "Five responsibilities. Independent owners. One inspectable path.",
+  agentSupplyChain.categoryStatement,
+  agentSupplyChain.claimBoundary,
+  ...agentSupplyChain.layers.flatMap((layer) => [layer.owner, layer.statement, layer.statusClass]),
+]) {
+  if (!agentSupplyChainHtml.includes(requiredText)) throw new Error(`hub overview missing ${requiredText}`);
+}
+for (const requiredText of [
+  "Known limit:",
+  "Qualified first-party reference adopter",
+  "Independent conforming implementation · not yet claimed as adopted",
+]) {
+  if (!agentSupplyChainDetailHtml.includes(requiredText)) throw new Error(`architecture detail missing ${requiredText}`);
+}
+if (
+  !agentSupplyChainHtml.includes('href="/agent-supply-chain.json"')
+  || agentSupplyChainHtml.includes("Known limit:")
+) {
+  throw new Error("Hub overview must keep the Agent Supply Chain concise and route detail down-level");
+}
+if (!manifest.pages.some((page) => page.path === "/agent-supply-chain.json")) {
+  throw new Error("site manifest missing Agent Supply Chain machine route");
 }
 if (
   runtimeSurface.source.sourceCommit !== "7eeb5bd1b45492f4da27eaacbe63eddfd6245176" ||
@@ -1304,7 +1344,7 @@ if (hubHtml.includes("<h3>Agent index</h3>") || hubHtml.includes("<h3>Site manif
 }
 const readerOrder = [
   escapeHtml(site.homepage.headline),
-  escapeHtml(readerContract.guidedSynthesis.heading),
+  "Five responsibilities. Independent owners. One inspectable path.",
   "The complete architecture now lives one level down.",
 ];
 let previousReaderPosition = -1;
@@ -1327,7 +1367,7 @@ if (
   throw new Error("homepage must preserve the Hub promise while routing detailed architecture one level down");
 }
 for (const layer of readerContract.layers) {
-  if (!hubHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
+  if (!hubDetailHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
     throw new Error(`human and agent entries must share reader layer: ${layer.label}`);
   }
 }
@@ -2107,7 +2147,7 @@ grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '2.14.13' dist/buildchain/mechanism/index.html
+grep -q '2.14.14-alpha.4' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html
