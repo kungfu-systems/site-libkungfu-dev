@@ -1193,6 +1193,9 @@ function page({ title, description, current, body, alternates = "", preserveRela
       return `<a ${surfaceLinkAttrs(id)}${active}>${escapeHtml(label)}</a>`;
     })
     .join("");
+  const mainSiteUrl = site.homepage.futureProducts.url;
+  const mainSiteLabel = new URL(mainSiteUrl).hostname.replace(/^www\./, "");
+  const mainSiteHtml = `<a class="main-site-link" href="${escapeAttr(mainSiteUrl)}" aria-label="Back to the Kungfu main site">${escapeHtml(mainSiteLabel)} <span aria-hidden="true">↗</span></a>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -1312,6 +1315,26 @@ ${current === "core" ? `
     nav a[aria-current="page"] {
       color: var(--fg);
       font-weight: 700;
+    }
+
+    .main-site-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 2px;
+      padding-left: 18px;
+      border-left: 1px solid var(--line);
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .main-site-link:hover,
+    .main-site-link:focus {
+      color: var(--accent-strong);
+    }
+
+    .main-site-link span {
+      font-size: 0.9em;
     }
 
     main {
@@ -2622,6 +2645,16 @@ ${current === "papers" ? "" : `
         padding: 18px 0;
       }
 
+      nav {
+        width: 100%;
+        gap: 14px;
+      }
+
+      .main-site-link {
+        margin-left: 0;
+        padding-left: 14px;
+      }
+
       main {
         padding-top: 42px;
       }
@@ -2723,6 +2756,15 @@ ${current === "core" ? `
       }
     }
 
+    @media (max-width: 640px) {
+      .main-site-link {
+        flex-basis: 100%;
+        padding: 12px 0 0;
+        border-top: 1px solid var(--line);
+        border-left: 0;
+      }
+    }
+
 ${current === "core" ? `
     @media (max-width: 640px) {
       .core-runtime-map {
@@ -2821,7 +2863,7 @@ ${current === "core" ? `
   <header>
     <div class="bar">
       <a class="brand" ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
-      <nav aria-label="Primary">${navHtml}</nav>
+      <nav aria-label="Primary">${navHtml}${mainSiteHtml}</nav>
     </div>
   </header>
   <main>${body}</main>
@@ -4261,6 +4303,11 @@ const runtimeHomepageStyles = `<style>
   }
 
   @media (max-width: 820px) {
+    .agent-supply-chain-grid,
+    .architecture-visual {
+      grid-template-columns: 1fr;
+    }
+
     .architecture-visual {
       overflow: hidden;
       padding: 16px;
