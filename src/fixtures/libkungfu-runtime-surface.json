@@ -134,7 +134,7 @@
     "hubs": [
       {
         "id": "hub-a",
-        "label": "Hub A · libkungfu adopter",
+        "label": "Qualified first-party reference adopter",
         "layers": [
           "Vendor product · UI, models, accounts",
           "Local policy · identity, authority, admission",
@@ -144,7 +144,7 @@
       },
       {
         "id": "hub-b",
-        "label": "Hub B · independent implementation",
+        "label": "Independent conforming implementation · not yet claimed as adopted",
         "layers": [
           "Participant product · UX and workflows",
           "Local policy · identity, authority, admission",
