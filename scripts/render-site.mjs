@@ -3331,6 +3331,7 @@ const runtimeHomepageStyles = `<style>
     min-width: 0;
     align-content: start;
     gap: 9px;
+    margin: 0;
     min-height: 214px;
     height: 100%;
     border: 1px solid var(--line);
