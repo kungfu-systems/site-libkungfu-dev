@@ -1053,6 +1053,7 @@ function renderPublicationArchives() {
           description: `Immutable archive for ${publication.title} ${version.version}.`,
           current: "papers",
           preserveRelativeMachineEntries: true,
+          immutableArchive: true,
           body: `<section class="hero">
             <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">immutable / ${escapeHtml(version.version)}</span></p>
             <h1>${escapeHtml(publication.title)} ${escapeHtml(version.version)}</h1>
@@ -1179,7 +1180,7 @@ ${registry.archivePolicy.rule}
   };
 }
 
-function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false }) {
+function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, immutableArchive = false }) {
   const nav = [
     ["core", "Core"],
     ["buildchain", "Buildchain"],
@@ -1195,7 +1196,51 @@ function page({ title, description, current, body, alternates = "", preserveRela
     .join("");
   const mainSiteUrl = site.homepage.futureProducts.url;
   const mainSiteLabel = new URL(mainSiteUrl).hostname.replace(/^www\./, "");
-  const mainSiteHtml = `<a class="main-site-link" href="${escapeAttr(mainSiteUrl)}" aria-label="Back to the Kungfu main site">${escapeHtml(mainSiteLabel)} <span aria-hidden="true">↗</span></a>`;
+  const mainSiteHtml = immutableArchive
+    ? ""
+    : `<a class="main-site-link" href="${escapeAttr(mainSiteUrl)}" aria-label="Back to the Kungfu main site">${escapeHtml(mainSiteLabel)} <span aria-hidden="true">↗</span></a>`;
+  const mainSiteStyles = immutableArchive ? "" : `
+    .main-site-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 2px;
+      padding-left: 18px;
+      border-left: 1px solid var(--line);
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .main-site-link:hover,
+    .main-site-link:focus {
+      color: var(--accent-strong);
+    }
+
+    .main-site-link span {
+      font-size: 0.9em;
+    }
+`;
+  const mainSiteTabletStyles = immutableArchive ? "" : `
+      nav {
+        width: 100%;
+        gap: 14px;
+      }
+
+      .main-site-link {
+        margin-left: 0;
+        padding-left: 14px;
+      }
+`;
+  const mainSiteMobileStyles = immutableArchive ? "" : `
+    @media (max-width: 640px) {
+      .main-site-link {
+        flex-basis: 100%;
+        padding: 12px 0 0;
+        border-top: 1px solid var(--line);
+        border-left: 0;
+      }
+    }
+`;
 
   return `<!doctype html>
 <html lang="en">
@@ -1316,27 +1361,7 @@ ${current === "core" ? `
       color: var(--fg);
       font-weight: 700;
     }
-
-    .main-site-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-left: 2px;
-      padding-left: 18px;
-      border-left: 1px solid var(--line);
-      color: var(--fg);
-      font-weight: 700;
-    }
-
-    .main-site-link:hover,
-    .main-site-link:focus {
-      color: var(--accent-strong);
-    }
-
-    .main-site-link span {
-      font-size: 0.9em;
-    }
-
+${mainSiteStyles}
     main {
       width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
@@ -2644,17 +2669,7 @@ ${current === "papers" ? "" : `
         flex-direction: column;
         padding: 18px 0;
       }
-
-      nav {
-        width: 100%;
-        gap: 14px;
-      }
-
-      .main-site-link {
-        margin-left: 0;
-        padding-left: 14px;
-      }
-
+${mainSiteTabletStyles}
       main {
         padding-top: 42px;
       }
@@ -2755,16 +2770,7 @@ ${current === "core" ? `
         position: static;
       }
     }
-
-    @media (max-width: 640px) {
-      .main-site-link {
-        flex-basis: 100%;
-        padding: 12px 0 0;
-        border-top: 1px solid var(--line);
-        border-left: 0;
-      }
-    }
-
+${mainSiteMobileStyles}
 ${current === "core" ? `
     @media (max-width: 640px) {
       .core-runtime-map {

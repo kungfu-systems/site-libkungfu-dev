@@ -944,6 +944,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (versionHtml.includes("--core-blue:") || versionHtml.includes(".core-runtime-map {")) {
       throw new Error(`immutable publication version page contains Core-only runtime styles: ${publication.id}@${version.version}`);
     }
+    if (versionHtml.includes("main-site-link") || versionHtml.includes("Back to the Kungfu main site")) {
+      throw new Error(`immutable publication version page changed after the main-site header addition: ${publication.id}@${version.version}`);
+    }
     if (
       versionHtml.includes(".reader-orientation {")
       || versionHtml.includes(".reader-supply-chain {")
