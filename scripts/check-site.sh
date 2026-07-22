@@ -390,9 +390,10 @@ if (
   runtimeSurface.actionWorld?.foundation?.length !== 3 ||
   runtimeSurface.hubNetwork?.hubs?.length !== 2 ||
   runtimeSurface.hubNetwork?.exchange?.length !== 4 ||
-  runtimeSurface.invariants?.map((entry) => `${entry.left}!=${entry.right}`).join(",") !== "Delivery!=Admission,Occurrence!=Completion,Authentication!=Authority"
+  runtimeSurface.invariants?.map((entry) => `${entry.left}!=${entry.right}`).join(",") !== "Delivery!=Admission,Occurrence!=Completion,Authentication!=Authority" ||
+  !/\.action-step\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)
 ) {
-  throw new Error("architecture projection drifted from its exact Kungfu/KFD sources or visual contract");
+  throw new Error("architecture projection drifted from its exact Kungfu/KFD sources, card alignment, or visual contract");
 }
 if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
   throw new Error("core fixture contract mismatch");
@@ -411,9 +412,15 @@ if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
 }
 const expectedPaperPackageNames = [
   "@kungfu-tech/paper-kungfu-product-white-paper",
-  "@kungfu-tech/paper-episodes-to-primitives",
   "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",
   "@kungfu-tech/paper-observer-declared-timelines",
+  "@kungfu-tech/paper-episodes-to-primitives",
+];
+const expectedPaperIds = [
+  "kungfu-product-white-paper",
+  "kfd-foundation-real-world-agent-work",
+  "observer-declared-timelines",
+  "episodes-to-primitives",
 ];
 if (
   publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" ||
@@ -649,6 +656,12 @@ if (publicationSource.kind !== "paper-packages" || publicationSource.registry.co
 if (publicationRenderedRegistry.contract !== publicationSource.registry.contract) {
   throw new Error("rendered publication registry contract mismatch");
 }
+if (
+  publicationRenderedRegistry.publications.map((entry) => entry.id).join(",") !== expectedPaperIds.join(",")
+  || publicationManifest.publications.map((entry) => entry.id).join(",") !== expectedPaperIds.join(",")
+) {
+  throw new Error("rendered publication registry and manifest must preserve the canonical paper order");
+}
 if (publicationRenderedRegistry.publications?.length !== expectedPaperPackages.length || publicationRenderedRegistry.publications.some((entry) => entry.id === "publication-archive-fixture")) {
   throw new Error("rendered publication registry must expose every declared real paper and no fixture publication");
 }
@@ -747,10 +760,16 @@ for (const publication of publicationRenderedRegistry.publications || []) {
   }
 }
 const papersIndex = fs.readFileSync("dist/papers/index.html", "utf8");
+let previousPaperCardPosition = -1;
 for (const publication of publicationRenderedRegistry.publications) {
   if (!papersIndex.includes(escapeHtml(publication.title))) {
     throw new Error(`papers index missing publication: ${publication.id}`);
   }
+  const paperCardPosition = papersIndex.indexOf(`href="${escapeHtml(expectedSurfaceEndpoint("papers", `${publication.id}/`))}"`);
+  if (paperCardPosition <= previousPaperCardPosition) {
+    throw new Error(`papers index card order drifted at publication: ${publication.id}`);
+  }
+  previousPaperCardPosition = paperCardPosition;
 }
 if (papersIndex.includes("Publication Archive Fixture") || !papersIndex.includes("Kungfu Papers")) {
   throw new Error("papers index must be human-first and free of fixture content");
