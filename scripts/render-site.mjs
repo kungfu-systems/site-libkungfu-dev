@@ -1688,13 +1688,7 @@ ${current === "core" ? `
       align-items: center;
       justify-content: space-between;
       gap: 8px 16px;
-      min-width: 0;
       width: 100%;
-    }
-
-    .page-kicker > * {
-      min-width: 0;
-      overflow-wrap: anywhere;
     }
 
     .page-kicker-state {
@@ -1804,6 +1798,15 @@ ${current === "core" ? `
       margin: 48px 0 18px;
     }
 ${current === "papers" ? "" : `
+    .page-kicker {
+      min-width: 0;
+    }
+
+    .page-kicker > * {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
     .reader-orientation {
       display: grid;
       min-width: 0;
