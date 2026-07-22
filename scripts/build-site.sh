@@ -23,12 +23,16 @@ mkdir -p dist/.buildchain
 cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evidence-ownership.json
 
 test -f dist/index.html
+test -f dist/architecture/index.html
 test -f dist/core/index.html
+test -f dist/core/runtime/index.html
 test -f dist/core/manifest.json
 test -f dist/core/llms.txt
 test -f dist/core/llms-full.txt
 test -f dist/buildchain/index.html
+test -f dist/buildchain/mechanism/index.html
 test -f dist/kfd/index.html
+test -f dist/kfd/decisions/index.html
 test -f dist/kfd/foundation/index.html
 test -f dist/foundation/index.html
 test -f dist/kfd/formal/index.html
@@ -67,6 +71,7 @@ test -f dist/dogfood-evidence.json
 test -f dist/.buildchain/observed-evidence-ownership.json
 test -f dist/llms.txt
 test -f dist/papers/index.html
+test -f dist/papers/archive/index.html
 test -f dist/papers/manifest.json
 test -f dist/papers/registry.json
 test -f dist/papers/llms.txt

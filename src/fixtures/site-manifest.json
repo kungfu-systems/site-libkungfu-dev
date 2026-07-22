@@ -378,8 +378,8 @@
         "promise": "Keep the product and customer relationship. Adopt only the portable runtime and cooperation layers you need.",
         "claimClass": "site-synthesis",
         "sourceRefs": ["kungfu-action-runtime", "kfd-agent-hub-profile"],
-        "authorityLabel": "See the continuity stack",
-        "authorityHref": "#continuity-stack",
+        "authorityLabel": "Explore the continuity architecture",
+        "authorityHref": "/architecture/",
         "evidenceLabel": "Inspect machine facts",
         "evidenceHref": "/runtime.json"
       },
@@ -390,8 +390,8 @@
         "promise": "Start with the local evidence path, then descend into its exact runtime mechanism, qualification boundary, and pinned sources.",
         "claimClass": "site-synthesis",
         "sourceRefs": ["kungfu-action-runtime"],
-        "authorityLabel": "See the runtime mechanism",
-        "authorityHref": "#core-authority",
+        "authorityLabel": "Explore the runtime mechanism",
+        "authorityHref": "/runtime/",
         "evidenceLabel": "Inspect the manifest",
         "evidenceHref": "/manifest.json"
       },
@@ -402,8 +402,8 @@
         "promise": "Start with KFD's continuity question and adoption boundary, then descend into the numbered authority, schemas, and exact decision text.",
         "claimClass": "site-synthesis",
         "sourceRefs": ["kfd-3", "kfd-7", "kfd-agent-hub-profile"],
-        "authorityLabel": "Read KFD's answer",
-        "authorityHref": "#kfd-authority",
+        "authorityLabel": "Explore KFD decisions",
+        "authorityHref": "/decisions/",
         "evidenceLabel": "Inspect the manifest",
         "evidenceHref": "/manifest.json"
       },
@@ -414,10 +414,10 @@
         "promise": "Bind KFD-3 value surfaces and KFD-2 trust evidence to exact releases while keeping your product, customer relationship, and local admission policy.",
         "claimClass": "site-synthesis",
         "sourceRefs": ["buildchain-release-passport", "buildchain-kfd-support", "kfd-2", "kfd-3", "kfd-agent-hub-profile"],
-        "authorityLabel": "See the KFD-2/3 trust loop",
-        "authorityHref": "#buildchain-trust-loop",
+        "authorityLabel": "Explore release trust",
+        "authorityHref": "/mechanism/",
         "evidenceLabel": "Inspect the shipped mechanism",
-        "evidenceHref": "#buildchain-authority"
+        "evidenceHref": "#buildchain-evidence"
       }
     ]
   },

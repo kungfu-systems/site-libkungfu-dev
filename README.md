@@ -47,6 +47,24 @@ disclosure may move detail down-level; it may not delete upstream content,
 break a stable route, or upgrade an alpha contract, reference implementation,
 or future picture into a present ecosystem claim.
 
+Primary homepages are bounded overview surfaces, not cumulative documentation
+pages. Their stable depth routes own the material a reader only needs after the
+first decision to continue:
+
+- `https://libkungfu.dev/architecture/` — complete action-world, plural-Hub,
+  qualification, quickstart, and release-trust architecture;
+- `https://core.libkungfu.dev/runtime/` — complete Core runtime mechanism and
+  source contract;
+- `https://buildchain.libkungfu.dev/mechanism/` — complete KFD-2/3 release-trust
+  synthesis and package-owned Buildchain facts;
+- `https://kfd.libkungfu.dev/decisions/` — complete KFD foundation, numbered
+  authority, candidates, quickstart, and decision metadata; and
+- `https://papers.libkungfu.dev/archive/` — publication source, versions,
+  manifests, passports, and immutable archive evidence.
+
+The checker enforces a visible-word budget for every primary homepage and
+verifies that the removed detail still exists at its stable depth route.
+
 The five-layer Agent Supply Chain composition comes from the pinned product
 white-paper package. Buildchain and KFD package bundles remain authoritative
 for their own mechanics; the runtime fixture remains source-bound to Kungfu.
@@ -55,18 +73,20 @@ and keeps its human homepage projection aligned with that machine contract.
 
 ## Surfaces
 
-- `https://libkungfu.dev` is the open developer and agent substrate hub.
+- `https://libkungfu.dev` is the short builder entry to the open developer and
+  agent substrate hub; `/architecture/` owns the full architecture.
 - `https://core.libkungfu.dev` presents the libkungfu runtime substrate: the
-  mmap journal as retained evidence and local observation bus, its explicit
-  visibility/durability boundaries, and the secondary spec/source contract.
+  reader question, essential mechanism, and outcomes; `/runtime/` owns the
+  complete mmap, frontier, and source-contract detail.
 - `https://buildchain.libkungfu.dev` explains how KFD-3 value surfaces and
   KFD-2 trust evidence become release-bound facts that a Builder Hub can
-  evaluate under its own admission policy, then hands readers to Buildchain's
+  evaluate under its own admission policy; `/mechanism/` owns Buildchain's
   package-owned CI/CD, Release Passport, and release-governance facts.
-- `https://kfd.libkungfu.dev` presents Kung Fu Decisions as the organization
-  decision registry, standards metadata, schemas, and stable decision pages.
+- `https://kfd.libkungfu.dev` presents the continuity question and foundation
+  triad; `/decisions/` owns the complete registry, standards metadata,
+  candidates, schemas, and stable decision navigation.
 - `https://papers.libkungfu.dev` presents Kungfu product and research papers,
-  PDF-first reader entrypoints, mutable latest routes, immutable versioned
+  with PDF-first reader entrypoints; `/archive/` owns versions, immutable
   artifact prefixes, and agent-readable publication evidence.
 - `https://kungfu.tech` remains the end-user, buyer, and Kungfu Rewind product
   home.

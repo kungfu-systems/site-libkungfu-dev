@@ -395,6 +395,18 @@ function surfaceLinkAttrs(id) {
   return `href="${escapeAttr(surfaceCanonicalHref(id))}" data-local-href="${escapeAttr(surfaceSitePath(id))}"`;
 }
 
+function surfaceRouteLinkAttrs(id, routePath) {
+  const normalizedRoute = String(routePath || "").replace(/^\/+/, "");
+  return `href="${escapeAttr(surfaceEndpointHref(id, normalizedRoute))}" data-local-href="${escapeAttr(`${surfaceSitePath(id)}${normalizedRoute}`)}"`;
+}
+
+function readerActionLinkAttrs(surfaceId, href) {
+  if (/^(?:https?:|#)/.test(href)) {
+    return `href="${escapeAttr(href)}"`;
+  }
+  return surfaceRouteLinkAttrs(surfaceId, href);
+}
+
 function assertBadgeSlug(value, label) {
   const slug = String(value || "").trim();
   if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
@@ -892,18 +904,62 @@ function renderPublicationArchives() {
       </section>
 
       <section class="panel archive-boundary">
-        <h2>Publication evidence</h2>
+        <p class="eyebrow">Need versions, hashes, and provenance?</p>
+        <h2>Publication evidence lives in the archive.</h2>
+        <p>The reading shelf stays short. Open the archive only when you need manifests, source bundles, passports, and immutable version paths.</p>
+        <div class="card-actions">
+          <a class="card-action" ${archiveLinkAttrs("/archive/")}>Inspect publication evidence</a>
+          <a class="card-action secondary" href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}" data-local-href="/papers/registry.json">Open the registry</a>
+        </div>
+      </section>`,
+    }),
+  );
+  renderedRoutes.push({ path: "/", host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "registry-index" });
+
+  writeFile(
+    "papers/archive/index.html",
+    page({
+      title: "Publication evidence | papers.libkungfu.dev",
+      description: "Version, source, manifest, passport, and immutable archive evidence for every Kungfu paper.",
+      current: "papers",
+      body: `<section class="hero">
+        <p class="eyebrow page-kicker"><a ${archiveLinkAttrs("/")} aria-label="Back to Kungfu Papers">Back to Kungfu Papers</a><span class="page-kicker-state">archive / publication evidence</span></p>
+        <h1>Publication evidence</h1>
+        <p class="lead">Inspect versions, source revisions, PDFs, manifests, passports, and immutable archive paths without making every paper reader traverse release metadata first.</p>
+      </section>
+
+      <section class="panel archive-boundary">
+        <h2>Archive contract</h2>
         <p>Each release preserves its PDF, source bundle, manifest, and passport under an immutable version path.</p>
         <dl class="meta" style="margin-top: 14px;">
           <dt>source</dt>
           <dd><code>${escapeHtml(source.source)}</code></dd>
           <dt>archive rule</dt>
           <dd>${escapeHtml(registry.archivePolicy.rule)}</dd>
+          <dt>machine registry</dt>
+          <dd><a href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}" data-local-href="/papers/registry.json"><code>/registry.json</code></a></dd>
+          <dt>archive manifest</dt>
+          <dd><a href="${escapeAttr(surfaceEndpointHref("papers", "manifest.json"))}" data-local-href="/papers/manifest.json"><code>/manifest.json</code></a></dd>
         </dl>
+      </section>
+
+      <section class="section-heading">
+        <p class="eyebrow">Published coordinates</p>
+        <h2>Every paper and immutable release</h2>
+      </section>
+      <section class="grid">
+        ${normalizedPublications.map((publication) => `<article class="panel">
+          <h3><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h3>
+          <p>${escapeHtml(publication.summary)}</p>
+          <div class="card-actions">
+            <a class="card-action" ${archiveLinkAttrs(publication.latest.path)}>Latest evidence</a>
+            <a class="card-action secondary" ${archiveLinkAttrs(`/${publication.id}/`)}>All versions</a>
+          </div>
+        </article>`).join("\n")}
       </section>`,
     }),
   );
-  renderedRoutes.push({ path: "/", host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "registry-index" });
+  renderedRoutes.push({ path: "/archive/", host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "evidence-index" });
 
   for (const publication of normalizedPublications) {
     const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
@@ -1093,6 +1149,7 @@ Publication archives expose mutable latest routes and immutable version artifact
 
 Human entry:
 - ${surfaceCanonicalHref("papers")}
+- ${surfaceEndpointHref("papers", "archive/")} (publication evidence)
 
 Agent-first entries:
 - ${surfaceEndpointHref("papers", "manifest.json")}
@@ -3643,8 +3700,8 @@ function renderReaderOrientation(surfaceId, stateLabel) {
     <h1>${escapeHtml(pathEntry.question)}</h1>
     <p class="lead">${escapeHtml(pathEntry.promise)}</p>
     <div class="reader-actions">
-      <a class="reader-action" href="${escapeAttr(pathEntry.authorityHref)}">${escapeHtml(pathEntry.authorityLabel)}</a>
-      <a class="reader-action secondary" href="${escapeAttr(pathEntry.evidenceHref)}">${escapeHtml(pathEntry.evidenceLabel)}</a>
+      <a class="reader-action" ${readerActionLinkAttrs(surfaceId, pathEntry.authorityHref)}>${escapeHtml(pathEntry.authorityLabel)}</a>
+      <a class="reader-action secondary" ${readerActionLinkAttrs(surfaceId, pathEntry.evidenceHref)}>${escapeHtml(pathEntry.evidenceLabel)}</a>
     </div>
   </section>`;
 }
@@ -3692,6 +3749,29 @@ function renderContinuityStack() {
           .join("\n")}
       </div>
       <p class="reader-claim-boundary" data-claim-class="${escapeAttr(supplyChain.claimClass)}"><strong>Claim boundary:</strong> ${escapeHtml(supplyChain.nonClaim)} ${renderReaderSources(supplyChain.sourceRefs)}</p>
+    </div>
+  </section>`;
+}
+
+function renderAgentSupplyChainSummary() {
+  return `<section id="agent-supply-chain" aria-labelledby="agent-supply-chain-heading">
+    <div class="section-heading">
+      <p class="eyebrow">01 · Agent Supply Chain · upstream composition</p>
+      <h2 id="agent-supply-chain-heading">Five responsibilities. Independent owners. One inspectable path.</h2>
+      <p>${escapeHtml(agentSupplyChain.categoryStatement)}</p>
+    </div>
+    <ol class="reader-chain agent-supply-chain-grid" aria-label="Five Agent Supply Chain responsibilities">
+      ${agentSupplyChain.layers.map((layer) => `<li class="reader-card" data-status-class="${escapeAttr(layer.statusClass)}">
+        <p class="reader-card-role">${escapeHtml(`${String(layer.order).padStart(2, "0")} · ${layer.owner}`)}</p>
+        <h3>${escapeHtml(layer.id)}</h3>
+        <p>${escapeHtml(layer.statement)}</p>
+        <span class="tag">${escapeHtml(layer.statusClass)}</span>
+      </li>`).join("\n")}
+    </ol>
+    <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(agentSupplyChain.claimBoundary)}</p>
+    <div class="card-actions">
+      <a class="card-action" href="/agent-supply-chain.json">Inspect the machine contract</a>
+      <a class="card-action secondary" href="/architecture/">Explore the complete architecture</a>
     </div>
   </section>`;
 }
@@ -3768,7 +3848,65 @@ function renderBuildchainReaderSynthesis() {
   </section>`;
 }
 
+function renderBuildchainHomepageSummary() {
+  const synthesis = site.readerContract.surfaceSynthesis.buildchain;
+  const trustLoop = synthesis.trustLoop;
+  const hubValue = synthesis.hubValue;
+  const ecosystemEffect = synthesis.ecosystemEffect;
+  const ownershipBoundary = synthesis.ownershipBoundary;
+  return `<section class="buildchain-reader-story" aria-labelledby="buildchain-reader-heading">
+    <div class="section-heading">
+      <p class="eyebrow">01 · The essential loop</p>
+      <h2 id="buildchain-reader-heading">${escapeHtml(synthesis.heading)}</h2>
+      <p>${escapeHtml(synthesis.lead)}</p>
+      ${renderReaderSources(synthesis.sourceRefs)}
+    </div>
+
+    <section class="buildchain-story-panel" id="buildchain-trust-loop" aria-labelledby="buildchain-trust-loop-heading" data-claim-class="${escapeAttr(trustLoop.claimClass)}">
+      <header>
+        <p class="eyebrow">KFD-2 × KFD-3 × exact release</p>
+        <h3 id="buildchain-trust-loop-heading">${escapeHtml(trustLoop.heading)}</h3>
+      </header>
+      <ol class="buildchain-trust-loop" aria-label="The shortest Buildchain trust loop">
+        ${trustLoop.steps.map((entry) => `<li class="buildchain-story-card" data-claim-class="${escapeAttr(entry.claimClass)}">
+          <p class="reader-card-role">${escapeHtml(entry.role)}</p>
+          <h4>${escapeHtml(entry.label)}</h4>
+          <p>${escapeHtml(entry.summary)}</p>
+        </li>`).join("\n")}
+      </ol>
+    </section>
+
+    <section class="grid" id="buildchain-evidence" aria-label="Builder Hub value and ownership boundary">
+      <article class="panel">
+        <p class="eyebrow">What the Hub gains</p>
+        <h3>${escapeHtml(hubValue.heading)}</h3>
+        <ul>${hubValue.outcomes.map((entry) => `<li>${escapeHtml(entry.label)}</li>`).join("")}</ul>
+      </article>
+      <article class="panel buildchain-ownership">
+        <p class="eyebrow">What the Hub keeps</p>
+        <h3>${escapeHtml(ownershipBoundary.heading)}</h3>
+        <ul class="buildchain-ownership-list">${ownershipBoundary.retainedByHub.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("\n")}</ul>
+      </article>
+    </section>
+
+    <section class="panel" data-claim-class="${escapeAttr(ecosystemEffect.claimClass)}">
+      <p class="eyebrow">Potential ecosystem effect · not an adoption claim</p>
+      <h3>${escapeHtml(ecosystemEffect.heading)}</h3>
+      <p>${escapeHtml(ecosystemEffect.summary)}</p>
+      <p class="reader-claim-boundary" data-claim-class="${escapeAttr(ecosystemEffect.nonClaimClass)}"><strong>Claim boundary:</strong> ${escapeHtml(ecosystemEffect.nonClaim)}</p>
+      <div class="card-actions">
+        <a class="card-action" ${surfaceRouteLinkAttrs("buildchain", "mechanism/")}>Explore release trust and Buildchain mechanics</a>
+        <a class="card-action secondary" href="${escapeAttr(buildchainPackage.repository)}">Open the source repository</a>
+      </div>
+    </section>
+  </section>`;
+}
+
 const runtimeHomepageStyles = `<style>
+  .agent-supply-chain-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
@@ -4419,21 +4557,16 @@ const dogfoodStyles = `<style>
 </style>`;
 
 writeFile(
-  "index.html",
+  "architecture/index.html",
   page({
-    title: `${site.title} | Embeddable Agent runtime`,
-    description: site.tagline,
+    title: `Continuity architecture | ${site.title}`,
+    description: "The complete Kungfu continuity, Hub cooperation, runtime qualification, and release-trust architecture.",
     current: "hub",
     body: `${runtimeHomepageStyles}${dogfoodStyles}
     <section class="hero">
-      <p class="eyebrow">Start here · ${escapeHtml(readerPath("hub").audience)}</p>
-      <h1>${escapeHtml(site.homepage.headline)}</h1>
-      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
-      <p><strong>Your Hub stays yours.</strong> ${escapeHtml(site.readerContract.guidedSynthesis.supplyChain.steps[0].summary)}</p>
-      <div class="hero-actions">
-        <a class="hero-action" href="${escapeAttr(readerPath("hub").authorityHref)}">${escapeHtml(readerPath("hub").authorityLabel)}</a>
-        <a class="hero-action secondary" ${surfaceLinkAttrs("core")}>Open Core runtime</a>
-      </div>
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state">architecture / complete model</span></p>
+      <h1>How the continuity stack works</h1>
+      <p class="lead">Follow the full path from recorded action and plural-Hub cooperation to runtime qualification, release trust, and public evidence.</p>
     </section>
 
     ${renderContinuityStack()}
@@ -4643,6 +4776,39 @@ writeFile(
   }),
 );
 
+writeFile(
+  "index.html",
+  page({
+    title: `${site.title} | Embeddable Agent runtime`,
+    description: site.tagline,
+    current: "hub",
+    body: `${runtimeHomepageStyles}
+    <section class="hero">
+      <p class="eyebrow">Start here · ${escapeHtml(readerPath("hub").audience)}</p>
+      <h1>${escapeHtml(site.homepage.headline)}</h1>
+      <p class="lead">${escapeHtml(site.homepage.lead)}</p>
+      <p><strong>Your Hub stays yours.</strong> ${escapeHtml(site.readerContract.guidedSynthesis.supplyChain.steps[0].summary)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="${escapeAttr(readerPath("hub").authorityHref)}">${escapeHtml(readerPath("hub").authorityLabel)}</a>
+        <a class="hero-action secondary" ${surfaceLinkAttrs("core")}>Open Core runtime</a>
+      </div>
+    </section>
+
+    ${renderAgentSupplyChainSummary()}
+
+    <section class="panel" aria-labelledby="hub-next-depth-heading">
+      <p class="eyebrow">Continue only when you need the mechanism</p>
+      <h2 id="hub-next-depth-heading">The complete architecture now lives one level down.</h2>
+      <p>Open the detailed action world, plural-Hub topology, qualification evidence, quickstarts, release-trust map, and source boundary without making every visitor traverse them first.</p>
+      <div class="card-actions">
+        <a class="card-action" href="/architecture/">Explore the continuity architecture</a>
+        <a class="card-action secondary" href="/dogfood/">Audit public dogfood evidence</a>
+        <a class="card-action secondary" href="/runtime.json">Inspect machine facts</a>
+      </div>
+    </section>`,
+  }),
+);
+
 const coreAgentManifest = {
   schemaVersion: 1,
   contract: "libkungfu-core-runtime-surface",
@@ -4659,6 +4825,10 @@ const coreAgentManifest = {
     contract: site.readerContract.contract,
     owner: site.readerContract.owner,
     path: readerPath("core"),
+    humanEntries: {
+      overview: surfaceCanonicalHref("core"),
+      mechanism: surfaceEndpointHref("core", "runtime/"),
+    },
     layers: site.readerContract.layers,
     sourceBoundary: site.sourceBoundary,
   },
@@ -4785,13 +4955,17 @@ writeFile(
 );
 
 writeFile(
-  "core/index.html",
+  "core/runtime/index.html",
   page({
-    title: "core.libkungfu.dev | Runtime substrate",
-    description: core.homepage.lead,
+    title: "Core runtime mechanism | core.libkungfu.dev",
+    description: "The complete Core journal, observation, durability, semantic, qualification, and source-contract model.",
     current: "core",
     preserveRelativeMachineEntries: true,
-    body: `${renderReaderOrientation("core", "Runtime substrate")}
+    body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("core")} aria-label="Back to Core home">Back to Core home</a><span class="page-kicker-state">runtime / complete mechanism</span></p>
+      <h1>Core runtime mechanism</h1>
+      <p class="lead">Inspect the complete journal, observation, durability, semantic, qualification, and source-contract path.</p>
+    </section>
     <section class="hero core-hero" id="core-authority">
       <div class="core-hero-layout">
         <div class="core-hero-copy">
@@ -4922,6 +5096,42 @@ writeFile(
   }),
 );
 
+writeFile(
+  "core/index.html",
+  page({
+    title: "core.libkungfu.dev | Runtime substrate",
+    description: core.homepage.lead,
+    current: "core",
+    preserveRelativeMachineEntries: true,
+    body: `${renderReaderOrientation("core", "Runtime substrate")}
+    <section class="panel" id="core-authority" aria-labelledby="core-home-mechanism-heading">
+      <p class="eyebrow">Essential mechanism</p>
+      <h2 id="core-home-mechanism-heading">${escapeHtml(core.homepage.headline)}</h2>
+      <p class="lead">${escapeHtml(core.homepage.lead)}</p>
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(core.homepage.claimBoundary)}</p>
+      <div class="card-actions">
+        <a class="card-action" ${surfaceRouteLinkAttrs("core", "runtime/")}>Explore the runtime mechanism</a>
+        <a class="card-action secondary" ${surfaceRouteLinkAttrs("core", "manifest.json")}>Inspect the manifest</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="core-outcomes-heading">
+      <p class="eyebrow">Why this matters to an Agent Hub</p>
+      <h2 id="core-outcomes-heading" class="section-heading">One retained path supports live observation and later recovery.</h2>
+      <div class="grid three core-outcome-grid">
+        ${core.outcomes
+          .map(
+            (outcome) => `<article class="panel core-outcome-card">
+              <h3>${escapeHtml(outcome.title)}</h3>
+              <p>${escapeHtml(outcome.summary)}</p>
+            </article>`,
+          )
+          .join("")}
+      </div>
+    </section>`,
+  }),
+);
+
 writeFile("core/manifest.json", `${JSON.stringify(coreAgentManifest, null, 2)}\n`);
 writeFile(
   "core/llms.txt",
@@ -4968,14 +5178,18 @@ Machine entries:
 writeFile("core/llms-full.txt", `# core.libkungfu.dev full agent index\n\n${JSON.stringify(coreAgentManifest, null, 2)}\n`);
 
 writeFile(
-  "kfd/index.html",
+  "kfd/decisions/index.html",
   page({
-    title: "kfd.libkungfu.dev | Kung Fu Decisions",
-    description: kfdPackage.description,
+    title: "KFD decisions and standards | kfd.libkungfu.dev",
+    description: "The complete KFD foundation, numbered decisions, candidates, adoption boundary, quickstart, and source metadata.",
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
-    <section class="hero" id="kfd-authority">
+    body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">decisions / complete authority</span></p>
+      <h1>KFD decisions and standards</h1>
+      <p class="lead">Inspect the complete foundation model, adoption boundary, numbered authority, candidates, quickstart, and decision metadata.</p>
+    </section>
+    <section class="hero">
       <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
       ${kfdFuturePictureHero()}
     </section>
@@ -5045,6 +5259,41 @@ writeFile(
     }
 
     `,
+  }),
+);
+
+writeFile(
+  "kfd/index.html",
+  page({
+    title: "kfd.libkungfu.dev | Kung Fu Decisions",
+    description: kfdPackage.description,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
+    <section class="hero" id="kfd-authority">
+      <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
+      ${kfdFuturePictureHero()}
+    </section>
+
+    <section class="panel" id="foundation-triad">
+      <p class="eyebrow">The minimum model</p>
+      <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
+      <div class="grid three" style="margin-top: 18px;">
+        ${kfdSite.homepage.foundationTriad.commitments
+          .map((entry) => {
+            const match = /^KFD-(\d+)\b/.exec(entry.id);
+            return `<article class="panel foundation-triad-card">
+              <h3><a href="/${escapeHtml(match[1])}/">${escapeHtml(entry.id)}</a></h3>
+              <p>${inlineMarkdown(entry.text)}</p>
+            </article>`;
+          })
+          .join("\n")}
+      </div>
+      <div class="card-actions">
+        <a class="card-action" ${surfaceRouteLinkAttrs("kfd", "decisions/")}>Explore decisions and standards</a>
+        <a class="card-action secondary" ${surfaceRouteLinkAttrs("kfd", "registry.json")}>Inspect the registry</a>
+      </div>
+    </section>`,
   }),
 );
 
@@ -5570,12 +5819,16 @@ for (const entry of kfdRegistry.entries) {
 }
 
 writeFile(
-  "buildchain/index.html",
+  "buildchain/mechanism/index.html",
   page({
-    title: "buildchain.libkungfu.dev | Buildchain surface",
-    description: buildchainPageDescription(),
+    title: "Buildchain release trust and mechanics | buildchain.libkungfu.dev",
+    description: "The complete KFD-2/3 trust model and package-owned Buildchain mechanism, CLI, workflows, artifacts, and release facts.",
     current: "buildchain",
-    body: `${renderReaderOrientation("buildchain", "Buildchain product surface")}
+    body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("buildchain")} aria-label="Back to Buildchain home">Back to Buildchain home</a><span class="page-kicker-state">mechanism / complete reference</span></p>
+      <h1>Buildchain release trust and mechanics</h1>
+      <p class="lead">Inspect the complete KFD-2/3 trust model, Hub boundary, package-owned mechanism, CLI, workflows, artifacts, and release facts.</p>
+    </section>
     ${renderBuildchainReaderSynthesis()}
     <section class="hero" id="buildchain-authority">
       <p class="eyebrow">06 · Upstream authority · @kungfu-tech/buildchain</p>
@@ -5709,6 +5962,17 @@ writeFile(
   }),
 );
 
+writeFile(
+  "buildchain/index.html",
+  page({
+    title: "buildchain.libkungfu.dev | Buildchain surface",
+    description: buildchainPageDescription(),
+    current: "buildchain",
+    body: `${renderReaderOrientation("buildchain", "Buildchain product surface")}
+    ${renderBuildchainHomepageSummary()}`,
+  }),
+);
+
 for (const buildchainPage of buildchainSite.pages.filter((pageEntry) => normalizeBuildchainRoute(pageEntry.route) !== "/")) {
   const renderedPage = renderBuildchainPageMarkdown(buildchainPage);
   writeFile(
@@ -5780,6 +6044,7 @@ const manifest = {
   readerContract: site.readerContract,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    { path: "/architecture/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),
@@ -5801,6 +6066,7 @@ const manifest = {
       source: `@kungfu-tech/paper-kungfu-product-white-paper@${whitePaperEvidence.source.packageVersion}/site/evidence-site.json`,
     },
     { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
+    { path: "/runtime/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/manifest.json", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/llms.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
     { path: "/llms-full.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
@@ -5817,6 +6083,11 @@ const manifest = {
       host: surfaceCanonicalHost("buildchain"),
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
+    {
+      path: "/mechanism/",
+      host: surfaceCanonicalHost("buildchain"),
+      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
+    },
     ...buildchainSite.pages
       .filter((pageEntry) => normalizeBuildchainRoute(pageEntry.route) !== "/")
       .map((pageEntry) => ({
@@ -5826,6 +6097,11 @@ const manifest = {
       })),
     {
       path: "/",
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
+    },
+    {
+      path: "/decisions/",
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
     },
@@ -6018,6 +6294,10 @@ const kfdAgentManifest = {
   ...surfaceTimestampPolicy,
   canonicalHost: surfaceCanonicalHost("kfd"),
   humanEntry: surfaceCanonicalHref("kfd"),
+  humanEntries: {
+    overview: surfaceCanonicalHref("kfd"),
+    decisions: surfaceEndpointHref("kfd", "decisions/"),
+  },
   agentEntries: {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
     manifest: surfaceEndpointHref("kfd", "manifest.json"),
@@ -6049,6 +6329,7 @@ const kfdAgentManifest = {
   },
   readOrder: [
     surfaceCanonicalHref("kfd"),
+    surfaceEndpointHref("kfd", "decisions/"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdTerminologyPath.replace(/^\/+/, "")),
@@ -6227,11 +6508,16 @@ ${site.readerContract.surfacePaths.map((entry) => `- ${entry.id} / ${entry.audie
 
 Primary pages:
 - ${surfaceCanonicalHref("hub")}
+- ${surfaceEndpointHref("hub", "architecture/")} (complete continuity architecture)
 - ${surfaceEndpointHref("hub", "dogfood/")}
 - ${surfaceCanonicalHref("core")}
+- ${surfaceEndpointHref("core", "runtime/")} (complete runtime mechanism)
 - ${surfaceCanonicalHref("buildchain")}
+- ${surfaceEndpointHref("buildchain", "mechanism/")} (complete release-trust mechanism)
 - ${surfaceCanonicalHref("kfd")}
+- ${surfaceEndpointHref("kfd", "decisions/")} (complete decisions and standards)
 - ${surfaceCanonicalHref("papers")}
+- ${surfaceEndpointHref("papers", "archive/")} (publication evidence)
 
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
