@@ -922,6 +922,7 @@ function renderPublicationArchives() {
       title: "Publication evidence | papers.libkungfu.dev",
       description: "Version, source, manifest, passport, and immutable archive evidence for every Kungfu paper.",
       current: "papers",
+      immutableArchive: true,
       body: `<section class="hero">
         <p class="eyebrow page-kicker"><a ${archiveLinkAttrs("/")} aria-label="Back to Kungfu Papers">Back to Kungfu Papers</a><span class="page-kicker-state">archive / publication evidence</span></p>
         <h1>Publication evidence</h1>

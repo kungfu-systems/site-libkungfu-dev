@@ -993,6 +993,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
 }
 const papersIndex = fs.readFileSync("dist/papers/index.html", "utf8");
 const papersArchiveHtml = fs.readFileSync("dist/papers/archive/index.html", "utf8");
+if (papersArchiveHtml.includes("main-site-link") || papersArchiveHtml.includes("Back to the Kungfu main site")) {
+  throw new Error("immutable publication archive index changed after the main-site header addition");
+}
 let previousPaperCardPosition = -1;
 for (const publication of publicationRenderedRegistry.publications) {
   if (!papersIndex.includes(escapeHtml(publication.title))) {
