@@ -20,6 +20,19 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
+for (const projectionContract of [
+  'projection === "kungfu-tech"',
+  'parentOrigin === "https://kungfu.tech"',
+  '"kungfu.dogfood.timeline/v1"',
+  '"kungfu.dogfood.timeline.request/v1"',
+  '"kungfu.dogfood.snapshot.request/v1"',
+  '"kungfu.dogfood.snapshot.response/v1"',
+  'event.origin !== parentOrigin || event.source !== window.parent',
+]) {
+  if (!renderSiteSource.includes(projectionContract)) {
+    throw new Error(`dogfood projection bridge missing safety contract: ${projectionContract}`);
+  }
+}
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/core-runtime-surface.json",
