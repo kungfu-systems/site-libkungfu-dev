@@ -3040,15 +3040,51 @@ function dogfoodLiveProjectionScript() {
   (() => {
     const number = new Intl.NumberFormat("en-US");
     const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
-    const render = (evidence) => {
+    const latestUrl = "/dogfood-evidence.json";
+    const cache = new Map();
+    let latestEvidence;
+    let timeline = [];
+    const status = (message) => setText("dogfood-history-status", message);
+    const validate = (evidence, expectedId) => {
+      if (!evidence || !["kungfu.public-dogfood-evidence/v1", "kungfu.public-dogfood-evidence/v2"].includes(evidence.schema)) throw new Error("unsupported evidence schema");
+      if (!evidence.snapshotId || !evidence.observation || !evidence.metrics || !Array.isArray(evidence.repositories)) throw new Error("incomplete evidence snapshot");
+      if (expectedId && evidence.snapshotId !== expectedId) throw new Error("snapshot id mismatch");
+      return evidence;
+    };
+    const sha256 = async (bytes) => {
+      if (!window.crypto || !window.crypto.subtle) return null;
+      const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+    };
+    const load = async (entry) => {
+      if (cache.has(entry.snapshotId)) return cache.get(entry.snapshotId);
+      const promise = (async () => {
+        const fetchUrl = entry.current ? latestUrl : new URL(entry.url, window.location.href).pathname;
+        const response = await fetch(fetchUrl, { cache: entry.current ? "no-store" : "force-cache" });
+        if (!response.ok) throw new Error("evidence fetch failed: " + response.status);
+        const bytes = await response.arrayBuffer();
+        const digest = entry.sha256 ? await sha256(bytes) : null;
+        if (digest && digest !== entry.sha256) throw new Error("snapshot sha256 mismatch");
+        return validate(JSON.parse(new TextDecoder().decode(bytes)), entry.snapshotId);
+      })();
+      cache.set(entry.snapshotId, promise);
+      try { return await promise; } catch (error) { cache.delete(entry.snapshotId); throw error; }
+    };
+    const render = (evidence, entry) => {
       document.documentElement.dataset.dogfoodSnapshot = evidence.snapshotId;
-      setText("dogfood-state", "public dogfood / latest observed");
+      setText("dogfood-state", entry.current ? "public dogfood / latest observed" : "public dogfood / archived observation");
       setText("dogfood-window-start", evidence.observation.window.startInclusive);
       setText("dogfood-window-end", evidence.observation.window.endInclusive);
       setText("dogfood-pr-total", number.format(evidence.metrics.mergedPublicPullRequests.value));
       setText("dogfood-pr-caption", evidence.metrics.mergedPublicPullRequests.label + " across " + number.format(evidence.metrics.repositoriesWithMergedPullRequests.value) + " repositories");
+      const hero = document.getElementById("dogfood-hero-number");
+      if (hero) hero.setAttribute("aria-label", number.format(evidence.metrics.mergedPublicPullRequests.value) + " merged public pull requests in the observed window");
       setText("dogfood-observed-at", evidence.observation.observedAt);
       setText("dogfood-query", evidence.sources.github.baseQuery);
+      setText("dogfood-generated-at", evidence.provenance?.generatedAt || "legacy snapshot; generation timestamp was not recorded");
+      setText("dogfood-snapshot-kind", entry.generationKind + (entry.offCadence ? " / off cadence" : ""));
+      const machine = document.getElementById("dogfood-machine-route");
+      if (machine) { machine.href = entry.url; machine.textContent = entry.current ? latestUrl : new URL(entry.url, window.location.href).pathname; }
       const cut = document.getElementById("dogfood-cut");
       if (cut) {
         cut.textContent = evidence.sources.projectCuts.gitCommit;
@@ -3093,10 +3129,116 @@ function dogfoodLiveProjectionScript() {
         }));
       }
     };
-    fetch("/dogfood-evidence.json", { cache: "no-store" })
+    const signed = (value) => value > 0 ? "+" + number.format(value) : number.format(value);
+    const renderComparison = (current, previous) => {
+      const body = document.getElementById("dogfood-comparison-body");
+      const heading = document.getElementById("dogfood-comparison-heading");
+      if (!body || !heading) return;
+      if (!previous) {
+        heading.textContent = "First retained observation point";
+        body.replaceChildren();
+        return;
+      }
+      heading.textContent = "Change from " + previous.observation.observedAt + " to " + current.observation.observedAt;
+      const metrics = [
+        ["mergedPublicPullRequests", "Merged public PR search matches"],
+        ["repositoriesWithMergedPullRequests", "Repositories with merged PRs"],
+        ["reviewSearchMatches", "Reviewed-by search matches"],
+        ["retainedPublicProjectCuts", "Retained public Project Cuts"],
+        ["projectCutTitleMatches", "Project Cut title matches"],
+      ];
+      body.replaceChildren(...metrics.map(([key, label]) => {
+        const before = previous.metrics[key].value;
+        const after = current.metrics[key].value;
+        const row = document.createElement("tr");
+        for (const value of [label, number.format(before), number.format(after), signed(after - before)]) {
+          const cell = document.createElement(value === label ? "th" : "td");
+          if (value === label) cell.scope = "row";
+          cell.textContent = value;
+          row.append(cell);
+        }
+        return row;
+      }));
+    };
+    const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus) => {
+      const entry = timeline.find((candidate) => candidate.snapshotId === snapshotId);
+      if (!entry) {
+        return selectSnapshot(timeline.at(-1).snapshotId, false, "Unknown snapshot id; showing the latest verified observation.");
+      }
+      const index = timeline.indexOf(entry);
+      try {
+        const [evidence, previous] = await Promise.all([
+          entry.current ? Promise.resolve(latestEvidence) : load(entry),
+          index > 0 ? load(timeline[index - 1]) : Promise.resolve(null),
+        ]);
+        render(evidence, entry);
+        renderComparison(evidence, previous);
+        const selector = document.getElementById("dogfood-snapshot-select");
+        if (selector) selector.value = entry.snapshotId;
+        const previousButton = document.getElementById("dogfood-previous");
+        const nextButton = document.getElementById("dogfood-next");
+        if (previousButton) previousButton.disabled = index === 0;
+        if (nextButton) nextButton.disabled = index === timeline.length - 1;
+        document.body.dataset.dogfoodTimelineIndex = String(index);
+        if (updateUrl) {
+          const url = new URL(window.location.href);
+          if (entry.current) url.searchParams.delete("snapshot"); else url.searchParams.set("snapshot", entry.snapshotId);
+          window.history.pushState({ snapshotId: entry.snapshotId }, "", url);
+        }
+        status(fallbackStatus || ((entry.current ? "Showing latest observation: " : "Showing archived observation: ") + entry.observedAt + ". Adjacent deltas compare overlapping P30D windows."));
+      } catch (error) {
+        if (!entry.current) {
+          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.");
+        }
+        throw error;
+      }
+    };
+    const move = (offset) => {
+      const index = Number(document.body.dataset.dogfoodTimelineIndex || timeline.length - 1);
+      const target = timeline[index + offset];
+      if (target) selectSnapshot(target.snapshotId, true);
+    };
+    fetch(latestUrl, { cache: "no-store" })
       .then((response) => { if (!response.ok) throw new Error("evidence fetch failed"); return response.json(); })
-      .then(render)
-      .catch(() => setText("dogfood-state", "public dogfood / retained fallback"));
+      .then((evidence) => {
+        latestEvidence = validate(evidence);
+        const current = {
+          snapshotId: evidence.snapshotId,
+          observedAt: evidence.observation.observedAt,
+          generatedAt: evidence.provenance?.generatedAt || evidence.observation.observedAt,
+          generationKind: evidence.provenance?.generationKind || "legacy",
+          backfill: evidence.provenance?.backfill === true,
+          offCadence: evidence.provenance ? false : true,
+          url: latestUrl,
+          sha256: null,
+          previousSnapshotId: evidence.history?.previousSnapshotId || null,
+          current: true,
+        };
+        timeline = [...(evidence.history?.entries || []), current].sort((left, right) => Date.parse(left.observedAt) - Date.parse(right.observedAt));
+        cache.set(current.snapshotId, Promise.resolve(evidence));
+        const selector = document.getElementById("dogfood-snapshot-select");
+        if (selector) {
+          selector.replaceChildren(...timeline.map((entry) => {
+            const option = document.createElement("option");
+            option.value = entry.snapshotId;
+            option.textContent = entry.observedAt + " · " + (entry.current ? "latest" : entry.generationKind) + (entry.offCadence ? " · off cadence" : "");
+            return option;
+          }));
+          selector.addEventListener("change", () => selectSnapshot(selector.value, true));
+        }
+        document.getElementById("dogfood-previous")?.addEventListener("click", () => move(-1));
+        document.getElementById("dogfood-next")?.addEventListener("click", () => move(1));
+        window.addEventListener("popstate", () => {
+          const requested = new URL(window.location.href).searchParams.get("snapshot");
+          selectSnapshot(requested || timeline.at(-1).snapshotId, false);
+        });
+        const requested = new URL(window.location.href).searchParams.get("snapshot");
+        return selectSnapshot(requested || current.snapshotId, false);
+      })
+      .catch(() => {
+        setText("dogfood-state", "public dogfood / retained fallback");
+        status("Live evidence is unavailable; the readable retained fallback remains on this page.");
+      });
   })();
   </script>`;
 }
@@ -4448,6 +4590,54 @@ const dogfoodStyles = `<style>
 
   .dogfood-window code { font-size: 12px; }
 
+  .dogfood-history {
+    display: grid;
+    gap: 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--soft);
+    padding: clamp(18px, 3vw, 28px);
+  }
+
+  .dogfood-history-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .dogfood-history-controls label { display: grid; gap: 7px; font-weight: 750; }
+  .dogfood-history-controls select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 10px 12px;
+    font: inherit;
+  }
+
+  .dogfood-history-nav { display: flex; gap: 8px; }
+  .dogfood-history-nav button {
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 10px 14px;
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .dogfood-history-nav button:disabled { cursor: not-allowed; opacity: 0.45; }
+  .dogfood-history-status { min-height: 1.5em; margin: 0; color: var(--muted); }
+  .dogfood-comparison { overflow-x: auto; }
+  .dogfood-comparison h3 { margin: 0 0 12px; }
+  .dogfood-comparison table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .dogfood-comparison caption { margin-bottom: 10px; color: var(--muted); text-align: left; }
+  .dogfood-comparison th,
+  .dogfood-comparison td { border-top: 1px solid var(--line); padding: 9px 10px; text-align: right; }
+  .dogfood-comparison th:first-child { min-width: 210px; text-align: left; }
+
   .dogfood-flow {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -4604,6 +4794,8 @@ const dogfoodStyles = `<style>
     }
 
     .dogfood-case { grid-template-columns: 1fr; }
+    .dogfood-history-controls { grid-template-columns: 1fr; }
+    .dogfood-history-nav button { flex: 1; }
     .case-roots { grid-template-columns: 1fr; }
     .case-roots dd + dt { margin-top: 6px; }
     .repo-work-row { grid-template-columns: minmax(100px, 0.8fr) minmax(70px, 1fr) 48px; }
@@ -4925,9 +5117,37 @@ writeFile(
           <a class="card-action" href="${escapeAttr(dogfoodEvidence.sources.github.repository)}">Inspect the public organization</a>
         </div>
       </div>
-      <div class="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
+      <div class="dogfood-hero-number" id="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
         <strong id="dogfood-pr-total">${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
         <span id="dogfood-pr-caption">${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
+      </div>
+    </section>
+
+    <section class="dogfood-history" aria-labelledby="dogfood-history-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Append-only observation history</p>
+        <h2 id="dogfood-history-heading">Review any retained snapshot and its adjacent change.</h2>
+        <p>Each delta is a change between observation points over overlapping rolling P30D windows. It is not a count of work newly created in one week.</p>
+      </div>
+      <div class="dogfood-history-controls">
+        <label for="dogfood-snapshot-select">Observation snapshot
+          <select id="dogfood-snapshot-select" name="snapshot">
+            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · retained fallback</option>
+          </select>
+        </label>
+        <div class="dogfood-history-nav" aria-label="Adjacent observations">
+          <button type="button" id="dogfood-previous" disabled>Previous</button>
+          <button type="button" id="dogfood-next" disabled>Next</button>
+        </div>
+      </div>
+      <p class="dogfood-history-status" id="dogfood-history-status" role="status" aria-live="polite">Loading the append-only observation chain…</p>
+      <div class="dogfood-comparison">
+        <h3 id="dogfood-comparison-heading">Adjacent observation comparison</h3>
+        <table aria-describedby="dogfood-history-status">
+          <caption>Metric values are independent P30D observations; the delta is current minus previous.</caption>
+          <thead><tr><th scope="col">Metric</th><th scope="col">Previous</th><th scope="col">Selected</th><th scope="col">Delta</th></tr></thead>
+          <tbody id="dogfood-comparison-body"><tr><th scope="row">History</th><td colspan="3">Available when live evidence loads.</td></tr></tbody>
+        </table>
       </div>
     </section>
 
@@ -4999,9 +5219,11 @@ writeFile(
       <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
       <dl class="meta" style="margin-top: 18px;">
         <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
+        <dt>Generated at</dt><dd><code id="dogfood-generated-at">legacy snapshot; generation timestamp was not recorded</code></dd>
+        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">retained fallback</code></dd>
         <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
         <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
-        <dt>Machine route</dt><dd><a href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
+        <dt>Machine route</dt><dd><a id="dogfood-machine-route" href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
       </dl>
     </section>
     ${dogfoodLiveProjectionScript()}`,

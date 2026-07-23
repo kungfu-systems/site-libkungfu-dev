@@ -502,6 +502,54 @@ for (const requiredText of [
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
 }
+for (const historyContract of [
+  'id="dogfood-snapshot-select"',
+  'id="dogfood-previous"',
+  'id="dogfood-next"',
+  'id="dogfood-comparison-body"',
+  "Append-only observation history",
+  "overlapping rolling P30D windows",
+  'role="status" aria-live="polite"',
+]) {
+  if (!dogfoodHtml.includes(historyContract)) {
+    throw new Error(`dogfood page missing history interaction contract: ${historyContract}`);
+  }
+}
+for (const runtimeContract of [
+  'url.searchParams.set("snapshot", entry.snapshotId)',
+  'window.addEventListener("popstate"',
+  'throw new Error("snapshot sha256 mismatch")',
+  'hero.setAttribute("aria-label"',
+  "Unknown snapshot id; showing the latest verified observation.",
+  "The requested snapshot failed integrity or schema validation; showing the latest verified observation.",
+]) {
+  if (!renderSiteSource.includes(runtimeContract)) {
+    throw new Error(`dogfood renderer missing history runtime contract: ${runtimeContract}`);
+  }
+}
+const historyWorkflow = fs.readFileSync(".github/workflows/dogfood-evidence-history-backfill.yml", "utf8");
+const historyPublisher = fs.readFileSync("scripts/publish-dogfood-history-backfill.mjs", "utf8");
+for (const workflowContract of [
+  "workflow_dispatch:",
+  "fetch-depth: 0",
+  "--history-seed-file .buildchain/dogfood-history-backfill/history-seed.json",
+  "--execute",
+]) {
+  if (!historyWorkflow.includes(workflowContract)) {
+    throw new Error(`dogfood history workflow missing safety contract: ${workflowContract}`);
+  }
+}
+if (/\bschedule:/.test(historyWorkflow)) {
+  throw new Error("the one-time dogfood history backfill must not have a schedule trigger");
+}
+for (const publisherContract of ["--if-none-match", "verifyRemote(entry)", "read-after-write hash mismatch", "only after every immutable object passes read-after-write verification"]) {
+  if (!historyPublisher.includes(publisherContract)) {
+    throw new Error(`dogfood history publisher missing append-only safety contract: ${publisherContract}`);
+  }
+}
+if (/\b(list-objects|delete-object|delete-objects)\b/.test(historyPublisher)) {
+  throw new Error("dogfood history publisher must not list or delete production objects");
+}
 if (!/\.dogfood-flow li\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)) {
   throw new Error("dogfood flow cards must reset inherited list margins");
 }
