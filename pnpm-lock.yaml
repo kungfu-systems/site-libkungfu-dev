@@ -24,8 +24,8 @@ importers:
         specifier: 0.1.0-alpha.10
         version: 0.1.0-alpha.10
       '@kungfu-tech/paper-observer-declared-timelines':
-        specifier: 0.1.0-alpha.8
-        version: 0.1.0-alpha.8
+        specifier: 0.1.0-alpha.9
+        version: 0.1.0-alpha.9
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -57,8 +57,8 @@ packages:
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10':
     resolution: {integrity: sha512-E72T/WnVn9tLCHGdJVsORZzvwS281hUcWDmr3kIOcQQ0D/SK8Ktf8GlGv/Ov43dy9VtKlqMNm8BgO/P1zCQkMQ==}
 
-  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.8':
-    resolution: {integrity: sha512-68ugGvrnutyprT6IY95ArUsLPDzOBFErliGSPR6rC68HJXJnUHNFl4f5e2V2hwloicuDesVSoJvByo42yf8oHQ==}
+  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9':
+    resolution: {integrity: sha512-uixVi6Vic6KILqQoiqisiFv2NOWkOoZrlEhrXSVBPBaMxkg5HtDVqJE0XYiiGz85LIbArQ+DRVKl/E3U/pmH+Q==}
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -120,7 +120,7 @@ snapshots:
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10': {}
 
-  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.8': {}
+  '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9': {}
 
   '@types/linkify-it@5.0.0': {}
 
