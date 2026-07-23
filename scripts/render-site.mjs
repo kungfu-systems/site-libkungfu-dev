@@ -3045,6 +3045,17 @@ function dogfoodLiveProjectionScript() {
     let latestEvidence;
     let timeline = [];
     const status = (message) => setText("dogfood-history-status", message);
+    const projection = new URL(window.location.href).searchParams.get("projection");
+    const parentOrigin = (() => {
+      try { return new URL(document.referrer).origin; } catch { return ""; }
+    })();
+    const trustedProjectionOrigin = parentOrigin === "https://kungfu.tech"
+      || parentOrigin === "https://staging.kungfu.tech"
+      || /^https:\\/\\/[a-z0-9-]+\\.preview\\.kungfu\\.tech$/.test(parentOrigin);
+    const bridgeEnabled = projection === "kungfu-tech" && window.parent !== window && trustedProjectionOrigin;
+    const postProjection = (message) => {
+      if (bridgeEnabled) window.parent.postMessage(message, parentOrigin);
+    };
     const validate = (evidence, expectedId) => {
       if (!evidence || !["kungfu.public-dogfood-evidence/v1", "kungfu.public-dogfood-evidence/v2"].includes(evidence.schema)) throw new Error("unsupported evidence schema");
       if (!evidence.snapshotId || !evidence.observation || !evidence.metrics || !Array.isArray(evidence.repositories)) throw new Error("incomplete evidence snapshot");
@@ -3216,6 +3227,47 @@ function dogfoodLiveProjectionScript() {
         };
         timeline = [...(evidence.history?.entries || []), current].sort((left, right) => Date.parse(left.observedAt) - Date.parse(right.observedAt));
         cache.set(current.snapshotId, Promise.resolve(evidence));
+        const postTimeline = () => postProjection({
+          type: "kungfu.dogfood.timeline/v1",
+          timeline,
+          evidence,
+        });
+        postTimeline();
+        if (bridgeEnabled) {
+          window.addEventListener("message", async (event) => {
+            if (event.origin !== parentOrigin || event.source !== window.parent) return;
+            if (event.data?.type === "kungfu.dogfood.timeline.request/v1") {
+              postTimeline();
+              return;
+            }
+            if (event.data?.type !== "kungfu.dogfood.snapshot.request/v1") return;
+            const requestId = String(event.data.requestId || "");
+            const entry = timeline.find((candidate) => candidate.snapshotId === event.data.snapshotId);
+            if (!requestId || !entry) {
+              postProjection({
+                type: "kungfu.dogfood.snapshot.response/v1",
+                requestId,
+                error: "unknown snapshot id",
+              });
+              return;
+            }
+            try {
+              const selectedEvidence = entry.current ? evidence : await load(entry);
+              postProjection({
+                type: "kungfu.dogfood.snapshot.response/v1",
+                requestId,
+                entry,
+                evidence: selectedEvidence,
+              });
+            } catch {
+              postProjection({
+                type: "kungfu.dogfood.snapshot.response/v1",
+                requestId,
+                error: "snapshot integrity or schema validation failed",
+              });
+            }
+          });
+        }
         const selector = document.getElementById("dogfood-snapshot-select");
         if (selector) {
           selector.replaceChildren(...timeline.map((entry) => {
