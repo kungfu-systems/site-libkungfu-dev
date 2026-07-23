@@ -1,0 +1,87 @@
+{
+  "schema": "kungfu.dogfood-history-bootstrap/v1",
+  "queryCapturedAt": "2026-07-23T01:45:52.000Z",
+  "sourceRepository": "https://github.com/kungfu-systems/kungfu",
+  "sourceRef": "dev/v4/v4.0",
+  "snapshots": [
+    {
+      "observedAt": "2026-07-06T03:17:00.000Z",
+      "kungfuCommit": "8c51591dd3c0c834fa16d946752c51890cd7233e",
+      "github": {
+        "mergedPublicPullRequests": 775,
+        "authorSearchMatches": 753,
+        "reviewSearchMatches": 623,
+        "projectCutTitleMatches": 0,
+        "repositories": [
+          { "name": "buildchain", "mergedPublicPullRequests": 531 },
+          { "name": "kungfu", "mergedPublicPullRequests": 150 },
+          { "name": "build-images", "mergedPublicPullRequests": 36 },
+          { "name": "libnode", "mergedPublicPullRequests": 32 },
+          { "name": "site-kungfu-tech", "mergedPublicPullRequests": 11 },
+          { "name": "site-libkungfu-dev", "mergedPublicPullRequests": 8 },
+          { "name": "kfd", "mergedPublicPullRequests": 7 }
+        ]
+      },
+      "projectCuts": { "retained": 0, "valid": 0, "nonEmpty": 0, "empty": 0 }
+    },
+    {
+      "observedAt": "2026-07-13T03:17:00.000Z",
+      "kungfuCommit": "8536a7841a3de38cfe157ab8fd885e1b5cbb69e6",
+      "github": {
+        "mergedPublicPullRequests": 1821,
+        "authorSearchMatches": 1763,
+        "reviewSearchMatches": 1599,
+        "projectCutTitleMatches": 0,
+        "repositories": [
+          { "name": "buildchain", "mergedPublicPullRequests": 950 },
+          { "name": "kungfu", "mergedPublicPullRequests": 512 },
+          { "name": "kfd", "mergedPublicPullRequests": 94 },
+          { "name": "build-images", "mergedPublicPullRequests": 64 },
+          { "name": "libnode", "mergedPublicPullRequests": 54 },
+          { "name": "site-libkungfu-dev", "mergedPublicPullRequests": 54 },
+          { "name": "paper-observer-declared-timelines", "mergedPublicPullRequests": 24 },
+          { "name": "site-kungfu-tech", "mergedPublicPullRequests": 23 },
+          { "name": "paper-kfd-foundation-real-world-agent-work", "mergedPublicPullRequests": 21 },
+          { "name": "paper-kungfu-product-white-paper", "mergedPublicPullRequests": 18 },
+          { "name": "homebrew-tap", "mergedPublicPullRequests": 7 }
+        ]
+      },
+      "projectCuts": { "retained": 0, "valid": 0, "nonEmpty": 0, "empty": 0 }
+    },
+    {
+      "observedAt": "2026-07-20T03:17:00.000Z",
+      "kungfuCommit": "9035455b6a3b2f0b3cf92411154d9e5a530101f6",
+      "github": {
+        "mergedPublicPullRequests": 2687,
+        "authorSearchMatches": 2610,
+        "reviewSearchMatches": 2451,
+        "projectCutTitleMatches": 23,
+        "repositories": [
+          { "name": "buildchain", "mergedPublicPullRequests": 1162 },
+          { "name": "kungfu", "mergedPublicPullRequests": 809 },
+          { "name": "build-images", "mergedPublicPullRequests": 209 },
+          { "name": "kfd", "mergedPublicPullRequests": 170 },
+          { "name": "site-libkungfu-dev", "mergedPublicPullRequests": 82 },
+          { "name": "libnode", "mergedPublicPullRequests": 68 },
+          { "name": "paper-observer-declared-timelines", "mergedPublicPullRequests": 57 },
+          { "name": "paper-kfd-foundation-real-world-agent-work", "mergedPublicPullRequests": 52 },
+          { "name": "paper-kungfu-product-white-paper", "mergedPublicPullRequests": 46 },
+          { "name": "site-kungfu-tech", "mergedPublicPullRequests": 25 },
+          { "name": "homebrew-tap", "mergedPublicPullRequests": 7 }
+        ]
+      },
+      "projectCuts": { "retained": 118, "valid": 118, "nonEmpty": 39, "empty": 79 }
+    }
+  ],
+  "legacy": {
+    "snapshotId": "kungfu-systems-2026-07-21T08:34:30.931Z",
+    "observedAt": "2026-07-21T08:34:30.931Z",
+    "generatedAt": "2026-07-21T08:34:30.931Z",
+    "generationKind": "legacy",
+    "backfill": false,
+    "offCadence": true,
+    "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-21T08:34:30.931Z.json",
+    "sha256": "db60fce21c0b1e6e262ec21b54309bbb137fb9c18e7d3fdf8214595cc4405ca6",
+    "previousSnapshotId": "kungfu-systems-2026-07-20T03:17:00.000Z"
+  }
+}

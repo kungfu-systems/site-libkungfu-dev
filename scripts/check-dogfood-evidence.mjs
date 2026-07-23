@@ -4,6 +4,9 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
+const schemaV1 = "kungfu.public-dogfood-evidence/v1";
+const schemaV2 = "kungfu.public-dogfood-evidence/v2";
+
 const repoRoot = process.cwd();
 const fileIndex = process.argv.indexOf("--file");
 const fixturePath = fileIndex === -1
@@ -12,13 +15,50 @@ const fixturePath = fileIndex === -1
 const evidence = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 const verifyLive = process.argv.includes("--verify-live");
 
-assert.equal(evidence.schema, "kungfu.public-dogfood-evidence/v1");
+assert.ok([schemaV1, schemaV2].includes(evidence.schema), `unsupported dogfood evidence schema: ${evidence.schema}`);
 assert.equal(evidence.status, "observed");
 assert.equal(
   Date.parse(evidence.observation.window.endInclusive) - Date.parse(evidence.observation.window.startInclusive),
   30 * 24 * 60 * 60 * 1000,
   "dogfood window must span exactly 30 days",
 );
+
+if (evidence.schema === schemaV2) {
+  assert.match(evidence.provenance.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(typeof evidence.provenance.backfill, "boolean");
+  assert.ok(["backfill", "scheduled", "manual"].includes(evidence.provenance.generationKind));
+  assert.match(evidence.provenance.generator.repository, /^https:\/\//);
+  assert.ok(evidence.provenance.generator.gitCommit, "generator commit is required");
+  assert.equal(evidence.provenance.source.gitCommit, evidence.sources.projectCuts.gitCommit);
+  assert.ok(evidence.provenance.workflow.repository, "workflow repository is required");
+  assert.ok(evidence.provenance.workflow.runId, "workflow run id is required");
+  if (evidence.provenance.backfill) {
+    assert.equal(evidence.provenance.generationKind, "backfill");
+    assert.match(evidence.provenance.backfilledAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.ok(
+      Date.parse(evidence.provenance.generatedAt) > Date.parse(evidence.observation.observedAt),
+      "a backfill must be generated after its historical observation boundary",
+    );
+    assert.ok(evidence.provenance.limitations.length > 0, "a backfill must state its reconstruction limitation");
+  }
+
+  assert.match(evidence.history.semantics, /overlapping P30D windows, not new work in a week/);
+  const ids = new Set();
+  let previous = null;
+  let previousObservedAt = -Infinity;
+  for (const entry of evidence.history.entries) {
+    assert.ok(!ids.has(entry.snapshotId), `duplicate history entry: ${entry.snapshotId}`);
+    ids.add(entry.snapshotId);
+    assert.equal(entry.previousSnapshotId, previous, `broken history link at ${entry.snapshotId}`);
+    assert.ok(Date.parse(entry.observedAt) > previousObservedAt, `history is not strictly ordered at ${entry.snapshotId}`);
+    assert.ok(Date.parse(entry.observedAt) < Date.parse(evidence.observation.observedAt), `history entry is not prior: ${entry.snapshotId}`);
+    assert.match(entry.url, new RegExp(`/dogfood-evidence/snapshots/${entry.snapshotId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.json$`));
+    assert.match(entry.sha256, /^[a-f0-9]{64}$/);
+    previous = entry.snapshotId;
+    previousObservedAt = Date.parse(entry.observedAt);
+  }
+  assert.equal(evidence.history.previousSnapshotId, previous);
+}
 assert.equal(
   evidence.repositories.reduce((total, repository) => total + repository.mergedPublicPullRequests, 0),
   evidence.metrics.mergedPublicPullRequests.value,

@@ -1,0 +1,78 @@
+name: Dogfood Evidence History Backfill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate:
+    if: github.repository == 'kungfu-systems/site-libkungfu-dev' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production-evidence
+    steps:
+      - name: Check out site source
+        uses: actions/checkout@v4
+
+      - name: Check out exact-history source
+        uses: actions/checkout@v4
+        with:
+          repository: kungfu-systems/kungfu
+          ref: dev/v4/v4.0
+          fetch-depth: 0
+          path: .observed-evidence/source
+
+      - name: Configure production evidence credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::727884401362:role/site-libkungfu-dev-evidence-github-actions
+          aws-region: us-east-1
+
+      - name: Generate immutable historical observations
+        run: >-
+          node scripts/generate-dogfood-history-backfill.mjs
+          --kungfu-dir .observed-evidence/source
+          --output-dir .buildchain/dogfood-history-backfill
+          --generator-commit "$GITHUB_SHA"
+
+      - name: Verify historical observations
+        run: >-
+          node scripts/check-dogfood-history.mjs
+          --backfill-dir .buildchain/dogfood-history-backfill
+
+      - name: Generate current snapshot with the history seed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/generate-dogfood-evidence.mjs
+          --kungfu-dir .observed-evidence/source
+          --kungfu-source-ref dev/v4/v4.0
+          --history-seed-file .buildchain/dogfood-history-backfill/history-seed.json
+          --output-dir .buildchain/observed-evidence
+          --generator-commit "$GITHUB_SHA"
+          --generation-kind manual
+
+      - name: Verify current history projection
+        run: >-
+          node scripts/check-dogfood-evidence.mjs
+          --file .buildchain/observed-evidence/latest.json
+
+      - name: Publish append-only history and advance latest
+        run: >-
+          node scripts/publish-dogfood-history-backfill.mjs
+          --backfill-manifest .buildchain/dogfood-history-backfill/backfill-manifest.json
+          --current-manifest .buildchain/observed-evidence/manifest.json
+          --bucket libkungfu-dev-site-727884401362-us-east-1
+          --cloudfront-distribution EXWVGLVVXGURT
+          --receipt .buildchain/dogfood-history-publication-receipt.json
+          --execute
+
+      - name: Retain the publication receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: dogfood-history-publication-receipt
+          path: .buildchain/dogfood-history-publication-receipt.json
+          if-no-files-found: error
+          retention-days: 90
