@@ -76,7 +76,9 @@ tarball is vendored at `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz` until a
 registry release is needed. Regenerate it only from the exact clean Kungfu
 commit recorded inside the package, and preserve the pnpm lockfile integrity;
 the vendor directory is a deployment transport cache, not a source of Core
-facts.
+facts. Merging a vendored pickup is repository integration, not an npm
+publication or a production release; each release action remains a separate,
+explicitly admitted step.
 Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.14-alpha.4` npm package
 and its exported `dist/site` bundle. KFD uses the pinned
 `@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
