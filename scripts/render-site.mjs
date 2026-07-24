@@ -42,12 +42,23 @@ function readPnpmLockPackage(packageName, version) {
   const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`^  '${escapedName}@${escapedVersion}':\\n(?:    .+\\n)*?    resolution: \\{integrity: ([^}]+)\\}`, "m");
   const match = lockText.match(pattern);
-  if (!match) {
+  if (match) {
+    return {
+      version,
+      integrity: match[1].trim(),
+    };
+  }
+  const localPattern = new RegExp(
+    `^  '${escapedName}@file:[^']+':\\n    resolution: \\{integrity: ([^,}]+)[^\\n]*\\}\\n    version: ${escapedVersion}$`,
+    "m",
+  );
+  const localMatch = lockText.match(localPattern);
+  if (!localMatch) {
     throw new Error(`pnpm-lock.yaml missing ${packageName}@${version}`);
   }
   return {
     version,
-    integrity: match[1].trim(),
+    integrity: localMatch[1].trim(),
   };
 }
 
@@ -3472,7 +3483,11 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 }
 
 const site = readFixtureJson("site-manifest.json");
-const core = readFixtureJson("core-runtime-surface.json");
+const coreBundle = readPackageJson("@kungfu-tech/site/site-bundle.json");
+const coreAgentIndex = readPackageJson("@kungfu-tech/site/agent-index.json");
+const coreAdrMap = readPackageJson("@kungfu-tech/site/adr-map.json");
+const coreBundleSchema = readPackageText("@kungfu-tech/site/schema");
+const corePackage = readPackageJson("@kungfu-tech/site/package.json");
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
 const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
@@ -3508,8 +3523,10 @@ const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
 const expectedBuildchainVersion = "2.14.14-alpha.4";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
+const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
+const coreSiteLock = readPnpmLockPackage("@kungfu-tech/site", expectedCoreSiteVersion);
 if (buildchainPackage.version !== expectedBuildchainVersion || buildchainLock.version !== expectedBuildchainVersion) {
   throw new Error(`site-libkungfu-dev expects @kungfu-tech/buildchain ${expectedBuildchainVersion}`);
 }
@@ -3545,16 +3562,74 @@ if (
   throw new Error("Buildchain and white-paper Agent Supply Chain facts drifted");
 }
 if (
-  core.contract !== "libkungfu-core-runtime-surface-fixture"
-  || core.status !== "evidence-linked-fixture"
-  || !core.sourceRef
-  || !core.homepage?.headline
-  || !core.architecture?.journal
-  || !Array.isArray(core.evidence)
-  || !core.sourceContract
+  corePackage.version !== expectedCoreSiteVersion
+  || coreBundle.package?.name !== "@kungfu-tech/site"
+  || coreBundle.package?.version !== expectedCoreSiteVersion
+  || coreBundle.contract !== "kungfu.site-bundle/v1"
+  || coreBundle.schemaVersion !== 1
+  || coreBundle.surfaces?.length !== 11
+  || coreBundle.sources?.length < 1
+  || coreAgentIndex.bundleContentRoot !== coreBundle.contentRoot
+  || coreBundle.adrMap?.contentRoot !== sha256Buffer(Buffer.from(`${JSON.stringify(coreAdrMap, null, 2)}\n`))
+  || coreAdrMap.summary?.records !== coreAdrMap.records?.length
+  || !coreBundle.contentRoot
+  || !coreBundle.sourceRoot
+  || !coreSiteLock.integrity
 ) {
-  throw new Error("unexpected Core runtime surface fixture");
+  throw new Error("unexpected @kungfu-tech/site product bundle");
 }
+const coreSurfaceById = new Map(coreBundle.surfaces.map((surface) => [surface.id, surface]));
+const coreSourceById = new Map(coreBundle.sources.map((source) => [source.id, source]));
+const coreRuntimeSurface = coreSurfaceById.get("runtime");
+const coreRuntimePresentation = coreRuntimeSurface?.presentation;
+if (!coreRuntimePresentation?.architecture?.journal || !Array.isArray(coreRuntimePresentation.outcomes)) {
+  throw new Error("@kungfu-tech/site runtime surface is missing its presentation projection");
+}
+const coreRepository = coreBundle.source.repository.replace(/\.git$/, "");
+const core = {
+  sourceRepository: coreRepository,
+  sourceRef: coreBundle.source.revision,
+  homepage: {
+    kicker: coreRuntimePresentation.kicker,
+    headline: coreRuntimeSurface.headline,
+    lead: coreRuntimeSurface.summary,
+    claimBoundary: coreRuntimeSurface.knownLimits.join(" "),
+  },
+  architecture: coreRuntimePresentation.architecture,
+  outcomes: coreRuntimePresentation.outcomes,
+  semanticBoundary: coreRuntimePresentation.semanticBoundary,
+  frontiers: coreRuntimePresentation.frontiers,
+  qualificationBoundary: {
+    heading: "Qualified runtime boundary",
+    claims: coreRuntimePresentation.qualificationClaims,
+  },
+  evidence: coreRuntimeSurface.sourceIds.map((sourceId) => {
+    const source = coreSourceById.get(sourceId);
+    if (!source) {
+      throw new Error(`runtime surface references missing source ${sourceId}`);
+    }
+    return {
+      label: source.path,
+      status: source.role,
+      sourcePath: source.path,
+      sourceUrl: source.url,
+    };
+  }),
+  sourceContract: {
+    heading: "Pinned product bundle",
+    summary: "The runtime page is rendered from the exact @kungfu-tech/site package consumed by this deployment.",
+    package: `${corePackage.name}@${corePackage.version}`,
+    currentSpec: {
+      specVersion: coreBundle.contract,
+      docsUrl: surfaceEndpointHref("core", "site-bundle.json"),
+    },
+    sections: coreBundle.adoptionLayers.map((layer) => ({
+      title: layer.label,
+      summary: `${layer.job} Maturity: ${layer.maturity}.`,
+    })),
+    machineFields: Object.keys(coreBundle),
+  },
+};
 const buildchainMachineArtifacts = Array.from(
   new Set([
     ...buildchainSite.entrypoints,
@@ -3579,6 +3654,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
     "pnpm-lock.yaml",
     "@kungfu-tech/buildchain package content",
     "@kungfu-tech/kfd package content",
+    "@kungfu-tech/site package content",
     "declared @kungfu-tech/paper-* package content",
   ],
   artifactDigestScope: "site dist manifest JSON files",
@@ -4148,6 +4224,120 @@ function renderBuildchainHomepageSummary() {
     </section>
   </section>`;
 }
+
+const coreProductStyles = `<style>
+  .core-positioning {
+    display: grid;
+    gap: 18px;
+    border-left: 5px solid var(--accent);
+  }
+
+  .core-positioning .product-promise {
+    max-width: 24ch;
+    margin: 0;
+    font-size: clamp(28px, 5vw, 58px);
+    line-height: 1.02;
+  }
+
+  .core-layer-grid,
+  .core-surface-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .core-layer-card,
+  .core-surface-card {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .core-layer-card p,
+  .core-surface-card p {
+    margin: 0;
+  }
+
+  .core-layer-index {
+    color: var(--accent-strong);
+    font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .core-maturity {
+    width: fit-content;
+  }
+
+  .core-authority-list,
+  .core-limit-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .core-authority-list li {
+    overflow-wrap: anywhere;
+  }
+
+  .core-adr-domains {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .core-adr-domain {
+    display: grid;
+    gap: 5px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+    background: var(--soft);
+  }
+
+  .core-adr-domain strong {
+    font-size: 24px;
+  }
+
+  .core-adr-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .core-adr-record {
+    display: grid;
+    grid-template-columns: minmax(84px, 0.18fr) minmax(0, 1fr);
+    gap: 12px;
+    border-top: 1px solid var(--line);
+    padding: 14px 0;
+  }
+
+  .core-adr-record:first-child {
+    border-top: 0;
+  }
+
+  .core-adr-record code,
+  .core-adr-record span {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 900px) {
+    .core-layer-grid,
+    .core-surface-grid,
+    .core-adr-domains {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .core-layer-grid,
+    .core-surface-grid,
+    .core-adr-domains,
+    .core-adr-record {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>`;
 
 const runtimeHomepageStyles = `<style>
   .agent-supply-chain-grid {
@@ -5120,39 +5310,115 @@ writeFile(
   }),
 );
 
+function coreSurfaceAuthorities(surface) {
+  return surface.sourceIds.map((sourceId) => {
+    const source = coreSourceById.get(sourceId);
+    if (!source) {
+      throw new Error(`Core surface ${surface.id} references missing source ${sourceId}`);
+    }
+    return source;
+  });
+}
+
+function coreSurfaceOutputPath(route) {
+  const normalized = route.replace(/^\/+|\/+$/g, "");
+  return normalized ? `core/${normalized}/index.html` : "core/index.html";
+}
+
+function renderCoreSurfaceCard(surface) {
+  return `<article class="panel core-surface-card" data-maturity="${escapeAttr(surface.maturity)}">
+    <span class="tag core-maturity">${escapeHtml(surface.maturity)}</span>
+    <h3><a ${surfaceRouteLinkAttrs("core", surface.route.replace(/^\//, ""))}>${escapeHtml(surface.label)}</a></h3>
+  </article>`;
+}
+
+function renderCoreSurfacePage(surface) {
+  const authorities = coreSurfaceAuthorities(surface);
+  return page({
+    title: `${surface.label} | core.libkungfu.dev`,
+    description: surface.summary,
+    current: "core",
+    preserveRelativeMachineEntries: true,
+    body: `${coreProductStyles}<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("core")} aria-label="Back to Core product map">Back to Core product map</a><span class="page-kicker-state">${escapeHtml(surface.claimClass)} / ${escapeHtml(surface.maturity)}</span></p>
+      <h1>${escapeHtml(surface.headline)}</h1>
+      <p class="lead">${escapeHtml(surface.summary)}</p>
+    </section>
+
+    <section class="grid" aria-labelledby="${escapeAttr(surface.id)}-capabilities-heading">
+      <article class="panel">
+        <p class="eyebrow">What this layer supports</p>
+        <h2 id="${escapeAttr(surface.id)}-capabilities-heading">Capabilities</h2>
+        <ul>${surface.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("")}</ul>
+      </article>
+      <article class="panel warning">
+        <p class="eyebrow">Claim boundary</p>
+        <h2>Known limits</h2>
+        <ul class="core-limit-list">${surface.knownLimits.map((limit) => `<li>${escapeHtml(limit)}</li>`).join("")}</ul>
+      </article>
+    </section>
+
+    <section class="panel" aria-labelledby="${escapeAttr(surface.id)}-authority-heading">
+      <p class="eyebrow">Pinned authority</p>
+      <h2 id="${escapeAttr(surface.id)}-authority-heading">Inspect the exact upstream sources</h2>
+      <ul class="core-authority-list">
+        ${authorities.map((source) => `<li><span class="tag">${escapeHtml(source.role)}</span> <a href="${escapeAttr(source.url)}">${escapeHtml(source.path)}</a> <code>${escapeHtml(source.contentRoot)}</code></li>`).join("")}
+      </ul>
+    </section>
+    ${surface.id === "qualification" ? `<section class="panel warning">
+      <p class="eyebrow">Global product boundary</p>
+      <h2>Claims this bundle does not make</h2>
+      <ul class="core-limit-list">${coreBundle.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+    </section>` : ""}`,
+  });
+}
+
+function coreAdrSourceHref(record) {
+  return `${coreRepository}/blob/${encodeURIComponent(coreBundle.source.revision)}/${record.file}`;
+}
+
 const coreAgentManifest = {
   schemaVersion: 1,
-  contract: "libkungfu-core-runtime-surface",
+  contract: "core.libkungfu.dev/site-bundle-consumer/v1",
   ...surfaceTimestampPolicy,
   canonicalHost: surfaceCanonicalHost("core"),
-  source: {
-    kind: "evidence-linked-fixture",
-    path: "src/fixtures/core-runtime-surface.json",
-    contract: core.contract,
-    repository: core.sourceRepository,
-    ref: core.sourceRef,
+  package: {
+    name: corePackage.name,
+    version: corePackage.version,
+    integrity: coreSiteLock.integrity,
+  },
+  bundle: {
+    contract: coreBundle.contract,
+    contentRoot: coreBundle.contentRoot,
+    sourceRoot: coreBundle.sourceRoot,
+    source: coreBundle.source,
+    schemaDigest: sha256Buffer(Buffer.from(coreBundleSchema)),
   },
   readerContract: {
     contract: site.readerContract.contract,
     owner: site.readerContract.owner,
     path: readerPath("core"),
-    humanEntries: {
-      overview: surfaceCanonicalHref("core"),
-      mechanism: surfaceEndpointHref("core", "runtime/"),
-    },
+    humanEntries: Object.fromEntries(coreBundle.surfaces.map((surface) => [
+      surface.id,
+      surfaceEndpointHref("core", surface.route.replace(/^\//, "")),
+    ])),
     layers: site.readerContract.layers,
     sourceBoundary: site.sourceBoundary,
   },
-  homepage: core.homepage,
-  architecture: core.architecture,
-  outcomes: core.outcomes,
-  semanticBoundary: core.semanticBoundary,
-  frontiers: core.frontiers,
-  qualificationBoundary: core.qualificationBoundary,
-  evidence: core.evidence,
-  sourceContract: core.sourceContract,
+  positioning: coreBundle.positioning,
+  adoptionLayers: coreBundle.adoptionLayers,
+  surfaces: coreBundle.surfaces.map((surface) => ({
+    ...surface,
+    authorities: coreSurfaceAuthorities(surface),
+  })),
+  nonClaims: coreBundle.nonClaims,
+  adrMap: coreBundle.adrMap,
   machineEntries: {
     manifest: surfaceEndpointHref("core", "manifest.json"),
+    bundle: surfaceEndpointHref("core", "site-bundle.json"),
+    agentIndex: surfaceEndpointHref("core", "agent-index.json"),
+    adrMap: surfaceEndpointHref("core", "adr-map.json"),
+    schema: surfaceEndpointHref("core", "schema/site-bundle.schema.json"),
     llms: surfaceEndpointHref("core", "llms.txt"),
     full: surfaceEndpointHref("core", "llms-full.txt"),
   },
@@ -5302,7 +5568,7 @@ writeFile(
     description: "The complete Core journal, observation, durability, semantic, qualification, and source-contract model.",
     current: "core",
     preserveRelativeMachineEntries: true,
-    body: `<section class="hero">
+    body: `${coreProductStyles}<section class="hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("core")} aria-label="Back to Core home">Back to Core home</a><span class="page-kicker-state">runtime / complete mechanism</span></p>
       <h1>Core runtime mechanism</h1>
       <p class="lead">Inspect the complete journal, observation, durability, semantic, qualification, and source-contract path.</p>
@@ -5440,83 +5706,163 @@ writeFile(
 writeFile(
   "core/index.html",
   page({
-    title: "core.libkungfu.dev | Runtime substrate",
-    description: core.homepage.lead,
+    title: "core.libkungfu.dev | Kungfu product map",
+    description: coreBundle.positioning.promise,
     current: "core",
     preserveRelativeMachineEntries: true,
-    body: `${renderReaderOrientation("core", "Runtime substrate")}
-    <section class="panel" id="core-authority" aria-labelledby="core-home-mechanism-heading">
-      <p class="eyebrow">Essential mechanism</p>
-      <h2 id="core-home-mechanism-heading">${escapeHtml(core.homepage.headline)}</h2>
-      <p class="lead">${escapeHtml(core.homepage.lead)}</p>
-      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(core.homepage.claimBoundary)}</p>
+    body: `${coreProductStyles}${renderReaderOrientation("core", "Complete Kungfu product map")}
+    <section class="panel core-positioning" id="core-authority" aria-labelledby="core-product-promise">
+      <p class="eyebrow">Kungfu product promise</p>
+      <h2 class="product-promise" id="core-product-promise">${escapeHtml(coreBundle.positioning.firstReleaseOutcome)}</h2>
+      <p class="lead">${escapeHtml(coreBundle.positioning.promise)}</p>
+      <p><strong>${escapeHtml(coreBundle.positioning.principle)}</strong></p>
+      <p class="reader-claim-boundary"><strong>Status:</strong> ${escapeHtml(coreBundle.positioning.status)}</p>
       <div class="card-actions">
-        <a class="card-action" ${surfaceRouteLinkAttrs("core", "runtime/")}>Explore the runtime mechanism</a>
-        <a class="card-action secondary" ${surfaceRouteLinkAttrs("core", "manifest.json")}>Inspect the manifest</a>
+        <a class="card-action" ${surfaceRouteLinkAttrs("core", "format/")}>Start with the .kungfu contract</a>
+        <a class="card-action secondary" ${surfaceRouteLinkAttrs("core", "site-bundle.json")}>Inspect the exact bundle</a>
       </div>
     </section>
 
-    <section aria-labelledby="core-outcomes-heading">
-      <p class="eyebrow">Why this matters to an Agent Hub</p>
-      <h2 id="core-outcomes-heading" class="section-heading">One retained path supports live observation and later recovery.</h2>
-      <div class="grid three core-outcome-grid">
-        ${core.outcomes
-          .map(
-            (outcome) => `<article class="panel core-outcome-card">
-              <h3>${escapeHtml(outcome.title)}</h3>
-              <p>${escapeHtml(outcome.summary)}</p>
-            </article>`,
-          )
-          .join("")}
+    <section aria-labelledby="core-layers-heading">
+      <p class="eyebrow">Adopt only what you need</p>
+      <h2 id="core-layers-heading" class="section-heading">Six independently bounded product layers</h2>
+      <div class="core-layer-grid">
+        ${coreBundle.adoptionLayers.map((layer, index) => `<article class="panel core-layer-card">
+          <span class="core-layer-index">${String(index + 1).padStart(2, "0")} · ${escapeHtml(layer.maturity)}</span>
+          <h3>${escapeHtml(layer.label)}</h3>
+        </article>`).join("")}
       </div>
+    </section>
+
+    <section aria-labelledby="core-surfaces-heading">
+      <p class="eyebrow">Human and agent navigation</p>
+      <h2 id="core-surfaces-heading" class="section-heading">Open the layer, boundary, or evidence you need</h2>
+      <div class="core-surface-grid">
+        ${coreBundle.surfaces.filter((surface) => surface.id !== "overview").map(renderCoreSurfaceCard).join("")}
+      </div>
+    </section>
+
+    <section class="panel warning">
+      <p class="eyebrow">Qualification before promotion</p>
+      <h2>Design, implementation, qualification, and publication are separate claims.</h2>
+      <a class="card-action" ${surfaceRouteLinkAttrs("core", "qualification/")}>Read all global non-claims</a>
     </section>`,
   }),
 );
 
+for (const surface of coreBundle.surfaces) {
+  if (surface.id === "overview" || surface.id === "runtime" || surface.id === "decisions") {
+    continue;
+  }
+  writeFile(coreSurfaceOutputPath(surface.route), renderCoreSurfacePage(surface));
+}
+
+writeFile(
+  "core/decisions/index.html",
+  page({
+    title: "Kungfu ADR map | core.libkungfu.dev",
+    description: coreSurfaceById.get("decisions").summary,
+    current: "core",
+    preserveRelativeMachineEntries: true,
+    body: `${coreProductStyles}<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("core")} aria-label="Back to Core product map">Back to Core product map</a><span class="page-kicker-state">current-contract / implemented</span></p>
+      <h1>${escapeHtml(coreSurfaceById.get("decisions").headline)}</h1>
+      <p class="lead">${escapeHtml(coreSurfaceById.get("decisions").summary)}</p>
+      <p><strong>Authority boundary:</strong> ${escapeHtml(coreBundle.adrMap.authorityBoundary)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="/adr-map.json">Open machine ADR map</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="core-adr-domain-heading">
+      <p class="eyebrow">Corpus overview</p>
+      <h2 id="core-adr-domain-heading">${escapeHtml(String(coreAdrMap.summary.records))} ADRs across ${escapeHtml(String(coreAdrMap.summary.domains))} domains</h2>
+      <div class="core-adr-domains">
+        ${coreAdrMap.domains.map((domain) => `<a class="core-adr-domain" href="#domain-${escapeAttr(domain.id)}"><strong>${escapeHtml(String(domain.count))}</strong><span>${escapeHtml(domain.title)}</span></a>`).join("")}
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="eyebrow">Authoritative relations</p>
+      <h2>${escapeHtml(String(coreAdrMap.summary.authoritativeEdges))} supersedes edges declared in ADR frontmatter</h2>
+      <ul>${coreAdrMap.authoritativeEdges.map((edge) => `<li><code>${escapeHtml(edge.source)}</code> ${escapeHtml(edge.relation)} <code>${escapeHtml(edge.target)}</code></li>`).join("")}</ul>
+      <p>${escapeHtml(String(coreAdrMap.summary.inferredNavigationEdges))} inferred nearby edges are navigation aids only; they do not create architecture authority.</p>
+    </section>
+
+    ${coreAdrMap.domains.map((domain) => `<section class="panel" id="domain-${escapeAttr(domain.id)}">
+      <p class="eyebrow">${escapeHtml(domain.id)} · ${escapeHtml(String(domain.count))} records</p>
+      <h2>${escapeHtml(domain.title)}</h2>
+      <ul class="core-adr-list">
+        ${coreAdrMap.records.filter((record) => record.domain === domain.id).map((record) => `<li class="core-adr-record">
+          <code>${escapeHtml(record.key)}</code>
+          <span><a href="${escapeAttr(coreAdrSourceHref(record))}"><strong>${escapeHtml(record.title)}</strong></a><br><span class="tag">${escapeHtml(record.decisionStatus)}</span> <span class="tag">${escapeHtml(record.implementationStatus)}</span> <span class="tag">${escapeHtml(record.reviewState)}</span> <small>${escapeHtml(String(record.qualificationRefCount))} qualification refs</small></span>
+        </li>`).join("")}
+      </ul>
+    </section>`).join("")}`,
+  }),
+);
+
 writeFile("core/manifest.json", `${JSON.stringify(coreAgentManifest, null, 2)}\n`);
+writeFile("core/site-bundle.json", readPackageText("@kungfu-tech/site/site-bundle.json"));
+writeFile("core/agent-index.json", readPackageText("@kungfu-tech/site/agent-index.json"));
+writeFile("core/adr-map.json", readPackageText("@kungfu-tech/site/adr-map.json"));
+writeFile("core/schema/site-bundle.schema.json", coreBundleSchema);
 writeFile(
   "core/llms.txt",
-  `# ${surfaceCanonicalHost("core")}
+  `# ${surfaceCanonicalHost("core")} product map
 
 Reader contract: ${site.readerContract.contract}
 Audience: ${readerPath("core").audience}
 Question: ${readerPath("core").question}
 Promise: ${readerPath("core").promise}
 
-${core.homepage.headline}
+Product promise:
+${coreBundle.positioning.promise}
 
-${core.homepage.lead}
+First release outcome:
+${coreBundle.positioning.firstReleaseOutcome}
 
-Mechanism:
-${core.architecture.writer.label} -> ${core.architecture.journal.label} -> ${core.architecture.readers.map((reader) => reader.label).join(" / ")}
+Status:
+${coreBundle.positioning.status}
 
-Why it matters:
-${core.outcomes.map((outcome) => `- ${outcome.title}: ${outcome.summary}`).join("\n")}
+Principle:
+${coreBundle.positioning.principle}
 
-Frontiers:
-${core.frontiers.map((frontier) => `- ${frontier.label} [${frontier.status}]: ${frontier.summary}`).join("\n")}
+Product layers:
+${coreBundle.adoptionLayers.map((layer) => `- ${layer.label} [${layer.maturity}]: ${layer.job} Does not require: ${layer.notRequired}`).join("\n")}
 
-Semantic boundary:
-${core.semanticBoundary.heading}
-${core.semanticBoundary.body}
-${core.semanticBoundary.invariants.map((invariant) => `- ${invariant}`).join("\n")}
+Surfaces:
+${coreBundle.surfaces.map((surface) => `- ${surface.route} ${surface.label} [${surface.maturity}; ${surface.claimClass}]: ${surface.summary}`).join("\n")}
 
-Claim boundary:
-${core.homepage.claimBoundary}
+Global non-claims:
+${coreBundle.nonClaims.map((claim) => `- ${claim}`).join("\n")}
 
-Qualification boundary:
-${core.qualificationBoundary.claims.map((claim) => `- ${claim}`).join("\n")}
-
-Pinned evidence:
-${core.evidence.map((entry) => `- ${entry.label} [${entry.status}]: ${entry.sourceUrl}`).join("\n")}
+Pinned package:
+- ${corePackage.name}@${corePackage.version}
+- integrity: ${coreSiteLock.integrity}
+- bundle content root: ${coreBundle.contentRoot}
+- source root: ${coreBundle.sourceRoot}
+- source revision: ${coreBundle.source.revision}
 
 Machine entries:
 - ${surfaceEndpointHref("core", "manifest.json")}
+- ${surfaceEndpointHref("core", "site-bundle.json")}
+- ${surfaceEndpointHref("core", "agent-index.json")}
+- ${surfaceEndpointHref("core", "adr-map.json")}
+- ${surfaceEndpointHref("core", "schema/site-bundle.schema.json")}
 - ${surfaceEndpointHref("core", "llms.txt")}
 - ${surfaceEndpointHref("core", "llms-full.txt")}
 `,
 );
-writeFile("core/llms-full.txt", `# core.libkungfu.dev full agent index\n\n${JSON.stringify(coreAgentManifest, null, 2)}\n`);
+writeFile(
+  "core/llms-full.txt",
+  `# core.libkungfu.dev full agent index\n\n${JSON.stringify({
+    site: coreAgentManifest,
+    bundle: coreBundle,
+    agentIndex: coreAgentIndex,
+    adrMap: coreAdrMap,
+  }, null, 2)}\n`,
+);
 
 writeFile(
   "kfd/decisions/index.html",
@@ -6483,11 +6829,24 @@ const manifest = {
       host: surfaceCanonicalHost("hub"),
       source: `@kungfu-tech/paper-kungfu-product-white-paper@${whitePaperEvidence.source.packageVersion}/site/evidence-site.json`,
     },
-    { path: "/core/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
-    { path: "/runtime/", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
-    { path: "/manifest.json", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
-    { path: "/llms.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
-    { path: "/llms-full.txt", host: surfaceCanonicalHost("core"), source: "src/fixtures/core-runtime-surface.json" },
+    ...coreBundle.surfaces.map((surface) => ({
+      path: surface.route,
+      host: surfaceCanonicalHost("core"),
+      source: `${corePackage.name}@${corePackage.version}/dist/site/site-bundle.json`,
+    })),
+    ...[
+      "manifest.json",
+      "site-bundle.json",
+      "agent-index.json",
+      "adr-map.json",
+      "schema/site-bundle.schema.json",
+      "llms.txt",
+      "llms-full.txt",
+    ].map((entry) => ({
+      path: `/${entry}`,
+      host: surfaceCanonicalHost("core"),
+      source: `${corePackage.name}@${corePackage.version}`,
+    })),
     ...publicationArchives.routes.map((route) => ({
       path: route.path,
       host: route.host,
@@ -6610,17 +6969,19 @@ const manifest = {
       suiteRoot: runtimeSurface.qualification.suiteRoot,
     },
     core: {
-      contract: core.contract,
-      status: core.status,
-      sourceRepository: core.sourceRepository,
-      sourceRef: core.sourceRef,
+      contract: coreBundle.contract,
+      package: corePackage.name,
+      version: corePackage.version,
+      lockIntegrity: coreSiteLock.integrity,
+      contentRoot: coreBundle.contentRoot,
+      sourceRoot: coreBundle.sourceRoot,
+      sourceRepository: coreBundle.source.repository,
+      sourceRef: coreBundle.source.revision,
+      treeDirty: coreBundle.source.treeDirty,
       surfaceManifest: surfaceEndpointHref("core", "manifest.json"),
-      evidence: core.evidence,
-      sourceContract: {
-        package: core.sourceContract.package,
-        status: core.sourceContract.status,
-        docsUrlPattern: core.sourceContract.docsUrlPattern,
-      },
+      bundle: surfaceEndpointHref("core", "site-bundle.json"),
+      agentIndex: surfaceEndpointHref("core", "agent-index.json"),
+      adrMap: surfaceEndpointHref("core", "adr-map.json"),
     },
   },
   upstreamPackages: {
@@ -6974,15 +7335,18 @@ Machine entries:
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
 - ${surfaceEndpointHref("core", "manifest.json")}
+- ${surfaceEndpointHref("core", "site-bundle.json")}
+- ${surfaceEndpointHref("core", "agent-index.json")}
+- ${surfaceEndpointHref("core", "adr-map.json")}
 - ${surfaceEndpointHref("core", "llms.txt")}
 - ${surfaceEndpointHref("papers", "manifest.json")}
 - ${surfaceEndpointHref("papers", "registry.json")}
 
-Core runtime mechanism:
-${core.architecture.writer.label} -> ${core.architecture.journal.label} -> ${core.architecture.readers.map((reader) => reader.label).join(" / ")}
+Core product promise:
+${coreBundle.positioning.promise}
 
-Core claim boundary:
-${core.homepage.claimBoundary}
+Core product routes:
+${coreBundle.surfaces.map((surface) => `- ${surface.route} ${surface.label} [${surface.maturity}]`).join("\n")}
 
 Agent Supply Chain:
 ${agentSupplyChain.layers.map((layer) => `${layer.order}. ${layer.id} [${layer.statusClass}] - ${layer.statement}`).join("\n")}
@@ -6996,9 +7360,9 @@ ${agentSupplyChain.vendorNextAction}
 Source boundary:
 This repository owns the reader contract and renders pinned upstream evidence,
 manifests, and packages. It is not a product fact source. Embeddable runtime facts come from the pinned
-Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. Core mmap and
-recovery claims are pinned to exact Kungfu evidence while the future spec
-handoff remains a secondary fixture. Buildchain facts must come from the
+Kungfu source/PR and KFD Runtime 100 roots in /runtime.json. The complete Core
+product map comes from the exact @kungfu-tech/site bundle, including its
+per-surface maturity, authority, and non-claim boundaries. Buildchain facts must come from the
 @kungfu-tech/buildchain docs/site bundle. KFD facts must come from the
 @kungfu-tech/kfd site bundle, registry, and decision documents. Publication
 archive facts must come from Buildchain publication registry data.

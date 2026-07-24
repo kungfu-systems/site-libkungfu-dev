@@ -60,19 +60,29 @@ Deployment must not turn this repository into a fact source. The artifact should
 render pinned upstream bundles:
 
 ```text
-kungfu evidence -> evidence-linked Core surface fixture -> core.libkungfu.dev
-kungfu -> future @kungfu-tech/spec or Core site bundle -> replace the fixture source contract
+kungfu evidence -> framework/site -> exact source-bound package tarball -> site vendor pickup -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
 ```
 
-For now, the hub and Core still use `src/fixtures/` as explicit contract
-fixtures. The Core presentation fixture pins runtime claims to an immutable
-Kungfu source ref and keeps the future spec-package contract secondary.
-Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.13` npm package and its
-exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
-its exported site bundle. Papers use the exact package set in
+The Core surface consumes the exact pinned `@kungfu-tech/site` package generated
+by Kungfu's `framework/site` package, and the hub routes readers to that
+package-backed Core surface. The package carries the complete product map,
+qualification boundaries, authority-source inventory, ADR map, source revision,
+and content roots; the renderer must reproduce its machine artifacts
+byte-for-byte and must not maintain a parallel Core claim fixture. The package
+tarball is vendored at `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz` until a
+registry release is needed. Regenerate it only from the exact clean Kungfu
+commit recorded inside the package, and preserve the pnpm lockfile integrity;
+the vendor directory is a deployment transport cache, not a source of Core
+facts. Merging a vendored pickup is repository integration, not an npm
+publication or a production release; each release action remains a separate,
+explicitly admitted step.
+Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.14-alpha.4` npm package
+and its exported `dist/site` bundle. KFD uses the pinned
+`@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
+use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable
 version prefixes while allowing canonical and latest pages to advance.
 The infrastructure contract publishes Papers as a first-class surface in every

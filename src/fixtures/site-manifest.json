@@ -111,6 +111,16 @@
         "sha256": "edc59fbaf5ecfc1417bb7296695345c7589c55899f737c07775a6b3e0216b6f4"
       },
       {
+        "id": "kungfu-site-bundle",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "package-document",
+        "package": "@kungfu-tech/site",
+        "version": "4.0.0-alpha.1",
+        "path": "dist/site/site-bundle.json",
+        "sha256": "6d479296dd7455233f14bc6a7ddc14a04e0b3a917ce9733ff3946b6a9021745c",
+        "contentRoot": "sha256:edb695d66fcf24e672945a9bf146b01df94f97385eec6c96766687ae620fa88d"
+      },
+      {
         "id": "kfd-2",
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
@@ -385,15 +395,15 @@
       },
       {
         "id": "core",
-        "audience": "Runtime builders",
-        "question": "What survives when the session ends?",
-        "promise": "Start with the local evidence path, then descend into its exact runtime mechanism, qualification boundary, and pinned sources.",
+        "audience": "Kungfu adopters and runtime builders",
+        "question": "Which Kungfu layer solves the continuity problem I have now?",
+        "promise": "Start with the complete product map, adopt only the layer you need, and inspect every maturity and authority boundary.",
         "claimClass": "site-synthesis",
-        "sourceRefs": ["kungfu-action-runtime"],
-        "authorityLabel": "Explore the runtime mechanism",
-        "authorityHref": "/runtime/",
-        "evidenceLabel": "Inspect the manifest",
-        "evidenceHref": "/manifest.json"
+        "sourceRefs": ["kungfu-site-bundle"],
+        "authorityLabel": "Explore the product map",
+        "authorityHref": "/",
+        "evidenceLabel": "Inspect the exact bundle",
+        "evidenceHref": "/site-bundle.json"
       },
       {
         "id": "kfd",
@@ -426,9 +436,9 @@
       "id": "core",
       "host": "core.libkungfu.dev",
       "path": "/core/",
-      "label": "Runtime substrate",
-      "summary": "One mmap journal as retained evidence and the local observation bus, with explicit visibility, durability, recovery, and authority boundaries.",
-      "source": "pinned Kungfu evidence -> Core runtime surface fixture -> site-libkungfu-dev"
+      "label": "Kungfu product map",
+      "summary": "The complete product promise, independently adoptable layers, runtime and ABI mechanics, SDKs, extensions, qualification, ADR navigation, and bounded domain horizons.",
+      "source": "kungfu framework/site -> @kungfu-tech/site pinned bundle -> site-libkungfu-dev"
     },
     {
       "id": "buildchain",
