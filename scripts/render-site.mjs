@@ -5096,6 +5096,15 @@ writeFile(
       </div>
     </section>
 
+    <section class="panel" id="installed-agent-hub-qualification">
+      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} KFD adopter profile</p>
+      <h2>Verify Agent Hub with the installed Kungfu product</h2>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
+      <div class="card-actions">
+        <a class="card-action" ${surfaceRouteLinkAttrs("kfd", "agent-hub/")}>Understand the test and verify again</a>
+      </div>
+    </section>
+
     ${renderAgentSupplyChainSummary()}
 
     <section class="panel" aria-labelledby="hub-next-depth-heading">
@@ -6909,6 +6918,13 @@ ${site.readerContract.promise}
 
 Reader layers:
 ${site.readerContract.layers.map((entry) => `- ${entry.label} [${entry.owner}]: ${entry.purpose}`).join("\n")}
+
+Installed Kungfu Agent Hub qualification:
+- Human guide: ${surfaceEndpointHref("kfd", "agent-hub/")}
+- Run: ${kfdSite.agentHubPage.firstPartyProductProjection.run}
+- Verify: ${kfdSite.agentHubPage.firstPartyProductProjection.verify}
+- Ownership: ${kfdSite.agentHubPage.firstPartyProductProjection.ownership}
+- Claim boundary: ${kfdSite.agentHubPage.claimBoundary}
 
 Guided synthesis:
 ${site.readerContract.guidedSynthesis.heading}
