@@ -35,7 +35,6 @@ for (const projectionContract of [
 }
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
-  "src/fixtures/core-runtime-surface.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
   "docs/versioning.md",
@@ -54,7 +53,20 @@ const requiredBaseFiles = [
   "dist/architecture/index.html",
   "dist/core/index.html",
   "dist/core/runtime/index.html",
+  "dist/core/format/index.html",
+  "dist/core/primitives/index.html",
+  "dist/core/abi/index.html",
+  "dist/core/sdk/index.html",
+  "dist/core/extensions/index.html",
+  "dist/core/products/index.html",
+  "dist/core/qualification/index.html",
+  "dist/core/decisions/index.html",
+  "dist/core/horizons/index.html",
   "dist/core/manifest.json",
+  "dist/core/site-bundle.json",
+  "dist/core/agent-index.json",
+  "dist/core/adr-map.json",
+  "dist/core/schema/site-bundle.schema.json",
   "dist/core/llms.txt",
   "dist/core/llms-full.txt",
   "dist/buildchain/index.html",
@@ -116,7 +128,10 @@ if (!notFoundPage.includes('<meta name="robots" content="noindex">') || !notFoun
 }
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
-const core = JSON.parse(fs.readFileSync("src/fixtures/core-runtime-surface.json", "utf8"));
+const coreBundle = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/site-bundle.json", "utf8"));
+const coreAgentIndex = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/agent-index.json", "utf8"));
+const coreAdrMap = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/adr-map.json", "utf8"));
+const corePackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/package.json", "utf8"));
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
 const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
@@ -159,6 +174,8 @@ const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
 const expectedBuildchainVersion = "2.14.14-alpha.4";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
+const expectedCoreSiteVersion = "4.0.0-alpha.1";
+const expectedCoreSitePickup = "file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
@@ -215,12 +232,23 @@ function readPnpmLockPackage(packageName, version) {
   const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`^  '${escapedName}@${escapedVersion}':\\n(?:    .+\\n)*?    resolution: \\{integrity: ([^}]+)\\}`, "m");
   const match = pnpmLockText.match(pattern);
-  if (!match) {
+  if (match) {
+    return {
+      version,
+      integrity: match[1].trim(),
+    };
+  }
+  const localPattern = new RegExp(
+    `^  '${escapedName}@file:[^']+':\\n    resolution: \\{integrity: ([^,}]+)[^\\n]*\\}\\n    version: ${escapedVersion}$`,
+    "m",
+  );
+  const localMatch = pnpmLockText.match(localPattern);
+  if (!localMatch) {
     throw new Error(`pnpm-lock.yaml missing ${packageName}@${version}`);
   }
   return {
     version,
-    integrity: match[1].trim(),
+    integrity: localMatch[1].trim(),
   };
 }
 
@@ -357,6 +385,7 @@ if (
 
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
+const coreSiteLock = readPnpmLockPackage("@kungfu-tech/site", expectedCoreSiteVersion);
 const paperLocks = expectedPaperPackages.map((entry) => ({
   ...entry,
   lock: readPnpmLockPackage(entry.name, entry.version),
@@ -411,6 +440,7 @@ if (readerSourceById.size !== readerContract.sources.length) {
 const packageAuthority = new Map([
   ["@kungfu-tech/kfd", kfdPackage],
   ["@kungfu-tech/buildchain", buildchainPackage],
+  ["@kungfu-tech/site", corePackage],
 ]);
 const architectureAuthority = [
   runtimeSurface.architectureSources.kungfu,
@@ -654,8 +684,13 @@ if (
 ) {
   throw new Error("runtime projection rule must separate site reader ownership from Kungfu and KFD semantic authority");
 }
-if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
-  throw new Error("core fixture contract mismatch");
+if (
+  coreBundle.contract !== "kungfu.site-bundle/v1"
+  || corePackage.name !== "@kungfu-tech/site"
+  || corePackage.version !== expectedCoreSiteVersion
+  || coreBundle.package?.version !== expectedCoreSiteVersion
+) {
+  throw new Error("Core product bundle contract mismatch");
 }
 if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVersion) {
   throw new Error(`Buildchain dependency must be pinned to ${expectedBuildchainVersion}`);
@@ -663,11 +698,17 @@ if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVe
 if (packageJson.dependencies["@kungfu-tech/kfd"] !== expectedKfdVersion) {
   throw new Error(`KFD dependency must be pinned to ${expectedKfdVersion}`);
 }
+if (packageJson.dependencies["@kungfu-tech/site"] !== expectedCoreSitePickup) {
+  throw new Error(`Core site dependency must use the immutable pickup ${expectedCoreSitePickup}`);
+}
 if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
   throw new Error(`Buildchain lockfile entry must resolve to ${expectedBuildchainVersion}`);
 }
 if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
   throw new Error(`KFD lockfile entry must resolve to ${expectedKfdVersion}`);
+}
+if (!coreSiteLock || coreSiteLock.version !== expectedCoreSiteVersion) {
+  throw new Error(`Core site lockfile entry must resolve to ${expectedCoreSiteVersion}`);
 }
 const expectedPaperPackageNames = [
   "@kungfu-tech/paper-kungfu-product-white-paper",
@@ -864,31 +905,47 @@ if (
   throw new Error("dist manifest does not bind the exact embeddable runtime projection");
 }
 if (
-  core.contract !== "libkungfu-core-runtime-surface-fixture"
-  || core.status !== "evidence-linked-fixture"
-  || !/^[0-9a-f]{40}$/.test(core.sourceRef)
-  || core.sourceContract?.status !== "fixture"
+  coreBundle.schemaVersion !== 1
+  || coreBundle.surfaces?.map((surface) => surface.id).join(",") !== "overview,format,primitives,runtime,abi,sdk,extensions,products,qualification,decisions,horizons"
+  || coreBundle.adoptionLayers?.length !== 6
+  || coreBundle.sources?.length !== 27
+  || coreBundle.source?.reproducible !== true
+  || typeof coreBundle.source?.treeDirty !== "boolean"
+  || !/^[0-9a-f]{40}$/.test(coreBundle.source?.revision || "")
+  || !/^sha256:[0-9a-f]{64}$/.test(coreBundle.contentRoot || "")
+  || !/^sha256:[0-9a-f]{64}$/.test(coreBundle.sourceRoot || "")
+  || coreAgentIndex.bundleContentRoot !== coreBundle.contentRoot
+  || coreBundle.adrMap?.contentRoot !== sha256File("node_modules/@kungfu-tech/site/dist/site/adr-map.json")
+  || coreAdrMap.summary?.records !== coreAdrMap.records?.length
+  || coreAdrMap.summary?.records !== 154
+  || coreAdrMap.summary?.domains !== coreAdrMap.domains?.length
 ) {
-  throw new Error("Core runtime fixture must preserve its evidence-linked and secondary source-contract boundaries");
+  throw new Error("Core package bundle, source roots, or ADR corpus projection drifted");
 }
 if (
-  coreManifest.contract !== "libkungfu-core-runtime-surface"
+  coreManifest.contract !== "core.libkungfu.dev/site-bundle-consumer/v1"
   || coreManifest.canonicalHost !== expectedSurfaceHost("core")
-  || coreManifest.source?.path !== "src/fixtures/core-runtime-surface.json"
-  || coreManifest.source?.ref !== core.sourceRef
+  || coreManifest.package?.name !== corePackage.name
+  || coreManifest.package?.version !== corePackage.version
+  || coreManifest.package?.integrity !== coreSiteLock.integrity
+  || coreManifest.bundle?.contract !== coreBundle.contract
+  || coreManifest.bundle?.contentRoot !== coreBundle.contentRoot
+  || coreManifest.bundle?.sourceRoot !== coreBundle.sourceRoot
   || coreManifest.readerContract?.contract !== readerContract.contract
   || coreManifest.readerContract?.path?.id !== "core"
   || JSON.stringify(coreManifest.readerContract?.layers) !== JSON.stringify(readerContract.layers)
-  || JSON.stringify(coreManifest.homepage) !== JSON.stringify(core.homepage)
-  || JSON.stringify(coreManifest.architecture) !== JSON.stringify(core.architecture)
-  || JSON.stringify(coreManifest.outcomes) !== JSON.stringify(core.outcomes)
-  || JSON.stringify(coreManifest.frontiers) !== JSON.stringify(core.frontiers)
-  || JSON.stringify(coreManifest.qualificationBoundary) !== JSON.stringify(core.qualificationBoundary)
+  || JSON.stringify(coreManifest.positioning) !== JSON.stringify(coreBundle.positioning)
+  || JSON.stringify(coreManifest.adoptionLayers) !== JSON.stringify(coreBundle.adoptionLayers)
+  || JSON.stringify(coreManifest.nonClaims) !== JSON.stringify(coreBundle.nonClaims)
 ) {
-  throw new Error("Core human and machine runtime surface facts drifted");
+  throw new Error("Core site manifest drifted from the exact package bundle");
 }
 for (const [field, file] of [
   ["manifest", "manifest.json"],
+  ["bundle", "site-bundle.json"],
+  ["agentIndex", "agent-index.json"],
+  ["adrMap", "adr-map.json"],
+  ["schema", "schema/site-bundle.schema.json"],
   ["llms", "llms.txt"],
   ["full", "llms-full.txt"],
 ]) {
@@ -896,17 +953,19 @@ for (const [field, file] of [
     throw new Error(`Core machine entry drifted: ${field}`);
   }
 }
-for (const evidence of core.evidence || []) {
-  if (
-    !evidence.sourcePath
-    || !evidence.sourceUrl?.startsWith(`${core.sourceRepository}/blob/${core.sourceRef}/`)
-    || !evidence.sourceUrl.endsWith(evidence.sourcePath)
-  ) {
-    throw new Error(`Core evidence is not pinned to the declared source ref: ${evidence.id}`);
+for (const [sourceFile, generatedFile] of [
+  ["node_modules/@kungfu-tech/site/dist/site/site-bundle.json", "dist/core/site-bundle.json"],
+  ["node_modules/@kungfu-tech/site/dist/site/agent-index.json", "dist/core/agent-index.json"],
+  ["node_modules/@kungfu-tech/site/dist/site/adr-map.json", "dist/core/adr-map.json"],
+  ["node_modules/@kungfu-tech/site/schema/site-bundle.schema.json", "dist/core/schema/site-bundle.schema.json"],
+]) {
+  if (!fs.readFileSync(sourceFile).equals(fs.readFileSync(generatedFile))) {
+    throw new Error(`Core machine artifact must preserve exact package bytes: ${generatedFile}`);
   }
 }
 const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
 const coreDetailHtml = fs.readFileSync("dist/core/runtime/index.html", "utf8");
+const coreAdrHtml = fs.readFileSync("dist/core/decisions/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
 const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
 if (
@@ -918,27 +977,57 @@ if (
   throw new Error("Core human and agent entries must share the site-owned reader path");
 }
 for (const expectedText of [
-  core.homepage.headline,
-  core.homepage.lead,
-  core.homepage.claimBoundary,
-  ...core.outcomes.flatMap((outcome) => [outcome.title, outcome.summary]),
+  coreBundle.positioning.promise,
+  coreBundle.positioning.firstReleaseOutcome,
+  coreBundle.positioning.status,
+  coreBundle.positioning.principle,
+  ...coreBundle.adoptionLayers.flatMap((layer) => [layer.label, layer.maturity]),
 ]) {
   if (!coreHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
-    throw new Error(`Core overview and agent entry do not share the essential runtime claim: ${expectedText}`);
+    throw new Error(`Core overview and agent entry do not share the product map claim: ${expectedText}`);
   }
 }
+const coreQualificationHtml = fs.readFileSync("dist/core/qualification/index.html", "utf8");
+for (const expectedText of coreBundle.nonClaims) {
+  if (!coreQualificationHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core qualification and agent entries do not share global non-claim: ${expectedText}`);
+  }
+}
+const coreRuntime = coreBundle.surfaces.find((surface) => surface.id === "runtime");
 for (const expectedText of [
-  core.architecture.writer.label,
-  core.architecture.journal.label,
-  ...core.architecture.readers.map((reader) => reader.label),
-  ...core.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
-  core.semanticBoundary.heading,
-  core.semanticBoundary.body,
-  ...core.semanticBoundary.invariants,
-  ...core.qualificationBoundary.claims,
+  coreRuntime.presentation.architecture.writer.label,
+  coreRuntime.presentation.architecture.journal.label,
+  ...coreRuntime.presentation.architecture.readers.map((reader) => reader.label),
+  ...coreRuntime.presentation.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
+  coreRuntime.presentation.semanticBoundary.heading,
+  coreRuntime.presentation.semanticBoundary.body,
+  ...coreRuntime.presentation.semanticBoundary.invariants,
+  ...coreRuntime.presentation.qualificationClaims,
 ]) {
-  if (!coreDetailHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
-    throw new Error(`Core detail and agent entries do not share the runtime mechanism: ${expectedText}`);
+  if (!coreDetailHtml.includes(escapeHtml(expectedText))) {
+    throw new Error(`Core runtime page does not preserve package presentation: ${expectedText}`);
+  }
+}
+for (const surface of coreBundle.surfaces.filter((entry) => !["overview", "runtime", "decisions"].includes(entry.id))) {
+  const surfaceHtml = fs.readFileSync(`dist/core/${surface.route.replace(/^\/+|\/+$/g, "")}/index.html`, "utf8");
+  for (const expectedText of [
+    surface.headline,
+    surface.summary,
+    ...surface.capabilities,
+    ...surface.knownLimits,
+    ...surface.sourceIds.flatMap((sourceId) => {
+      const source = coreBundle.sources.find((entry) => entry.id === sourceId);
+      return [source.path, source.contentRoot];
+    }),
+  ]) {
+    if (!surfaceHtml.includes(escapeHtml(expectedText))) {
+      throw new Error(`Core ${surface.id} page does not preserve package fact: ${expectedText}`);
+    }
+  }
+}
+for (const record of coreAdrMap.records) {
+  if (!coreAdrHtml.includes(escapeHtml(record.key)) || !coreAdrHtml.includes(escapeHtml(record.title))) {
+    throw new Error(`Core ADR navigation is missing ${record.id}`);
   }
 }
 if (
@@ -956,6 +1045,9 @@ if (
   || !coreHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("core", "runtime/"))}" data-local-href="/core/runtime/"`)
 ) {
   throw new Error("Core overview must stay bounded and route complete mechanics to /runtime/");
+}
+if (renderSiteSource.includes('readFixtureJson("core-runtime-surface.json")') || fs.existsSync("src/fixtures/core-runtime-surface.json")) {
+  throw new Error("Core must consume @kungfu-tech/site without retaining the legacy runtime fixture");
 }
 if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
   throw new Error("publication package aggregation contract mismatch");
@@ -1560,8 +1652,10 @@ for (const source of readerContract.sources) {
   } else if (source.package === "@kungfu-tech/buildchain") {
     const match = /^docs\/(.+)\.md$/.exec(source.path);
     href = match ? expectedSurfaceEndpoint("buildchain", `docs/${match[1]}/`) : undefined;
+  } else if (source.package === "@kungfu-tech/site") {
+    href = expectedSurfaceEndpoint("core", "site-bundle.json");
   }
-  if (!href || ![hubDetailHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+  if (!href || ![hubDetailHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
     html.includes(`href="${escapeHtml(href)}"`)
     || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
   ))) {
@@ -1569,7 +1663,7 @@ for (const source of readerContract.sources) {
   }
 }
 for (const [label, html, pathEntry, authorityMarker] of [
-  ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), core.homepage.headline],
+  ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), coreBundle.positioning.firstReleaseOutcome],
   ["Buildchain", buildchainHomeHtml, readerContract.surfacePaths.find((entry) => entry.id === "buildchain"), buildchainSynthesis.heading],
 ]) {
   const questionPosition = html.indexOf(escapeHtml(pathEntry.question));
@@ -1671,7 +1765,7 @@ for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   }
 }
 for (const [label, html, state] of [
-  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Runtime substrate"],
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Complete Kungfu product map"],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
@@ -2301,13 +2395,18 @@ NODE
 grep -q 'libkungfu.dev' dist/index.html
 grep -q 'Open developer and agent substrate hub' dist/index.html
 grep -q 'core.libkungfu.dev' dist/core/index.html
-grep -q 'Record once. Observe live. Recover from evidence.' dist/core/index.html
+grep -q 'Keep the work when the chat ends.' dist/core/index.html
+grep -q 'Six independently bounded product layers' dist/core/index.html
 grep -q 'Append-only mmap Episode journal' dist/core/runtime/index.html
 grep -q 'Storage is the bus' dist/core/runtime/index.html
 grep -q 'Visibility is not durability.' dist/core/runtime/index.html
-grep -q 'Spec and source contract' dist/core/runtime/index.html
-grep -q 'libkungfu-core-runtime-surface' dist/core/manifest.json
-grep -q 'Record once. Observe live. Recover from evidence.' dist/core/llms.txt
+grep -q 'Pinned product bundle' dist/core/runtime/index.html
+grep -q 'core.libkungfu.dev/site-bundle-consumer/v1' dist/core/manifest.json
+grep -q 'Keep the work when the chat ends.' dist/core/llms.txt
+grep -q 'A current workspace evidence contract' dist/core/format/index.html
+grep -q 'Fact, Episode and Action Geometry' dist/core/primitives/index.html
+grep -q 'One public bootstrap' dist/core/abi/index.html
+grep -q 'Browse the complete decision corpus' dist/core/decisions/index.html
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
 grep -q 'Projection source' dist/architecture/index.html

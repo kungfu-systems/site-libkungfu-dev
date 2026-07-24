@@ -12,8 +12,8 @@ importers:
         specifier: 2.14.14-alpha.4
         version: 2.14.14-alpha.4
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.42
-        version: 1.0.0-alpha.42
+        specifier: 1.0.0-alpha.47
+        version: 1.0.0-alpha.47
       '@kungfu-tech/paper-episodes-to-primitives':
         specifier: 0.1.0-alpha.2
         version: 0.1.0-alpha.2
@@ -26,6 +26,9 @@ importers:
       '@kungfu-tech/paper-observer-declared-timelines':
         specifier: 0.1.0-alpha.9
         version: 0.1.0-alpha.9
+      '@kungfu-tech/site':
+        specifier: file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz
+        version: file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -44,8 +47,8 @@ packages:
     resolution: {integrity: sha512-gX1xWL7I2bqRkjbAuLLbkqcGdbRn6Aemdxg2y7zQZHFYPKi0Y7Su55xby++52fafX6A/ZpPZtO+9iQalqHVRxw==}
     hasBin: true
 
-  '@kungfu-tech/kfd@1.0.0-alpha.42':
-    resolution: {integrity: sha512-bl3xQwdhpBZPplemrFnBIq7O/xRu+HurQhNOhOlx/+8blFVQF3m9UFNXri04i+pxbQNXMtZbNtqMyegZeIcEMw==}
+  '@kungfu-tech/kfd@1.0.0-alpha.47':
+    resolution: {integrity: sha512-tFyFev5UKm2snujWB0FXwHkwLpKhWxmE16MPjn1zSyl0X/y7QTERG7oCL0TIBuMpKC20QnNi6r0oVKRawyQ7fA==}
     hasBin: true
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2':
@@ -59,6 +62,10 @@ packages:
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9':
     resolution: {integrity: sha512-uixVi6Vic6KILqQoiqisiFv2NOWkOoZrlEhrXSVBPBaMxkg5HtDVqJE0XYiiGz85LIbArQ+DRVKl/E3U/pmH+Q==}
+
+  '@kungfu-tech/site@file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz':
+    resolution: {integrity: sha512-Gc4GLK0O+EevpMcXGTiN0jO5Vo9n1HfviGbXpS3MpnxLflNsGc6q8kcqgvZ2K+9rBhGZByfLTigKWj3gtysllw==, tarball: file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz}
+    version: 4.0.0-alpha.1
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
@@ -112,7 +119,7 @@ snapshots:
 
   '@kungfu-tech/kfd@1.0.0-alpha.29': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.42': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.47': {}
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2': {}
 
@@ -121,6 +128,8 @@ snapshots:
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10': {}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9': {}
+
+  '@kungfu-tech/site@file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz': {}
 
   '@types/linkify-it@5.0.0': {}
 
