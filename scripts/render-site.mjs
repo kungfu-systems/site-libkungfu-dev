@@ -3459,6 +3459,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
     <h2>Kung Fu Decisions</h2>
     <div class="doc-nav-group">
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
+      <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
@@ -3617,7 +3618,10 @@ const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdTerminologyPath = `${kfdSite.terminologyPage.url.replace(/\/+$/, "")}/`;
 const kfdCasesPath = `${kfdSite.casesPage.url.replace(/\/+$/, "")}/`;
+const kfdAgentHubPath = `${kfdSite.agentHubPage.url.replace(/\/+$/, "")}/`;
 const kfdPageRouteBySourcePath = new Map([
+  [kfdSite.agentHubPage.authorityPath, kfdAgentHubPath],
+  [kfdSite.agentHubPage.guidePath, kfdAgentHubPath],
   [kfdSite.foundationPage.sourcePath, kfdFoundationPath],
   [kfdSite.formalPage.sourcePath, kfdFormalModelPath],
   [kfdSite.terminologyPage.sourcePath, kfdTerminologyPath],
@@ -5603,6 +5607,16 @@ writeFile(
       ${kfdFuturePictureHero()}
     </section>
 
+    <section class="panel" id="agent-hub-qualification">
+      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
+      <h2>Verify Agent Hub in the installed Kungfu product</h2>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}">Understand and run the qualification</a>
+      </div>
+    </section>
+
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
       <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
@@ -5624,6 +5638,73 @@ writeFile(
     </section>`,
   }),
 );
+
+const renderedKfdAgentHub = renderDecisionMarkdown(
+  rewritePackageMarkdownLinks(
+    kfdSite.agentHubPage.sections
+      .map((section) => `## ${section.title}\n\n${section.markdown}`)
+      .join("\n\n"),
+    "kungfu-systems/kfd",
+    {
+      filePattern: /\.md$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: kfdSite.agentHubPage.authorityPath,
+    },
+  ),
+  "Agent Hub qualification sections",
+);
+const kfdAgentHubPageHtml = page({
+  title: `${kfdSite.agentHubPage.title} | kfd.libkungfu.dev`,
+  description: kfdSite.agentHubPage.lead,
+  current: "kfd",
+  alternates: kfdSurfaceAlternates(),
+  body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(kfdSite.agentHubPage.status)} / ${escapeHtml(kfdSite.agentHubPage.relationship)}</span></p>
+      <h1>${escapeHtml(kfdSite.agentHubPage.title)}</h1>
+      <p class="lead">${escapeHtml(kfdSite.agentHubPage.lead)}</p>
+    </section>
+
+    <section class="panel" id="installed-kungfu-qualification">
+      <p class="eyebrow">First-party product projection</p>
+      <h2>Run the fixed suite through installed Kungfu</h2>
+      <pre><code class="language-sh">${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}
+${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></pre>
+      <p>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership)}</p>
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSite.agentHubPage.claimBoundary)}</p>
+    </section>
+
+    <section class="doc-layout" style="margin-top: 18px;">
+      <aside class="doc-sidebar">
+        ${kfdDecisionNav(undefined, "agent-hub")}
+        ${renderedKfdAgentHub.tocHtml}
+      </aside>
+      <article class="panel doc-content">
+        ${renderedKfdAgentHub.html}
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Page metadata</h2>
+      <dl class="meta">
+        <dt>Route</dt>
+        <dd><code>${escapeHtml(kfdAgentHubPath)}</code></dd>
+        <dt>Relationship</dt>
+        <dd><code>${escapeHtml(kfdSite.agentHubPage.relationship)}</code></dd>
+        <dt>Normative</dt>
+        <dd><code>${escapeHtml(String(kfdSite.agentHubPage.normative))}</code></dd>
+        <dt>Profile</dt>
+        <dd><code>${escapeHtml(kfdSite.agentHubPage.profile)}</code></dd>
+        <dt>Suite</dt>
+        <dd><code>${escapeHtml(kfdSite.agentHubPage.suite.id)}@${escapeHtml(kfdSite.agentHubPage.suite.version)}</code></dd>
+        <dt>Source path</dt>
+        <dd><code>${escapeHtml(kfdSite.agentHubPage.authorityPath)}</code></dd>
+        <dt>Package</dt>
+        <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+      </dl>
+    </section>`,
+});
+writeFile("kfd/agent-hub/index.html", kfdAgentHubPageHtml);
+writeFile("agent-hub/index.html", kfdAgentHubPageHtml);
 
 const renderedKfdFoundation = renderDecisionMarkdown(
   rewritePackageMarkdownLinks(kfdSite.foundationPage.markdown, "kungfu-systems/kfd", {
@@ -6434,6 +6515,11 @@ const manifest = {
       source: `@kungfu-tech/kfd@${kfdPackage.version}/site/kfd-site.json`,
     },
     {
+      path: kfdAgentHubPath,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.agentHubPage.authorityPath}`,
+    },
+    {
       path: kfdFoundationPath,
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.foundationPage.sourcePath}`,
@@ -6625,10 +6711,12 @@ const kfdAgentManifest = {
   humanEntries: {
     overview: surfaceCanonicalHref("kfd"),
     decisions: surfaceEndpointHref("kfd", "decisions/"),
+    agentHub: surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
   },
   agentEntries: {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
     manifest: surfaceEndpointHref("kfd", "manifest.json"),
+    agentHub: surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
     registry: surfaceEndpointHref("kfd", "registry.json"),
     candidateRegistry: surfaceEndpointHref("kfd", "drafts/registry.json"),
     caseRegistry: surfaceEndpointHref("kfd", "cases/registry.json"),
@@ -6657,6 +6745,7 @@ const kfdAgentManifest = {
   },
   readOrder: [
     surfaceCanonicalHref("kfd"),
+    surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "decisions/"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),
@@ -6675,6 +6764,12 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", "cases/registry.json"),
     surfaceEndpointHref("kfd", "standards.json"),
   ],
+  agentHub: {
+    ...kfdSite.agentHubPage,
+    path: kfdAgentHubPath,
+    url: surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.agentHubPage.authorityPath}`,
+  },
   foundation: {
     path: kfdFoundationPath,
     url: surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
@@ -6774,9 +6869,17 @@ Promise: ${readerPath("kfd").promise}
 
 Human entry:
 - ${surfaceCanonicalHref("kfd")}
+- ${surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, ""))}
+
+Installed Kungfu Agent Hub qualification:
+- Run: ${kfdSite.agentHubPage.firstPartyProductProjection.run}
+- Verify: ${kfdSite.agentHubPage.firstPartyProductProjection.verify}
+- Ownership: ${kfdSite.agentHubPage.firstPartyProductProjection.ownership}
+- Claim boundary: ${kfdSite.agentHubPage.claimBoundary}
 
 Agent-first entries:
 - ${surfaceEndpointHref("kfd", "manifest.json")}
+- ${surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, ""))}
 - ${surfaceEndpointHref("kfd", "registry.json")}
 - ${surfaceEndpointHref("kfd", "drafts/registry.json")}
 - ${surfaceEndpointHref("kfd", "cases/registry.json")}

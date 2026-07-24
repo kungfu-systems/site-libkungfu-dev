@@ -115,7 +115,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.42",
+        "version": "1.0.0-alpha.47",
         "path": "decisions/KFD-2.md",
         "sha256": "026ed1d23fbb45fd5b3163962ce736a757e383230af09556c8fb4b56f5e802b5"
       },
@@ -124,7 +124,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.42",
+        "version": "1.0.0-alpha.47",
         "path": "decisions/KFD-3.md",
         "sha256": "5691761dcab21fcdeaf748655f20f61de74b906cd9f5cd03459131fd78082f83"
       },
@@ -133,7 +133,7 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "package-document",
         "package": "@kungfu-tech/kfd",
-        "version": "1.0.0-alpha.42",
+        "version": "1.0.0-alpha.47",
         "path": "decisions/KFD-7.md",
         "sha256": "df5be3a5f49cbeabc2cac684326fd0356a96645151786b49e8b938f823493456"
       },
@@ -142,9 +142,9 @@
         "owner": "@kungfu-tech/kfd",
         "kind": "git-document",
         "repository": "https://github.com/kungfu-systems/kfd",
-        "ref": "35915676330696f888c73c154f431c99f37c19ec",
+        "ref": "b7e7773c9c310a6a30f70e83fb8b890d45cd63ba",
         "path": "protocols/agent-hub/README.md",
-        "sha256": "2a3ac987d280a5baaacde7ddfb01cdce22a094b09709d1ff4d9a2329060b1140"
+        "sha256": "0d9024c9727a9ffb5cdd2912e2f51a5f53a186663be052ef6551095ed19cdaaf"
       },
       {
         "id": "buildchain-release-passport",
