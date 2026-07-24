@@ -1491,6 +1491,17 @@ if (
 ) {
   throw new Error("homepage must preserve the Hub promise while routing detailed architecture one level down");
 }
+if (
+  !hubHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !hubHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "agent-hub/"))}" data-local-href="/kfd/agent-hub/"`)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.run)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.verify)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.ownership)
+  || !hubLlms.includes(kfdSite.agentHubPage.claimBoundary)
+  || !hubLlms.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("Hub first entries must expose and explain the installed Kungfu Agent Hub qualification");
+}
 for (const layer of readerContract.layers) {
   if (!hubDetailHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
     throw new Error(`human and agent entries must share reader layer: ${layer.label}`);
