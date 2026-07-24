@@ -61,6 +61,8 @@ const requiredBaseFiles = [
   "dist/buildchain/mechanism/index.html",
   "dist/kfd/index.html",
   "dist/kfd/decisions/index.html",
+  "dist/kfd/agent-hub/index.html",
+  "dist/agent-hub/index.html",
   "dist/kfd/foundation/index.html",
   "dist/foundation/index.html",
   "dist/kfd/formal/index.html",
@@ -633,9 +635,9 @@ if (
 }
 if (
   runtimeSurface.architectureSources?.kungfu?.commit !== "1f3893fae1a7a666d8abe736cd9563128f48549b" ||
-  runtimeSurface.architectureSources?.kfd?.commit !== "35915676330696f888c73c154f431c99f37c19ec" ||
+  runtimeSurface.architectureSources?.kfd?.commit !== "b7e7773c9c310a6a30f70e83fb8b890d45cd63ba" ||
   runtimeSurface.architectureSources?.kfd?.profile !== "kfd-agent-hub@0.1.0-alpha.1" ||
-  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:649ec7531d4c879846b8207a94e21844d573f0c07a422b9fa3f921bfa65d05a3" ||
+  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:dab4e93d2a662092eb51e29171dfc8bd0c400daa99899f074e69608b45cc7a59" ||
   runtimeSurface.actionWorld?.steps?.length !== 7 ||
   runtimeSurface.actionWorld?.foundation?.length !== 3 ||
   runtimeSurface.hubNetwork?.hubs?.length !== 2 ||
@@ -736,6 +738,22 @@ if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.r
 }
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
   throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
+}
+if (
+  kfdSite.agentHubPage?.id !== "agent-hub"
+  || kfdSite.agentHubPage?.url !== "/agent-hub"
+  || kfdSite.agentHubPage?.normative !== false
+  || kfdSite.agentHubPage?.suite?.fixedVectorCount !== 20
+  || JSON.stringify(kfdSite.agentHubPage?.scaffoldLanguages) !== JSON.stringify(["cpp", "node", "python", "rust"])
+  || kfdSite.agentHubPage?.commands?.kungfuProduct !== "kungfu agent hub qualify --output-dir <new-directory> [--json]"
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.run
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.verify
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.ownership
+  || !kfdSite.agentHubPage?.claimBoundary
+  || !Array.isArray(kfdSite.agentHubPage?.sections)
+  || kfdSite.agentHubPage.sections.length === 0
+) {
+  throw new Error("KFD site bundle must expose the fixed Agent Hub product-qualification contract");
 }
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
   throw new Error("KFD registry must expose decision entries");
@@ -1220,6 +1238,17 @@ if (manifest.canonicalHost !== expectedSurfaceHost("hub")) {
 if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === "/")) {
   throw new Error(`dist manifest does not record KFD channel root: ${expectedSurfaceHost("kfd")}`);
 }
+const kfdAgentHubPath = `${kfdSite.agentHubPage.url.replace(/\/+$/, "")}/`;
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === kfdAgentHubPath
+      && page.source.endsWith(`/${kfdSite.agentHubPage.authorityPath}`),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD Agent Hub qualification route");
+}
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
@@ -1294,10 +1323,27 @@ if (
 if (
   kfdAgentManifest.canonicalHost !== expectedSurfaceHost("kfd") ||
   kfdAgentManifest.humanEntry !== expectedSurfaceHref("kfd") ||
+  kfdAgentManifest.humanEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/") ||
   kfdAgentManifest.agentEntries?.manifest !== expectedSurfaceEndpoint("kfd", "manifest.json") ||
-  kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt")
+  kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt") ||
+  kfdAgentManifest.agentEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
+}
+if (
+  kfdAgentManifest.agentHub?.path !== kfdAgentHubPath
+  || kfdAgentManifest.agentHub?.url !== expectedSurfaceEndpoint("kfd", "agent-hub/")
+  || kfdAgentManifest.agentHub?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.agentHubPage.authorityPath}`
+  || kfdAgentManifest.agentHub?.commands?.kungfuProduct !== kfdSite.agentHubPage.commands.kungfuProduct
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.run !== kfdSite.agentHubPage.firstPartyProductProjection.run
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.verify !== kfdSite.agentHubPage.firstPartyProductProjection.verify
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.ownership !== kfdSite.agentHubPage.firstPartyProductProjection.ownership
+  || kfdAgentManifest.agentHub?.suite?.fixedVectorCount !== 20
+  || JSON.stringify(kfdAgentManifest.agentHub?.scaffoldLanguages) !== JSON.stringify(kfdSite.agentHubPage.scaffoldLanguages)
+  || kfdAgentManifest.agentHub?.claimBoundary !== kfdSite.agentHubPage.claimBoundary
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("KFD agent manifest must explain and route the installed Kungfu Agent Hub qualification");
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
@@ -1700,6 +1746,18 @@ if (
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
+if (
+  !kfdHomeHtml.includes(`href="${escapeHtml(kfdAgentHubPath)}"`)
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify))
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.run)
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.verify)
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.ownership)
+  || !kfdLlms.includes(kfdSite.agentHubPage.claimBoundary)
+  || !kfdLlms.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("KFD first entries must expose and explain the installed Kungfu Agent Hub qualification");
+}
 for (const sectionId of kfdSite.homepage.displayPlan.support) {
   const section = kfdSite.homepage.sections.find((entry) => entry.id === sectionId);
   if (!section) {
@@ -1745,6 +1803,26 @@ if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`
 }
 if (kfdHomeHtml.includes('href="docs/') || kfdDetailHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
+}
+const kfdAgentHubCanonicalHtml = fs.readFileSync("dist/kfd/agent-hub/index.html", "utf8");
+const kfdAgentHubAliasHtml = fs.readFileSync("dist/agent-hub/index.html", "utf8");
+if (kfdAgentHubAliasHtml !== kfdAgentHubCanonicalHtml) {
+  throw new Error("KFD Agent Hub subdomain route alias drifted: dist/agent-hub/index.html");
+}
+const agentHubHeadings = kfdSite.agentHubPage.sections.map((section) => section.title);
+if (
+  agentHubHeadings.some((heading) => !kfdAgentHubCanonicalHtml.includes(`>${escapeHtml(heading)}</h3>`))
+  || !kfdAgentHubCanonicalHtml.includes('aria-label="Agent Hub qualification sections"')
+  || !kfdAgentHubCanonicalHtml.includes(`<a href="${escapeHtml(kfdAgentHubPath)}" aria-current="page">Agent Hub qualification</a>`)
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.claimBoundary))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.authorityPath))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.profile))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.suite.id))
+) {
+  throw new Error("KFD Agent Hub page is missing bundle-owned commands, explanation, boundaries, navigation, or metadata");
 }
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
 const kfdFoundationCanonicalHtml = fs.readFileSync("dist/kfd/foundation/index.html", "utf8");
@@ -1983,7 +2061,6 @@ for (const formalCandidate of kfdCandidateFormalPages) {
     || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.normative))}</code>`)
     || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.formalCandidateVersion))}</code>`)
     || !formalCanonicalHtml.includes(`href="${escapeHtml(parent.url)}"`)
-    || !formalCanonicalHtml.includes('href="/7/formal/"')
     || !formalCanonicalHtml.includes('href="/drafts/registry.json"')
   ) {
     throw new Error(`KFD formal candidate page is missing declared facts or navigation: ${formalCandidate.id}`);
