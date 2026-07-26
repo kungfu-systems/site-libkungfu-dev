@@ -60,7 +60,7 @@ Deployment must not turn this repository into a fact source. The artifact should
 render pinned upstream bundles:
 
 ```text
-kungfu evidence -> framework/site -> exact source-bound package tarball -> site vendor pickup -> core.libkungfu.dev
+kungfu evidence -> framework/site -> @kungfu-tech/site exact npm pickup -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
@@ -71,15 +71,15 @@ by Kungfu's `framework/site` package, and the hub routes readers to that
 package-backed Core surface. The package carries the complete product map,
 qualification boundaries, authority-source inventory, ADR map, source revision,
 and content roots; the renderer must reproduce its machine artifacts
-byte-for-byte and must not maintain a parallel Core claim fixture. The package
-tarball is vendored at `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz` until a
-registry release is needed. Regenerate it only from the exact clean Kungfu
-commit recorded inside the package, and preserve the pnpm lockfile integrity;
-the vendor directory is a deployment transport cache, not a source of Core
-facts. Merging a vendored pickup is repository integration, not an npm
-publication or a production release; each release action remains a separate,
-explicitly admitted step.
-Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.1-alpha.2` npm package
+byte-for-byte and must not maintain a parallel Core claim fixture. The exact
+public npm coordinate, package integrity, clean source revision, and bundle
+roots bind the rendered content to Kungfu. Consuming the package is repository
+integration, not an npm publication or a production release; each release
+action remains a separate, explicitly admitted step.
+The Core `/format/` human page is generated from the package's
+`formatAuthority` projection, while the complete packaged `dist/site/format/**`
+tree is copied byte-for-byte to the matching Core machine routes.
+Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.2-alpha.2` npm package
 and its exported `dist/site` bundle. KFD uses the pinned
 `@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
 use the exact package set in

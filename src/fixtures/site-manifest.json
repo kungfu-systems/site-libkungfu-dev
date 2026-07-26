@@ -117,8 +117,8 @@
         "package": "@kungfu-tech/site",
         "version": "4.0.0-alpha.1",
         "path": "dist/site/site-bundle.json",
-        "sha256": "6d479296dd7455233f14bc6a7ddc14a04e0b3a917ce9733ff3946b6a9021745c",
-        "contentRoot": "sha256:edb695d66fcf24e672945a9bf146b01df94f97385eec6c96766687ae620fa88d"
+        "sha256": "aa0aef21828398a4d24874f3e23bb6147e8ccb9269cb79265d28923e53b3bc4f",
+        "contentRoot": "sha256:8656db9db7f6ffba17b6a137162331c2cf63926eefe452aa94c4c5eb6bc05e69"
       },
       {
         "id": "kfd-2",
@@ -161,18 +161,18 @@
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "3.0.1-alpha.2",
+        "version": "3.0.2-alpha.2",
         "path": "docs/release-passport.md",
-        "sha256": "f10d2f0f9cc694976b2a1d2a61195ed155c1bc24c964de1551475882e8197c92"
+        "sha256": "ed29d25882cbf4ec062abc21e7d069a6377eaf7e3171c24642dfe08da2e4c05b"
       },
       {
         "id": "buildchain-kfd-support",
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "3.0.1-alpha.2",
+        "version": "3.0.2-alpha.2",
         "path": "docs/kfd-support.md",
-        "sha256": "58a60b3e54bc47d4bc9b6e08a432ba4ff75ed2275ef056d04c44cc2bc25046da"
+        "sha256": "3a6143e450ab7976a50788fee48ec4d7313706774ff5cf8f71075a7b9e196e01"
       }
     ],
     "guidedSynthesis": {

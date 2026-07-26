@@ -9,13 +9,13 @@
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
-    "@kungfu-tech/buildchain": "3.0.1-alpha.2",
+    "@kungfu-tech/buildchain": "3.0.2-alpha.2",
     "@kungfu-tech/kfd": "1.0.0-alpha.47",
     "@kungfu-tech/paper-episodes-to-primitives": "0.1.0-alpha.2",
     "@kungfu-tech/paper-kfd-foundation-real-world-agent-work": "0.1.0-alpha.8",
     "@kungfu-tech/paper-kungfu-product-white-paper": "0.1.0-alpha.10",
     "@kungfu-tech/paper-observer-declared-timelines": "0.1.0-alpha.9",
-    "@kungfu-tech/site": "file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz",
+    "@kungfu-tech/site": "4.0.0-alpha.1",
     "markdown-it": "14.1.0",
     "markdown-it-anchor": "9.2.0"
   }

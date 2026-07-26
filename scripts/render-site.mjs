@@ -81,6 +81,18 @@ function writeBinaryFile(relativePath, content) {
   fs.writeFileSync(target, content);
 }
 
+function copyDirectoryContents(sourceDir, outputDir) {
+  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const outputPath = path.posix.join(outputDir, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectoryContents(sourcePath, outputPath);
+    } else if (entry.isFile()) {
+      writeBinaryFile(outputPath, fs.readFileSync(sourcePath));
+    }
+  }
+}
+
 function sha256Buffer(content) {
   return `sha256:${crypto.createHash("sha256").update(content).digest("hex")}`;
 }
@@ -3512,11 +3524,20 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 }
 
 const site = readFixtureJson("site-manifest.json");
+const coreSiteApi = require("@kungfu-tech/site");
+const coreBundleVerification = coreSiteApi.verifyBundle();
 const coreBundle = readPackageJson("@kungfu-tech/site/site-bundle.json");
 const coreAgentIndex = readPackageJson("@kungfu-tech/site/agent-index.json");
 const coreAdrMap = readPackageJson("@kungfu-tech/site/adr-map.json");
 const coreBundleSchema = readPackageText("@kungfu-tech/site/schema");
 const corePackage = readPackageJson("@kungfu-tech/site/package.json");
+const coreFormatManifest = coreSiteApi.loadFormatAuthorityManifest();
+const coreFormatRoutes = Object.fromEntries(
+  Object.keys(coreBundle.formatAuthority?.routes || {}).map((routeId) => [
+    routeId,
+    coreSiteApi.loadFormatAuthorityRoute(routeId),
+  ]),
+);
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
 const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
@@ -3550,7 +3571,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "3.0.1-alpha.2";
+const expectedBuildchainVersion = "3.0.2-alpha.2";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -3604,6 +3625,11 @@ if (
   || !coreBundle.contentRoot
   || !coreBundle.sourceRoot
   || !coreSiteLock.integrity
+  || coreBundleVerification.status !== "passing"
+  || coreBundleVerification.contentRoot !== coreBundle.contentRoot
+  || coreBundleVerification.format?.manifestRoot !== coreBundle.formatAuthority?.pickup?.manifestRoot
+  || coreFormatManifest.normative?.root !== coreBundle.formatAuthority?.normativeRoot
+  || Object.keys(coreFormatRoutes).join(",") !== "overview,readerContract,versionMatrix,registry,vectors"
 ) {
   throw new Error("unexpected @kungfu-tech/site product bundle");
 }
@@ -5361,6 +5387,69 @@ function renderCoreSurfaceCard(surface) {
   </article>`;
 }
 
+function renderCoreFormatAuthorityDetails() {
+  const authority = coreBundle.formatAuthority;
+  const overview = coreFormatRoutes.overview.value;
+  const readerContract = coreFormatRoutes.readerContract.value;
+  const compatibility = coreFormatRoutes.versionMatrix.value;
+  const registry = coreFormatRoutes.registry.value;
+  const vectors = coreFormatRoutes.vectors.value;
+  return `<section class="panel" aria-labelledby="format-authority-heading">
+    <p class="eyebrow">Exact packaged Spec authority</p>
+    <h2 id="format-authority-heading">${escapeHtml(overview.boundary.definition)}</h2>
+    <dl class="meta" style="margin-top: 18px;">
+      <dt>Spec pickup</dt><dd><code>${escapeHtml(authority.pickup.coordinate)}</code></dd>
+      <dt>Format namespace</dt><dd><code>${escapeHtml(authority.formatNamespace)}</code></dd>
+      <dt>Authority status</dt><dd><code>${escapeHtml(authority.status)}</code></dd>
+      <dt>Normative root</dt><dd><code>${escapeHtml(authority.normativeRoot)}</code></dd>
+      <dt>Retained corpus</dt><dd><code>${escapeHtml(authority.conformance.release)}</code> · ${escapeHtml(String(authority.conformance.vectorCount))} vectors · <code>${escapeHtml(authority.conformance.releaseRoot)}</code></dd>
+      <dt>Projection policy</dt><dd><code>${escapeHtml(authority.projectionPolicy)}</code></dd>
+    </dl>
+    <p style="margin-top: 18px;"><strong>Composition rule:</strong> ${escapeHtml(compatibility.composition_rule)}</p>
+    <div class="grid three" style="margin-top: 18px;">
+      ${overview.boundary.notOneOf.map((item) => `<article class="panel"><p class="eyebrow">Not one authority</p><h3>${escapeHtml(item)}</h3></article>`).join("")}
+    </div>
+  </section>
+
+  <section aria-labelledby="format-reader-heading">
+    <p class="eyebrow">Required-reader behavior</p>
+    <h2 id="format-reader-heading">${escapeHtml(readerContract.rule)}</h2>
+    <div class="grid three" style="margin-top: 18px;">
+      ${readerContract.profiles.map((profile) => `<article class="panel">
+        <span class="tag">${escapeHtml(profile.id)}</span>
+        <h3>${escapeHtml(profile.authorityEffect)}</h3>
+        <p><strong>Semantic scope:</strong> ${escapeHtml(profile.semanticScope)}</p>
+        <p><strong>Unknown material:</strong> <code>${escapeHtml(profile.unknownOutcome)}</code></p>
+        <p><strong>Unsupported root:</strong> <code>${escapeHtml(profile.unsupportedRootOutcome)}</code></p>
+      </article>`).join("")}
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="format-version-heading">
+    <p class="eyebrow">Independent version axes</p>
+    <h2 id="format-version-heading">No package version stands in for every compatibility decision.</h2>
+    <ul class="core-authority-list">
+      ${overview.version_axes.map((axis) => `<li><code>${escapeHtml(axis.id)}</code> <strong>${escapeHtml(axis.owner)}</strong> — ${escapeHtml(axis.changesWhen)}</li>`).join("")}
+    </ul>
+    <p><strong>v4 alpha baseline:</strong> <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release)}</code> · <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release_root)}</code> · ${escapeHtml(compatibility.v4_alpha_baseline.stability.status)}</p>
+  </section>
+
+  <section class="panel" aria-labelledby="format-artifacts-heading">
+    <p class="eyebrow">Rooted machine routes</p>
+    <h2 id="format-artifacts-heading">Inspect the exact Spec artifacts copied from the verified package.</h2>
+    <ul class="core-authority-list">
+      ${Object.entries(authority.routes).map(([routeId, descriptor]) => `<li><span class="tag">${escapeHtml(routeId)}</span> <a ${surfaceRouteLinkAttrs("core", descriptor.path)}><code>${escapeHtml(descriptor.path)}</code></a> <code>${escapeHtml(descriptor.artifactRoot)}</code></li>`).join("")}
+    </ul>
+    <p>${escapeHtml(String(registry.entries.length))} registered protocols · ${escapeHtml(String(vectors.vectors.length))} retained vectors · release <code>${escapeHtml(vectors.latest_release)}</code>.</p>
+  </section>
+
+  <section class="panel warning" aria-labelledby="format-nonclaims-heading">
+    <p class="eyebrow">Spec claim boundary</p>
+    <h2 id="format-nonclaims-heading">What this portable authority does not claim</h2>
+    <ul class="core-limit-list">${authority.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+  </section>`;
+}
+
 function renderCoreSurfacePage(surface) {
   const authorities = coreSurfaceAuthorities(surface);
   return page({
@@ -5386,6 +5475,8 @@ function renderCoreSurfacePage(surface) {
         <ul class="core-limit-list">${surface.knownLimits.map((limit) => `<li>${escapeHtml(limit)}</li>`).join("")}</ul>
       </article>
     </section>
+
+    ${surface.id === "format" ? renderCoreFormatAuthorityDetails() : ""}
 
     <section class="panel" aria-labelledby="${escapeAttr(surface.id)}-authority-heading">
       <p class="eyebrow">Pinned authority</p>
@@ -5436,6 +5527,17 @@ const coreAgentManifest = {
   },
   positioning: coreBundle.positioning,
   adoptionLayers: coreBundle.adoptionLayers,
+  formatAuthority: {
+    ...coreBundle.formatAuthority,
+    manifest: surfaceEndpointHref("core", "format/manifest.json"),
+    routes: Object.fromEntries(Object.entries(coreBundle.formatAuthority.routes).map(([routeId, descriptor]) => [
+      routeId,
+      {
+        ...descriptor,
+        url: surfaceEndpointHref("core", descriptor.path),
+      },
+    ])),
+  },
   surfaces: coreBundle.surfaces.map((surface) => ({
     ...surface,
     authorities: coreSurfaceAuthorities(surface),
@@ -5448,6 +5550,11 @@ const coreAgentManifest = {
     agentIndex: surfaceEndpointHref("core", "agent-index.json"),
     adrMap: surfaceEndpointHref("core", "adr-map.json"),
     schema: surfaceEndpointHref("core", "schema/site-bundle.schema.json"),
+    formatManifest: surfaceEndpointHref("core", "format/manifest.json"),
+    formatReaderContract: surfaceEndpointHref("core", "format/reader-matrix.json"),
+    formatVersionMatrix: surfaceEndpointHref("core", "format/compatibility.json"),
+    formatRegistry: surfaceEndpointHref("core", "format/registry.json"),
+    formatVectors: surfaceEndpointHref("core", "format/vectors/index.json"),
     llms: surfaceEndpointHref("core", "llms.txt"),
     full: surfaceEndpointHref("core", "llms-full.txt"),
   },
@@ -5836,6 +5943,10 @@ writeFile("core/site-bundle.json", readPackageText("@kungfu-tech/site/site-bundl
 writeFile("core/agent-index.json", readPackageText("@kungfu-tech/site/agent-index.json"));
 writeFile("core/adr-map.json", readPackageText("@kungfu-tech/site/adr-map.json"));
 writeFile("core/schema/site-bundle.schema.json", coreBundleSchema);
+copyDirectoryContents(
+  path.join(packageRoot("@kungfu-tech/site"), "dist", "site", "format"),
+  "core/format",
+);
 writeFile(
   "core/llms.txt",
   `# ${surfaceCanonicalHost("core")} product map
@@ -5863,6 +5974,15 @@ ${coreBundle.adoptionLayers.map((layer) => `- ${layer.label} [${layer.maturity}]
 Surfaces:
 ${coreBundle.surfaces.map((surface) => `- ${surface.route} ${surface.label} [${surface.maturity}; ${surface.claimClass}]: ${surface.summary}`).join("\n")}
 
+Portable format authority:
+- pickup: ${coreBundle.formatAuthority.pickup.coordinate}
+- status: ${coreBundle.formatAuthority.status}
+- normative root: ${coreBundle.formatAuthority.normativeRoot}
+- reader rule: ${coreFormatRoutes.readerContract.value.rule}
+- compatibility rule: ${coreFormatRoutes.versionMatrix.value.composition_rule}
+- retained corpus: ${coreBundle.formatAuthority.conformance.release} / ${coreBundle.formatAuthority.conformance.vectorCount} vectors / ${coreBundle.formatAuthority.conformance.releaseRoot}
+${Object.entries(coreBundle.formatAuthority.routes).map(([routeId, descriptor]) => `- ${routeId}: ${surfaceEndpointHref("core", descriptor.path)} [${descriptor.artifactRoot}]`).join("\n")}
+
 Global non-claims:
 ${coreBundle.nonClaims.map((claim) => `- ${claim}`).join("\n")}
 
@@ -5879,6 +5999,11 @@ Machine entries:
 - ${surfaceEndpointHref("core", "agent-index.json")}
 - ${surfaceEndpointHref("core", "adr-map.json")}
 - ${surfaceEndpointHref("core", "schema/site-bundle.schema.json")}
+- ${surfaceEndpointHref("core", "format/manifest.json")}
+- ${surfaceEndpointHref("core", "format/reader-matrix.json")}
+- ${surfaceEndpointHref("core", "format/compatibility.json")}
+- ${surfaceEndpointHref("core", "format/registry.json")}
+- ${surfaceEndpointHref("core", "format/vectors/index.json")}
 - ${surfaceEndpointHref("core", "llms.txt")}
 - ${surfaceEndpointHref("core", "llms-full.txt")}
 `,

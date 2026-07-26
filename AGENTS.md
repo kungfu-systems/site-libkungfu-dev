@@ -28,14 +28,11 @@ developer and agent substrate hub.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Core product facts come from
   `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
-  `@kungfu-tech/buildchain@3.0.1-alpha.2`; KFD facts come from
+  `@kungfu-tech/buildchain@3.0.2-alpha.2`; KFD facts come from
   `@kungfu-tech/kfd@1.0.0-alpha.47`.
-- Keep the Core package transport artifact at
-  `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz`. Generate it only from the exact
-  clean Kungfu commit embedded in the package, never hand-edit its contents,
-  and keep pnpm integrity plus the package source and content roots verified.
-  Vendoring transports the upstream package; it does not make this repository
-  the owner of Core product facts.
+- Consume the Core bundle from the exact public npm coordinate. Verify pnpm
+  integrity plus the package source and content roots, and render the packaged
+  Spec authority instead of retaining a parallel local interpretation.
 - Buildchain hosted README badge endpoints are generated under
   `/badges/v1/{badge}/{state}.svg` and `.json`. Prefer the Buildchain package
   `dist/site/badge-endpoint-registry.json` and `dist/site/badges/v1/**/*.json`
