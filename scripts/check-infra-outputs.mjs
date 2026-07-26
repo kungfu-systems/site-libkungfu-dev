@@ -101,9 +101,10 @@ for (const snippet of [
     throw new Error(`Buildchain web-surface workflow must set ${snippet}`);
   }
 }
+const sameRepositoryPreview = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
 const expectedApplySwitches = {
-  "preview-apply": true,
-  "preview-cleanup-apply": true,
+  "preview-apply": sameRepositoryPreview,
+  "preview-cleanup-apply": sameRepositoryPreview,
   "staging-apply": true,
   "production-apply": outputs.channels?.production?.status === "active",
   "production-release-on-main": outputs.channels?.production?.status === "active",
