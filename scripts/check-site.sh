@@ -1533,8 +1533,8 @@ if (!hubHtml.includes(".architecture-visual") || immutableFoundationPaperHtml.in
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
-if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>`)) {
-  throw new Error("human header brand must link to the canonical hub and expose a local fallback");
+if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Kungfu UNGFU™ — Developer Platform; back to libkungfu.dev home"><span>Kungfu UNGFU™</span><span class="brand-context">Developer Platform</span></a>`)) {
+  throw new Error("human header brand must expose the shared Kungfu signature, local role, canonical hub, and local fallback");
 }
 if (
   !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
@@ -1550,8 +1550,28 @@ for (const path of ["index.html", "core/index.html", "buildchain/index.html", "k
 if (hubHtml.includes(">Hub</a>")) {
   throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
 }
-if (!hubHtml.includes("Kungfu Origin Technology Limited") || !hubHtml.includes("Open developer and agent substrate hub")) {
-  throw new Error("human footer must expose the commercial steward and substrate boundary");
+if (!hubHtml.includes("Kungfu UNGFU™ is a trademark of Kungfu Origin Technology Limited.") || !hubHtml.includes("Open developer and agent substrate hub")) {
+  throw new Error("human footer must expose the exact trademark notice and substrate boundary");
+}
+if (
+  !hubHtml.includes('<meta name="application-name" content="Kungfu UNGFU™">')
+  || !hubHtml.includes('<meta property="og:site_name" content="Kungfu UNGFU™">')
+) {
+  throw new Error("human metadata must expose the shared Kungfu brand signature");
+}
+if (
+  manifest.brand?.signature !== "Kungfu UNGFU™"
+  || manifest.brand?.context !== "Developer Platform"
+  || manifest.brand?.productName !== "Kungfu"
+  || !manifest.brand?.boundary.includes("not a second product or runtime")
+) {
+  throw new Error("machine manifest must expose the shared brand identity and product boundary");
+}
+if (
+  !hubLlms.startsWith("# Kungfu UNGFU™ — Developer Platform")
+  || !hubLlms.includes("UNGFU is not a second product or runtime")
+) {
+  throw new Error("agent entrypoint must expose the shared brand identity and product boundary");
 }
 if (!hubHtml.includes("Public collaboration starts on") || !hubHtml.includes('href="https://github.com/kungfu-systems"')) {
   throw new Error("human footer must route collaboration through GitHub");
