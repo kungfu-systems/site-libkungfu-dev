@@ -1263,14 +1263,14 @@ function page({ title, description, current, body, alternates = "", preserveRela
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeAttr(description)}">
+  <meta name="description" content="${escapeAttr(description)}">${immutableArchive ? "" : `
   <meta name="application-name" content="${escapeAttr(BRAND_SIGNATURE)}">
   <meta property="og:site_name" content="${escapeAttr(BRAND_SIGNATURE)}">
   <meta property="og:title" content="${escapeAttr(title)}">
   <meta property="og:description" content="${escapeAttr(description)}">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="${escapeAttr(title)}">
-  <meta name="twitter:description" content="${escapeAttr(description)}">
+  <meta name="twitter:description" content="${escapeAttr(description)}">`}
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(preserveRelativeMachineEntries ? "/manifest.json" : pageMachineEntryHref(current, "manifest.json"))}">
   <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(preserveRelativeMachineEntries ? "/llms.txt" : pageMachineEntryHref(current, "llms.txt"))}">
@@ -1355,16 +1355,16 @@ ${current === "core" ? `
       gap: 20px;
     }
 
-    .brand {
+    .brand {${immutableArchive ? "" : `
       display: inline-flex;
       flex-wrap: wrap;
       align-items: baseline;
-      gap: 8px;
+      gap: 8px;`}
       color: var(--fg);
       font-weight: 700;
       letter-spacing: 0;
       text-decoration: none;
-    }
+    }${immutableArchive ? "" : `
 
     .brand-context {
       color: var(--muted);
@@ -1376,7 +1376,7 @@ ${current === "core" ? `
       content: "·";
       margin-right: 8px;
       color: var(--line);
-    }
+    }`}
 
     .brand:hover {
       color: var(--accent-strong);
@@ -2906,15 +2906,17 @@ ${current === "core" ? `
 <body>
   <header>
     <div class="bar">
-      <a class="brand" ${surfaceLinkAttrs("hub")} aria-label="${escapeAttr(BRAND_SIGNATURE)} — ${escapeAttr(BRAND_CONTEXT)}; back to libkungfu.dev home"><span>${escapeHtml(BRAND_SIGNATURE)}</span><span class="brand-context">${escapeHtml(BRAND_CONTEXT)}</span></a>
+${immutableArchive
+  ? `      <a class="brand" ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">libkungfu.dev</a>`
+  : `      <a class="brand" ${surfaceLinkAttrs("hub")} aria-label="${escapeAttr(BRAND_SIGNATURE)} — ${escapeAttr(BRAND_CONTEXT)}; back to libkungfu.dev home"><span>${escapeHtml(BRAND_SIGNATURE)}</span><span class="brand-context">${escapeHtml(BRAND_CONTEXT)}</span></a>`}
       <nav aria-label="Primary">${navHtml}${mainSiteHtml}</nav>
     </div>
   </header>
   <main>${body}</main>
   <footer>
     <div>
-      <p>&copy; 2026 Kungfu Origin Technology Limited.</p>
-      <p>${escapeHtml(BRAND_SIGNATURE)} is a trademark of Kungfu Origin Technology Limited.</p>
+      <p>&copy; 2026 Kungfu Origin Technology Limited.</p>${immutableArchive ? "" : `
+      <p>${escapeHtml(BRAND_SIGNATURE)} is a trademark of Kungfu Origin Technology Limited.</p>`}
       <p>Open developer and agent substrate hub. Facts come from upstream packages and pinned release artifacts.</p>
       <p>Open-source components are governed by their repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">kungfu-systems on GitHub</a>.</p>
     </div>

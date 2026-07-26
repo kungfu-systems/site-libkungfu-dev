@@ -1530,6 +1530,13 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (!hubHtml.includes(".architecture-visual") || immutableFoundationPaperHtml.includes(".architecture-visual")) {
   throw new Error("embeddable runtime styles must remain homepage-local and must not mutate immutable paper HTML");
 }
+if (
+  immutableFoundationPaperHtml.includes("brand-context")
+  || immutableFoundationPaperHtml.includes('property="og:site_name" content="Kungfu UNGFU™"')
+  || !immutableFoundationPaperHtml.includes('aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')
+) {
+  throw new Error("brand rollout must not mutate immutable publication archive HTML");
+}
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
