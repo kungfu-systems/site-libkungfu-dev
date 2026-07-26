@@ -172,7 +172,7 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "2.14.14-alpha.4";
+const expectedBuildchainVersion = "3.0.1-alpha.2";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const expectedCoreSitePickup = "file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz";
@@ -845,13 +845,13 @@ for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock
 }
 
 for (const [channel, lock, expectedRef] of [
-  ["stable", buildchainContractLock, "v2"],
-  ["alpha", buildchainAlphaContractLock, "v2-alpha"],
+  ["stable", buildchainContractLock, "v3"],
+  ["alpha", buildchainAlphaContractLock, "v3-alpha"],
 ]) {
   if (
     lock.contract !== "kungfu-buildchain-contract-lock" ||
     lock.buildchain?.ref !== expectedRef ||
-    lock.buildchain?.majorLine !== "v2" ||
+    lock.buildchain?.majorLine !== "v3" ||
     lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
     !lock.buildchain?.resolvedSha ||
     !lock.buildchain?.contractDigest ||
@@ -2413,7 +2413,7 @@ grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '2.14.14-alpha.4' dist/buildchain/mechanism/index.html
+grep -q '3.0.1-alpha.2' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html

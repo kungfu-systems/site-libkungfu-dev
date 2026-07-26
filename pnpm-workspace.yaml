@@ -1,5 +1,5 @@
 minimumReleaseAgeExclude:
-  - "@kungfu-tech/buildchain@2.10.1 || 2.10.2 || 2.10.3 || 2.10.4 || 2.10.8 || 2.11.0 || 2.11.1 || 2.11.13 || 2.14.13 || 2.14.14-alpha.4"
+  - "@kungfu-tech/buildchain@3.0.0 || 3.0.1-alpha.2"
   - "@kungfu-tech/kfd@1.0.0-alpha.16 || 1.0.0-alpha.19 || 1.0.0-alpha.21 || 1.0.0-alpha.22 || 1.0.0-alpha.24 || 1.0.0-alpha.25 || 1.0.0-alpha.29 || 1.0.0-alpha.31 || 1.0.0-alpha.34 || 1.0.0-alpha.38 || 1.0.0-alpha.39 || 1.0.0-alpha.40 || 1.0.0-alpha.41 || 1.0.0-alpha.42"
   - "@kungfu-tech/kfd@1.0.0-alpha.47"
   - "@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2"

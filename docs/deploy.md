@@ -36,15 +36,15 @@ resource lifecycle decisions belong in the infra repository.
 - The repository builds a static `dist/` artifact.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- The workflow consumes Buildchain through the floating `@v2-alpha` workflow ref and
+- The workflow consumes Buildchain through the floating `@v3-alpha` workflow ref and
   records the accepted runtime contract in `.buildchain/contract-lock.json`.
-  The build checks that lock before rendering so `@v2-alpha` movement is audited as
+  The build checks that lock before rendering so `@v3-alpha` movement is audited as
   compatible drift or blocked as breaking drift.
 - Preview, preview cleanup, and staging apply are enabled in the repository
   workflow so same-repository pull requests publish short-lived preview
   surfaces, closed pull requests clean them up, and `main` pushes publish the
   protected staging channel.
-- The workflow uses the Buildchain v2 first-class surface host mappings, so each
+- The workflow uses the Buildchain v3 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
 - Production apply is enabled because the production channel status is active in
@@ -79,7 +79,7 @@ the vendor directory is a deployment transport cache, not a source of Core
 facts. Merging a vendored pickup is repository integration, not an npm
 publication or a production release; each release action remains a separate,
 explicitly admitted step.
-Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.14-alpha.4` npm package
+Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.1-alpha.2` npm package
 and its exported `dist/site` bundle. KFD uses the pinned
 `@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
 use the exact package set in

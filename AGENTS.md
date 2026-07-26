@@ -22,13 +22,13 @@ developer and agent substrate hub.
   non-normative, and expose every page's relationship, status, model metadata,
   and source path.
 - Before a stable Buildchain promotion, manually dispatch `Buildchain Stable Canary`
-  with the exact alpha tag or SHA. Its workflow shell stays on stable `v2` while
+  with the exact alpha tag or SHA. Its workflow shell stays on stable `v3` while
   the explicit runtime ref follows the alpha candidate; preview, staging, and
   production apply stay fixed to `false`.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Core product facts come from
   `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
-  `@kungfu-tech/buildchain@2.14.14-alpha.4`; KFD facts come from
+  `@kungfu-tech/buildchain@3.0.1-alpha.2`; KFD facts come from
   `@kungfu-tech/kfd@1.0.0-alpha.47`.
 - Keep the Core package transport artifact at
   `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz`. Generate it only from the exact

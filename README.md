@@ -112,7 +112,7 @@ Kungfu commit, locked by pnpm integrity, and verified against the package's
 embedded source revision and content roots. The vendored file is a transport
 cache, not a second semantic authority. The Buildchain page consumes
 the pinned npm package artifact
-`@kungfu-tech/buildchain@2.14.14-alpha.4` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@3.0.1-alpha.2` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -197,7 +197,7 @@ without disabling the age policy for unrelated dependencies.
 ## Buildchain
 
 This site is a Buildchain `web-surface` project. Pull requests and manual
-dispatches use the shared Buildchain v2 web-surface workflow for
+dispatches use the shared Buildchain v3 web-surface workflow for
 preview, cleanup, staging, and production plans. Same-repository pull requests
 apply short-lived preview deployments, pull request closure applies preview
 cleanup, ordinary `main` pushes apply the protected staging deployment, and
@@ -205,12 +205,12 @@ merged release pull requests can apply the public production deployment. The
 release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
 dispatch can still apply production with `production_approved=true`. The workflow
-runs through the floating Buildchain `@v2-alpha` workflow ref and checks
+runs through the floating Buildchain `@v3-alpha` workflow ref and checks
 `.buildchain/contract-lock.json` before rendering. The lock records the accepted
-Buildchain runtime SHA and contract digests; `@v2-alpha` is allowed to move only when
+Buildchain runtime SHA and contract digests; `@v3-alpha` is allowed to move only when
 the current contract remains compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@2.14.14-alpha.4` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.1-alpha.2` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 
@@ -257,7 +257,7 @@ The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
 `.buildchain/buildchain.toml` and the GitHub Actions role assumptions still match that
 contract, wires all declared role references, keeps the workflow shell on
-Buildchain `@v2-alpha`, and fails closed if the production release gate drifts.
+Buildchain `@v3-alpha`, and fails closed if the production release gate drifts.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain
