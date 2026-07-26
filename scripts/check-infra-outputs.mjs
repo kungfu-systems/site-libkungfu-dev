@@ -12,7 +12,7 @@ const stableCanaryWorkflow = fs.readFileSync(
   ".github/workflows/buildchain-stable-canary.yml",
   "utf8",
 );
-const expectedBuildchainShellRef = "v2";
+const expectedBuildchainShellRef = "v3";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
@@ -70,15 +70,15 @@ for (const snippet of [
   }
 }
 for (const [channel, lockPath, expectedRef] of [
-  ["stable", ".buildchain/contract-lock.json", "v2"],
-  ["alpha", ".buildchain/alpha-contract-lock.json", "v2-alpha"],
+  ["stable", ".buildchain/contract-lock.json", "v3"],
+  ["alpha", ".buildchain/alpha-contract-lock.json", "v3-alpha"],
 ]) {
   if (!fs.existsSync(lockPath)) throw new Error(`missing Buildchain ${channel} contract lock: ${lockPath}`);
   const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
   if (
     lock.contract !== "kungfu-buildchain-contract-lock" ||
     lock.buildchain?.ref !== expectedRef ||
-    lock.buildchain?.majorLine !== "v2" ||
+    lock.buildchain?.majorLine !== "v3" ||
     lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
     !lock.buildchain?.resolvedSha ||
     !lock.buildchain?.contractDigest ||
