@@ -161,6 +161,45 @@ come from the pinned `@kungfu-tech/site` bundle, preserve its exact source,
 maturity, qualification, and non-claim boundaries, and remain aligned across
 human pages and machine entries.
 
+### Preview an unpublished local Site bundle
+
+An unpublished `framework/site` package can be rendered without changing the
+production npm pin or pretending that local bytes have registry integrity.
+Generate the package in a writable Kungfu worktree, then point this repository
+at that exact package root:
+
+```bash
+cd /path/to/kungfu-worktree
+./shifu --filter @kungfu-tech/site test
+
+cd /path/to/site-libkungfu-dev-worktree
+pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/
+KUNGFU_SITE_PACKAGE_ROOT=/path/to/kungfu-worktree/framework/site \
+  pnpm run build:local-site-bundle
+python3 -m http.server 4174 --directory dist/core-preview
+```
+
+Open `http://127.0.0.1:4174/`. The preview is generated entirely by
+`renderProductSiteExperience()`: the first-screen Agent co-reading cue,
+human-first sections, collapsed technical detail, KFD-3 machine entries, and
+`Kungfu UNGFU™` brand/navigation all come from the local package. The generated
+`local-pickup.json` binds the page bytes to the bundle and experience roots and
+explicitly states that the pickup is neither an npm publication nor a
+deployment.
+
+Open `http://127.0.0.1:4174/format/` for the human format entry. Its visible
+reading cards lead through all seven task guides and the complete overview,
+CLI/Node/Python handbook, and historical-document library. Each rendered page
+links to its exact Markdown source. The same preview also serves the packaged
+`/format/manifest.json`, reader/compatibility/registry JSON routes, and retained
+`/format/vectors/` corpus byte-for-byte; the local checker rejects missing
+documents, missing evidence routes, broken internal links, and byte drift.
+The primitives, runtime, ABI, SDK, extensions, products, qualification,
+decisions, and horizons pages likewise expose a visible “Detailed
+documentation” section. Together they render all thirty bundle-declared
+product authorities under `/docs/authority/`, with exact raw bytes under
+`/sources/`.
+
 ## KFD Compliance
 
 This repository is itself a Kungfu product surface and must follow the current
