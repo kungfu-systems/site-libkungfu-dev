@@ -209,7 +209,11 @@ cleanup, ordinary `main` pushes apply the protected staging deployment, and
 merged release pull requests can apply the public production deployment. The
 release-PR gate requires the `buildchain-release` label and a `release/` source
 branch so production cannot drift from a reviewed release intent. Trusted manual
-dispatch can still apply production with `production_approved=true`. The workflow
+dispatch can still apply production with `production_approved=true`. Before either
+production path enters Buildchain's publication authority, a production-only
+preflight uses the organization governance auditor App and the exact selected
+Buildchain runtime to collect a short-lived qualifying receipt for this repository
+and target ref. The workflow
 runs through the floating Buildchain `@v3-alpha` workflow ref and checks
 `.buildchain/contract-lock.json` before rendering. The lock records the accepted
 Buildchain runtime SHA and contract digests; `@v3-alpha` is allowed to move only when
