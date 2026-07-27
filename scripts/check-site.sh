@@ -18,6 +18,7 @@ fi
 node - <<'NODE'
 const fs = require("fs");
 const crypto = require("crypto");
+const path = require("path");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 for (const projectionContract of [
@@ -54,6 +55,12 @@ const requiredBaseFiles = [
   "dist/core/index.html",
   "dist/core/runtime/index.html",
   "dist/core/format/index.html",
+  "dist/core/format/manifest.json",
+  "dist/core/format/authority.json",
+  "dist/core/format/reader-matrix.json",
+  "dist/core/format/compatibility.json",
+  "dist/core/format/registry.json",
+  "dist/core/format/vectors/index.json",
   "dist/core/primitives/index.html",
   "dist/core/abi/index.html",
   "dist/core/sdk/index.html",
@@ -132,6 +139,15 @@ const coreBundle = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/di
 const coreAgentIndex = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/agent-index.json", "utf8"));
 const coreAdrMap = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/adr-map.json", "utf8"));
 const corePackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/package.json", "utf8"));
+const coreSiteApi = require("@kungfu-tech/site");
+const coreBundleVerification = coreSiteApi.verifyBundle();
+const coreFormatManifest = coreSiteApi.loadFormatAuthorityManifest();
+const coreFormatRoutes = Object.fromEntries(
+  Object.keys(coreBundle.formatAuthority?.routes || {}).map((routeId) => [
+    routeId,
+    coreSiteApi.loadFormatAuthorityRoute(routeId),
+  ]),
+);
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
 const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
@@ -172,10 +188,10 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "3.0.1-alpha.2";
+const expectedBuildchainVersion = "3.0.2-alpha.2";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
-const expectedCoreSitePickup = "file:vendor/kungfu-tech-site-4.0.0-alpha.1.tgz";
+const expectedCoreSitePickup = "4.0.0-alpha.1";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
@@ -917,8 +933,13 @@ if (
   || coreAgentIndex.bundleContentRoot !== coreBundle.contentRoot
   || coreBundle.adrMap?.contentRoot !== sha256File("node_modules/@kungfu-tech/site/dist/site/adr-map.json")
   || coreAdrMap.summary?.records !== coreAdrMap.records?.length
-  || coreAdrMap.summary?.records !== 154
+  || JSON.stringify(coreAdrMap.summary) !== JSON.stringify(coreBundle.adrMap?.summary)
   || coreAdrMap.summary?.domains !== coreAdrMap.domains?.length
+  || coreBundleVerification.status !== "passing"
+  || coreBundleVerification.contentRoot !== coreBundle.contentRoot
+  || coreBundleVerification.format?.manifestRoot !== coreBundle.formatAuthority?.pickup?.manifestRoot
+  || coreFormatManifest.normative?.root !== coreBundle.formatAuthority?.normativeRoot
+  || Object.keys(coreFormatRoutes).join(",") !== "overview,readerContract,versionMatrix,registry,vectors"
 ) {
   throw new Error("Core package bundle, source roots, or ADR corpus projection drifted");
 }
@@ -937,6 +958,12 @@ if (
   || JSON.stringify(coreManifest.positioning) !== JSON.stringify(coreBundle.positioning)
   || JSON.stringify(coreManifest.adoptionLayers) !== JSON.stringify(coreBundle.adoptionLayers)
   || JSON.stringify(coreManifest.nonClaims) !== JSON.stringify(coreBundle.nonClaims)
+  || coreManifest.formatAuthority?.normativeRoot !== coreBundle.formatAuthority?.normativeRoot
+  || coreManifest.formatAuthority?.manifest !== expectedSurfaceEndpoint("core", "format/manifest.json")
+  || Object.entries(coreBundle.formatAuthority.routes).some(([routeId, descriptor]) => (
+    coreManifest.formatAuthority?.routes?.[routeId]?.artifactRoot !== descriptor.artifactRoot
+    || coreManifest.formatAuthority?.routes?.[routeId]?.url !== expectedSurfaceEndpoint("core", descriptor.path)
+  ))
 ) {
   throw new Error("Core site manifest drifted from the exact package bundle");
 }
@@ -946,6 +973,11 @@ for (const [field, file] of [
   ["agentIndex", "agent-index.json"],
   ["adrMap", "adr-map.json"],
   ["schema", "schema/site-bundle.schema.json"],
+  ["formatManifest", "format/manifest.json"],
+  ["formatReaderContract", "format/reader-matrix.json"],
+  ["formatVersionMatrix", "format/compatibility.json"],
+  ["formatRegistry", "format/registry.json"],
+  ["formatVectors", "format/vectors/index.json"],
   ["llms", "llms.txt"],
   ["full", "llms-full.txt"],
 ]) {
@@ -963,10 +995,51 @@ for (const [sourceFile, generatedFile] of [
     throw new Error(`Core machine artifact must preserve exact package bytes: ${generatedFile}`);
   }
 }
+function listFiles(root, relative = "") {
+  return fs.readdirSync(path.join(root, relative), { withFileTypes: true })
+    .flatMap((entry) => {
+      const child = path.join(relative, entry.name);
+      return entry.isDirectory() ? listFiles(root, child) : [child];
+    })
+    .sort();
+}
+const packageFormatRoot = "node_modules/@kungfu-tech/site/dist/site/format";
+for (const relativeFile of listFiles(packageFormatRoot)) {
+  const sourceFile = path.join(packageFormatRoot, relativeFile);
+  const generatedFile = path.join("dist/core/format", relativeFile);
+  if (!fs.existsSync(generatedFile) || !fs.readFileSync(sourceFile).equals(fs.readFileSync(generatedFile))) {
+    throw new Error(`Core Spec artifact must preserve exact package bytes: ${generatedFile}`);
+  }
+}
 const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
 const coreDetailHtml = fs.readFileSync("dist/core/runtime/index.html", "utf8");
+const coreFormatHtml = fs.readFileSync("dist/core/format/index.html", "utf8");
 const coreAdrHtml = fs.readFileSync("dist/core/decisions/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
+const coreFormatHumanTexts = [
+  ".kungfu is a portable, verifiable record of real work.",
+  "Keep the work, not just the conversation.",
+  "How a fresh agent continues the same work",
+  "Not understanding something is different from losing it.",
+  "Qualified does not mean stable.",
+];
+for (const expectedText of coreFormatHumanTexts) {
+  if (!coreFormatHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core format human and agent entries do not share the reader framing: ${expectedText}`);
+  }
+}
+const coreFormatOrientationPosition = coreFormatHtml.indexOf("Keep the work, not just the conversation.");
+const coreFormatTechnicalPosition = coreFormatHtml.indexOf('id="format-technical-details"');
+if (
+  coreFormatOrientationPosition < 0
+  || coreFormatTechnicalPosition < 0
+  || coreFormatOrientationPosition >= coreFormatTechnicalPosition
+  || !coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details">')
+  || coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details" open')
+  || !renderSiteSource.includes(".core-format-technical:not([open]) > .core-format-technical-body")
+) {
+  throw new Error("Core format page must explain the human outcome before a closed technical disclosure");
+}
 const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
 if (
   !coreHtml.includes(escapeHtml(coreReaderPath.question))
@@ -1023,6 +1096,50 @@ for (const surface of coreBundle.surfaces.filter((entry) => !["overview", "runti
     if (!surfaceHtml.includes(escapeHtml(expectedText))) {
       throw new Error(`Core ${surface.id} page does not preserve package fact: ${expectedText}`);
     }
+  }
+}
+for (const expectedText of [
+  coreBundle.formatAuthority.pickup.coordinate,
+  coreBundle.formatAuthority.formatNamespace,
+  coreBundle.formatAuthority.status,
+  coreBundle.formatAuthority.normativeRoot,
+  coreBundle.formatAuthority.conformance.release,
+  coreBundle.formatAuthority.conformance.releaseRoot,
+  coreFormatRoutes.overview.value.boundary.definition,
+  coreFormatRoutes.readerContract.value.rule,
+  coreFormatRoutes.versionMatrix.value.composition_rule,
+  coreFormatRoutes.versionMatrix.value.v4_alpha_baseline.latest_release,
+  coreFormatRoutes.versionMatrix.value.v4_alpha_baseline.latest_release_root,
+  ...coreFormatRoutes.readerContract.value.profiles.flatMap((profile) => [
+    profile.id,
+    profile.authorityEffect,
+    profile.semanticScope,
+    profile.unknownOutcome,
+    profile.unsupportedRootOutcome,
+  ]),
+  ...coreFormatRoutes.overview.value.version_axes.flatMap((axis) => [
+    axis.id,
+    axis.owner,
+    axis.changesWhen,
+  ]),
+  ...coreBundle.formatAuthority.nonClaims,
+  ...Object.values(coreBundle.formatAuthority.routes).flatMap((descriptor) => [
+    descriptor.path,
+    descriptor.artifactRoot,
+  ]),
+]) {
+  if (!coreFormatHtml.includes(escapeHtml(expectedText))) {
+    throw new Error(`Core format page does not preserve packaged Spec fact: ${expectedText}`);
+  }
+}
+for (const expectedText of [
+  coreBundle.formatAuthority.pickup.coordinate,
+  coreBundle.formatAuthority.normativeRoot,
+  coreFormatRoutes.readerContract.value.rule,
+  coreFormatRoutes.versionMatrix.value.composition_rule,
+]) {
+  if (!coreLlms.includes(expectedText)) {
+    throw new Error(`Core agent entry does not preserve packaged Spec fact: ${expectedText}`);
   }
 }
 for (const record of coreAdrMap.records) {
@@ -2430,7 +2547,12 @@ grep -q 'Visibility is not durability.' dist/core/runtime/index.html
 grep -q 'Pinned product bundle' dist/core/runtime/index.html
 grep -q 'core.libkungfu.dev/site-bundle-consumer/v1' dist/core/manifest.json
 grep -q 'Keep the work when the chat ends.' dist/core/llms.txt
-grep -q 'A current workspace evidence contract' dist/core/format/index.html
+grep -q '.kungfu is a portable, verifiable record of real work.' dist/core/format/index.html
+grep -q 'How a fresh agent continues the same work' dist/core/format/index.html
+grep -q 'For implementers and auditors' dist/core/format/index.html
+grep -q 'An exact pre-release portable authority bundle' dist/core/format/index.html
+grep -q '@kungfu-tech/spec@4.0.0-alpha.1' dist/core/format/index.html
+grep -q 'Required-reader behavior' dist/core/format/index.html
 grep -q 'Fact, Episode and Action Geometry' dist/core/primitives/index.html
 grep -q 'One public bootstrap' dist/core/abi/index.html
 grep -q 'Browse the complete decision corpus' dist/core/decisions/index.html
@@ -2440,7 +2562,7 @@ grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '3.0.1-alpha.2' dist/buildchain/mechanism/index.html
+grep -q '3.0.2-alpha.2' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html

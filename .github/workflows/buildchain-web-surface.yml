@@ -32,10 +32,67 @@ permissions:
   pull-requests: write
 
 jobs:
+  production-governance:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      receipt-json: ${{ steps.receipt.outputs.receipt-json }}
+      runtime-sha: ${{ steps.receipt.outputs.runtime-sha }}
+    steps:
+      - name: Resolve production governance requirement
+        id: decision
+        env:
+          PRODUCTION_REQUESTED: ${{ ((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release'))) && 'true' || 'false' }}
+        run: echo "requested=$PRODUCTION_REQUESTED" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact Buildchain governance runtime
+        if: steps.decision.outputs.requested == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: kungfu-systems/buildchain
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || 'v3' }}
+          path: .buildchain/governance-runtime
+          persist-credentials: false
+
+      - name: Mint bounded governance auditor token
+        if: steps.decision.outputs.requested == 'true'
+        id: governance-auditor
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.KUNGFU_GOVERNANCE_AUDITOR_APP_ID }}
+          private-key: ${{ secrets.KUNGFU_GOVERNANCE_AUDITOR_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Collect exact production governance receipt
+        if: steps.decision.outputs.requested == 'true'
+        id: receipt
+        env:
+          GH_TOKEN: ${{ steps.governance-auditor.outputs.token }}
+        run: |
+          set -euo pipefail
+          runtime_sha="$(git -C .buildchain/governance-runtime rev-parse HEAD)"
+          node .buildchain/governance-runtime/scripts/audit-github-governance.mjs \
+            --organization "$GITHUB_REPOSITORY_OWNER" \
+            --repository "$GITHUB_REPOSITORY" \
+            --target-ref "$GITHUB_REF_NAME" \
+            --source-revision "$runtime_sha" \
+            --ttl-minutes 15 \
+            --output .buildchain/github-governance-audit.json \
+            --require-qualifying
+          receipt_json="$(jq -c '.receipts[0]' .buildchain/github-governance-audit.json)"
+          {
+            echo "runtime-sha=$runtime_sha"
+            echo "receipt-json=$receipt_json"
+          } >> "$GITHUB_OUTPUT"
+
   web-surface:
+    needs:
+      - production-governance
+    if: ${{ always() && needs.production-governance.result == 'success' }}
     uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v3
     with:
-      buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || ((((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && 'v3' || 'v3-alpha') }}
+      buildchain-ref: ${{ needs.production-governance.outputs.runtime-sha || (github.event_name == 'workflow_dispatch' && inputs.buildchain_ref) || ((((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && 'v3' || 'v3-alpha') }}
       buildchain-contract-lock-path: ${{ (((github.event_name == 'workflow_dispatch' && inputs.buildchain_ref == 'v3') || (github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && '.buildchain/contract-lock.json' || '.buildchain/alpha-contract-lock.json' }}
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
@@ -65,6 +122,7 @@ jobs:
       production-release-app-client-id: ${{ vars.KUNGFU_RELEASE_APP_CLIENT_ID }}
       production-release-label: buildchain-release
       production-release-head-prefix: release/
+      github-governance-receipt-json: ${{ needs.production-governance.outputs.receipt-json }}
       production-aws-role-arn: arn:aws:iam::727884401362:role/site-libkungfu-dev-production-github-actions
       production-environment: production
     secrets:

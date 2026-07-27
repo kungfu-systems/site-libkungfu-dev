@@ -74,10 +74,17 @@ must understand, while the depth page preserves the complete cited authority.
 - `@kungfu-tech/site@4.0.0-alpha.1` supplies the complete Core product bundle,
   exact authority roots, agent index, schema, and ADR map. The site copies its
   machine artifacts byte-for-byte and only owns their human rendering. The
-  exact package is transported through
-  `vendor/kungfu-tech-site-4.0.0-alpha.1.tgz`; pnpm integrity plus the embedded
-  clean source revision and content roots bind that artifact to Kungfu. The
-  vendored tarball does not transfer semantic ownership to this repository.
+  exact public npm coordinate, pnpm integrity, embedded clean source revision,
+  and content roots bind that artifact to Kungfu. Package transport does not
+  transfer semantic ownership to this repository.
+- `core.libkungfu.dev/format/` opens with a site-owned explanation of what the
+  portable work format is, why a fresh agent needs it, and how preservation,
+  inspection, and action differ. The bundle's exact Spec authority projection
+  remains complete inside a closed implementer and auditor disclosure:
+  pickup coordinate, normative root, required-reader behavior, compatibility
+  axes, retained vectors, rooted routes, and non-claims. The corresponding
+  `dist/site/format/**` package files are published byte-for-byte under the same
+  Core machine paths.
 - `src/fixtures/libkungfu-runtime-surface.json` projects the exact public
   Kungfu PR, source commit, Project Cut, quickstart paths, KFD suite root,
   observed qualification, package availability, and known limits. The site
@@ -90,7 +97,7 @@ must understand, while the depth page preserves the complete cited authority.
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@3.0.1-alpha.2` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@3.0.2-alpha.2` supplies the Buildchain `dist/site` bundle.
 - `@kungfu-tech/kfd@1.0.0-alpha.47` supplies the KFD site bundle, registry,
   standards and terminology metadata, schemas, reference pages, and decision
   markdown.
