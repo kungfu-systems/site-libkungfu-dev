@@ -109,9 +109,11 @@ owns only reader framing, routing, and rendering. With registry publication now
 available, the exact package coordinate is installed from the public npm
 registry, locked by pnpm integrity, and verified against the package's embedded
 source revision and content roots. The package transport is not a second
-semantic authority. The Core `/format/` page renders the package-declared Spec
-pickup, normative root, required-reader profiles, independent compatibility
-axes, retained-vector qualification, and non-claims; every packaged
+semantic authority. The Core `/format/` page first explains the portable work
+handoff in human terms, then keeps the package-declared Spec pickup, normative
+root, required-reader profiles, independent compatibility axes,
+retained-vector qualification, and non-claims in a closed implementer and
+auditor disclosure. Every packaged
 `dist/site/format/**` artifact is copied byte-for-byte to the matching machine
 route. The Buildchain page consumes
 the pinned npm package artifact

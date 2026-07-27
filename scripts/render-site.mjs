@@ -4332,6 +4332,67 @@ const coreProductStyles = `<style>
     overflow-wrap: anywhere;
   }
 
+  .core-format-orientation {
+    border-left: 5px solid var(--accent);
+  }
+
+  .core-format-orientation h2 {
+    max-width: 26ch;
+  }
+
+  .core-format-step {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .core-format-step p {
+    margin: 0;
+  }
+
+  .core-format-step-index {
+    color: var(--accent-strong);
+    font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .core-format-technical > summary {
+    display: grid;
+    gap: 8px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .core-format-technical > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .core-format-technical > summary::after {
+    content: "Open technical details";
+    width: fit-content;
+    border-bottom: 1px solid currentColor;
+    color: var(--accent-strong);
+    font-weight: 700;
+  }
+
+  .core-format-technical[open] > summary {
+    margin-bottom: 24px;
+  }
+
+  .core-format-technical[open] > summary::after {
+    content: "Close technical details";
+  }
+
+  .core-format-technical-body {
+    display: grid;
+    gap: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+  }
+
+  .core-format-technical:not([open]) > .core-format-technical-body {
+    display: none;
+  }
+
   .core-adr-domains {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -5387,71 +5448,219 @@ function renderCoreSurfaceCard(surface) {
   </article>`;
 }
 
-function renderCoreFormatAuthorityDetails() {
+const coreFormatReaderFraming = Object.freeze({
+  kicker: ".kungfu portable work format",
+  headline: ".kungfu is a portable, verifiable record of real work.",
+  lead: "It keeps one bounded piece of work—what happened, the facts and artifacts it produced, and the evidence needed to verify it—together so a fresh person or agent can inspect and continue it without reconstructing the story from a chat.",
+  orientationHeading: "Keep the work, not just the conversation.",
+  orientationBody: "A folder keeps files. A transcript keeps words. Neither reliably tells the next agent what actually happened, which information was trusted, which outputs belong to the work, or how to check them. .kungfu keeps those relationships together.",
+  handoffHeading: "How a fresh agent continues the same work",
+  readerLevelsHeading: "Not understanding something is different from losing it.",
+  statusHeading: "Qualified does not mean stable.",
+  status: "This packaged format authority is qualified but still pre-release. It proves the current contract and retained test corpus; it does not promise stable compatibility or automatic understanding of every future format.",
+  contents: [
+    {
+      label: "What happened",
+      body: "An Episode records one bounded occurrence. Facts record the state the work relied on.",
+    },
+    {
+      label: "What it produced",
+      body: "Artifacts, a Manifest, Receipts and dependencies keep outputs connected to the work that produced them.",
+    },
+    {
+      label: "Why it can be checked",
+      body: "Content roots let another reader verify the retained material before trusting or acting on it.",
+    },
+  ],
+  handoff: [
+    {
+      label: "Work",
+      body: "An agent performs a bounded piece of real work and produces facts, artifacts and evidence.",
+    },
+    {
+      label: "Retain",
+      body: ".kungfu keeps the Episode and its verification material together instead of leaving context scattered across a chat and a folder.",
+    },
+    {
+      label: "Continue",
+      body: "A fresh agent can inspect what is known, preserve material it does not yet understand, and act only when the required semantics are compatible.",
+    },
+  ],
+  readerLevels: [
+    {
+      label: "Preserve",
+      body: "Keep unfamiliar but well-formed material as exact bytes without pretending to understand it.",
+    },
+    {
+      label: "Inspect",
+      body: "Read structure and verification evidence within the reader's declared capability.",
+    },
+    {
+      label: "Act",
+      body: "Deriving canonical state, admitting it as trusted, or executing it requires complete compatible semantics.",
+    },
+  ],
+});
+
+function renderCoreFormatAuthorityDetails(surface, authorities) {
   const authority = coreBundle.formatAuthority;
   const overview = coreFormatRoutes.overview.value;
   const readerContract = coreFormatRoutes.readerContract.value;
   const compatibility = coreFormatRoutes.versionMatrix.value;
   const registry = coreFormatRoutes.registry.value;
   const vectors = coreFormatRoutes.vectors.value;
-  return `<section class="panel" aria-labelledby="format-authority-heading">
-    <p class="eyebrow">Exact packaged Spec authority</p>
-    <h2 id="format-authority-heading">${escapeHtml(overview.boundary.definition)}</h2>
-    <dl class="meta" style="margin-top: 18px;">
-      <dt>Spec pickup</dt><dd><code>${escapeHtml(authority.pickup.coordinate)}</code></dd>
-      <dt>Format namespace</dt><dd><code>${escapeHtml(authority.formatNamespace)}</code></dd>
-      <dt>Authority status</dt><dd><code>${escapeHtml(authority.status)}</code></dd>
-      <dt>Normative root</dt><dd><code>${escapeHtml(authority.normativeRoot)}</code></dd>
-      <dt>Retained corpus</dt><dd><code>${escapeHtml(authority.conformance.release)}</code> · ${escapeHtml(String(authority.conformance.vectorCount))} vectors · <code>${escapeHtml(authority.conformance.releaseRoot)}</code></dd>
-      <dt>Projection policy</dt><dd><code>${escapeHtml(authority.projectionPolicy)}</code></dd>
-    </dl>
-    <p style="margin-top: 18px;"><strong>Composition rule:</strong> ${escapeHtml(compatibility.composition_rule)}</p>
-    <div class="grid three" style="margin-top: 18px;">
-      ${overview.boundary.notOneOf.map((item) => `<article class="panel"><p class="eyebrow">Not one authority</p><h3>${escapeHtml(item)}</h3></article>`).join("")}
+  return `<details class="panel core-format-technical" id="format-technical-details">
+    <summary>
+      <span class="eyebrow">For implementers and auditors</span>
+      <strong>Inspect the exact Spec contract, compatibility rules, roots and machine artifacts.</strong>
+      <span>This material remains complete, but it does not have to be understood before the product makes sense.</span>
+    </summary>
+    <div class="core-format-technical-body">
+      <section class="panel" aria-labelledby="format-package-framing-heading">
+        <p class="eyebrow">Package-declared surface model</p>
+        <h2 id="format-package-framing-heading">${escapeHtml(surface.headline)}</h2>
+        <p>${escapeHtml(surface.summary)}</p>
+        <div class="grid" style="margin-top: 18px;">
+          <article>
+            <h3>Capabilities</h3>
+            <ul>${surface.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("")}</ul>
+          </article>
+          <article>
+            <h3>Known limits</h3>
+            <ul class="core-limit-list">${surface.knownLimits.map((limit) => `<li>${escapeHtml(limit)}</li>`).join("")}</ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="format-authority-heading">
+        <p class="eyebrow">Exact packaged Spec authority</p>
+        <h2 id="format-authority-heading">${escapeHtml(overview.boundary.definition)}</h2>
+        <dl class="meta" style="margin-top: 18px;">
+          <dt>Spec pickup</dt><dd><code>${escapeHtml(authority.pickup.coordinate)}</code></dd>
+          <dt>Format namespace</dt><dd><code>${escapeHtml(authority.formatNamespace)}</code></dd>
+          <dt>Authority status</dt><dd><code>${escapeHtml(authority.status)}</code></dd>
+          <dt>Normative root</dt><dd><code>${escapeHtml(authority.normativeRoot)}</code></dd>
+          <dt>Retained corpus</dt><dd><code>${escapeHtml(authority.conformance.release)}</code> · ${escapeHtml(String(authority.conformance.vectorCount))} vectors · <code>${escapeHtml(authority.conformance.releaseRoot)}</code></dd>
+          <dt>Projection policy</dt><dd><code>${escapeHtml(authority.projectionPolicy)}</code></dd>
+        </dl>
+        <p style="margin-top: 18px;"><strong>Composition rule:</strong> ${escapeHtml(compatibility.composition_rule)}</p>
+        <div class="grid three" style="margin-top: 18px;">
+          ${overview.boundary.notOneOf.map((item) => `<article class="panel"><p class="eyebrow">Not one authority</p><h3>${escapeHtml(item)}</h3></article>`).join("")}
+        </div>
+      </section>
+
+      <section aria-labelledby="format-reader-heading">
+        <p class="eyebrow">Required-reader behavior</p>
+        <h2 id="format-reader-heading">${escapeHtml(readerContract.rule)}</h2>
+        <div class="grid three" style="margin-top: 18px;">
+          ${readerContract.profiles.map((profile) => `<article class="panel">
+            <span class="tag">${escapeHtml(profile.id)}</span>
+            <h3>${escapeHtml(profile.authorityEffect)}</h3>
+            <p><strong>Semantic scope:</strong> ${escapeHtml(profile.semanticScope)}</p>
+            <p><strong>Unknown material:</strong> <code>${escapeHtml(profile.unknownOutcome)}</code></p>
+            <p><strong>Unsupported root:</strong> <code>${escapeHtml(profile.unsupportedRootOutcome)}</code></p>
+          </article>`).join("")}
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="format-version-heading">
+        <p class="eyebrow">Independent version axes</p>
+        <h2 id="format-version-heading">No package version stands in for every compatibility decision.</h2>
+        <ul class="core-authority-list">
+          ${overview.version_axes.map((axis) => `<li><code>${escapeHtml(axis.id)}</code> <strong>${escapeHtml(axis.owner)}</strong> — ${escapeHtml(axis.changesWhen)}</li>`).join("")}
+        </ul>
+        <p><strong>v4 alpha baseline:</strong> <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release)}</code> · <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release_root)}</code> · ${escapeHtml(compatibility.v4_alpha_baseline.stability.status)}</p>
+      </section>
+
+      <section class="panel" aria-labelledby="format-artifacts-heading">
+        <p class="eyebrow">Rooted machine routes</p>
+        <h2 id="format-artifacts-heading">Inspect the exact Spec artifacts copied from the verified package.</h2>
+        <ul class="core-authority-list">
+          ${Object.entries(authority.routes).map(([routeId, descriptor]) => `<li><span class="tag">${escapeHtml(routeId)}</span> <a ${surfaceRouteLinkAttrs("core", descriptor.path)}><code>${escapeHtml(descriptor.path)}</code></a> <code>${escapeHtml(descriptor.artifactRoot)}</code></li>`).join("")}
+        </ul>
+        <p>${escapeHtml(String(registry.entries.length))} registered protocols · ${escapeHtml(String(vectors.vectors.length))} retained vectors · release <code>${escapeHtml(vectors.latest_release)}</code>.</p>
+      </section>
+
+      <section class="panel warning" aria-labelledby="format-nonclaims-heading">
+        <p class="eyebrow">Spec claim boundary</p>
+        <h2 id="format-nonclaims-heading">What this portable authority does not claim</h2>
+        <ul class="core-limit-list">${authority.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+      </section>
+
+      <section class="panel" aria-labelledby="format-upstream-authority-heading">
+        <p class="eyebrow">Pinned authority</p>
+        <h2 id="format-upstream-authority-heading">Inspect the exact upstream sources</h2>
+        <ul class="core-authority-list">
+          ${authorities.map((source) => `<li><span class="tag">${escapeHtml(source.role)}</span> <a href="${escapeAttr(source.url)}">${escapeHtml(source.path)}</a> <code>${escapeHtml(source.contentRoot)}</code></li>`).join("")}
+        </ul>
+      </section>
     </div>
+  </details>`;
+}
+
+function renderCoreFormatHumanPage(surface, authorities) {
+  return `${coreProductStyles}<section class="hero">
+    <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("core")} aria-label="Back to Core product map">Back to Core product map</a><span class="page-kicker-state">${escapeHtml(surface.claimClass)} / ${escapeHtml(surface.maturity)}</span></p>
+    <p class="eyebrow">${escapeHtml(coreFormatReaderFraming.kicker)}</p>
+    <h1>${escapeHtml(coreFormatReaderFraming.headline)}</h1>
+    <p class="lead">${escapeHtml(coreFormatReaderFraming.lead)}</p>
   </section>
 
-  <section aria-labelledby="format-reader-heading">
-    <p class="eyebrow">Required-reader behavior</p>
-    <h2 id="format-reader-heading">${escapeHtml(readerContract.rule)}</h2>
+  <section class="panel core-format-orientation" aria-labelledby="format-orientation-heading">
+    <p class="eyebrow">Why it exists</p>
+    <h2 id="format-orientation-heading">${escapeHtml(coreFormatReaderFraming.orientationHeading)}</h2>
+    <p>${escapeHtml(coreFormatReaderFraming.orientationBody)}</p>
     <div class="grid three" style="margin-top: 18px;">
-      ${readerContract.profiles.map((profile) => `<article class="panel">
-        <span class="tag">${escapeHtml(profile.id)}</span>
-        <h3>${escapeHtml(profile.authorityEffect)}</h3>
-        <p><strong>Semantic scope:</strong> ${escapeHtml(profile.semanticScope)}</p>
-        <p><strong>Unknown material:</strong> <code>${escapeHtml(profile.unknownOutcome)}</code></p>
-        <p><strong>Unsupported root:</strong> <code>${escapeHtml(profile.unsupportedRootOutcome)}</code></p>
+      ${coreFormatReaderFraming.contents.map((entry) => `<article class="panel">
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.body)}</p>
       </article>`).join("")}
     </div>
   </section>
 
-  <section class="panel" aria-labelledby="format-version-heading">
-    <p class="eyebrow">Independent version axes</p>
-    <h2 id="format-version-heading">No package version stands in for every compatibility decision.</h2>
-    <ul class="core-authority-list">
-      ${overview.version_axes.map((axis) => `<li><code>${escapeHtml(axis.id)}</code> <strong>${escapeHtml(axis.owner)}</strong> — ${escapeHtml(axis.changesWhen)}</li>`).join("")}
-    </ul>
-    <p><strong>v4 alpha baseline:</strong> <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release)}</code> · <code>${escapeHtml(compatibility.v4_alpha_baseline.latest_release_root)}</code> · ${escapeHtml(compatibility.v4_alpha_baseline.stability.status)}</p>
+  <section aria-labelledby="format-handoff-heading">
+    <p class="eyebrow">A simple handoff</p>
+    <h2 id="format-handoff-heading">${escapeHtml(coreFormatReaderFraming.handoffHeading)}</h2>
+    <div class="grid three" style="margin-top: 18px;">
+      ${coreFormatReaderFraming.handoff.map((entry, index) => `<article class="panel core-format-step">
+        <span class="core-format-step-index">${escapeHtml(String(index + 1).padStart(2, "0"))}</span>
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.body)}</p>
+      </article>`).join("")}
+    </div>
   </section>
 
-  <section class="panel" aria-labelledby="format-artifacts-heading">
-    <p class="eyebrow">Rooted machine routes</p>
-    <h2 id="format-artifacts-heading">Inspect the exact Spec artifacts copied from the verified package.</h2>
-    <ul class="core-authority-list">
-      ${Object.entries(authority.routes).map(([routeId, descriptor]) => `<li><span class="tag">${escapeHtml(routeId)}</span> <a ${surfaceRouteLinkAttrs("core", descriptor.path)}><code>${escapeHtml(descriptor.path)}</code></a> <code>${escapeHtml(descriptor.artifactRoot)}</code></li>`).join("")}
-    </ul>
-    <p>${escapeHtml(String(registry.entries.length))} registered protocols · ${escapeHtml(String(vectors.vectors.length))} retained vectors · release <code>${escapeHtml(vectors.latest_release)}</code>.</p>
+  <section class="panel" aria-labelledby="format-reader-levels-heading">
+    <p class="eyebrow">Safe reader behavior</p>
+    <h2 id="format-reader-levels-heading">${escapeHtml(coreFormatReaderFraming.readerLevelsHeading)}</h2>
+    <div class="grid three" style="margin-top: 18px;">
+      ${coreFormatReaderFraming.readerLevels.map((entry) => `<article>
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.body)}</p>
+      </article>`).join("")}
+    </div>
   </section>
 
-  <section class="panel warning" aria-labelledby="format-nonclaims-heading">
-    <p class="eyebrow">Spec claim boundary</p>
-    <h2 id="format-nonclaims-heading">What this portable authority does not claim</h2>
-    <ul class="core-limit-list">${authority.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
-  </section>`;
+  <section class="panel warning" aria-labelledby="format-human-status-heading">
+    <p class="eyebrow">Current boundary</p>
+    <h2 id="format-human-status-heading">${escapeHtml(coreFormatReaderFraming.statusHeading)}</h2>
+    <p>${escapeHtml(coreFormatReaderFraming.status)}</p>
+  </section>
+
+  ${renderCoreFormatAuthorityDetails(surface, authorities)}`;
 }
 
 function renderCoreSurfacePage(surface) {
   const authorities = coreSurfaceAuthorities(surface);
+  if (surface.id === "format") {
+    return page({
+      title: `${surface.label} | core.libkungfu.dev`,
+      description: coreFormatReaderFraming.lead,
+      current: "core",
+      preserveRelativeMachineEntries: true,
+      body: renderCoreFormatHumanPage(surface, authorities),
+    });
+  }
   return page({
     title: `${surface.label} | core.libkungfu.dev`,
     description: surface.summary,
@@ -5475,8 +5684,6 @@ function renderCoreSurfacePage(surface) {
         <ul class="core-limit-list">${surface.knownLimits.map((limit) => `<li>${escapeHtml(limit)}</li>`).join("")}</ul>
       </article>
     </section>
-
-    ${surface.id === "format" ? renderCoreFormatAuthorityDetails() : ""}
 
     <section class="panel" aria-labelledby="${escapeAttr(surface.id)}-authority-heading">
       <p class="eyebrow">Pinned authority</p>
@@ -5975,6 +6182,11 @@ Surfaces:
 ${coreBundle.surfaces.map((surface) => `- ${surface.route} ${surface.label} [${surface.maturity}; ${surface.claimClass}]: ${surface.summary}`).join("\n")}
 
 Portable format authority:
+- human definition: ${coreFormatReaderFraming.headline}
+- why it exists: ${coreFormatReaderFraming.orientationHeading} ${coreFormatReaderFraming.orientationBody}
+- handoff: ${coreFormatReaderFraming.handoffHeading} ${coreFormatReaderFraming.handoff.map((entry) => `${entry.label}: ${entry.body}`).join(" ")}
+- safe reader behavior: ${coreFormatReaderFraming.readerLevelsHeading} ${coreFormatReaderFraming.readerLevels.map((entry) => `${entry.label}: ${entry.body}`).join(" ")}
+- current boundary: ${coreFormatReaderFraming.statusHeading} ${coreFormatReaderFraming.status}
 - pickup: ${coreBundle.formatAuthority.pickup.coordinate}
 - status: ${coreBundle.formatAuthority.status}
 - normative root: ${coreBundle.formatAuthority.normativeRoot}

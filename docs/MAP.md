@@ -77,11 +77,14 @@ must understand, while the depth page preserves the complete cited authority.
   exact public npm coordinate, pnpm integrity, embedded clean source revision,
   and content roots bind that artifact to Kungfu. Package transport does not
   transfer semantic ownership to this repository.
-- `core.libkungfu.dev/format/` renders the bundle's exact Spec authority
-  projection: pickup coordinate, normative root, required-reader behavior,
-  compatibility axes, retained vectors, rooted routes, and non-claims. The
-  corresponding `dist/site/format/**` package files are published
-  byte-for-byte under the same Core machine paths.
+- `core.libkungfu.dev/format/` opens with a site-owned explanation of what the
+  portable work format is, why a fresh agent needs it, and how preservation,
+  inspection, and action differ. The bundle's exact Spec authority projection
+  remains complete inside a closed implementer and auditor disclosure:
+  pickup coordinate, normative root, required-reader behavior, compatibility
+  axes, retained vectors, rooted routes, and non-claims. The corresponding
+  `dist/site/format/**` package files are published byte-for-byte under the same
+  Core machine paths.
 - `src/fixtures/libkungfu-runtime-surface.json` projects the exact public
   Kungfu PR, source commit, Project Cut, quickstart paths, KFD suite root,
   observed qualification, package availability, and known limits. The site

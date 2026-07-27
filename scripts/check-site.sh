@@ -1016,6 +1016,30 @@ const coreDetailHtml = fs.readFileSync("dist/core/runtime/index.html", "utf8");
 const coreFormatHtml = fs.readFileSync("dist/core/format/index.html", "utf8");
 const coreAdrHtml = fs.readFileSync("dist/core/decisions/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
+const coreFormatHumanTexts = [
+  ".kungfu is a portable, verifiable record of real work.",
+  "Keep the work, not just the conversation.",
+  "How a fresh agent continues the same work",
+  "Not understanding something is different from losing it.",
+  "Qualified does not mean stable.",
+];
+for (const expectedText of coreFormatHumanTexts) {
+  if (!coreFormatHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core format human and agent entries do not share the reader framing: ${expectedText}`);
+  }
+}
+const coreFormatOrientationPosition = coreFormatHtml.indexOf("Keep the work, not just the conversation.");
+const coreFormatTechnicalPosition = coreFormatHtml.indexOf('id="format-technical-details"');
+if (
+  coreFormatOrientationPosition < 0
+  || coreFormatTechnicalPosition < 0
+  || coreFormatOrientationPosition >= coreFormatTechnicalPosition
+  || !coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details">')
+  || coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details" open')
+  || !renderSiteSource.includes(".core-format-technical:not([open]) > .core-format-technical-body")
+) {
+  throw new Error("Core format page must explain the human outcome before a closed technical disclosure");
+}
 const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
 if (
   !coreHtml.includes(escapeHtml(coreReaderPath.question))
@@ -2523,6 +2547,9 @@ grep -q 'Visibility is not durability.' dist/core/runtime/index.html
 grep -q 'Pinned product bundle' dist/core/runtime/index.html
 grep -q 'core.libkungfu.dev/site-bundle-consumer/v1' dist/core/manifest.json
 grep -q 'Keep the work when the chat ends.' dist/core/llms.txt
+grep -q '.kungfu is a portable, verifiable record of real work.' dist/core/format/index.html
+grep -q 'How a fresh agent continues the same work' dist/core/format/index.html
+grep -q 'For implementers and auditors' dist/core/format/index.html
 grep -q 'An exact pre-release portable authority bundle' dist/core/format/index.html
 grep -q '@kungfu-tech/spec@4.0.0-alpha.1' dist/core/format/index.html
 grep -q 'Required-reader behavior' dist/core/format/index.html
