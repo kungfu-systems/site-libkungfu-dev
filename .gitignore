@@ -9,6 +9,7 @@ node_modules/
 .buildchain/downloaded-manifests/
 .buildchain/downloaded-relay-manifests/
 .buildchain/logs/
+.buildchain/render-inputs/
 .buildchain/release-evidence/
 .buildchain/release-state/
 .buildchain/relayed-artifacts/

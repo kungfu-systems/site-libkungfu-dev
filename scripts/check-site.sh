@@ -22,6 +22,10 @@ const crypto = require("crypto");
 const path = require("path");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
+const webSurfaceWorkflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+if (!webSurfaceWorkflow.includes("export DOGFOOD_EVIDENCE_REQUIRED=true")) {
+  throw new Error("published site builds must fail closed when the public dogfood snapshot cannot be admitted");
+}
 for (const projectionContract of [
   'projection === "kungfu-tech"',
   'parentOrigin === "https://kungfu.tech"',
@@ -39,6 +43,7 @@ const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
+  "scripts/prepare-dogfood-render-input.mjs",
   "docs/versioning.md",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -151,7 +156,10 @@ const coreFormatRoutes = Object.fromEntries(
 );
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
-const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
+const dogfoodRenderInputPath = ".buildchain/render-inputs/dogfood-evidence.json";
+const dogfoodRenderSourcePath = ".buildchain/render-inputs/dogfood-evidence-source.json";
+const dogfoodEvidence = JSON.parse(fs.readFileSync(dogfoodRenderInputPath, "utf8"));
+const dogfoodEvidenceSource = JSON.parse(fs.readFileSync(dogfoodRenderSourcePath, "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
@@ -556,7 +564,26 @@ for (const entry of [site.homepage, ...readerContract.surfacePaths]) {
   }
 }
 if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
-  throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
+  throw new Error("published dogfood evidence must preserve the admitted render input semantically");
+}
+if (
+  dogfoodEvidenceSource.contract !== "kungfu-site-dogfood-render-input"
+  || !["observed-immutable", "retained-fixture"].includes(dogfoodEvidenceSource.selection)
+  || dogfoodEvidenceSource.snapshotId !== dogfoodEvidence.snapshotId
+  || dogfoodEvidenceSource.observedAt !== dogfoodEvidence.observation.observedAt
+  || crypto.createHash("sha256").update(fs.readFileSync(dogfoodRenderInputPath)).digest("hex") !== dogfoodEvidenceSource.sha256
+) {
+  throw new Error("dogfood render input source contract or digest is invalid");
+}
+if (crypto.createHash("sha256").update(fs.readFileSync("dist/dogfood-evidence.json")).digest("hex") !== dogfoodEvidenceSource.sha256) {
+  throw new Error("published dogfood evidence bytes do not match the admitted immutable snapshot");
+}
+if (
+  manifest.observedEvidence?.snapshotId !== dogfoodEvidenceSource.snapshotId
+  || manifest.observedEvidence?.sha256 !== dogfoodEvidenceSource.sha256
+  || manifest.observedEvidence?.immutableUrl !== dogfoodEvidenceSource.immutableUrl
+) {
+  throw new Error("site manifest does not expose the admitted dogfood render input");
 }
 const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
 for (const requiredText of [
@@ -592,6 +619,10 @@ for (const runtimeContract of [
   'hero.setAttribute("aria-label"',
   "Unknown snapshot id; showing the latest verified observation.",
   "The requested snapshot failed integrity or schema validation; showing the latest verified observation.",
+  "Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)",
+  "The build-embedded snapshot remains a complete no-network projection.",
+  "comparePrevious = true",
+  "Choose a retained snapshot to compare adjacent observations.",
 ]) {
   if (!renderSiteSource.includes(runtimeContract)) {
     throw new Error(`dogfood renderer missing history runtime contract: ${runtimeContract}`);
@@ -624,7 +655,7 @@ if (!/\.dogfood-flow li\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)) {
   throw new Error("dogfood flow cards must reset inherited list margins");
 }
 for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
-  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
+  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === (dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source) && page.sha256 === dogfoodEvidenceSource.sha256)) {
     throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
   }
 }

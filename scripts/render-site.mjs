@@ -3087,7 +3087,7 @@ function renderDogfoodCase(evidenceCase, index) {
   </article>`;
 }
 
-function dogfoodLiveProjectionScript() {
+function dogfoodLiveProjectionScript(embeddedEvidence) {
   return `<script>
   (() => {
     const number = new Intl.NumberFormat("en-US");
@@ -3114,6 +3114,7 @@ function dogfoodLiveProjectionScript() {
       if (expectedId && evidence.snapshotId !== expectedId) throw new Error("snapshot id mismatch");
       return evidence;
     };
+    const embeddedEvidence = validate(${JSON.stringify(embeddedEvidence).replaceAll("<", "\\u003c")});
     const sha256 = async (bytes) => {
       if (!window.crypto || !window.crypto.subtle) return null;
       const digest = await window.crypto.subtle.digest("SHA-256", bytes);
@@ -3197,6 +3198,11 @@ function dogfoodLiveProjectionScript() {
       const body = document.getElementById("dogfood-comparison-body");
       const heading = document.getElementById("dogfood-comparison-heading");
       if (!body || !heading) return;
+      if (previous === undefined) {
+        heading.textContent = "Adjacent observation comparison";
+        body.innerHTML = '<tr><th scope="row">History</th><td colspan="3">Choose a retained snapshot to compare adjacent observations.</td></tr>';
+        return;
+      }
       if (!previous) {
         heading.textContent = "First retained observation point";
         body.replaceChildren();
@@ -3223,7 +3229,7 @@ function dogfoodLiveProjectionScript() {
         return row;
       }));
     };
-    const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus) => {
+    const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus, comparePrevious = true) => {
       const entry = timeline.find((candidate) => candidate.snapshotId === snapshotId);
       if (!entry) {
         return selectSnapshot(timeline.at(-1).snapshotId, false, "Unknown snapshot id; showing the latest verified observation.");
@@ -3232,7 +3238,7 @@ function dogfoodLiveProjectionScript() {
       try {
         const [evidence, previous] = await Promise.all([
           entry.current ? Promise.resolve(latestEvidence) : load(entry),
-          index > 0 ? load(timeline[index - 1]) : Promise.resolve(null),
+          index > 0 && comparePrevious ? load(timeline[index - 1]) : Promise.resolve(index > 0 ? undefined : null),
         ]);
         render(evidence, entry);
         renderComparison(evidence, previous);
@@ -3251,7 +3257,7 @@ function dogfoodLiveProjectionScript() {
         status(fallbackStatus || ((entry.current ? "Showing latest observation: " : "Showing archived observation: ") + entry.observedAt + ". Adjacent deltas compare overlapping P30D windows."));
       } catch (error) {
         if (!entry.current) {
-          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.");
+          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.", false);
         }
         throw error;
       }
@@ -3261,9 +3267,7 @@ function dogfoodLiveProjectionScript() {
       const target = timeline[index + offset];
       if (target) selectSnapshot(target.snapshotId, true);
     };
-    fetch(latestUrl, { cache: "no-store" })
-      .then((response) => { if (!response.ok) throw new Error("evidence fetch failed"); return response.json(); })
-      .then((evidence) => {
+    const initialize = async (evidence, sourceStatus) => {
         latestEvidence = validate(evidence);
         const current = {
           snapshotId: evidence.snapshotId,
@@ -3337,12 +3341,34 @@ function dogfoodLiveProjectionScript() {
           selectSnapshot(requested || timeline.at(-1).snapshotId, false);
         });
         const requested = new URL(window.location.href).searchParams.get("snapshot");
-        return selectSnapshot(requested || current.snapshotId, false);
-      })
-      .catch(() => {
-        setText("dogfood-state", "public dogfood / retained fallback");
-        status("Live evidence is unavailable; the readable retained fallback remains on this page.");
-      });
+        await selectSnapshot(
+          requested || current.snapshotId,
+          false,
+          sourceStatus === "embedded"
+            ? "Showing the latest observation embedded and verified when this site artifact was built."
+            : undefined,
+          false,
+        );
+    };
+    (async () => {
+      let evidence = embeddedEvidence;
+      let sourceStatus = "embedded";
+      try {
+        const response = await fetch(latestUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error("evidence fetch failed");
+        const fetched = validate(await response.json());
+        if (Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)) {
+          evidence = fetched;
+          sourceStatus = "live";
+        }
+      } catch {
+        // The build-embedded snapshot remains a complete no-network projection.
+      }
+      await initialize(evidence, sourceStatus);
+    })().catch(() => {
+      setText("dogfood-state", "public dogfood / embedded observation");
+      status("The interactive history is unavailable; the verified build-embedded observation remains readable.");
+    });
   })();
   </script>`;
 }
@@ -3540,7 +3566,17 @@ const coreFormatRoutes = Object.fromEntries(
   ]),
 );
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
-const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
+const dogfoodRenderInputPath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence.json");
+const dogfoodRenderSourcePath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence-source.json");
+const dogfoodEvidence = readOptionalJsonFile(dogfoodRenderInputPath) || readFixtureJson("dogfood-evidence.json");
+const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
+  selection: "retained-fixture",
+  source: "src/fixtures/dogfood-evidence.json",
+  immutableUrl: null,
+  snapshotId: dogfoodEvidence.snapshotId,
+  observedAt: dogfoodEvidence.observation.observedAt,
+  sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodEvidence)).digest("hex"),
+};
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage);
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
@@ -3707,6 +3743,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
     "scripts/publication-packages.cjs",
     "src/fixtures/*.json",
     "src/publication-packages.json",
+    "resolved dogfood immutable snapshot URL and SHA-256",
     "pnpm-lock.yaml",
     "@kungfu-tech/buildchain package content",
     "@kungfu-tech/kfd package content",
@@ -5785,7 +5822,7 @@ writeFile(
     body: `${dogfoodStyles}
     <section class="dogfood-hero" aria-labelledby="dogfood-title">
       <div class="dogfood-hero-copy">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / retained fallback</span></p>
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded observation" : "retained fallback"}</span></p>
         <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
         <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
         <div class="dogfood-window">
@@ -5814,7 +5851,7 @@ writeFile(
       <div class="dogfood-history-controls">
         <label for="dogfood-snapshot-select">Observation snapshot
           <select id="dogfood-snapshot-select" name="snapshot">
-            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · retained fallback</option>
+            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded" : "retained fallback"}</option>
           </select>
         </label>
         <div class="dogfood-history-nav" aria-label="Adjacent observations">
@@ -5898,17 +5935,17 @@ writeFile(
     <section class="panel" aria-labelledby="reproduce-heading">
       <p class="eyebrow">Reproduce</p>
       <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
-      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
+      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the immutable published JSON remains the admitted observation snapshot.</p>
       <dl class="meta" style="margin-top: 18px;">
         <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
-        <dt>Generated at</dt><dd><code id="dogfood-generated-at">legacy snapshot; generation timestamp was not recorded</code></dd>
-        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">retained fallback</code></dd>
+        <dt>Generated at</dt><dd><code id="dogfood-generated-at">${escapeHtml(dogfoodEvidence.provenance?.generatedAt || "legacy snapshot; generation timestamp was not recorded")}</code></dd>
+        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">${escapeHtml(dogfoodEvidence.provenance?.generationKind || "retained fallback")}</code></dd>
         <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
         <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
         <dt>Machine route</dt><dd><a id="dogfood-machine-route" href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
       </dl>
     </section>
-    ${dogfoodLiveProjectionScript()}`,
+    ${dogfoodLiveProjectionScript(dogfoodEvidence)}`,
   }),
 );
 
@@ -7202,6 +7239,16 @@ const manifest = {
     boundary: BRAND_BOUNDARY,
   },
   sourceBoundary: site.sourceBoundary,
+  observedEvidence: {
+    contract: dogfoodEvidenceSource.contract || "kungfu-site-dogfood-render-input",
+    selection: dogfoodEvidenceSource.selection,
+    snapshotId: dogfoodEvidenceSource.snapshotId,
+    observedAt: dogfoodEvidenceSource.observedAt,
+    source: dogfoodEvidenceSource.source,
+    immutableUrl: dogfoodEvidenceSource.immutableUrl,
+    sha256: dogfoodEvidenceSource.sha256,
+    reproducibility: "Fetch the immutable URL and verify its SHA-256 before rendering the same snapshot.",
+  },
   readerContract: site.readerContract,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
@@ -7209,12 +7256,14 @@ const manifest = {
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),
-      source: "src/fixtures/dogfood-evidence.json",
+      source: dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source,
+      sha256: dogfoodEvidenceSource.sha256,
     },
     {
       path: "/dogfood-evidence.json",
       host: surfaceCanonicalHost("hub"),
-      source: "src/fixtures/dogfood-evidence.json",
+      source: dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source,
+      sha256: dogfoodEvidenceSource.sha256,
     },
     {
       path: "/runtime.json",
