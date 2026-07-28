@@ -3577,6 +3577,7 @@ const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
   observedAt: dogfoodEvidence.observation.observedAt,
   sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodEvidence)).digest("hex"),
 };
+const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage);
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
@@ -5842,6 +5843,12 @@ writeFile(
       </div>
     </section>
 
+    <section class="panel" aria-labelledby="bootstrap-interpretation-heading">
+      <p class="eyebrow">Related first-party interpretation</p>
+      <h2 id="bootstrap-interpretation-heading">What this public work suggests about organizational bootstrap</h2>
+      <p>For a bounded first-party interpretation of what this public work suggests about organizational bootstrap, read <a href="${escapeAttr(dogfoodRelatedInterpretation.url)}">${escapeHtml(dogfoodRelatedInterpretation.label)}</a>. ${escapeHtml(dogfoodRelatedInterpretation.claimBoundary)}</p>
+    </section>
+
     <section class="dogfood-history" aria-labelledby="dogfood-history-heading">
       <div class="section-heading">
         <p class="eyebrow">Append-only observation history</p>
@@ -7239,6 +7246,7 @@ const manifest = {
     boundary: BRAND_BOUNDARY,
   },
   sourceBoundary: site.sourceBoundary,
+  relatedInterpretations: site.relatedInterpretations,
   observedEvidence: {
     contract: dogfoodEvidenceSource.contract || "kungfu-site-dogfood-render-input",
     selection: dogfoodEvidenceSource.selection,

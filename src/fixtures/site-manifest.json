@@ -5,6 +5,14 @@
   "canonicalHost": "libkungfu.dev",
   "title": "libkungfu.dev",
   "tagline": "Embeddable Agent runtime facts, recovery, and open KFD evidence.",
+  "relatedInterpretations": {
+    "dogfoodBootstrap": {
+      "label": "A Public Week of Agent-Mediated Work",
+      "url": "https://kungfu.tech/about/bootstrapping/evidence/",
+      "relationship": "bounded-first-party-interpretation",
+      "claimBoundary": "This interpretation is not additional qualification evidence."
+    }
+  },
   "homepage": {
     "headline": "Build your Hub. Don't rebuild the runtime.",
     "lead": "libkungfu is the embeddable local or worker runtime substrate for Agent products. Keep your interface, models, accounts, permissions, cloud, and customers; add durable runtime facts, Episode recovery, and portable KFD evidence.",
