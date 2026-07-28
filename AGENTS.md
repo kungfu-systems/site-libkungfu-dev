@@ -29,7 +29,7 @@ developer and agent substrate hub.
   pinned upstream package artifacts. Core product facts come from
   `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
   `@kungfu-tech/buildchain@3.0.2-alpha.2`; KFD facts come from
-  `@kungfu-tech/kfd@1.0.0-alpha.47`.
+  `@kungfu-tech/kfd@1.0.0-alpha.50`.
 - Consume the Core bundle from the exact public npm coordinate. Verify pnpm
   integrity plus the package source and content roots, and render the packaged
   Spec authority instead of retaining a parallel local interpretation.
