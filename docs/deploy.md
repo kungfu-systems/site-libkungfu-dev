@@ -25,6 +25,16 @@ with future dynamic adapters. Buildchain remains the deployment state machine:
 the release object is source commit plus build artifact plus deploy target plus
 channel plus deployment manifest.
 
+Every site build resolves the public dogfood latest alias to its matching
+immutable snapshot, verifies the repository evidence contract and identical
+bytes, and embeds that admitted snapshot in `/dogfood/`. The retained fixture
+is used only when the public latest/immutable pair cannot be verified. This
+keeps the initial HTML useful to no-JavaScript readers and records the selected
+immutable URL and SHA-256 in the site manifest; browser-side refresh may advance
+the view but must never replace the embedded observation with an older one.
+Published builds fail closed if the latest/immutable pair cannot be admitted;
+local builds may retain the repository fixture as an explicit offline fallback.
+
 The AWS resource contract is owned by the private
 `kungfu-systems/infra-kungfu-sites` repository and mirrored into this repository
 as `infra/outputs.json`. Site changes may update content, Buildchain wiring, and
