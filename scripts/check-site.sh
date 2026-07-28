@@ -497,10 +497,22 @@ for (const requiredText of [
   "A reviewed-by search match is not automatically an approval",
   "Three actors continued one exact Project Cut without a human relay",
   "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
+  "Related first-party interpretation",
+  "A Public Week of Agent-Mediated Work",
+  "This interpretation is not additional qualification evidence.",
 ]) {
   if (!dogfoodHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
+}
+if (!dogfoodHtml.includes(`href="${dogfoodEvidence.relatedInterpretation.url}"`)) {
+  throw new Error("dogfood page missing bounded bootstrap interpretation URL");
+}
+if (
+  dogfoodProjection.relatedInterpretation.relationship !== "bounded-first-party-interpretation" ||
+  dogfoodProjection.relatedInterpretation.claimBoundary !== "This interpretation is not additional qualification evidence."
+) {
+  throw new Error("published dogfood evidence must preserve the bootstrap interpretation boundary");
 }
 for (const historyContract of [
   'id="dogfood-snapshot-select"',

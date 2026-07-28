@@ -4,6 +4,12 @@
   "status": "observed",
   "headline": "Kungfu is built through the same public evidence loop it exposes.",
   "claimBoundary": "This snapshot proves public repository activity and exact retained evidence objects. It does not equate pull requests with features, GitHub accounts with Agent actors, or review-search matches with approvals.",
+  "relatedInterpretation": {
+    "label": "A Public Week of Agent-Mediated Work",
+    "url": "https://kungfu.tech/about/bootstrapping/evidence/",
+    "relationship": "bounded-first-party-interpretation",
+    "claimBoundary": "This interpretation is not additional qualification evidence."
+  },
   "observation": {
     "observedAt": "2026-07-21T04:45:00Z",
     "window": {

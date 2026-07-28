@@ -5123,6 +5123,12 @@ writeFile(
       </div>
     </section>
 
+    <section class="panel" aria-labelledby="bootstrap-interpretation-heading">
+      <p class="eyebrow">Related first-party interpretation</p>
+      <h2 id="bootstrap-interpretation-heading">What this public work suggests about organizational bootstrap</h2>
+      <p>For a bounded first-party interpretation of what this public work suggests about organizational bootstrap, read <a href="${escapeAttr(dogfoodEvidence.relatedInterpretation.url)}">${escapeHtml(dogfoodEvidence.relatedInterpretation.label)}</a>. ${escapeHtml(dogfoodEvidence.relatedInterpretation.claimBoundary)}</p>
+    </section>
+
     <section class="dogfood-history" aria-labelledby="dogfood-history-heading">
       <div class="section-heading">
         <p class="eyebrow">Append-only observation history</p>
