@@ -3513,6 +3513,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
+      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>`).join("\n")}
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
@@ -3732,6 +3733,9 @@ const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || []
 const kfdCandidateFormalPageByCandidateId = new Map(
   kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
 );
+const kfdStandalonePages = (kfdSite.standalonePages || [])
+  .slice()
+  .sort((left, right) => (left.rendering?.navigationOrder || 0) - (right.rendering?.navigationOrder || 0));
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -3757,6 +3761,10 @@ const kfdPageRouteBySourcePath = new Map([
   [kfdSite.formalPage.sourcePath, kfdFormalModelPath],
   [kfdSite.terminologyPage.sourcePath, kfdTerminologyPath],
   [kfdSite.casesPage.sourcePath, kfdCasesPath],
+  ...kfdStandalonePages.map((pageEntry) => [
+    pageEntry.sourcePath,
+    `${pageEntry.url.replace(/\/+$/, "")}/`,
+  ]),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
   ...kfdRegistry.entries.map((entry) => [entry.path, `/${entry.number}/`]),
@@ -6524,6 +6532,23 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
   });
 }
 
+for (const pageEntry of kfdStandalonePages) {
+  if (pageEntry.rendering?.kind !== "markdown-document") {
+    throw new Error(`Unsupported KFD standalone page renderer: ${pageEntry.id || pageEntry.url}`);
+  }
+  const relativeRoute = pageEntry.url.replace(/^\/+|\/+$/g, "");
+  if (!relativeRoute) {
+    throw new Error(`KFD standalone page must declare a non-root route: ${pageEntry.id || "unknown"}`);
+  }
+  const pageHtml = renderKfdReferencePage(pageEntry, {
+    currentPage: `standalone:${pageEntry.id}`,
+    tocLabel: `${pageEntry.title} sections`,
+    kicker: `${pageEntry.relationship} / ${pageEntry.normative ? "normative" : "non-normative"}`,
+  });
+  writeFile(`kfd/${relativeRoute}/index.html`, pageHtml);
+  writeFile(`${relativeRoute}/index.html`, pageHtml);
+}
+
 const kfdFormalModelPageHtml = renderKfdReferencePage(kfdSite.formalPage, {
   currentPage: "formal-model",
   tocLabel: "Formal model sections",
@@ -7264,6 +7289,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.foundationPage.sourcePath}`,
     },
+    ...kfdStandalonePages.map((pageEntry) => ({
+      path: `${pageEntry.url.replace(/\/+$/, "")}/`,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
+    })),
     {
       path: kfdFormalModelPath,
       host: surfaceCanonicalHost("kfd"),
@@ -7490,6 +7520,7 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "decisions/"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
+    ...kfdStandalonePages.map((entry) => surfaceEndpointHref("kfd", `${entry.url.replace(/^\/+|\/+$/g, "")}/`)),
     surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdTerminologyPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "terminology.json"),
@@ -7519,6 +7550,16 @@ const kfdAgentManifest = {
     relationship: kfdSite.foundationPage.relationship,
     normative: kfdSite.foundationPage.normative,
   },
+  standalonePages: kfdStandalonePages.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    path: `${entry.url.replace(/\/+$/, "")}/`,
+    url: surfaceEndpointHref("kfd", `${entry.url.replace(/^\/+|\/+$/g, "")}/`),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.sourcePath}`,
+    relationship: entry.relationship,
+    normative: entry.normative,
+    rendering: entry.rendering,
+  })),
   formalModel: {
     path: kfdFormalModelPath,
     url: surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),
