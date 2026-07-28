@@ -602,14 +602,14 @@ for (const requiredText of [
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
 }
-if (!dogfoodHtml.includes(`href="${dogfoodEvidence.relatedInterpretation.url}"`)) {
+if (!dogfoodHtml.includes(`href="${site.relatedInterpretations.dogfoodBootstrap.url}"`)) {
   throw new Error("dogfood page missing bounded bootstrap interpretation URL");
 }
 if (
-  dogfoodProjection.relatedInterpretation.relationship !== "bounded-first-party-interpretation" ||
-  dogfoodProjection.relatedInterpretation.claimBoundary !== "This interpretation is not additional qualification evidence."
+  manifest.relatedInterpretations.dogfoodBootstrap.relationship !== "bounded-first-party-interpretation" ||
+  manifest.relatedInterpretations.dogfoodBootstrap.claimBoundary !== "This interpretation is not additional qualification evidence."
 ) {
-  throw new Error("published dogfood evidence must preserve the bootstrap interpretation boundary");
+  throw new Error("site manifest must preserve the bootstrap interpretation boundary");
 }
 for (const historyContract of [
   'id="dogfood-snapshot-select"',

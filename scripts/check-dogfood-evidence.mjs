@@ -17,12 +17,6 @@ const verifyLive = process.argv.includes("--verify-live");
 
 assert.ok([schemaV1, schemaV2].includes(evidence.schema), `unsupported dogfood evidence schema: ${evidence.schema}`);
 assert.equal(evidence.status, "observed");
-assert.deepEqual(evidence.relatedInterpretation, {
-  label: "A Public Week of Agent-Mediated Work",
-  url: "https://kungfu.tech/about/bootstrapping/evidence/",
-  relationship: "bounded-first-party-interpretation",
-  claimBoundary: "This interpretation is not additional qualification evidence.",
-});
 assert.equal(
   Date.parse(evidence.observation.window.endInclusive) - Date.parse(evidence.observation.window.startInclusive),
   30 * 24 * 60 * 60 * 1000,
