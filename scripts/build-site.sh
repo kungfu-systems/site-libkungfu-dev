@@ -18,6 +18,7 @@ for surface in core buildchain kfd papers; do
   cp public/assets/favicon.svg "dist/${surface}/assets/favicon.svg"
 done
 
+node scripts/prepare-dogfood-render-input.mjs
 node scripts/render-site.mjs
 mkdir -p dist/.buildchain
 cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evidence-ownership.json

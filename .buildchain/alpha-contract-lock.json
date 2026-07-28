@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "contract": "kungfu-buildchain-contract-lock",
   "buildchain": {
-    "ref": "v2-alpha",
-    "resolvedSha": "e7ad500238f5bbfc301b3388e01621383c0bd6fb",
+    "ref": "v3-alpha",
+    "resolvedSha": "25e3b31992ef0186cec050cf6a6023ba44d822a2",
     "contract": "kungfu-buildchain-runtime-contract-world",
-    "contractDigest": "sha256:fe7adf9ed1c1a0b14b29fef1eb72205ae29c9558806c9b35bfcc258f07d422a8",
-    "compatibilityDigest": "sha256:cdf588422ec6b460bd6f631400efa6e361a045e052c8967d6c50fadd7aa4dd90",
-    "majorLine": "v2",
+    "contractDigest": "sha256:5b75cb3c3f376e023497d3374b338b1f9622c6c24e7d5fc197ffa9ae7ce66c08",
+    "compatibilityDigest": "sha256:9770baa99ba374e9dbd743ca9624a72137513b8c4e65af1fbf2160cb3ef51d9d",
+    "majorLine": "v3",
     "compatibilityPolicy": "major-compatible",
-    "acceptedAt": "2026-07-22T15:32:03Z",
+    "acceptedAt": "2026-07-28T14:14:36.000Z",
     "surfaces": [
       {
         "id": "reusable-build",
@@ -24,7 +24,7 @@
       {
         "id": "release-candidate-promote",
         "kind": "workflow",
-        "breakingDigest": "sha256:1f476fb9a4854b362c4b24cef89a3c7675d7d63baf3bc828d7b8ae7d2787cead"
+        "breakingDigest": "sha256:acd401cfc46450115a3763fd4b679d85f185e8757ebd52510d6262e1533df4cf"
       },
       {
         "id": "advanced-release-candidate-promote",
@@ -37,9 +37,19 @@
         "breakingDigest": "sha256:da569f90374e878948e3d5160ed9929338ce0572473ca8ee54867b0fe1aaeace"
       },
       {
+        "id": "auditable-demo",
+        "kind": "workflow",
+        "breakingDigest": "sha256:425f8d3d1ba205dd6fe35a20f1dc6dad7d7c563872283e3af79fea4d5c475692"
+      },
+      {
         "id": "promote-buildchain-ref-action",
         "kind": "action",
         "breakingDigest": "sha256:6147c0a8d5c36bfaa6021871574e1fc28192a3f1b8cfdae4d24ef3059ac1ebda"
+      },
+      {
+        "id": "macos-credential-island-action",
+        "kind": "action",
+        "breakingDigest": "sha256:61866985864205770c70cbe14c3c60f479512a32c0b007b5fd6d8d65132ff8be"
       },
       {
         "id": "report-buildchain-issue-action",
@@ -99,7 +109,7 @@
       {
         "id": "controller:build-lifecycle",
         "kind": "controller",
-        "breakingDigest": "sha256:e264a79f9f399038c2fcfd21e4168c68c2e1485ee5c651c02242a02b622ac2be"
+        "breakingDigest": "sha256:30745921541e9b0f70475bb2178c2559f6aef248f6680670ccd44d8c5a69a6b1"
       },
       {
         "id": "controller:build-channel-router",

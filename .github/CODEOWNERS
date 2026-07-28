@@ -1,0 +1,11 @@
+# GitHub review and governance authority.
+* @kungfu-origin
+
+# Last-match rules make ownership and publication control surfaces explicit.
+/.github/CODEOWNERS @kungfu-origin
+/.github/workflows/ @kungfu-origin
+/.buildchain/ @kungfu-origin
+/docs/deploy.md @kungfu-origin
+/scripts/build-site.sh @kungfu-origin
+/scripts/check-site.sh @kungfu-origin
+/scripts/publish-dogfood-history-backfill.mjs @kungfu-origin

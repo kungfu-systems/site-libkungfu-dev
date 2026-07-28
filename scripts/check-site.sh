@@ -9,7 +9,8 @@ node scripts/check-dogfood-evidence.mjs
 
 pnpm exec buildchain badges readme --check
 
-if grep -RInE 'mailto:|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
+if grep -RInE --exclude-dir=core-preview \
+  'mailto:|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
   README.md docs public src dist 2>/dev/null; then
   echo "error: email address or mailto link found" >&2
   exit 1
@@ -18,13 +19,31 @@ fi
 node - <<'NODE'
 const fs = require("fs");
 const crypto = require("crypto");
+const path = require("path");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
+const webSurfaceWorkflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+if (!webSurfaceWorkflow.includes("export DOGFOOD_EVIDENCE_REQUIRED=true")) {
+  throw new Error("published site builds must fail closed when the public dogfood snapshot cannot be admitted");
+}
+for (const projectionContract of [
+  'projection === "kungfu-tech"',
+  'parentOrigin === "https://kungfu.tech"',
+  '"kungfu.dogfood.timeline/v1"',
+  '"kungfu.dogfood.timeline.request/v1"',
+  '"kungfu.dogfood.snapshot.request/v1"',
+  '"kungfu.dogfood.snapshot.response/v1"',
+  'event.origin !== parentOrigin || event.source !== window.parent',
+]) {
+  if (!renderSiteSource.includes(projectionContract)) {
+    throw new Error(`dogfood projection bridge missing safety contract: ${projectionContract}`);
+  }
+}
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
-  "src/fixtures/core-runtime-surface.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
+  "scripts/prepare-dogfood-render-input.mjs",
   "docs/versioning.md",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -41,13 +60,34 @@ const requiredBaseFiles = [
   "dist/architecture/index.html",
   "dist/core/index.html",
   "dist/core/runtime/index.html",
+  "dist/core/format/index.html",
+  "dist/core/format/manifest.json",
+  "dist/core/format/authority.json",
+  "dist/core/format/reader-matrix.json",
+  "dist/core/format/compatibility.json",
+  "dist/core/format/registry.json",
+  "dist/core/format/vectors/index.json",
+  "dist/core/primitives/index.html",
+  "dist/core/abi/index.html",
+  "dist/core/sdk/index.html",
+  "dist/core/extensions/index.html",
+  "dist/core/products/index.html",
+  "dist/core/qualification/index.html",
+  "dist/core/decisions/index.html",
+  "dist/core/horizons/index.html",
   "dist/core/manifest.json",
+  "dist/core/site-bundle.json",
+  "dist/core/agent-index.json",
+  "dist/core/adr-map.json",
+  "dist/core/schema/site-bundle.schema.json",
   "dist/core/llms.txt",
   "dist/core/llms-full.txt",
   "dist/buildchain/index.html",
   "dist/buildchain/mechanism/index.html",
   "dist/kfd/index.html",
   "dist/kfd/decisions/index.html",
+  "dist/kfd/agent-hub/index.html",
+  "dist/agent-hub/index.html",
   "dist/kfd/foundation/index.html",
   "dist/foundation/index.html",
   "dist/kfd/formal/index.html",
@@ -101,10 +141,25 @@ if (!notFoundPage.includes('<meta name="robots" content="noindex">') || !notFoun
 }
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
-const core = JSON.parse(fs.readFileSync("src/fixtures/core-runtime-surface.json", "utf8"));
+const coreBundle = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/site-bundle.json", "utf8"));
+const coreAgentIndex = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/agent-index.json", "utf8"));
+const coreAdrMap = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/adr-map.json", "utf8"));
+const corePackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/package.json", "utf8"));
+const coreSiteApi = require("@kungfu-tech/site");
+const coreBundleVerification = coreSiteApi.verifyBundle();
+const coreFormatManifest = coreSiteApi.loadFormatAuthorityManifest();
+const coreFormatRoutes = Object.fromEntries(
+  Object.keys(coreBundle.formatAuthority?.routes || {}).map((routeId) => [
+    routeId,
+    coreSiteApi.loadFormatAuthorityRoute(routeId),
+  ]),
+);
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
-const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
+const dogfoodRenderInputPath = ".buildchain/render-inputs/dogfood-evidence.json";
+const dogfoodRenderSourcePath = ".buildchain/render-inputs/dogfood-evidence-source.json";
+const dogfoodEvidence = JSON.parse(fs.readFileSync(dogfoodRenderInputPath, "utf8"));
+const dogfoodEvidenceSource = JSON.parse(fs.readFileSync(dogfoodRenderSourcePath, "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
@@ -142,8 +197,10 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "2.14.14-alpha.4";
+const expectedBuildchainVersion = "3.0.2-alpha.2";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
+const expectedCoreSiteVersion = "4.0.0-alpha.1";
+const expectedCoreSitePickup = "4.0.0-alpha.1";
 const expectedPaperPackages = publicationPackageSet.packages;
 const kfdUsagePages = kfdSite.decisionPages?.usagePages?.pages || [];
 const kfdUsagePageByDecisionNumber = new Map(kfdUsagePages.map((pageEntry) => [String(pageEntry.decisionNumber), pageEntry]));
@@ -154,6 +211,7 @@ const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || []
 const kfdCandidateFormalPageByCandidateId = new Map(
   kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
 );
+const kfdStandalonePages = kfdSite.standalonePages || [];
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -167,6 +225,13 @@ const requiredFiles = [
     `dist/drafts/${entry.id}/index.html`,
   ]),
   ...kfdCandidateFormalPages.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+|\/+$/g, "");
+    return [
+      `dist/kfd/${output}/index.html`,
+      `dist/${output}/index.html`,
+    ];
+  }),
+  ...kfdStandalonePages.flatMap((entry) => {
     const output = entry.url.replace(/^\/+|\/+$/g, "");
     return [
       `dist/kfd/${output}/index.html`,
@@ -200,12 +265,23 @@ function readPnpmLockPackage(packageName, version) {
   const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(`^  '${escapedName}@${escapedVersion}':\\n(?:    .+\\n)*?    resolution: \\{integrity: ([^}]+)\\}`, "m");
   const match = pnpmLockText.match(pattern);
-  if (!match) {
+  if (match) {
+    return {
+      version,
+      integrity: match[1].trim(),
+    };
+  }
+  const localPattern = new RegExp(
+    `^  '${escapedName}@file:[^']+':\\n    resolution: \\{integrity: ([^,}]+)[^\\n]*\\}\\n    version: ${escapedVersion}$`,
+    "m",
+  );
+  const localMatch = pnpmLockText.match(localPattern);
+  if (!localMatch) {
     throw new Error(`pnpm-lock.yaml missing ${packageName}@${version}`);
   }
   return {
     version,
-    integrity: match[1].trim(),
+    integrity: localMatch[1].trim(),
   };
 }
 
@@ -342,6 +418,7 @@ if (
 
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
 const kfdLock = readPnpmLockPackage("@kungfu-tech/kfd", expectedKfdVersion);
+const coreSiteLock = readPnpmLockPackage("@kungfu-tech/site", expectedCoreSiteVersion);
 const paperLocks = expectedPaperPackages.map((entry) => ({
   ...entry,
   lock: readPnpmLockPackage(entry.name, entry.version),
@@ -396,6 +473,7 @@ if (readerSourceById.size !== readerContract.sources.length) {
 const packageAuthority = new Map([
   ["@kungfu-tech/kfd", kfdPackage],
   ["@kungfu-tech/buildchain", buildchainPackage],
+  ["@kungfu-tech/site", corePackage],
 ]);
 const architectureAuthority = [
   runtimeSurface.architectureSources.kungfu,
@@ -486,7 +564,26 @@ for (const entry of [site.homepage, ...readerContract.surfacePaths]) {
   }
 }
 if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
-  throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
+  throw new Error("published dogfood evidence must preserve the admitted render input semantically");
+}
+if (
+  dogfoodEvidenceSource.contract !== "kungfu-site-dogfood-render-input"
+  || !["observed-immutable", "retained-fixture"].includes(dogfoodEvidenceSource.selection)
+  || dogfoodEvidenceSource.snapshotId !== dogfoodEvidence.snapshotId
+  || dogfoodEvidenceSource.observedAt !== dogfoodEvidence.observation.observedAt
+  || crypto.createHash("sha256").update(fs.readFileSync(dogfoodRenderInputPath)).digest("hex") !== dogfoodEvidenceSource.sha256
+) {
+  throw new Error("dogfood render input source contract or digest is invalid");
+}
+if (crypto.createHash("sha256").update(fs.readFileSync("dist/dogfood-evidence.json")).digest("hex") !== dogfoodEvidenceSource.sha256) {
+  throw new Error("published dogfood evidence bytes do not match the admitted immutable snapshot");
+}
+if (
+  manifest.observedEvidence?.snapshotId !== dogfoodEvidenceSource.snapshotId
+  || manifest.observedEvidence?.sha256 !== dogfoodEvidenceSource.sha256
+  || manifest.observedEvidence?.immutableUrl !== dogfoodEvidenceSource.immutableUrl
+) {
+  throw new Error("site manifest does not expose the admitted dogfood render input");
 }
 const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
 for (const requiredText of [
@@ -534,6 +631,10 @@ for (const runtimeContract of [
   'hero.setAttribute("aria-label"',
   "Unknown snapshot id; showing the latest verified observation.",
   "The requested snapshot failed integrity or schema validation; showing the latest verified observation.",
+  "Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)",
+  "The build-embedded snapshot remains a complete no-network projection.",
+  "comparePrevious = true",
+  "Choose a retained snapshot to compare adjacent observations.",
 ]) {
   if (!renderSiteSource.includes(runtimeContract)) {
     throw new Error(`dogfood renderer missing history runtime contract: ${runtimeContract}`);
@@ -566,7 +667,7 @@ if (!/\.dogfood-flow li\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)) {
   throw new Error("dogfood flow cards must reset inherited list margins");
 }
 for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
-  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
+  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === (dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source) && page.sha256 === dogfoodEvidenceSource.sha256)) {
     throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
   }
 }
@@ -632,9 +733,9 @@ if (
 }
 if (
   runtimeSurface.architectureSources?.kungfu?.commit !== "1f3893fae1a7a666d8abe736cd9563128f48549b" ||
-  runtimeSurface.architectureSources?.kfd?.commit !== "35915676330696f888c73c154f431c99f37c19ec" ||
+  runtimeSurface.architectureSources?.kfd?.commit !== "b7e7773c9c310a6a30f70e83fb8b890d45cd63ba" ||
   runtimeSurface.architectureSources?.kfd?.profile !== "kfd-agent-hub@0.1.0-alpha.1" ||
-  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:649ec7531d4c879846b8207a94e21844d573f0c07a422b9fa3f921bfa65d05a3" ||
+  runtimeSurface.architectureSources?.kfd?.manifestDigest !== "sha256:dab4e93d2a662092eb51e29171dfc8bd0c400daa99899f074e69608b45cc7a59" ||
   runtimeSurface.actionWorld?.steps?.length !== 7 ||
   runtimeSurface.actionWorld?.foundation?.length !== 3 ||
   runtimeSurface.hubNetwork?.hubs?.length !== 2 ||
@@ -651,8 +752,13 @@ if (
 ) {
   throw new Error("runtime projection rule must separate site reader ownership from Kungfu and KFD semantic authority");
 }
-if (core.contract !== "libkungfu-core-runtime-surface-fixture") {
-  throw new Error("core fixture contract mismatch");
+if (
+  coreBundle.contract !== "kungfu.site-bundle/v1"
+  || corePackage.name !== "@kungfu-tech/site"
+  || corePackage.version !== expectedCoreSiteVersion
+  || coreBundle.package?.version !== expectedCoreSiteVersion
+) {
+  throw new Error("Core product bundle contract mismatch");
 }
 if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVersion) {
   throw new Error(`Buildchain dependency must be pinned to ${expectedBuildchainVersion}`);
@@ -660,11 +766,17 @@ if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVe
 if (packageJson.dependencies["@kungfu-tech/kfd"] !== expectedKfdVersion) {
   throw new Error(`KFD dependency must be pinned to ${expectedKfdVersion}`);
 }
+if (packageJson.dependencies["@kungfu-tech/site"] !== expectedCoreSitePickup) {
+  throw new Error(`Core site dependency must use the immutable pickup ${expectedCoreSitePickup}`);
+}
 if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
   throw new Error(`Buildchain lockfile entry must resolve to ${expectedBuildchainVersion}`);
 }
 if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
   throw new Error(`KFD lockfile entry must resolve to ${expectedKfdVersion}`);
+}
+if (!coreSiteLock || coreSiteLock.version !== expectedCoreSiteVersion) {
+  throw new Error(`Core site lockfile entry must resolve to ${expectedCoreSiteVersion}`);
 }
 const expectedPaperPackageNames = [
   "@kungfu-tech/paper-kungfu-product-white-paper",
@@ -736,6 +848,48 @@ if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.r
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
   throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
 }
+const kfdLoadBearingPage = kfdStandalonePages.find((entry) => entry.id === "load-bearing-dogfood");
+if (
+  !kfdLoadBearingPage
+  || kfdLoadBearingPage.url !== "/under-load"
+  || kfdLoadBearingPage.sourcePath !== "docs/load-bearing-dogfood.md"
+  || kfdLoadBearingPage.normative !== false
+  || kfdLoadBearingPage.rendering?.kind !== "markdown-document"
+  || kfdLoadBearingPage.rendering?.tocDepth !== 3
+  || JSON.stringify(kfdSite.loadBearingPage) !== JSON.stringify(kfdLoadBearingPage)
+) {
+  throw new Error("KFD site bundle must expose the governed load-bearing dogfood standalone page");
+}
+for (const pageEntry of kfdStandalonePages) {
+  if (
+    !pageEntry.id
+    || !pageEntry.title
+    || !pageEntry.sourcePath
+    || !pageEntry.url?.startsWith("/")
+    || !pageEntry.relationship
+    || typeof pageEntry.normative !== "boolean"
+    || pageEntry.rendering?.kind !== "markdown-document"
+    || !pageEntry.markdown
+  ) {
+    throw new Error(`KFD standalone page contract mismatch: ${pageEntry.id || pageEntry.url || "unknown"}`);
+  }
+}
+if (
+  kfdSite.agentHubPage?.id !== "agent-hub"
+  || kfdSite.agentHubPage?.url !== "/agent-hub"
+  || kfdSite.agentHubPage?.normative !== false
+  || kfdSite.agentHubPage?.suite?.fixedVectorCount !== 20
+  || JSON.stringify(kfdSite.agentHubPage?.scaffoldLanguages) !== JSON.stringify(["cpp", "node", "python", "rust"])
+  || kfdSite.agentHubPage?.commands?.kungfuProduct !== "kungfu agent hub qualify --output-dir <new-directory> [--json]"
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.run
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.verify
+  || !kfdSite.agentHubPage?.firstPartyProductProjection?.ownership
+  || !kfdSite.agentHubPage?.claimBoundary
+  || !Array.isArray(kfdSite.agentHubPage?.sections)
+  || kfdSite.agentHubPage.sections.length === 0
+) {
+  throw new Error("KFD site bundle must expose the fixed Agent Hub product-qualification contract");
+}
 if (!Array.isArray(kfdRegistry.entries) || kfdRegistry.entries.length < 4) {
   throw new Error("KFD registry must expose decision entries");
 }
@@ -785,13 +939,13 @@ for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock
 }
 
 for (const [channel, lock, expectedRef] of [
-  ["stable", buildchainContractLock, "v2"],
-  ["alpha", buildchainAlphaContractLock, "v2-alpha"],
+  ["stable", buildchainContractLock, "v3"],
+  ["alpha", buildchainAlphaContractLock, "v3-alpha"],
 ]) {
   if (
     lock.contract !== "kungfu-buildchain-contract-lock" ||
     lock.buildchain?.ref !== expectedRef ||
-    lock.buildchain?.majorLine !== "v2" ||
+    lock.buildchain?.majorLine !== "v3" ||
     lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
     !lock.buildchain?.resolvedSha ||
     !lock.buildchain?.contractDigest ||
@@ -845,31 +999,63 @@ if (
   throw new Error("dist manifest does not bind the exact embeddable runtime projection");
 }
 if (
-  core.contract !== "libkungfu-core-runtime-surface-fixture"
-  || core.status !== "evidence-linked-fixture"
-  || !/^[0-9a-f]{40}$/.test(core.sourceRef)
-  || core.sourceContract?.status !== "fixture"
+  coreBundle.schemaVersion !== 1
+  || coreBundle.surfaces?.map((surface) => surface.id).join(",") !== "overview,format,primitives,runtime,abi,sdk,extensions,products,qualification,decisions,horizons"
+  || coreBundle.adoptionLayers?.length !== 6
+  || coreBundle.sources?.length !== 27
+  || coreBundle.source?.reproducible !== true
+  || typeof coreBundle.source?.treeDirty !== "boolean"
+  || !/^[0-9a-f]{40}$/.test(coreBundle.source?.revision || "")
+  || !/^sha256:[0-9a-f]{64}$/.test(coreBundle.contentRoot || "")
+  || !/^sha256:[0-9a-f]{64}$/.test(coreBundle.sourceRoot || "")
+  || coreAgentIndex.bundleContentRoot !== coreBundle.contentRoot
+  || coreBundle.adrMap?.contentRoot !== sha256File("node_modules/@kungfu-tech/site/dist/site/adr-map.json")
+  || coreAdrMap.summary?.records !== coreAdrMap.records?.length
+  || JSON.stringify(coreAdrMap.summary) !== JSON.stringify(coreBundle.adrMap?.summary)
+  || coreAdrMap.summary?.domains !== coreAdrMap.domains?.length
+  || coreBundleVerification.status !== "passing"
+  || coreBundleVerification.contentRoot !== coreBundle.contentRoot
+  || coreBundleVerification.format?.manifestRoot !== coreBundle.formatAuthority?.pickup?.manifestRoot
+  || coreFormatManifest.normative?.root !== coreBundle.formatAuthority?.normativeRoot
+  || Object.keys(coreFormatRoutes).join(",") !== "overview,readerContract,versionMatrix,registry,vectors"
 ) {
-  throw new Error("Core runtime fixture must preserve its evidence-linked and secondary source-contract boundaries");
+  throw new Error("Core package bundle, source roots, or ADR corpus projection drifted");
 }
 if (
-  coreManifest.contract !== "libkungfu-core-runtime-surface"
+  coreManifest.contract !== "core.libkungfu.dev/site-bundle-consumer/v1"
   || coreManifest.canonicalHost !== expectedSurfaceHost("core")
-  || coreManifest.source?.path !== "src/fixtures/core-runtime-surface.json"
-  || coreManifest.source?.ref !== core.sourceRef
+  || coreManifest.package?.name !== corePackage.name
+  || coreManifest.package?.version !== corePackage.version
+  || coreManifest.package?.integrity !== coreSiteLock.integrity
+  || coreManifest.bundle?.contract !== coreBundle.contract
+  || coreManifest.bundle?.contentRoot !== coreBundle.contentRoot
+  || coreManifest.bundle?.sourceRoot !== coreBundle.sourceRoot
   || coreManifest.readerContract?.contract !== readerContract.contract
   || coreManifest.readerContract?.path?.id !== "core"
   || JSON.stringify(coreManifest.readerContract?.layers) !== JSON.stringify(readerContract.layers)
-  || JSON.stringify(coreManifest.homepage) !== JSON.stringify(core.homepage)
-  || JSON.stringify(coreManifest.architecture) !== JSON.stringify(core.architecture)
-  || JSON.stringify(coreManifest.outcomes) !== JSON.stringify(core.outcomes)
-  || JSON.stringify(coreManifest.frontiers) !== JSON.stringify(core.frontiers)
-  || JSON.stringify(coreManifest.qualificationBoundary) !== JSON.stringify(core.qualificationBoundary)
+  || JSON.stringify(coreManifest.positioning) !== JSON.stringify(coreBundle.positioning)
+  || JSON.stringify(coreManifest.adoptionLayers) !== JSON.stringify(coreBundle.adoptionLayers)
+  || JSON.stringify(coreManifest.nonClaims) !== JSON.stringify(coreBundle.nonClaims)
+  || coreManifest.formatAuthority?.normativeRoot !== coreBundle.formatAuthority?.normativeRoot
+  || coreManifest.formatAuthority?.manifest !== expectedSurfaceEndpoint("core", "format/manifest.json")
+  || Object.entries(coreBundle.formatAuthority.routes).some(([routeId, descriptor]) => (
+    coreManifest.formatAuthority?.routes?.[routeId]?.artifactRoot !== descriptor.artifactRoot
+    || coreManifest.formatAuthority?.routes?.[routeId]?.url !== expectedSurfaceEndpoint("core", descriptor.path)
+  ))
 ) {
-  throw new Error("Core human and machine runtime surface facts drifted");
+  throw new Error("Core site manifest drifted from the exact package bundle");
 }
 for (const [field, file] of [
   ["manifest", "manifest.json"],
+  ["bundle", "site-bundle.json"],
+  ["agentIndex", "agent-index.json"],
+  ["adrMap", "adr-map.json"],
+  ["schema", "schema/site-bundle.schema.json"],
+  ["formatManifest", "format/manifest.json"],
+  ["formatReaderContract", "format/reader-matrix.json"],
+  ["formatVersionMatrix", "format/compatibility.json"],
+  ["formatRegistry", "format/registry.json"],
+  ["formatVectors", "format/vectors/index.json"],
   ["llms", "llms.txt"],
   ["full", "llms-full.txt"],
 ]) {
@@ -877,18 +1063,61 @@ for (const [field, file] of [
     throw new Error(`Core machine entry drifted: ${field}`);
   }
 }
-for (const evidence of core.evidence || []) {
-  if (
-    !evidence.sourcePath
-    || !evidence.sourceUrl?.startsWith(`${core.sourceRepository}/blob/${core.sourceRef}/`)
-    || !evidence.sourceUrl.endsWith(evidence.sourcePath)
-  ) {
-    throw new Error(`Core evidence is not pinned to the declared source ref: ${evidence.id}`);
+for (const [sourceFile, generatedFile] of [
+  ["node_modules/@kungfu-tech/site/dist/site/site-bundle.json", "dist/core/site-bundle.json"],
+  ["node_modules/@kungfu-tech/site/dist/site/agent-index.json", "dist/core/agent-index.json"],
+  ["node_modules/@kungfu-tech/site/dist/site/adr-map.json", "dist/core/adr-map.json"],
+  ["node_modules/@kungfu-tech/site/schema/site-bundle.schema.json", "dist/core/schema/site-bundle.schema.json"],
+]) {
+  if (!fs.readFileSync(sourceFile).equals(fs.readFileSync(generatedFile))) {
+    throw new Error(`Core machine artifact must preserve exact package bytes: ${generatedFile}`);
+  }
+}
+function listFiles(root, relative = "") {
+  return fs.readdirSync(path.join(root, relative), { withFileTypes: true })
+    .flatMap((entry) => {
+      const child = path.join(relative, entry.name);
+      return entry.isDirectory() ? listFiles(root, child) : [child];
+    })
+    .sort();
+}
+const packageFormatRoot = "node_modules/@kungfu-tech/site/dist/site/format";
+for (const relativeFile of listFiles(packageFormatRoot)) {
+  const sourceFile = path.join(packageFormatRoot, relativeFile);
+  const generatedFile = path.join("dist/core/format", relativeFile);
+  if (!fs.existsSync(generatedFile) || !fs.readFileSync(sourceFile).equals(fs.readFileSync(generatedFile))) {
+    throw new Error(`Core Spec artifact must preserve exact package bytes: ${generatedFile}`);
   }
 }
 const coreHtml = fs.readFileSync("dist/core/index.html", "utf8");
 const coreDetailHtml = fs.readFileSync("dist/core/runtime/index.html", "utf8");
+const coreFormatHtml = fs.readFileSync("dist/core/format/index.html", "utf8");
+const coreAdrHtml = fs.readFileSync("dist/core/decisions/index.html", "utf8");
 const coreLlms = fs.readFileSync("dist/core/llms.txt", "utf8");
+const coreFormatHumanTexts = [
+  ".kungfu is a portable, verifiable record of real work.",
+  "Keep the work, not just the conversation.",
+  "How a fresh agent continues the same work",
+  "Not understanding something is different from losing it.",
+  "Qualified does not mean stable.",
+];
+for (const expectedText of coreFormatHumanTexts) {
+  if (!coreFormatHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core format human and agent entries do not share the reader framing: ${expectedText}`);
+  }
+}
+const coreFormatOrientationPosition = coreFormatHtml.indexOf("Keep the work, not just the conversation.");
+const coreFormatTechnicalPosition = coreFormatHtml.indexOf('id="format-technical-details"');
+if (
+  coreFormatOrientationPosition < 0
+  || coreFormatTechnicalPosition < 0
+  || coreFormatOrientationPosition >= coreFormatTechnicalPosition
+  || !coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details">')
+  || coreFormatHtml.includes('<details class="panel core-format-technical" id="format-technical-details" open')
+  || !renderSiteSource.includes(".core-format-technical:not([open]) > .core-format-technical-body")
+) {
+  throw new Error("Core format page must explain the human outcome before a closed technical disclosure");
+}
 const coreReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "core");
 if (
   !coreHtml.includes(escapeHtml(coreReaderPath.question))
@@ -899,27 +1128,101 @@ if (
   throw new Error("Core human and agent entries must share the site-owned reader path");
 }
 for (const expectedText of [
-  core.homepage.headline,
-  core.homepage.lead,
-  core.homepage.claimBoundary,
-  ...core.outcomes.flatMap((outcome) => [outcome.title, outcome.summary]),
+  coreBundle.positioning.promise,
+  coreBundle.positioning.firstReleaseOutcome,
+  coreBundle.positioning.status,
+  coreBundle.positioning.principle,
+  ...coreBundle.adoptionLayers.flatMap((layer) => [layer.label, layer.maturity]),
 ]) {
   if (!coreHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
-    throw new Error(`Core overview and agent entry do not share the essential runtime claim: ${expectedText}`);
+    throw new Error(`Core overview and agent entry do not share the product map claim: ${expectedText}`);
+  }
+}
+const coreQualificationHtml = fs.readFileSync("dist/core/qualification/index.html", "utf8");
+for (const expectedText of coreBundle.nonClaims) {
+  if (!coreQualificationHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
+    throw new Error(`Core qualification and agent entries do not share global non-claim: ${expectedText}`);
+  }
+}
+const coreRuntime = coreBundle.surfaces.find((surface) => surface.id === "runtime");
+for (const expectedText of [
+  coreRuntime.presentation.architecture.writer.label,
+  coreRuntime.presentation.architecture.journal.label,
+  ...coreRuntime.presentation.architecture.readers.map((reader) => reader.label),
+  ...coreRuntime.presentation.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
+  coreRuntime.presentation.semanticBoundary.heading,
+  coreRuntime.presentation.semanticBoundary.body,
+  ...coreRuntime.presentation.semanticBoundary.invariants,
+  ...coreRuntime.presentation.qualificationClaims,
+]) {
+  if (!coreDetailHtml.includes(escapeHtml(expectedText))) {
+    throw new Error(`Core runtime page does not preserve package presentation: ${expectedText}`);
+  }
+}
+for (const surface of coreBundle.surfaces.filter((entry) => !["overview", "runtime", "decisions"].includes(entry.id))) {
+  const surfaceHtml = fs.readFileSync(`dist/core/${surface.route.replace(/^\/+|\/+$/g, "")}/index.html`, "utf8");
+  for (const expectedText of [
+    surface.headline,
+    surface.summary,
+    ...surface.capabilities,
+    ...surface.knownLimits,
+    ...surface.sourceIds.flatMap((sourceId) => {
+      const source = coreBundle.sources.find((entry) => entry.id === sourceId);
+      return [source.path, source.contentRoot];
+    }),
+  ]) {
+    if (!surfaceHtml.includes(escapeHtml(expectedText))) {
+      throw new Error(`Core ${surface.id} page does not preserve package fact: ${expectedText}`);
+    }
   }
 }
 for (const expectedText of [
-  core.architecture.writer.label,
-  core.architecture.journal.label,
-  ...core.architecture.readers.map((reader) => reader.label),
-  ...core.frontiers.flatMap((frontier) => [frontier.label, frontier.status]),
-  core.semanticBoundary.heading,
-  core.semanticBoundary.body,
-  ...core.semanticBoundary.invariants,
-  ...core.qualificationBoundary.claims,
+  coreBundle.formatAuthority.pickup.coordinate,
+  coreBundle.formatAuthority.formatNamespace,
+  coreBundle.formatAuthority.status,
+  coreBundle.formatAuthority.normativeRoot,
+  coreBundle.formatAuthority.conformance.release,
+  coreBundle.formatAuthority.conformance.releaseRoot,
+  coreFormatRoutes.overview.value.boundary.definition,
+  coreFormatRoutes.readerContract.value.rule,
+  coreFormatRoutes.versionMatrix.value.composition_rule,
+  coreFormatRoutes.versionMatrix.value.v4_alpha_baseline.latest_release,
+  coreFormatRoutes.versionMatrix.value.v4_alpha_baseline.latest_release_root,
+  ...coreFormatRoutes.readerContract.value.profiles.flatMap((profile) => [
+    profile.id,
+    profile.authorityEffect,
+    profile.semanticScope,
+    profile.unknownOutcome,
+    profile.unsupportedRootOutcome,
+  ]),
+  ...coreFormatRoutes.overview.value.version_axes.flatMap((axis) => [
+    axis.id,
+    axis.owner,
+    axis.changesWhen,
+  ]),
+  ...coreBundle.formatAuthority.nonClaims,
+  ...Object.values(coreBundle.formatAuthority.routes).flatMap((descriptor) => [
+    descriptor.path,
+    descriptor.artifactRoot,
+  ]),
 ]) {
-  if (!coreDetailHtml.includes(escapeHtml(expectedText)) || !coreLlms.includes(expectedText)) {
-    throw new Error(`Core detail and agent entries do not share the runtime mechanism: ${expectedText}`);
+  if (!coreFormatHtml.includes(escapeHtml(expectedText))) {
+    throw new Error(`Core format page does not preserve packaged Spec fact: ${expectedText}`);
+  }
+}
+for (const expectedText of [
+  coreBundle.formatAuthority.pickup.coordinate,
+  coreBundle.formatAuthority.normativeRoot,
+  coreFormatRoutes.readerContract.value.rule,
+  coreFormatRoutes.versionMatrix.value.composition_rule,
+]) {
+  if (!coreLlms.includes(expectedText)) {
+    throw new Error(`Core agent entry does not preserve packaged Spec fact: ${expectedText}`);
+  }
+}
+for (const record of coreAdrMap.records) {
+  if (!coreAdrHtml.includes(escapeHtml(record.key)) || !coreAdrHtml.includes(escapeHtml(record.title))) {
+    throw new Error(`Core ADR navigation is missing ${record.id}`);
   }
 }
 if (
@@ -937,6 +1240,9 @@ if (
   || !coreHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("core", "runtime/"))}" data-local-href="/core/runtime/"`)
 ) {
   throw new Error("Core overview must stay bounded and route complete mechanics to /runtime/");
+}
+if (renderSiteSource.includes('readFixtureJson("core-runtime-surface.json")') || fs.existsSync("src/fixtures/core-runtime-surface.json")) {
+  throw new Error("Core must consume @kungfu-tech/site without retaining the legacy runtime fixture");
 }
 if (publicationSource.kind !== "paper-packages" || publicationSource.registry.contract !== "kungfu-buildchain-publication-release-registry") {
   throw new Error("publication package aggregation contract mismatch");
@@ -1219,6 +1525,30 @@ if (manifest.canonicalHost !== expectedSurfaceHost("hub")) {
 if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === "/")) {
   throw new Error(`dist manifest does not record KFD channel root: ${expectedSurfaceHost("kfd")}`);
 }
+const kfdAgentHubPath = `${kfdSite.agentHubPage.url.replace(/\/+$/, "")}/`;
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === kfdAgentHubPath
+      && page.source.endsWith(`/${kfdSite.agentHubPage.authorityPath}`),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD Agent Hub qualification route");
+}
+for (const pageEntry of kfdStandalonePages) {
+  const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === pagePath
+        && page.source.endsWith(`/${pageEntry.sourcePath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD standalone page: ${pageEntry.id}`);
+  }
+}
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
@@ -1293,10 +1623,45 @@ if (
 if (
   kfdAgentManifest.canonicalHost !== expectedSurfaceHost("kfd") ||
   kfdAgentManifest.humanEntry !== expectedSurfaceHref("kfd") ||
+  kfdAgentManifest.humanEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/") ||
   kfdAgentManifest.agentEntries?.manifest !== expectedSurfaceEndpoint("kfd", "manifest.json") ||
-  kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt")
+  kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt") ||
+  kfdAgentManifest.agentEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
+}
+if (
+  kfdAgentManifest.agentHub?.path !== kfdAgentHubPath
+  || kfdAgentManifest.agentHub?.url !== expectedSurfaceEndpoint("kfd", "agent-hub/")
+  || kfdAgentManifest.agentHub?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.agentHubPage.authorityPath}`
+  || kfdAgentManifest.agentHub?.commands?.kungfuProduct !== kfdSite.agentHubPage.commands.kungfuProduct
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.run !== kfdSite.agentHubPage.firstPartyProductProjection.run
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.verify !== kfdSite.agentHubPage.firstPartyProductProjection.verify
+  || kfdAgentManifest.agentHub?.firstPartyProductProjection?.ownership !== kfdSite.agentHubPage.firstPartyProductProjection.ownership
+  || kfdAgentManifest.agentHub?.suite?.fixedVectorCount !== 20
+  || JSON.stringify(kfdAgentManifest.agentHub?.scaffoldLanguages) !== JSON.stringify(kfdSite.agentHubPage.scaffoldLanguages)
+  || kfdAgentManifest.agentHub?.claimBoundary !== kfdSite.agentHubPage.claimBoundary
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("KFD agent manifest must explain and route the installed Kungfu Agent Hub qualification");
+}
+if (kfdAgentManifest.standalonePages?.length !== kfdStandalonePages.length) {
+  throw new Error("KFD agent manifest standalone page count mismatch");
+}
+for (const pageEntry of kfdStandalonePages) {
+  const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
+  const renderedEntry = kfdAgentManifest.standalonePages.find((entry) => entry.id === pageEntry.id);
+  if (
+    renderedEntry?.path !== pagePath
+    || renderedEntry?.url !== expectedSurfaceEndpoint("kfd", pagePath.replace(/^\/+/, ""))
+    || renderedEntry?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`
+    || renderedEntry?.relationship !== pageEntry.relationship
+    || renderedEntry?.normative !== pageEntry.normative
+    || JSON.stringify(renderedEntry?.rendering) !== JSON.stringify(pageEntry.rendering)
+    || !kfdAgentManifest.readOrder.includes(renderedEntry.url)
+  ) {
+    throw new Error(`KFD agent manifest is missing standalone page facts for ${pageEntry.id}`);
+  }
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
@@ -1391,11 +1756,18 @@ if (hubHtml.includes('name="robots"') && hubHtml.includes("noindex")) {
 if (!hubHtml.includes(".architecture-visual") || immutableFoundationPaperHtml.includes(".architecture-visual")) {
   throw new Error("embeddable runtime styles must remain homepage-local and must not mutate immutable paper HTML");
 }
+if (
+  immutableFoundationPaperHtml.includes("brand-context")
+  || immutableFoundationPaperHtml.includes('property="og:site_name" content="Kungfu UNGFU™"')
+  || !immutableFoundationPaperHtml.includes('aria-label="Back to libkungfu.dev home">libkungfu.dev</a>')
+) {
+  throw new Error("brand rollout must not mutate immutable publication archive HTML");
+}
 if (hubHtml.includes(">Manifest</a>") || hubHtml.includes(">Agents</a>")) {
   throw new Error("human navigation should not expose machine-only Manifest or Agents links");
 }
-if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>`)) {
-  throw new Error("human header brand must link to the canonical hub and expose a local fallback");
+if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("hub"))}" data-local-href="/" aria-label="Kungfu UNGFU™ — Developer Platform; back to libkungfu.dev home"><span>Kungfu UNGFU™</span><span class="brand-context">Developer Platform</span></a>`)) {
+  throw new Error("human header brand must expose the shared Kungfu signature, local role, canonical hub, and local fallback");
 }
 if (
   !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
@@ -1411,8 +1783,28 @@ for (const path of ["index.html", "core/index.html", "buildchain/index.html", "k
 if (hubHtml.includes(">Hub</a>")) {
   throw new Error("human navigation should not expose the abstract Hub label; the brand link owns home navigation");
 }
-if (!hubHtml.includes("Kungfu Origin Technology Limited") || !hubHtml.includes("Open developer and agent substrate hub")) {
-  throw new Error("human footer must expose the commercial steward and substrate boundary");
+if (!hubHtml.includes("Kungfu UNGFU™ is a trademark of Kungfu Origin Technology Limited.") || !hubHtml.includes("Open developer and agent substrate hub")) {
+  throw new Error("human footer must expose the exact trademark notice and substrate boundary");
+}
+if (
+  !hubHtml.includes('<meta name="application-name" content="Kungfu UNGFU™">')
+  || !hubHtml.includes('<meta property="og:site_name" content="Kungfu UNGFU™">')
+) {
+  throw new Error("human metadata must expose the shared Kungfu brand signature");
+}
+if (
+  manifest.brand?.signature !== "Kungfu UNGFU™"
+  || manifest.brand?.context !== "Developer Platform"
+  || manifest.brand?.productName !== "Kungfu"
+  || !manifest.brand?.boundary.includes("not a second product or runtime")
+) {
+  throw new Error("machine manifest must expose the shared brand identity and product boundary");
+}
+if (
+  !hubLlms.startsWith("# Kungfu UNGFU™ — Developer Platform")
+  || !hubLlms.includes("UNGFU is not a second product or runtime")
+) {
+  throw new Error("agent entrypoint must expose the shared brand identity and product boundary");
 }
 if (!hubHtml.includes("Public collaboration starts on") || !hubHtml.includes('href="https://github.com/kungfu-systems"')) {
   throw new Error("human footer must route collaboration through GitHub");
@@ -1443,6 +1835,17 @@ if (
   || hubHtml.includes("KFD Runtime 100 and restart qualification")
 ) {
   throw new Error("homepage must preserve the Hub promise while routing detailed architecture one level down");
+}
+if (
+  !hubHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !hubHtml.includes(`href="${escapeHtml(expectedSurfaceEndpoint("kfd", "agent-hub/"))}" data-local-href="/kfd/agent-hub/"`)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.run)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.verify)
+  || !hubLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.ownership)
+  || !hubLlms.includes(kfdSite.agentHubPage.claimBoundary)
+  || !hubLlms.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("Hub first entries must expose and explain the installed Kungfu Agent Hub qualification");
 }
 for (const layer of readerContract.layers) {
   if (!hubDetailHtml.includes(escapeHtml(layer.label)) || !hubLlms.includes(layer.label)) {
@@ -1502,8 +1905,10 @@ for (const source of readerContract.sources) {
   } else if (source.package === "@kungfu-tech/buildchain") {
     const match = /^docs\/(.+)\.md$/.exec(source.path);
     href = match ? expectedSurfaceEndpoint("buildchain", `docs/${match[1]}/`) : undefined;
+  } else if (source.package === "@kungfu-tech/site") {
+    href = expectedSurfaceEndpoint("core", "site-bundle.json");
   }
-  if (!href || ![hubDetailHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+  if (!href || ![hubDetailHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
     html.includes(`href="${escapeHtml(href)}"`)
     || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
   ))) {
@@ -1511,7 +1916,7 @@ for (const source of readerContract.sources) {
   }
 }
 for (const [label, html, pathEntry, authorityMarker] of [
-  ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), core.homepage.headline],
+  ["Core", coreHtml, readerContract.surfacePaths.find((entry) => entry.id === "core"), coreBundle.positioning.firstReleaseOutcome],
   ["Buildchain", buildchainHomeHtml, readerContract.surfacePaths.find((entry) => entry.id === "buildchain"), buildchainSynthesis.heading],
 ]) {
   const questionPosition = html.indexOf(escapeHtml(pathEntry.question));
@@ -1613,7 +2018,7 @@ for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   }
 }
 for (const [label, html, state] of [
-  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Runtime substrate"],
+  ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "Complete Kungfu product map"],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "Kung Fu Decisions"],
   ["Buildchain", fs.readFileSync("dist/buildchain/index.html", "utf8"), "Buildchain product surface"],
 ]) {
@@ -1699,6 +2104,18 @@ if (
 ) {
   throw new Error("KFD HTML must expose agent-first entries through head alternate links");
 }
+if (
+  !kfdHomeHtml.includes(`href="${escapeHtml(kfdAgentHubPath)}"`)
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify))
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.run)
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.verify)
+  || !kfdLlms.includes(kfdSite.agentHubPage.firstPartyProductProjection.ownership)
+  || !kfdLlms.includes(kfdSite.agentHubPage.claimBoundary)
+  || !kfdLlms.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
+) {
+  throw new Error("KFD first entries must expose and explain the installed Kungfu Agent Hub qualification");
+}
 for (const sectionId of kfdSite.homepage.displayPlan.support) {
   const section = kfdSite.homepage.sections.find((entry) => entry.id === sectionId);
   if (!section) {
@@ -1745,6 +2162,26 @@ if (kfdHomeHtml.includes(`data-kfd-section="${escapeHtml(rendererContract.id)}"`
 if (kfdHomeHtml.includes('href="docs/') || kfdDetailHtml.includes('href="docs/')) {
   throw new Error("KFD package-relative docs links must be rewritten away from site-local missing paths");
 }
+const kfdAgentHubCanonicalHtml = fs.readFileSync("dist/kfd/agent-hub/index.html", "utf8");
+const kfdAgentHubAliasHtml = fs.readFileSync("dist/agent-hub/index.html", "utf8");
+if (kfdAgentHubAliasHtml !== kfdAgentHubCanonicalHtml) {
+  throw new Error("KFD Agent Hub subdomain route alias drifted: dist/agent-hub/index.html");
+}
+const agentHubHeadings = kfdSite.agentHubPage.sections.map((section) => section.title);
+if (
+  agentHubHeadings.some((heading) => !kfdAgentHubCanonicalHtml.includes(`>${escapeHtml(heading)}</h3>`))
+  || !kfdAgentHubCanonicalHtml.includes('aria-label="Agent Hub qualification sections"')
+  || !kfdAgentHubCanonicalHtml.includes(`<a href="${escapeHtml(kfdAgentHubPath)}" aria-current="page">Agent Hub qualification</a>`)
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.claimBoundary))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.authorityPath))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.profile))
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.suite.id))
+) {
+  throw new Error("KFD Agent Hub page is missing bundle-owned commands, explanation, boundaries, navigation, or metadata");
+}
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
 const kfdFoundationCanonicalHtml = fs.readFileSync("dist/kfd/foundation/index.html", "utf8");
 const kfdFoundationAliasHtml = fs.readFileSync("dist/foundation/index.html", "utf8");
@@ -1779,6 +2216,27 @@ if (
   !kfdFoundationCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.foundationPage.normative))}</code>`)
 ) {
   throw new Error("KFD foundation page is missing source or authority metadata");
+}
+for (const pageEntry of kfdStandalonePages) {
+  const output = pageEntry.url.replace(/^\/+|\/+$/g, "");
+  const pagePath = `/${output}/`;
+  const canonicalHtml = fs.readFileSync(`dist/kfd/${output}/index.html`, "utf8");
+  const aliasHtml = fs.readFileSync(`dist/${output}/index.html`, "utf8");
+  const headings = [...pageEntry.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
+  if (canonicalHtml !== aliasHtml) {
+    throw new Error(`KFD standalone subdomain route alias drifted: ${pageEntry.id}`);
+  }
+  if (
+    headings.length === 0
+    || headings.some((heading) => !canonicalHtml.includes(`>${escapeHtml(heading)}</h`))
+    || !canonicalHtml.includes(`aria-label="${escapeHtml(pageEntry.title)} sections"`)
+    || !canonicalHtml.includes(`<a href="${escapeHtml(pagePath)}" aria-current="page">${escapeHtml(pageEntry.rendering.navigationLabel || pageEntry.title)}</a>`)
+    || !canonicalHtml.includes(escapeHtml(pageEntry.sourcePath))
+    || !canonicalHtml.includes(`<code>${escapeHtml(String(pageEntry.normative))}</code>`)
+    || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output + "/"))
+  ) {
+    throw new Error(`KFD standalone page is missing bundle-owned content, navigation, metadata, or read order: ${pageEntry.id}`);
+  }
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
@@ -1982,7 +2440,6 @@ for (const formalCandidate of kfdCandidateFormalPages) {
     || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.normative))}</code>`)
     || !formalCanonicalHtml.includes(`<code>${escapeHtml(String(formalCandidate.formalCandidateVersion))}</code>`)
     || !formalCanonicalHtml.includes(`href="${escapeHtml(parent.url)}"`)
-    || !formalCanonicalHtml.includes('href="/7/formal/"')
     || !formalCanonicalHtml.includes('href="/drafts/registry.json"')
   ) {
     throw new Error(`KFD formal candidate page is missing declared facts or navigation: ${formalCandidate.id}`);
@@ -2212,20 +2669,30 @@ NODE
 grep -q 'libkungfu.dev' dist/index.html
 grep -q 'Open developer and agent substrate hub' dist/index.html
 grep -q 'core.libkungfu.dev' dist/core/index.html
-grep -q 'Record once. Observe live. Recover from evidence.' dist/core/index.html
+grep -q 'Keep the work when the chat ends.' dist/core/index.html
+grep -q 'Six independently bounded product layers' dist/core/index.html
 grep -q 'Append-only mmap Episode journal' dist/core/runtime/index.html
 grep -q 'Storage is the bus' dist/core/runtime/index.html
 grep -q 'Visibility is not durability.' dist/core/runtime/index.html
-grep -q 'Spec and source contract' dist/core/runtime/index.html
-grep -q 'libkungfu-core-runtime-surface' dist/core/manifest.json
-grep -q 'Record once. Observe live. Recover from evidence.' dist/core/llms.txt
+grep -q 'Pinned product bundle' dist/core/runtime/index.html
+grep -q 'core.libkungfu.dev/site-bundle-consumer/v1' dist/core/manifest.json
+grep -q 'Keep the work when the chat ends.' dist/core/llms.txt
+grep -q '.kungfu is a portable, verifiable record of real work.' dist/core/format/index.html
+grep -q 'How a fresh agent continues the same work' dist/core/format/index.html
+grep -q 'For implementers and auditors' dist/core/format/index.html
+grep -q 'An exact pre-release portable authority bundle' dist/core/format/index.html
+grep -q '@kungfu-tech/spec@4.0.0-alpha.1' dist/core/format/index.html
+grep -q 'Required-reader behavior' dist/core/format/index.html
+grep -q 'Fact, Episode and Action Geometry' dist/core/primitives/index.html
+grep -q 'One public bootstrap' dist/core/abi/index.html
+grep -q 'Browse the complete decision corpus' dist/core/decisions/index.html
 grep -q 'buildchain.libkungfu.dev' dist/buildchain/index.html
 grep -q 'kfd.libkungfu.dev' dist/kfd/index.html
 grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '2.14.14-alpha.4' dist/buildchain/mechanism/index.html
+grep -q '3.0.2-alpha.2' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html

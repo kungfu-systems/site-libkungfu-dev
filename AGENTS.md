@@ -22,13 +22,17 @@ developer and agent substrate hub.
   non-normative, and expose every page's relationship, status, model metadata,
   and source path.
 - Before a stable Buildchain promotion, manually dispatch `Buildchain Stable Canary`
-  with the exact alpha tag or SHA. Its workflow shell stays on stable `v2` while
+  with the exact alpha tag or SHA. Its workflow shell stays on stable `v3` while
   the explicit runtime ref follows the alpha candidate; preview, staging, and
   production apply stay fixed to `false`.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
-  pinned upstream package artifacts. Buildchain facts currently come from
-  `@kungfu-tech/buildchain@2.14.13`; KFD facts currently come from
-  `@kungfu-tech/kfd@1.0.0-alpha.40`.
+  pinned upstream package artifacts. Core product facts come from
+  `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
+  `@kungfu-tech/buildchain@3.0.2-alpha.2`; KFD facts come from
+  `@kungfu-tech/kfd@1.0.0-alpha.50`.
+- Consume the Core bundle from the exact public npm coordinate. Verify pnpm
+  integrity plus the package source and content roots, and render the packaged
+  Spec authority instead of retaining a parallel local interpretation.
 - Buildchain hosted README badge endpoints are generated under
   `/badges/v1/{badge}/{state}.svg` and `.json`. Prefer the Buildchain package
   `dist/site/badge-endpoint-registry.json` and `dist/site/badges/v1/**/*.json`
@@ -57,10 +61,11 @@ entries must expose the same reader layers, claim classes, source references,
 claim boundaries, and down-level authority routes. A concise first screen may
 hide detail, but it may not delete the upstream content or strengthen a claim.
 Keep the primary homepages bounded and route complete detail to their stable
-depth owners: `/architecture/`, Core `/runtime/`, Buildchain `/mechanism/`, KFD
-`/decisions/`, and Papers `/archive/`. Do not render the same complete detail on
-both the overview and its depth page; `scripts/check-site.sh` owns the homepage
-word budgets and required detail-route assertions.
+depth owners: `/architecture/`, Core product bundle routes, Buildchain
+`/mechanism/`, KFD `/decisions/`, and Papers `/archive/`. Do not render the same
+complete detail on both the overview and its depth page;
+`scripts/check-site.sh` owns the homepage word budgets and required detail-route
+assertions.
 
 The repository itself is a Kungfu product surface. Treat changes here as work
 governed by the current KFD registry: keep source boundaries explicit, expose

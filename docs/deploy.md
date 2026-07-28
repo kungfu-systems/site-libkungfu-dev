@@ -25,6 +25,16 @@ with future dynamic adapters. Buildchain remains the deployment state machine:
 the release object is source commit plus build artifact plus deploy target plus
 channel plus deployment manifest.
 
+Every site build resolves the public dogfood latest alias to its matching
+immutable snapshot, verifies the repository evidence contract and identical
+bytes, and embeds that admitted snapshot in `/dogfood/`. The retained fixture
+is used only when the public latest/immutable pair cannot be verified. This
+keeps the initial HTML useful to no-JavaScript readers and records the selected
+immutable URL and SHA-256 in the site manifest; browser-side refresh may advance
+the view but must never replace the embedded observation with an older one.
+Published builds fail closed if the latest/immutable pair cannot be admitted;
+local builds may retain the repository fixture as an explicit offline fallback.
+
 The AWS resource contract is owned by the private
 `kungfu-systems/infra-kungfu-sites` repository and mirrored into this repository
 as `infra/outputs.json`. Site changes may update content, Buildchain wiring, and
@@ -36,15 +46,15 @@ resource lifecycle decisions belong in the infra repository.
 - The repository builds a static `dist/` artifact.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- The workflow consumes Buildchain through the floating `@v2-alpha` workflow ref and
+- The workflow consumes Buildchain through the floating `@v3-alpha` workflow ref and
   records the accepted runtime contract in `.buildchain/contract-lock.json`.
-  The build checks that lock before rendering so `@v2-alpha` movement is audited as
+  The build checks that lock before rendering so `@v3-alpha` movement is audited as
   compatible drift or blocked as breaking drift.
 - Preview, preview cleanup, and staging apply are enabled in the repository
   workflow so same-repository pull requests publish short-lived preview
   surfaces, closed pull requests clean them up, and `main` pushes publish the
   protected staging channel.
-- The workflow uses the Buildchain v2 first-class surface host mappings, so each
+- The workflow uses the Buildchain v3 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
 - Production apply is enabled because the production channel status is active in
@@ -60,19 +70,29 @@ Deployment must not turn this repository into a fact source. The artifact should
 render pinned upstream bundles:
 
 ```text
-kungfu evidence -> evidence-linked Core surface fixture -> core.libkungfu.dev
-kungfu -> future @kungfu-tech/spec or Core site bundle -> replace the fixture source contract
+kungfu evidence -> framework/site -> @kungfu-tech/site exact npm pickup -> core.libkungfu.dev
 buildchain -> @kungfu-tech/buildchain docs/site bundle -> site-libkungfu-dev -> buildchain.libkungfu.dev
 kfd -> @kungfu-tech/kfd site bundle -> site-libkungfu-dev -> kfd.libkungfu.dev
 paper repositories -> @kungfu-tech/paper-* publication packages -> site-libkungfu-dev -> papers.libkungfu.dev
 ```
 
-For now, the hub and Core still use `src/fixtures/` as explicit contract
-fixtures. The Core presentation fixture pins runtime claims to an immutable
-Kungfu source ref and keeps the future spec-package contract secondary.
-Buildchain uses the pinned `@kungfu-tech/buildchain@2.14.13` npm package and its
-exported `dist/site` bundle. KFD uses the pinned `@kungfu-tech/kfd` package and
-its exported site bundle. Papers use the exact package set in
+The Core surface consumes the exact pinned `@kungfu-tech/site` package generated
+by Kungfu's `framework/site` package, and the hub routes readers to that
+package-backed Core surface. The package carries the complete product map,
+qualification boundaries, authority-source inventory, ADR map, source revision,
+and content roots; the renderer must reproduce its machine artifacts
+byte-for-byte and must not maintain a parallel Core claim fixture. The exact
+public npm coordinate, package integrity, clean source revision, and bundle
+roots bind the rendered content to Kungfu. Consuming the package is repository
+integration, not an npm publication or a production release; each release
+action remains a separate, explicitly admitted step.
+The Core `/format/` human page is generated from the package's
+`formatAuthority` projection, while the complete packaged `dist/site/format/**`
+tree is copied byte-for-byte to the matching Core machine routes.
+Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.2-alpha.2` npm package
+and its exported `dist/site` bundle. KFD uses the pinned
+`@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
+use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable
 version prefixes while allowing canonical and latest pages to advance.
 The infrastructure contract publishes Papers as a first-class surface in every

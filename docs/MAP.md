@@ -8,11 +8,11 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: self-reviewed
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-24
 ai_provenance:
   model_family: GPT-5
   product: Codex
-  generated_at: 2026-07-22
+  generated_at: 2026-07-24
   limits: No access to hidden model build or checkpoint identifiers.
 ---
 
@@ -28,10 +28,11 @@ ai_provenance:
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
-- Use `https://core.libkungfu.dev` to understand the libkungfu runtime
-  proposition and outcomes; use `https://core.libkungfu.dev/runtime/` for the
-  complete mmap journal, readers, qualification frontiers, semantic boundary,
-  and secondary spec/source contract.
+- Use `https://core.libkungfu.dev` for the complete Kungfu product and adoption
+  map. Stable depth routes cover `.kungfu` format, primitives, runtime, ABI,
+  SDKs, extensions, products, qualification, ADR navigation, and domain
+  horizons. Use `/site-bundle.json`, `/agent-index.json`, and `/adr-map.json`
+  for the corresponding package-owned machine projections.
 - Use `https://buildchain.libkungfu.dev` to see how KFD-3 value surfaces and
   KFD-2 trust evidence become one release-bound Hub admission surface; use
   `https://buildchain.libkungfu.dev/mechanism/` for Buildchain-owned Release
@@ -70,10 +71,20 @@ must understand, while the depth page preserves the complete cited authority.
 
 ## Work In This Repository
 
-- `src/fixtures/` contains temporary contract fixtures for the hub and an
-  evidence-linked Core presentation bundle. The Core fixture must pin every
-  runtime claim to an immutable Kungfu source ref and keep the future spec
-  package handoff secondary.
+- `@kungfu-tech/site@4.0.0-alpha.1` supplies the complete Core product bundle,
+  exact authority roots, agent index, schema, and ADR map. The site copies its
+  machine artifacts byte-for-byte and only owns their human rendering. The
+  exact public npm coordinate, pnpm integrity, embedded clean source revision,
+  and content roots bind that artifact to Kungfu. Package transport does not
+  transfer semantic ownership to this repository.
+- `core.libkungfu.dev/format/` opens with a site-owned explanation of what the
+  portable work format is, why a fresh agent needs it, and how preservation,
+  inspection, and action differ. The bundle's exact Spec authority projection
+  remains complete inside a closed implementer and auditor disclosure:
+  pickup coordinate, normative root, required-reader behavior, compatibility
+  axes, retained vectors, rooted routes, and non-claims. The corresponding
+  `dist/site/format/**` package files are published byte-for-byte under the same
+  Core machine paths.
 - `src/fixtures/libkungfu-runtime-surface.json` projects the exact public
   Kungfu PR, source commit, Project Cut, quickstart paths, KFD suite root,
   observed qualification, package availability, and known limits. The site
@@ -86,8 +97,8 @@ must understand, while the depth page preserves the complete cited authority.
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@2.14.13` supplies the Buildchain `dist/site` bundle.
-- `@kungfu-tech/kfd@1.0.0-alpha.40` supplies the KFD site bundle, registry,
+- `@kungfu-tech/buildchain@3.0.2-alpha.2` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/kfd@1.0.0-alpha.47` supplies the KFD site bundle, registry,
   standards and terminology metadata, schemas, reference pages, and decision
   markdown.
 - `scripts/render-site.mjs` renders pages from fixtures and pinned upstream
