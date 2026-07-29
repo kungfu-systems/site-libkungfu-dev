@@ -783,18 +783,20 @@ const expectedPaperPackageNames = [
   "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",
   "@kungfu-tech/paper-observer-declared-timelines",
   "@kungfu-tech/paper-episodes-to-primitives",
+  "@kungfu-tech/paper-kfd-machine-life-roadmap",
 ];
 const expectedPaperIds = [
   "kungfu-product-white-paper",
   "kfd-foundation-real-world-agent-work",
   "observer-declared-timelines",
   "episodes-to-primitives",
+  "kfd-machine-life-roadmap",
 ];
 if (
   publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" ||
   expectedPaperPackages.map((entry) => entry.name).join(",") !== expectedPaperPackageNames.join(",")
 ) {
-  throw new Error("publication package set must declare the four current paper packages in canonical order");
+  throw new Error("publication package set must declare the five current paper packages in canonical order");
 }
 for (const entry of paperLocks) {
   if (packageJson.dependencies[entry.name] !== entry.version) {
