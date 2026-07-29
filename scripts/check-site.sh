@@ -1325,8 +1325,11 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       versionHtml.includes(".reader-orientation {")
       || versionHtml.includes(".reader-supply-chain {")
       || versionHtml.includes(".page-kicker > * {")
+      || versionHtml.includes(".publication-featured {")
+      || versionHtml.includes(".publication-featured-grid {")
+      || versionHtml.includes(".publication-card-featured {")
     ) {
-      throw new Error(`immutable publication version page contains site reader-contract styles: ${publication.id}@${version.version}`);
+      throw new Error(`immutable publication version page contains mutable site styles: ${publication.id}@${version.version}`);
     }
     for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
       if (!versionHtml.includes(`href="${href}"`)) {
