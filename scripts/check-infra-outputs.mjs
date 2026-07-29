@@ -153,6 +153,14 @@ for (const linePrefix of [
     );
   }
 }
+const buildchainRefLine = workflow
+  .split(/\r?\n/)
+  .find((line) => line.trimStart().startsWith("buildchain-ref:"));
+if (buildchainRefLine?.includes("outputs.runtime-sha")) {
+  throw new Error(
+    "buildchain-ref must not treat the governance receipt runtime SHA as an event override",
+  );
+}
 
 const config = parseTomlSections(buildchainToml);
 for (const channel of ["preview", "staging"]) {
