@@ -1962,11 +1962,10 @@ ${current === "core" ? `
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .publication-grid,
-    .publication-featured-grid {
+    .publication-grid${immutableArchive ? "" : ",\n    .publication-featured-grid"} {
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     }
-
+${immutableArchive ? "" : `
     .publication-featured {
       display: grid;
       gap: 18px;
@@ -2013,6 +2012,7 @@ ${current === "core" ? `
       font-size: clamp(22px, 2.4vw, 30px);
     }
 
+`}
     .publication-card {
       display: grid;
       grid-row: span 5;
@@ -2020,7 +2020,7 @@ ${current === "core" ? `
       gap: 14px;
       align-content: stretch;
     }
-
+${immutableArchive ? "" : `
     .publication-card-featured {
       --publication-focus: var(--accent);
       position: relative;
@@ -2087,6 +2087,7 @@ ${current === "core" ? `
       background: color-mix(in srgb, var(--soft) 92%, var(--bg));
     }
 
+`}
     .publication-card .card-actions {
       align-self: end;
     }
@@ -2887,16 +2888,15 @@ ${mainSiteTabletStyles}
       }
 
       .grid,
-      .grid.three,
-      .publication-featured-grid,
-      .publication-section-heading {
+      .grid.three${immutableArchive ? "" : ",\n      .publication-featured-grid,\n      .publication-section-heading"} {
         grid-template-columns: 1fr;
       }
-
+${immutableArchive ? "" : `
       .publication-section-heading > p {
         justify-self: start;
       }
-${current === "papers" ? "" : `
+
+`}${current === "papers" ? "" : `
       .reader-chain,
       .reader-layer-strip,
       .reader-supply-grid,
@@ -2965,8 +2965,7 @@ ${current === "core" ? `
       .mechanism-chain,
       .kfd-decision-list,
       .practice-guideline-list,
-      .publication-grid,
-      .publication-featured-grid {
+      .publication-grid${immutableArchive ? "" : ",\n      .publication-featured-grid"} {
         grid-template-rows: none;
       }
 
@@ -2974,11 +2973,12 @@ ${current === "core" ? `
         grid-row: auto;
         grid-template-rows: none;
       }
-
+${immutableArchive ? "" : `
       .publication-card-featured {
         min-height: 0;
       }
 
+`}
       .doc-layout {
         grid-template-columns: 1fr;
       }

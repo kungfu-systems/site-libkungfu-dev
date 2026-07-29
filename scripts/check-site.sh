@@ -1321,6 +1321,9 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (versionHtml.includes("main-site-link") || versionHtml.includes("Back to the Kungfu main site")) {
       throw new Error(`immutable publication version page changed after the main-site header addition: ${publication.id}@${version.version}`);
     }
+    if (versionHtml.includes(".publication-featured {") || versionHtml.includes(".publication-card-featured {")) {
+      throw new Error(`immutable publication version page contains mutable papers-homepage styles: ${publication.id}@${version.version}`);
+    }
     if (
       versionHtml.includes(".reader-orientation {")
       || versionHtml.includes(".reader-supply-chain {")
@@ -1369,6 +1372,9 @@ const papersIndex = fs.readFileSync("dist/papers/index.html", "utf8");
 const papersArchiveHtml = fs.readFileSync("dist/papers/archive/index.html", "utf8");
 if (papersArchiveHtml.includes("main-site-link") || papersArchiveHtml.includes("Back to the Kungfu main site")) {
   throw new Error("immutable publication archive index changed after the main-site header addition");
+}
+if (papersArchiveHtml.includes(".publication-featured {") || papersArchiveHtml.includes(".publication-card-featured {")) {
+  throw new Error("immutable publication archive index contains mutable papers-homepage styles");
 }
 const featuredPaperIds = ["kungfu-product-white-paper", "kfd-machine-life-roadmap"];
 const expectedPaperCardOrder = [
