@@ -1370,8 +1370,16 @@ const papersArchiveHtml = fs.readFileSync("dist/papers/archive/index.html", "utf
 if (papersArchiveHtml.includes("main-site-link") || papersArchiveHtml.includes("Back to the Kungfu main site")) {
   throw new Error("immutable publication archive index changed after the main-site header addition");
 }
+const featuredPaperIds = ["kungfu-product-white-paper", "kfd-machine-life-roadmap"];
+const expectedPaperCardOrder = [
+  ...featuredPaperIds,
+  ...publicationRenderedRegistry.publications
+    .map((publication) => publication.id)
+    .filter((publicationId) => !featuredPaperIds.includes(publicationId)),
+];
 let previousPaperCardPosition = -1;
-for (const publication of publicationRenderedRegistry.publications) {
+for (const publicationId of expectedPaperCardOrder) {
+  const publication = publicationRenderedRegistry.publications.find((entry) => entry.id === publicationId);
   if (!papersIndex.includes(escapeHtml(publication.title))) {
     throw new Error(`papers index missing publication: ${publication.id}`);
   }
@@ -1383,6 +1391,14 @@ for (const publication of publicationRenderedRegistry.publications) {
     throw new Error(`papers archive evidence page missing publication: ${publication.id}`);
   }
   previousPaperCardPosition = paperCardPosition;
+}
+if (
+  !papersIndex.includes('class="publication-featured"')
+  || !papersIndex.includes('data-featured="present" data-publication-id="kungfu-product-white-paper"')
+  || !papersIndex.includes('data-featured="future" data-publication-id="kfd-machine-life-roadmap"')
+  || !papersIndex.includes('class="grid three publication-grid publication-secondary-grid"')
+) {
+  throw new Error("papers index must visually prioritize the White Paper and Machine Life before supporting research");
 }
 if (papersIndex.includes("Publication Archive Fixture") || !papersIndex.includes("Kungfu Papers")) {
   throw new Error("papers index must be human-first and free of fixture content");

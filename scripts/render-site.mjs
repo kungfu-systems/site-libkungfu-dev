@@ -876,6 +876,54 @@ function renderPublicationArchives() {
     };
   });
 
+  const featuredPublicationFrames = [
+    {
+      id: "kungfu-product-white-paper",
+      focus: "present",
+      eyebrow: "Present · White Paper",
+      orientation: "Kungfu now",
+    },
+    {
+      id: "kfd-machine-life-roadmap",
+      focus: "future",
+      eyebrow: "Future · Machine Life",
+      orientation: "Kungfu next",
+    },
+  ];
+  const featuredPublicationIds = new Set(featuredPublicationFrames.map((frame) => frame.id));
+  const featuredPublications = featuredPublicationFrames.map((frame) => {
+    const publication = normalizedPublications.find((entry) => entry.id === frame.id);
+    if (!publication) {
+      throw new Error(`featured publication is missing from the registry: ${frame.id}`);
+    }
+    return { publication, frame };
+  });
+  const supportingPublications = normalizedPublications.filter((publication) => !featuredPublicationIds.has(publication.id));
+  const renderPublicationCard = (publication, frame = null) => {
+    const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+    const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
+    const cardClass = frame ? "publication-card-featured" : "publication-card-supporting";
+    const featuredKind = frame?.focus || "supporting";
+    return `<article class="panel publication-card ${cardClass}" data-featured="${escapeAttr(featuredKind)}" data-publication-id="${escapeAttr(publication.id)}">
+      <div class="publication-card-heading">
+        <p class="eyebrow">${escapeHtml(frame?.eyebrow || publication.kind || "paper")}</p>
+        ${frame ? `<p class="publication-orientation">${escapeHtml(frame.orientation)}</p>` : ""}
+      </div>
+      <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
+      <p>${escapeHtml(publication.summary)}</p>
+      <dl class="meta">
+        <dt>latest release</dt>
+        <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
+        <dt>published</dt>
+        <dd><code>${escapeHtml(latestVersion.releasedAt.slice(0, 10))}</code></dd>
+      </dl>
+      <div class="card-actions">
+        <a class="card-action" ${archiveLinkAttrs(`/${publication.id}/`)}>View paper</a>
+        <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, pdf.path)}>Open PDF</a>
+      </div>
+    </article>`;
+  };
+
   const publicRegistry = {
     ...registry,
     source: {
@@ -902,37 +950,38 @@ function renderPublicationArchives() {
       body: `<section class="hero">
         <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Publication archives</span></p>
         <h1>Kungfu Papers</h1>
-        <p class="lead">Product and research papers that explain the principles, system direction, and evidence model behind Kungfu. Read the papers first; inspect their publication facts when you need to verify them.</p>
+        <p class="lead">Five papers on Kungfu's system, direction, and evidence model. Start with the defining pair, then follow the supporting research.</p>
       </section>
 
-      <section class="grid three publication-grid" aria-label="Kungfu papers">
-        ${normalizedPublications
-          .map((publication) => {
-            const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
-            const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
-            return `<article class="panel publication-card">
-              <p class="eyebrow">${escapeHtml(publication.kind || "paper")}</p>
-              <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
-              <p>${escapeHtml(publication.summary)}</p>
-              <dl class="meta">
-                <dt>latest release</dt>
-                <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
-                <dt>published</dt>
-                <dd><code>${escapeHtml(latestVersion.releasedAt.slice(0, 10))}</code></dd>
-              </dl>
-              <div class="card-actions">
-                <a class="card-action" ${archiveLinkAttrs(`/${publication.id}/`)}>View paper</a>
-                <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, pdf.path)}>Open PDF</a>
-              </div>
-            </article>`;
-          })
-          .join("\n")}
+      <section class="publication-featured" aria-labelledby="featured-papers-heading">
+        <div class="publication-section-heading">
+          <div>
+            <p class="eyebrow">Start here</p>
+            <h2 id="featured-papers-heading">Kungfu: now and next</h2>
+          </div>
+          <p>The White Paper explains Kungfu now. Machine Life explores what comes next.</p>
+        </div>
+        <div class="publication-featured-grid">
+          ${featuredPublications.map(({ publication, frame }) => renderPublicationCard(publication, frame)).join("\n")}
+        </div>
+      </section>
+
+      <section class="publication-library" aria-labelledby="research-papers-heading">
+        <div class="publication-section-heading publication-section-heading-compact">
+          <div>
+            <p class="eyebrow">More papers</p>
+            <h2 id="research-papers-heading">Research and foundations</h2>
+          </div>
+        </div>
+        <div class="grid three publication-grid publication-secondary-grid">
+          ${supportingPublications.map((publication) => renderPublicationCard(publication)).join("\n")}
+        </div>
       </section>
 
       <section class="panel archive-boundary">
         <p class="eyebrow">Need versions, hashes, and provenance?</p>
         <h2>Publication evidence lives in the archive.</h2>
-        <p>The reading shelf stays short. Open the archive only when you need manifests, source bundles, passports, and immutable version paths.</p>
+        <p>Open the archive for manifests, source bundles, passports, hashes, and immutable version paths.</p>
         <div class="card-actions">
           <a class="card-action" ${archiveLinkAttrs("/archive/")}>Inspect publication evidence</a>
           <a class="card-action secondary" href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}" data-local-href="/papers/registry.json">Open the registry</a>
@@ -1913,8 +1962,55 @@ ${current === "core" ? `
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .publication-grid {
+    .publication-grid,
+    .publication-featured-grid {
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    }
+
+    .publication-featured {
+      display: grid;
+      gap: 18px;
+    }
+
+    .publication-section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+      gap: 24px;
+      align-items: end;
+    }
+
+    .publication-section-heading > div {
+      display: grid;
+      gap: 8px;
+    }
+
+    .publication-section-heading h2 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 36px);
+    }
+
+    .publication-section-heading > p {
+      max-width: 620px;
+      justify-self: end;
+      font-size: 16px;
+    }
+
+    .publication-featured-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .publication-library {
+      display: grid;
+      gap: 18px;
+      margin-top: 52px;
+      padding-top: 34px;
+      border-top: 1px solid var(--line);
+    }
+
+    .publication-section-heading-compact h2 {
+      font-size: clamp(22px, 2.4vw, 30px);
     }
 
     .publication-card {
@@ -1923,6 +2019,72 @@ ${current === "core" ? `
       grid-template-rows: subgrid;
       gap: 14px;
       align-content: stretch;
+    }
+
+    .publication-card-featured {
+      --publication-focus: var(--accent);
+      position: relative;
+      overflow: hidden;
+      min-height: 390px;
+      border-color: color-mix(in srgb, var(--publication-focus) 58%, var(--line));
+      border-top: 5px solid var(--publication-focus);
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--publication-focus) 18%, transparent), transparent 42%),
+        linear-gradient(145deg, color-mix(in srgb, var(--publication-focus) 8%, var(--soft)), var(--soft) 58%);
+      padding: clamp(22px, 3vw, 30px);
+      box-shadow: 0 18px 42px rgb(15 23 42 / 0.08);
+    }
+
+    .publication-card-featured[data-featured="future"] {
+      --publication-focus: var(--warn);
+    }
+
+    .publication-card-featured::after {
+      position: absolute;
+      top: -68px;
+      right: -68px;
+      width: 156px;
+      height: 156px;
+      border: 1px solid color-mix(in srgb, var(--publication-focus) 28%, transparent);
+      border-radius: 999px;
+      content: "";
+    }
+
+    .publication-card-featured > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .publication-card-featured .eyebrow,
+    .publication-card-featured .publication-orientation {
+      color: color-mix(in srgb, var(--publication-focus) 84%, var(--fg));
+    }
+
+    .publication-card-featured h2 {
+      max-width: 540px;
+      font-size: clamp(25px, 2.7vw, 34px);
+    }
+
+    .publication-card-featured h2 a {
+      color: var(--fg);
+      text-decoration-color: color-mix(in srgb, var(--publication-focus) 45%, transparent);
+    }
+
+    .publication-card-heading {
+      display: grid;
+      gap: 7px;
+    }
+
+    .publication-orientation {
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .publication-card-supporting {
+      border-top: 2px solid var(--line);
+      background: color-mix(in srgb, var(--soft) 92%, var(--bg));
     }
 
     .publication-card .card-actions {
@@ -2725,8 +2887,14 @@ ${mainSiteTabletStyles}
       }
 
       .grid,
-      .grid.three {
+      .grid.three,
+      .publication-featured-grid,
+      .publication-section-heading {
         grid-template-columns: 1fr;
+      }
+
+      .publication-section-heading > p {
+        justify-self: start;
       }
 ${current === "papers" ? "" : `
       .reader-chain,
@@ -2797,13 +2965,18 @@ ${current === "core" ? `
       .mechanism-chain,
       .kfd-decision-list,
       .practice-guideline-list,
-      .publication-grid {
+      .publication-grid,
+      .publication-featured-grid {
         grid-template-rows: none;
       }
 
       .publication-card {
         grid-row: auto;
         grid-template-rows: none;
+      }
+
+      .publication-card-featured {
+        min-height: 0;
       }
 
       .doc-layout {
