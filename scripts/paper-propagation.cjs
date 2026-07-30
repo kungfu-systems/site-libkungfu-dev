@@ -248,6 +248,18 @@ function classifyChangedFiles({ changedFiles, lockPath }) {
   };
 }
 
+function unqualifiedPaperPropagation({ reason, changedFiles, lockPath } = {}) {
+  const body = {
+    schemaVersion: 1,
+    contract: QUALIFICATION_CONTRACT,
+    qualified: false,
+    reason,
+    changedFiles,
+    lockPath: lockPath || undefined,
+  };
+  return { ...body, qualificationRoot: sha256Json(body) };
+}
+
 function qualifyPaperPropagation({
   repoRoot = process.cwd(),
   lockPath,
@@ -260,31 +272,56 @@ function qualifyPaperPropagation({
     ? normalizeRepoPath(lockPath, "propagation lock path")
     : (changedLocks.length === 1 ? changedLocks[0] : "");
   if (!selectedLockPath) {
-    if (changedLocks.length > 1) throw new Error("paper propagation qualification found multiple changed release locks");
-    const body = {
-      schemaVersion: 1,
-      contract: QUALIFICATION_CONTRACT,
-      qualified: false,
-      reason: "no-single-paper-propagation-lock",
+    return unqualifiedPaperPropagation({
+      reason: changedLocks.length > 1
+        ? "multiple-release-locks-require-full-site"
+        : "no-single-paper-propagation-lock",
       changedFiles: normalizedChangedFiles,
-    };
-    return { ...body, qualificationRoot: sha256Json(body) };
+    });
   }
 
-  const lock = readJson(path.resolve(repoRoot, selectedLockPath));
+  let lock;
+  try {
+    lock = readJson(path.resolve(repoRoot, selectedLockPath));
+  } catch {
+    return unqualifiedPaperPropagation({
+      reason: "unreadable-release-lock-requires-full-site",
+      changedFiles: normalizedChangedFiles,
+      lockPath: selectedLockPath,
+    });
+  }
+  if (
+    !lock.upstream?.package?.name?.startsWith("@kungfu-tech/paper-")
+    || !lock.upstream?.publicationArtifact
+  ) {
+    return unqualifiedPaperPropagation({
+      reason: "non-paper-release-lock-requires-full-site",
+      changedFiles: normalizedChangedFiles,
+      lockPath: selectedLockPath,
+    });
+  }
   const classification = classifyChangedFiles({ changedFiles: normalizedChangedFiles, lockPath: selectedLockPath });
-  const source = loadPublicationPackageSet(repoRoot);
-  const facts = qualifyPublicationFacts({ repoRoot, lock, source });
+  let facts;
   let controllerReceipt;
-  if (receiptPath) {
-    controllerReceipt = readJson(path.resolve(repoRoot, receiptPath));
-    if (
-      controllerReceipt.contract !== PROPAGATION_RECEIPT_CONTRACT
-      || controllerReceipt.propagationKey !== lock.propagation.propagationKey
-      || controllerReceipt.downstream?.lockSha256 !== lock.lockSha256
-    ) {
-      throw new Error("release propagation receipt does not bind the selected paper lock");
+  try {
+    const source = loadPublicationPackageSet(repoRoot);
+    facts = qualifyPublicationFacts({ repoRoot, lock, source });
+    if (receiptPath) {
+      controllerReceipt = readJson(path.resolve(repoRoot, receiptPath));
+      if (
+        controllerReceipt.contract !== PROPAGATION_RECEIPT_CONTRACT
+        || controllerReceipt.propagationKey !== lock.propagation.propagationKey
+        || controllerReceipt.downstream?.lockSha256 !== lock.lockSha256
+      ) {
+        throw new Error("release propagation receipt does not bind the selected paper lock");
+      }
     }
+  } catch {
+    return unqualifiedPaperPropagation({
+      reason: "paper-release-facts-require-full-site",
+      changedFiles: normalizedChangedFiles,
+      lockPath: selectedLockPath,
+    });
   }
 
   const prefix = facts.version.immutablePath.replace(/^\/+|\/+$/g, "");
@@ -476,5 +513,6 @@ module.exports = {
   qualifyPaperPropagation,
   readPnpmLockPackage,
   stableJson,
+  unqualifiedPaperPropagation,
   verifyPaperPropagationQualification,
 };

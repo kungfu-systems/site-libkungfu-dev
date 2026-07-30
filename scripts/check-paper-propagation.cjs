@@ -164,6 +164,30 @@ try {
   assert.equal(fullSite.qualified, false);
   assert.equal(fullSite.reason, "changed-paths-require-full-site");
   assert.equal(fullSite.publicationFastPath, undefined);
+
+  const nonPaperLock = qualifyPaperPropagation({
+    repoRoot,
+    lockPath: "buildchain.upstreams/kfd.release.json",
+    changedFiles: [
+      "buildchain.upstreams/kfd.release.json",
+      "package.json",
+      "pnpm-lock.yaml",
+    ],
+  });
+  assert.equal(nonPaperLock.qualified, false);
+  assert.equal(nonPaperLock.reason, "non-paper-release-lock-requires-full-site");
+  assert.equal(nonPaperLock.publicationFastPath, undefined);
+
+  const multipleLocks = qualifyPaperPropagation({
+    repoRoot,
+    changedFiles: [
+      "buildchain.upstreams/kfd.release.json",
+      path.relative(repoRoot, repoFixtureLock),
+    ],
+  });
+  assert.equal(multipleLocks.qualified, false);
+  assert.equal(multipleLocks.reason, "multiple-release-locks-require-full-site");
+  assert.equal(multipleLocks.publicationFastPath, undefined);
 } finally {
   fs.unlinkSync(repoFixtureLock);
 }
