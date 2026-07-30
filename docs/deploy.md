@@ -85,6 +85,14 @@ and its exported `dist/site` bundle. KFD uses the pinned
 use the exact package set in
 `src/publication-packages.json`; deploys must preserve declared immutable
 version prefixes while allowing canonical and latest pages to advance.
+For an exact paper package-pin propagation, the build runs
+`scripts/paper-propagation.cjs qualify` after dependency installation. A
+qualified `package-pin-only` envelope narrows Buildchain to the Papers surface,
+the newly declared immutable version prefix, and the bounded mutable
+index/registry/latest files. Any non-pin change omits that envelope and retains
+the full deployment path. Qualification does not promote channels:
+package-published, alpha-complete, staging-visible, and production-visible are
+separate facts.
 The infrastructure contract publishes Papers as a first-class surface in every
 channel: `papers-{alias}.preview.libkungfu.dev`,
 `papers.staging.libkungfu.dev`, and `papers.libkungfu.dev`.

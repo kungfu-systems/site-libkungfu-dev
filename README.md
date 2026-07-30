@@ -288,6 +288,21 @@ source.
 `pnpm run check` fails if a declared immutable version artifact disappears,
 if a digest drifts, or if the generated manifests omit the immutable route
 semantics.
+Each immutable version `index.html` is itself recorded with a SHA-256 in the
+publication manifest. The four version prefixes that predate this contract keep
+their already-published legacy bytes; new paper versions are rendered by
+`scripts/immutable-publication-page.cjs` under the frozen
+`libkungfu-dev-immutable-publication-page-v1` contract. Mutable homepage,
+navigation, and CSS changes therefore do not enter new immutable prefixes, and
+the rollout does not rewrite historical objects.
+
+Paper release propagation uses `scripts/paper-propagation.cjs`. `consume`
+applies an exact release lock to `package.json` and
+`src/publication-packages.json`; the caller must then refresh `pnpm-lock.yaml`.
+`qualify` proves the installed package integrity and package-local publication
+facts against that lock. It emits the Papers-only deployment fast path only
+when the diff contains exactly the propagation lock and those three pin files.
+Any extra changed path falls back to the full site deployment.
 
 KFD release propagation writes `.buildchain/upstreams/kfd.release.json`. The
 workflow consumes that lock before install, updates the local package pin and

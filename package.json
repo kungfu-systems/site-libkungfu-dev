@@ -8,6 +8,7 @@
     "check": "bash scripts/check-site.sh",
     "check:local-site-bundle": "node scripts/check-local-site-bundle.mjs",
     "check:dogfood": "node scripts/check-dogfood-evidence.mjs && node scripts/check-dogfood-history.mjs",
+    "check:paper-propagation": "node scripts/check-paper-propagation.cjs",
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
