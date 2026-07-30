@@ -43,7 +43,7 @@ jobs:
       - name: Resolve production governance requirement
         id: decision
         env:
-          PRODUCTION_REQUESTED: ${{ ((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release'))) && 'true' || 'false' }}
+          PRODUCTION_REQUESTED: ${{ ((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release'))) && 'true' || 'false' }}
         run: echo "requested=$PRODUCTION_REQUESTED" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact Buildchain governance runtime
@@ -92,8 +92,8 @@ jobs:
     if: ${{ always() && needs.production-governance.result == 'success' }}
     uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v3
     with:
-      buildchain-ref: ${{ needs.production-governance.outputs.runtime-sha || (github.event_name == 'workflow_dispatch' && inputs.buildchain_ref) || ((((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && 'v3' || 'v3-alpha') }}
-      buildchain-contract-lock-path: ${{ (((github.event_name == 'workflow_dispatch' && inputs.buildchain_ref == 'v3') || (github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && '.buildchain/contract-lock.json' || '.buildchain/alpha-contract-lock.json' }}
+      buildchain-ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.buildchain_ref) || ((((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && 'v3' || 'v3-alpha') }}
+      buildchain-contract-lock-path: ${{ (((github.event_name == 'workflow_dispatch' && inputs.buildchain_ref == 'v3') || (github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release')))) && '.buildchain/contract-lock.json' || '.buildchain/alpha-contract-lock.json' }}
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
       node-version: "24"
@@ -102,6 +102,7 @@ jobs:
         export SITE_PUBLISHED_AT="$SITE_GENERATED_AT"
         export SITE_TIMESTAMP_POLICY=ci-injected
         export SITE_SOURCE_REVISION="$GITHUB_SHA"
+        export DOGFOOD_EVIDENCE_REQUIRED=true
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
         node scripts/prepare-kfd-upstream.mjs
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0

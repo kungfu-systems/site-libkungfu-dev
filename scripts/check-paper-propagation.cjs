@@ -226,6 +226,7 @@ for (const [file, expectedSha256] of Object.entries({
   "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html": "bddba85c34fa25ea13c0607b36340b941b13aaa54c5b31720f70a32e406ba3f2",
   "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html": "919626b319231a676741d044d37d9a83f1231c31149577b5627e89010284de4f",
   "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html": "989251febddc66d51d9a9785a93ddbc9a259bf5f1ac251f834e298af07cbf4bb",
+  "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html": "06243cab16e296fe55e66b68f64e1d305eda97373d7ce9a79916b473baf85777",
 })) {
   const actualSha256 = crypto.createHash("sha256").update(fs.readFileSync(path.join(repoRoot, file))).digest("hex");
   assert.equal(actualSha256, expectedSha256, `legacy immutable publication snapshot drifted: ${file}`);

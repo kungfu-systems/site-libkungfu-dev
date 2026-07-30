@@ -137,6 +137,30 @@ for (const [key, expected] of Object.entries(releaseGateSnippets)) {
     throw new Error(`Buildchain web-surface workflow must set ${key}: ${expected}`);
   }
 }
+const mainPushProduction = "(github.event_name == 'push' && github.ref == 'refs/heads/main')";
+for (const linePrefix of [
+  "PRODUCTION_REQUESTED:",
+  "buildchain-ref:",
+  "buildchain-contract-lock-path:",
+]) {
+  const line = workflow
+    .split(/\r?\n/)
+    .map((candidate) => candidate.trim())
+    .find((candidate) => candidate.startsWith(linePrefix));
+  if (!line?.includes(mainPushProduction)) {
+    throw new Error(
+      `Buildchain ${linePrefix} must classify the release-PR main push as production`,
+    );
+  }
+}
+const buildchainRefLine = workflow
+  .split(/\r?\n/)
+  .find((line) => line.trimStart().startsWith("buildchain-ref:"));
+if (buildchainRefLine?.includes("outputs.runtime-sha")) {
+  throw new Error(
+    "buildchain-ref must not treat the governance receipt runtime SHA as an event override",
+  );
+}
 
 const config = parseTomlSections(buildchainToml);
 for (const channel of ["preview", "staging"]) {

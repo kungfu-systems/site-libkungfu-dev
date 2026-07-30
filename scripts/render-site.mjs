@@ -853,6 +853,10 @@ const LEGACY_IMMUTABLE_PUBLICATION_PAGES = new Map([
     "/archive/episodes-to-primitives/v0.1.0-alpha.2/",
     "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
   ],
+  [
+    "/archive/kfd-machine-life-roadmap/v0.1.0-alpha.2/",
+    "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+  ],
 ]);
 
 function renderLegacyImmutablePublicationPage(version) {
@@ -910,6 +914,54 @@ function renderPublicationArchives() {
     };
   });
 
+  const featuredPublicationFrames = [
+    {
+      id: "kungfu-product-white-paper",
+      focus: "present",
+      eyebrow: "Present · White Paper",
+      orientation: "Kungfu now",
+    },
+    {
+      id: "kfd-machine-life-roadmap",
+      focus: "future",
+      eyebrow: "Future · Machine Life",
+      orientation: "Kungfu next",
+    },
+  ];
+  const featuredPublicationIds = new Set(featuredPublicationFrames.map((frame) => frame.id));
+  const featuredPublications = featuredPublicationFrames.map((frame) => {
+    const publication = normalizedPublications.find((entry) => entry.id === frame.id);
+    if (!publication) {
+      throw new Error(`featured publication is missing from the registry: ${frame.id}`);
+    }
+    return { publication, frame };
+  });
+  const supportingPublications = normalizedPublications.filter((publication) => !featuredPublicationIds.has(publication.id));
+  const renderPublicationCard = (publication, frame = null) => {
+    const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
+    const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
+    const cardClass = frame ? "publication-card-featured" : "publication-card-supporting";
+    const featuredKind = frame?.focus || "supporting";
+    return `<article class="panel publication-card ${cardClass}" data-featured="${escapeAttr(featuredKind)}" data-publication-id="${escapeAttr(publication.id)}">
+      <div class="publication-card-heading">
+        <p class="eyebrow">${escapeHtml(frame?.eyebrow || publication.kind || "paper")}</p>
+        ${frame ? `<p class="publication-orientation">${escapeHtml(frame.orientation)}</p>` : ""}
+      </div>
+      <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
+      <p>${escapeHtml(publication.summary)}</p>
+      <dl class="meta">
+        <dt>latest release</dt>
+        <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
+        <dt>published</dt>
+        <dd><code>${escapeHtml(latestVersion.releasedAt.slice(0, 10))}</code></dd>
+      </dl>
+      <div class="card-actions">
+        <a class="card-action" ${archiveLinkAttrs(`/${publication.id}/`)}>View paper</a>
+        <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, pdf.path)}>Open PDF</a>
+      </div>
+    </article>`;
+  };
+
   const publicRegistry = {
     ...registry,
     source: {
@@ -936,37 +988,38 @@ function renderPublicationArchives() {
       body: `<section class="hero">
         <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Publication archives</span></p>
         <h1>Kungfu Papers</h1>
-        <p class="lead">Product and research papers that explain the principles, system direction, and evidence model behind Kungfu. Read the papers first; inspect their publication facts when you need to verify them.</p>
+        <p class="lead">Five papers on Kungfu's system, direction, and evidence model. Start with the defining pair, then follow the supporting research.</p>
       </section>
 
-      <section class="grid three publication-grid" aria-label="Kungfu papers">
-        ${normalizedPublications
-          .map((publication) => {
-            const latestVersion = publication.versions.find((version) => version.version === publication.latest.version);
-            const pdf = latestVersion.renderedArtifacts.find((artifact) => artifact.kind === "pdf");
-            return `<article class="panel publication-card">
-              <p class="eyebrow">${escapeHtml(publication.kind || "paper")}</p>
-              <h2><a ${archiveLinkAttrs(`/${publication.id}/`)}>${escapeHtml(publication.title)}</a></h2>
-              <p>${escapeHtml(publication.summary)}</p>
-              <dl class="meta">
-                <dt>latest release</dt>
-                <dd><code>${escapeHtml(latestVersion.version)}</code></dd>
-                <dt>published</dt>
-                <dd><code>${escapeHtml(latestVersion.releasedAt.slice(0, 10))}</code></dd>
-              </dl>
-              <div class="card-actions">
-                <a class="card-action" ${archiveLinkAttrs(`/${publication.id}/`)}>View paper</a>
-                <a class="card-action" ${artifactLinkAttrs(latestVersion.immutablePath, pdf.path)}>Open PDF</a>
-              </div>
-            </article>`;
-          })
-          .join("\n")}
+      <section class="publication-featured" aria-labelledby="featured-papers-heading">
+        <div class="publication-section-heading">
+          <div>
+            <p class="eyebrow">Start here</p>
+            <h2 id="featured-papers-heading">Kungfu: now and next</h2>
+          </div>
+          <p>The White Paper explains Kungfu now. Machine Life explores what comes next.</p>
+        </div>
+        <div class="publication-featured-grid">
+          ${featuredPublications.map(({ publication, frame }) => renderPublicationCard(publication, frame)).join("\n")}
+        </div>
+      </section>
+
+      <section class="publication-library" aria-labelledby="research-papers-heading">
+        <div class="publication-section-heading publication-section-heading-compact">
+          <div>
+            <p class="eyebrow">More papers</p>
+            <h2 id="research-papers-heading">Research and foundations</h2>
+          </div>
+        </div>
+        <div class="grid three publication-grid publication-secondary-grid">
+          ${supportingPublications.map((publication) => renderPublicationCard(publication)).join("\n")}
+        </div>
       </section>
 
       <section class="panel archive-boundary">
         <p class="eyebrow">Need versions, hashes, and provenance?</p>
         <h2>Publication evidence lives in the archive.</h2>
-        <p>The reading shelf stays short. Open the archive only when you need manifests, source bundles, passports, and immutable version paths.</p>
+        <p>Open the archive for manifests, source bundles, passports, hashes, and immutable version paths.</p>
         <div class="card-actions">
           <a class="card-action" ${archiveLinkAttrs("/archive/")}>Inspect publication evidence</a>
           <a class="card-action secondary" href="${escapeAttr(surfaceEndpointHref("papers", "registry.json"))}" data-local-href="/papers/registry.json">Open the registry</a>
@@ -1950,10 +2003,57 @@ ${current === "core" ? `
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .publication-grid {
+    .publication-grid${immutableArchive ? "" : `,
+    .publication-featured-grid`} {
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     }
+${immutableArchive ? "" : `
+    .publication-featured {
+      display: grid;
+      gap: 18px;
+    }
 
+    .publication-section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+      gap: 24px;
+      align-items: end;
+    }
+
+    .publication-section-heading > div {
+      display: grid;
+      gap: 8px;
+    }
+
+    .publication-section-heading h2 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 36px);
+    }
+
+    .publication-section-heading > p {
+      max-width: 620px;
+      justify-self: end;
+      font-size: 16px;
+    }
+
+    .publication-featured-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .publication-library {
+      display: grid;
+      gap: 18px;
+      margin-top: 52px;
+      padding-top: 34px;
+      border-top: 1px solid var(--line);
+    }
+
+    .publication-section-heading-compact h2 {
+      font-size: clamp(22px, 2.4vw, 30px);
+    }
+`}
     .publication-card {
       display: grid;
       grid-row: span 5;
@@ -1961,7 +2061,73 @@ ${current === "core" ? `
       gap: 14px;
       align-content: stretch;
     }
+${immutableArchive ? "" : `
+    .publication-card-featured {
+      --publication-focus: var(--accent);
+      position: relative;
+      overflow: hidden;
+      min-height: 390px;
+      border-color: color-mix(in srgb, var(--publication-focus) 58%, var(--line));
+      border-top: 5px solid var(--publication-focus);
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--publication-focus) 18%, transparent), transparent 42%),
+        linear-gradient(145deg, color-mix(in srgb, var(--publication-focus) 8%, var(--soft)), var(--soft) 58%);
+      padding: clamp(22px, 3vw, 30px);
+      box-shadow: 0 18px 42px rgb(15 23 42 / 0.08);
+    }
 
+    .publication-card-featured[data-featured="future"] {
+      --publication-focus: var(--warn);
+    }
+
+    .publication-card-featured::after {
+      position: absolute;
+      top: -68px;
+      right: -68px;
+      width: 156px;
+      height: 156px;
+      border: 1px solid color-mix(in srgb, var(--publication-focus) 28%, transparent);
+      border-radius: 999px;
+      content: "";
+    }
+
+    .publication-card-featured > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .publication-card-featured .eyebrow,
+    .publication-card-featured .publication-orientation {
+      color: color-mix(in srgb, var(--publication-focus) 84%, var(--fg));
+    }
+
+    .publication-card-featured h2 {
+      max-width: 540px;
+      font-size: clamp(25px, 2.7vw, 34px);
+    }
+
+    .publication-card-featured h2 a {
+      color: var(--fg);
+      text-decoration-color: color-mix(in srgb, var(--publication-focus) 45%, transparent);
+    }
+
+    .publication-card-heading {
+      display: grid;
+      gap: 7px;
+    }
+
+    .publication-orientation {
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .publication-card-supporting {
+      border-top: 2px solid var(--line);
+      background: color-mix(in srgb, var(--soft) 92%, var(--bg));
+    }
+`}
     .publication-card .card-actions {
       align-self: end;
     }
@@ -2762,10 +2928,17 @@ ${mainSiteTabletStyles}
       }
 
       .grid,
-      .grid.three {
+      .grid.three${immutableArchive ? "" : `,
+      .publication-featured-grid,
+      .publication-section-heading`} {
         grid-template-columns: 1fr;
       }
-${current === "papers" ? "" : `
+${immutableArchive ? "" : `
+
+      .publication-section-heading > p {
+        justify-self: start;
+      }
+`}${current === "papers" ? "" : `
       .reader-chain,
       .reader-layer-strip,
       .reader-supply-grid,
@@ -2834,7 +3007,8 @@ ${current === "core" ? `
       .mechanism-chain,
       .kfd-decision-list,
       .practice-guideline-list,
-      .publication-grid {
+      .publication-grid${immutableArchive ? "" : `,
+      .publication-featured-grid`} {
         grid-template-rows: none;
       }
 
@@ -2842,7 +3016,12 @@ ${current === "core" ? `
         grid-row: auto;
         grid-template-rows: none;
       }
+${immutableArchive ? "" : `
 
+      .publication-card-featured {
+        min-height: 0;
+      }
+`}
       .doc-layout {
         grid-template-columns: 1fr;
       }
@@ -3124,7 +3303,7 @@ function renderDogfoodCase(evidenceCase, index) {
   </article>`;
 }
 
-function dogfoodLiveProjectionScript() {
+function dogfoodLiveProjectionScript(embeddedEvidence) {
   return `<script>
   (() => {
     const number = new Intl.NumberFormat("en-US");
@@ -3151,6 +3330,7 @@ function dogfoodLiveProjectionScript() {
       if (expectedId && evidence.snapshotId !== expectedId) throw new Error("snapshot id mismatch");
       return evidence;
     };
+    const embeddedEvidence = validate(${JSON.stringify(embeddedEvidence).replaceAll("<", "\\u003c")});
     const sha256 = async (bytes) => {
       if (!window.crypto || !window.crypto.subtle) return null;
       const digest = await window.crypto.subtle.digest("SHA-256", bytes);
@@ -3234,6 +3414,11 @@ function dogfoodLiveProjectionScript() {
       const body = document.getElementById("dogfood-comparison-body");
       const heading = document.getElementById("dogfood-comparison-heading");
       if (!body || !heading) return;
+      if (previous === undefined) {
+        heading.textContent = "Adjacent observation comparison";
+        body.innerHTML = '<tr><th scope="row">History</th><td colspan="3">Choose a retained snapshot to compare adjacent observations.</td></tr>';
+        return;
+      }
       if (!previous) {
         heading.textContent = "First retained observation point";
         body.replaceChildren();
@@ -3260,7 +3445,7 @@ function dogfoodLiveProjectionScript() {
         return row;
       }));
     };
-    const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus) => {
+    const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus, comparePrevious = true) => {
       const entry = timeline.find((candidate) => candidate.snapshotId === snapshotId);
       if (!entry) {
         return selectSnapshot(timeline.at(-1).snapshotId, false, "Unknown snapshot id; showing the latest verified observation.");
@@ -3269,7 +3454,7 @@ function dogfoodLiveProjectionScript() {
       try {
         const [evidence, previous] = await Promise.all([
           entry.current ? Promise.resolve(latestEvidence) : load(entry),
-          index > 0 ? load(timeline[index - 1]) : Promise.resolve(null),
+          index > 0 && comparePrevious ? load(timeline[index - 1]) : Promise.resolve(index > 0 ? undefined : null),
         ]);
         render(evidence, entry);
         renderComparison(evidence, previous);
@@ -3288,7 +3473,7 @@ function dogfoodLiveProjectionScript() {
         status(fallbackStatus || ((entry.current ? "Showing latest observation: " : "Showing archived observation: ") + entry.observedAt + ". Adjacent deltas compare overlapping P30D windows."));
       } catch (error) {
         if (!entry.current) {
-          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.");
+          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.", false);
         }
         throw error;
       }
@@ -3298,9 +3483,7 @@ function dogfoodLiveProjectionScript() {
       const target = timeline[index + offset];
       if (target) selectSnapshot(target.snapshotId, true);
     };
-    fetch(latestUrl, { cache: "no-store" })
-      .then((response) => { if (!response.ok) throw new Error("evidence fetch failed"); return response.json(); })
-      .then((evidence) => {
+    const initialize = async (evidence, sourceStatus) => {
         latestEvidence = validate(evidence);
         const current = {
           snapshotId: evidence.snapshotId,
@@ -3374,12 +3557,34 @@ function dogfoodLiveProjectionScript() {
           selectSnapshot(requested || timeline.at(-1).snapshotId, false);
         });
         const requested = new URL(window.location.href).searchParams.get("snapshot");
-        return selectSnapshot(requested || current.snapshotId, false);
-      })
-      .catch(() => {
-        setText("dogfood-state", "public dogfood / retained fallback");
-        status("Live evidence is unavailable; the readable retained fallback remains on this page.");
-      });
+        await selectSnapshot(
+          requested || current.snapshotId,
+          false,
+          sourceStatus === "embedded"
+            ? "Showing the latest observation embedded and verified when this site artifact was built."
+            : undefined,
+          false,
+        );
+    };
+    (async () => {
+      let evidence = embeddedEvidence;
+      let sourceStatus = "embedded";
+      try {
+        const response = await fetch(latestUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error("evidence fetch failed");
+        const fetched = validate(await response.json());
+        if (Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)) {
+          evidence = fetched;
+          sourceStatus = "live";
+        }
+      } catch {
+        // The build-embedded snapshot remains a complete no-network projection.
+      }
+      await initialize(evidence, sourceStatus);
+    })().catch(() => {
+      setText("dogfood-state", "public dogfood / embedded observation");
+      status("The interactive history is unavailable; the verified build-embedded observation remains readable.");
+    });
   })();
   </script>`;
 }
@@ -3550,6 +3755,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
+      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>`).join("\n")}
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
@@ -3576,7 +3782,18 @@ const coreFormatRoutes = Object.fromEntries(
   ]),
 );
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
-const dogfoodEvidence = readFixtureJson("dogfood-evidence.json");
+const dogfoodRenderInputPath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence.json");
+const dogfoodRenderSourcePath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence-source.json");
+const dogfoodEvidence = readOptionalJsonFile(dogfoodRenderInputPath) || readFixtureJson("dogfood-evidence.json");
+const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
+  selection: "retained-fixture",
+  source: "src/fixtures/dogfood-evidence.json",
+  immutableUrl: null,
+  snapshotId: dogfoodEvidence.snapshotId,
+  observedAt: dogfoodEvidence.observation.observedAt,
+  sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodEvidence)).digest("hex"),
+};
+const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage);
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
@@ -3743,6 +3960,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
     "scripts/publication-packages.cjs",
     "src/fixtures/*.json",
     "src/publication-packages.json",
+    "resolved dogfood immutable snapshot URL and SHA-256",
     "pnpm-lock.yaml",
     "@kungfu-tech/buildchain package content",
     "@kungfu-tech/kfd package content",
@@ -3769,6 +3987,9 @@ const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || []
 const kfdCandidateFormalPageByCandidateId = new Map(
   kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
 );
+const kfdStandalonePages = (kfdSite.standalonePages || [])
+  .slice()
+  .sort((left, right) => (left.rendering?.navigationOrder || 0) - (right.rendering?.navigationOrder || 0));
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -3794,6 +4015,10 @@ const kfdPageRouteBySourcePath = new Map([
   [kfdSite.formalPage.sourcePath, kfdFormalModelPath],
   [kfdSite.terminologyPage.sourcePath, kfdTerminologyPath],
   [kfdSite.casesPage.sourcePath, kfdCasesPath],
+  ...kfdStandalonePages.map((pageEntry) => [
+    pageEntry.sourcePath,
+    `${pageEntry.url.replace(/\/+$/, "")}/`,
+  ]),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
   ...kfdRegistry.entries.map((entry) => [entry.path, `/${entry.number}/`]),
@@ -5814,7 +6039,7 @@ writeFile(
     body: `${dogfoodStyles}
     <section class="dogfood-hero" aria-labelledby="dogfood-title">
       <div class="dogfood-hero-copy">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / retained fallback</span></p>
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded observation" : "retained fallback"}</span></p>
         <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
         <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
         <div class="dogfood-window">
@@ -5834,6 +6059,12 @@ writeFile(
       </div>
     </section>
 
+    <section class="panel" aria-labelledby="bootstrap-interpretation-heading">
+      <p class="eyebrow">Related first-party interpretation</p>
+      <h2 id="bootstrap-interpretation-heading">What this public work suggests about organizational bootstrap</h2>
+      <p>For a bounded first-party interpretation of what this public work suggests about organizational bootstrap, read <a href="${escapeAttr(dogfoodRelatedInterpretation.url)}">${escapeHtml(dogfoodRelatedInterpretation.label)}</a>. ${escapeHtml(dogfoodRelatedInterpretation.claimBoundary)}</p>
+    </section>
+
     <section class="dogfood-history" aria-labelledby="dogfood-history-heading">
       <div class="section-heading">
         <p class="eyebrow">Append-only observation history</p>
@@ -5843,7 +6074,7 @@ writeFile(
       <div class="dogfood-history-controls">
         <label for="dogfood-snapshot-select">Observation snapshot
           <select id="dogfood-snapshot-select" name="snapshot">
-            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · retained fallback</option>
+            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded" : "retained fallback"}</option>
           </select>
         </label>
         <div class="dogfood-history-nav" aria-label="Adjacent observations">
@@ -5927,17 +6158,17 @@ writeFile(
     <section class="panel" aria-labelledby="reproduce-heading">
       <p class="eyebrow">Reproduce</p>
       <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
-      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the committed JSON remains the publication snapshot.</p>
+      <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the immutable published JSON remains the admitted observation snapshot.</p>
       <dl class="meta" style="margin-top: 18px;">
         <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
-        <dt>Generated at</dt><dd><code id="dogfood-generated-at">legacy snapshot; generation timestamp was not recorded</code></dd>
-        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">retained fallback</code></dd>
+        <dt>Generated at</dt><dd><code id="dogfood-generated-at">${escapeHtml(dogfoodEvidence.provenance?.generatedAt || "legacy snapshot; generation timestamp was not recorded")}</code></dd>
+        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">${escapeHtml(dogfoodEvidence.provenance?.generationKind || "retained fallback")}</code></dd>
         <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
         <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
         <dt>Machine route</dt><dd><a id="dogfood-machine-route" href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
       </dl>
     </section>
-    ${dogfoodLiveProjectionScript()}`,
+    ${dogfoodLiveProjectionScript(dogfoodEvidence)}`,
   }),
 );
 
@@ -6559,6 +6790,23 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
       </dl>
     </section>`,
   });
+}
+
+for (const pageEntry of kfdStandalonePages) {
+  if (pageEntry.rendering?.kind !== "markdown-document") {
+    throw new Error(`Unsupported KFD standalone page renderer: ${pageEntry.id || pageEntry.url}`);
+  }
+  const relativeRoute = pageEntry.url.replace(/^\/+|\/+$/g, "");
+  if (!relativeRoute) {
+    throw new Error(`KFD standalone page must declare a non-root route: ${pageEntry.id || "unknown"}`);
+  }
+  const pageHtml = renderKfdReferencePage(pageEntry, {
+    currentPage: `standalone:${pageEntry.id}`,
+    tocLabel: `${pageEntry.title} sections`,
+    kicker: `${pageEntry.relationship} / ${pageEntry.normative ? "normative" : "non-normative"}`,
+  });
+  writeFile(`kfd/${relativeRoute}/index.html`, pageHtml);
+  writeFile(`${relativeRoute}/index.html`, pageHtml);
 }
 
 const kfdFormalModelPageHtml = renderKfdReferencePage(kfdSite.formalPage, {
@@ -7229,6 +7477,17 @@ const manifest = {
     boundary: BRAND_BOUNDARY,
   },
   sourceBoundary: site.sourceBoundary,
+  relatedInterpretations: site.relatedInterpretations,
+  observedEvidence: {
+    contract: dogfoodEvidenceSource.contract || "kungfu-site-dogfood-render-input",
+    selection: dogfoodEvidenceSource.selection,
+    snapshotId: dogfoodEvidenceSource.snapshotId,
+    observedAt: dogfoodEvidenceSource.observedAt,
+    source: dogfoodEvidenceSource.source,
+    immutableUrl: dogfoodEvidenceSource.immutableUrl,
+    sha256: dogfoodEvidenceSource.sha256,
+    reproducibility: "Fetch the immutable URL and verify its SHA-256 before rendering the same snapshot.",
+  },
   readerContract: site.readerContract,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
@@ -7236,12 +7495,14 @@ const manifest = {
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),
-      source: "src/fixtures/dogfood-evidence.json",
+      source: dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source,
+      sha256: dogfoodEvidenceSource.sha256,
     },
     {
       path: "/dogfood-evidence.json",
       host: surfaceCanonicalHost("hub"),
-      source: "src/fixtures/dogfood-evidence.json",
+      source: dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source,
+      sha256: dogfoodEvidenceSource.sha256,
     },
     {
       path: "/runtime.json",
@@ -7316,6 +7577,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.foundationPage.sourcePath}`,
     },
+    ...kfdStandalonePages.map((pageEntry) => ({
+      path: `${pageEntry.url.replace(/\/+$/, "")}/`,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`,
+    })),
     {
       path: kfdFormalModelPath,
       host: surfaceCanonicalHost("kfd"),
@@ -7542,6 +7808,7 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "decisions/"),
     surfaceEndpointHref("kfd", kfdFoundationPath.replace(/^\/+/, "")),
+    ...kfdStandalonePages.map((entry) => surfaceEndpointHref("kfd", `${entry.url.replace(/^\/+|\/+$/g, "")}/`)),
     surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdTerminologyPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "terminology.json"),
@@ -7571,6 +7838,16 @@ const kfdAgentManifest = {
     relationship: kfdSite.foundationPage.relationship,
     normative: kfdSite.foundationPage.normative,
   },
+  standalonePages: kfdStandalonePages.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    path: `${entry.url.replace(/\/+$/, "")}/`,
+    url: surfaceEndpointHref("kfd", `${entry.url.replace(/^\/+|\/+$/g, "")}/`),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.sourcePath}`,
+    relationship: entry.relationship,
+    normative: entry.normative,
+    rendering: entry.rendering,
+  })),
   formalModel: {
     path: kfdFormalModelPath,
     url: surfaceEndpointHref("kfd", kfdFormalModelPath.replace(/^\/+/, "")),

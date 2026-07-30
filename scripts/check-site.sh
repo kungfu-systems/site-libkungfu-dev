@@ -24,6 +24,10 @@ const path = require("path");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
 const { verifyPaperPropagationQualification } = require("./scripts/paper-propagation.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
+const webSurfaceWorkflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+if (!webSurfaceWorkflow.includes("export DOGFOOD_EVIDENCE_REQUIRED=true")) {
+  throw new Error("published site builds must fail closed when the public dogfood snapshot cannot be admitted");
+}
 for (const projectionContract of [
   'projection === "kungfu-tech"',
   'parentOrigin === "https://kungfu.tech"',
@@ -41,6 +45,7 @@ const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
+  "scripts/prepare-dogfood-render-input.mjs",
   "docs/versioning.md",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -153,7 +158,10 @@ const coreFormatRoutes = Object.fromEntries(
 );
 const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8"));
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
-const dogfoodEvidence = JSON.parse(fs.readFileSync("src/fixtures/dogfood-evidence.json", "utf8"));
+const dogfoodRenderInputPath = ".buildchain/render-inputs/dogfood-evidence.json";
+const dogfoodRenderSourcePath = ".buildchain/render-inputs/dogfood-evidence-source.json";
+const dogfoodEvidence = JSON.parse(fs.readFileSync(dogfoodRenderInputPath, "utf8"));
+const dogfoodEvidenceSource = JSON.parse(fs.readFileSync(dogfoodRenderSourcePath, "utf8"));
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
@@ -210,6 +218,7 @@ const kfdCandidateFormalPages = kfdSite.candidatePages?.formalPages?.pages || []
 const kfdCandidateFormalPageByCandidateId = new Map(
   kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
 );
+const kfdStandalonePages = kfdSite.standalonePages || [];
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -223,6 +232,13 @@ const requiredFiles = [
     `dist/drafts/${entry.id}/index.html`,
   ]),
   ...kfdCandidateFormalPages.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+|\/+$/g, "");
+    return [
+      `dist/kfd/${output}/index.html`,
+      `dist/${output}/index.html`,
+    ];
+  }),
+  ...kfdStandalonePages.flatMap((entry) => {
     const output = entry.url.replace(/^\/+|\/+$/g, "");
     return [
       `dist/kfd/${output}/index.html`,
@@ -555,7 +571,26 @@ for (const entry of [site.homepage, ...readerContract.surfacePaths]) {
   }
 }
 if (JSON.stringify(dogfoodProjection) !== JSON.stringify(dogfoodEvidence)) {
-  throw new Error("published dogfood evidence must preserve the fixture bytes semantically");
+  throw new Error("published dogfood evidence must preserve the admitted render input semantically");
+}
+if (
+  dogfoodEvidenceSource.contract !== "kungfu-site-dogfood-render-input"
+  || !["observed-immutable", "retained-fixture"].includes(dogfoodEvidenceSource.selection)
+  || dogfoodEvidenceSource.snapshotId !== dogfoodEvidence.snapshotId
+  || dogfoodEvidenceSource.observedAt !== dogfoodEvidence.observation.observedAt
+  || crypto.createHash("sha256").update(fs.readFileSync(dogfoodRenderInputPath)).digest("hex") !== dogfoodEvidenceSource.sha256
+) {
+  throw new Error("dogfood render input source contract or digest is invalid");
+}
+if (crypto.createHash("sha256").update(fs.readFileSync("dist/dogfood-evidence.json")).digest("hex") !== dogfoodEvidenceSource.sha256) {
+  throw new Error("published dogfood evidence bytes do not match the admitted immutable snapshot");
+}
+if (
+  manifest.observedEvidence?.snapshotId !== dogfoodEvidenceSource.snapshotId
+  || manifest.observedEvidence?.sha256 !== dogfoodEvidenceSource.sha256
+  || manifest.observedEvidence?.immutableUrl !== dogfoodEvidenceSource.immutableUrl
+) {
+  throw new Error("site manifest does not expose the admitted dogfood render input");
 }
 const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
 for (const requiredText of [
@@ -566,10 +601,22 @@ for (const requiredText of [
   "A reviewed-by search match is not automatically an approval",
   "Three actors continued one exact Project Cut without a human relay",
   "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
+  "Related first-party interpretation",
+  "A Public Week of Agent-Mediated Work",
+  "This interpretation is not additional qualification evidence.",
 ]) {
   if (!dogfoodHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
+}
+if (!dogfoodHtml.includes(`href="${site.relatedInterpretations.dogfoodBootstrap.url}"`)) {
+  throw new Error("dogfood page missing bounded bootstrap interpretation URL");
+}
+if (
+  manifest.relatedInterpretations.dogfoodBootstrap.relationship !== "bounded-first-party-interpretation" ||
+  manifest.relatedInterpretations.dogfoodBootstrap.claimBoundary !== "This interpretation is not additional qualification evidence."
+) {
+  throw new Error("site manifest must preserve the bootstrap interpretation boundary");
 }
 for (const historyContract of [
   'id="dogfood-snapshot-select"',
@@ -591,6 +638,10 @@ for (const runtimeContract of [
   'hero.setAttribute("aria-label"',
   "Unknown snapshot id; showing the latest verified observation.",
   "The requested snapshot failed integrity or schema validation; showing the latest verified observation.",
+  "Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)",
+  "The build-embedded snapshot remains a complete no-network projection.",
+  "comparePrevious = true",
+  "Choose a retained snapshot to compare adjacent observations.",
 ]) {
   if (!renderSiteSource.includes(runtimeContract)) {
     throw new Error(`dogfood renderer missing history runtime contract: ${runtimeContract}`);
@@ -623,7 +674,7 @@ if (!/\.dogfood-flow li\s*\{[^}]*margin:\s*0;/.test(renderSiteSource)) {
   throw new Error("dogfood flow cards must reset inherited list margins");
 }
 for (const requiredPath of ["/dogfood/", "/dogfood-evidence.json"]) {
-  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === "src/fixtures/dogfood-evidence.json")) {
+  if (!manifest.pages.some((page) => page.path === requiredPath && page.source === (dogfoodEvidenceSource.immutableUrl || dogfoodEvidenceSource.source) && page.sha256 === dogfoodEvidenceSource.sha256)) {
     throw new Error(`site manifest missing dogfood route: ${requiredPath}`);
   }
 }
@@ -739,18 +790,20 @@ const expectedPaperPackageNames = [
   "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",
   "@kungfu-tech/paper-observer-declared-timelines",
   "@kungfu-tech/paper-episodes-to-primitives",
+  "@kungfu-tech/paper-kfd-machine-life-roadmap",
 ];
 const expectedPaperIds = [
   "kungfu-product-white-paper",
   "kfd-foundation-real-world-agent-work",
   "observer-declared-timelines",
   "episodes-to-primitives",
+  "kfd-machine-life-roadmap",
 ];
 if (
   publicationPackageSet.contract !== "libkungfu-dev-publication-package-set" ||
   expectedPaperPackages.map((entry) => entry.name).join(",") !== expectedPaperPackageNames.join(",")
 ) {
-  throw new Error("publication package set must declare the four current paper packages in canonical order");
+  throw new Error("publication package set must declare the five current paper packages in canonical order");
 }
 for (const entry of paperLocks) {
   if (packageJson.dependencies[entry.name] !== entry.version) {
@@ -803,6 +856,32 @@ if (!Array.isArray(kfdSite.homepage.displayPlan?.support) || !kfdSite.homepage.r
 }
 if (kfdSite.homepage.rendererContract?.renderAsHomepageContent !== false) {
   throw new Error("KFD rendererContract must declare renderAsHomepageContent=false");
+}
+const kfdLoadBearingPage = kfdStandalonePages.find((entry) => entry.id === "load-bearing-dogfood");
+if (
+  !kfdLoadBearingPage
+  || kfdLoadBearingPage.url !== "/under-load"
+  || kfdLoadBearingPage.sourcePath !== "docs/load-bearing-dogfood.md"
+  || kfdLoadBearingPage.normative !== false
+  || kfdLoadBearingPage.rendering?.kind !== "markdown-document"
+  || kfdLoadBearingPage.rendering?.tocDepth !== 3
+  || JSON.stringify(kfdSite.loadBearingPage) !== JSON.stringify(kfdLoadBearingPage)
+) {
+  throw new Error("KFD site bundle must expose the governed load-bearing dogfood standalone page");
+}
+for (const pageEntry of kfdStandalonePages) {
+  if (
+    !pageEntry.id
+    || !pageEntry.title
+    || !pageEntry.sourcePath
+    || !pageEntry.url?.startsWith("/")
+    || !pageEntry.relationship
+    || typeof pageEntry.normative !== "boolean"
+    || pageEntry.rendering?.kind !== "markdown-document"
+    || !pageEntry.markdown
+  ) {
+    throw new Error(`KFD standalone page contract mismatch: ${pageEntry.id || pageEntry.url || "unknown"}`);
+  }
 }
 if (
   kfdSite.agentHubPage?.id !== "agent-hub"
@@ -1269,8 +1348,11 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       versionHtml.includes(".reader-orientation {")
       || versionHtml.includes(".reader-supply-chain {")
       || versionHtml.includes(".page-kicker > * {")
+      || versionHtml.includes(".publication-featured {")
+      || versionHtml.includes(".publication-featured-grid {")
+      || versionHtml.includes(".publication-card-featured {")
     ) {
-      throw new Error(`immutable publication version page contains site reader-contract styles: ${publication.id}@${version.version}`);
+      throw new Error(`immutable publication version page contains mutable site styles: ${publication.id}@${version.version}`);
     }
     for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
       if (!versionHtml.includes(`href="${href}"`)) {
@@ -1340,8 +1422,16 @@ const papersArchiveHtml = fs.readFileSync("dist/papers/archive/index.html", "utf
 if (papersArchiveHtml.includes("main-site-link") || papersArchiveHtml.includes("Back to the Kungfu main site")) {
   throw new Error("immutable publication archive index changed after the main-site header addition");
 }
+const featuredPaperIds = ["kungfu-product-white-paper", "kfd-machine-life-roadmap"];
+const expectedPaperCardOrder = [
+  ...featuredPaperIds,
+  ...publicationRenderedRegistry.publications
+    .map((publication) => publication.id)
+    .filter((publicationId) => !featuredPaperIds.includes(publicationId)),
+];
 let previousPaperCardPosition = -1;
-for (const publication of publicationRenderedRegistry.publications) {
+for (const publicationId of expectedPaperCardOrder) {
+  const publication = publicationRenderedRegistry.publications.find((entry) => entry.id === publicationId);
   if (!papersIndex.includes(escapeHtml(publication.title))) {
     throw new Error(`papers index missing publication: ${publication.id}`);
   }
@@ -1353,6 +1443,14 @@ for (const publication of publicationRenderedRegistry.publications) {
     throw new Error(`papers archive evidence page missing publication: ${publication.id}`);
   }
   previousPaperCardPosition = paperCardPosition;
+}
+if (
+  !papersIndex.includes('class="publication-featured"')
+  || !papersIndex.includes('data-featured="present" data-publication-id="kungfu-product-white-paper"')
+  || !papersIndex.includes('data-featured="future" data-publication-id="kfd-machine-life-roadmap"')
+  || !papersIndex.includes('class="grid three publication-grid publication-secondary-grid"')
+) {
+  throw new Error("papers index must visually prioritize the White Paper and Machine Life before supporting research");
 }
 if (papersIndex.includes("Publication Archive Fixture") || !papersIndex.includes("Kungfu Papers")) {
   throw new Error("papers index must be human-first and free of fixture content");
@@ -1508,6 +1606,19 @@ if (
 ) {
   throw new Error("dist manifest does not record the KFD Agent Hub qualification route");
 }
+for (const pageEntry of kfdStandalonePages) {
+  const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === pagePath
+        && page.source.endsWith(`/${pageEntry.sourcePath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD standalone page: ${pageEntry.id}`);
+  }
+}
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
@@ -1603,6 +1714,24 @@ if (
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
 ) {
   throw new Error("KFD agent manifest must explain and route the installed Kungfu Agent Hub qualification");
+}
+if (kfdAgentManifest.standalonePages?.length !== kfdStandalonePages.length) {
+  throw new Error("KFD agent manifest standalone page count mismatch");
+}
+for (const pageEntry of kfdStandalonePages) {
+  const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
+  const renderedEntry = kfdAgentManifest.standalonePages.find((entry) => entry.id === pageEntry.id);
+  if (
+    renderedEntry?.path !== pagePath
+    || renderedEntry?.url !== expectedSurfaceEndpoint("kfd", pagePath.replace(/^\/+/, ""))
+    || renderedEntry?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${pageEntry.sourcePath}`
+    || renderedEntry?.relationship !== pageEntry.relationship
+    || renderedEntry?.normative !== pageEntry.normative
+    || JSON.stringify(renderedEntry?.rendering) !== JSON.stringify(pageEntry.rendering)
+    || !kfdAgentManifest.readOrder.includes(renderedEntry.url)
+  ) {
+    throw new Error(`KFD agent manifest is missing standalone page facts for ${pageEntry.id}`);
+  }
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
   throw new Error("KFD agent manifest decision list mismatch");
@@ -2157,6 +2286,27 @@ if (
   !kfdFoundationCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.foundationPage.normative))}</code>`)
 ) {
   throw new Error("KFD foundation page is missing source or authority metadata");
+}
+for (const pageEntry of kfdStandalonePages) {
+  const output = pageEntry.url.replace(/^\/+|\/+$/g, "");
+  const pagePath = `/${output}/`;
+  const canonicalHtml = fs.readFileSync(`dist/kfd/${output}/index.html`, "utf8");
+  const aliasHtml = fs.readFileSync(`dist/${output}/index.html`, "utf8");
+  const headings = [...pageEntry.markdown.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => match[1].trim());
+  if (canonicalHtml !== aliasHtml) {
+    throw new Error(`KFD standalone subdomain route alias drifted: ${pageEntry.id}`);
+  }
+  if (
+    headings.length === 0
+    || headings.some((heading) => !canonicalHtml.includes(`>${escapeHtml(heading)}</h`))
+    || !canonicalHtml.includes(`aria-label="${escapeHtml(pageEntry.title)} sections"`)
+    || !canonicalHtml.includes(`<a href="${escapeHtml(pagePath)}" aria-current="page">${escapeHtml(pageEntry.rendering.navigationLabel || pageEntry.title)}</a>`)
+    || !canonicalHtml.includes(escapeHtml(pageEntry.sourcePath))
+    || !canonicalHtml.includes(`<code>${escapeHtml(String(pageEntry.normative))}</code>`)
+    || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output + "/"))
+  ) {
+    throw new Error(`KFD standalone page is missing bundle-owned content, navigation, metadata, or read order: ${pageEntry.id}`);
+  }
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");

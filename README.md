@@ -289,7 +289,7 @@ source.
 if a digest drifts, or if the generated manifests omit the immutable route
 semantics.
 Each immutable version `index.html` is itself recorded with a SHA-256 in the
-publication manifest. The four version prefixes that predate this contract keep
+publication manifest. The five version prefixes that predate this contract keep
 their already-published legacy bytes; new paper versions are rendered by
 `scripts/immutable-publication-page.cjs` under the frozen
 `libkungfu-dev-immutable-publication-page-v1` contract. Mutable homepage,
