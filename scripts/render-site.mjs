@@ -11,6 +11,13 @@ const distDir = path.join(repoRoot, "dist");
 const fixturesDir = path.join(repoRoot, "src", "fixtures");
 const require = createRequire(import.meta.url);
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./publication-packages.cjs");
+const {
+  IMMUTABLE_PUBLICATION_PAGE_CONTRACT,
+  renderImmutablePublicationPage,
+} = require("./immutable-publication-page.cjs");
+const {
+  verifyPaperPropagationQualification,
+} = require("./paper-propagation.cjs");
 const BRAND_SIGNATURE = "Kungfu UNGFU™";
 const BRAND_CONTEXT = "Developer Platform";
 const BRAND_BOUNDARY = "Kungfu is the product name. UNGFU is not a second product or runtime, and the trademark symbol makes no registration-status claim.";
@@ -829,6 +836,37 @@ function publicationVersionCards(publication, versions) {
     .join("\n");
 }
 
+const LEGACY_IMMUTABLE_PUBLICATION_PAGES = new Map([
+  [
+    "/archive/kungfu-product-white-paper/v0.1.0-alpha.10/",
+    "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html",
+  ],
+  [
+    "/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/",
+    "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
+  ],
+  [
+    "/archive/observer-declared-timelines/v0.1.0-alpha.9/",
+    "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html",
+  ],
+  [
+    "/archive/episodes-to-primitives/v0.1.0-alpha.2/",
+    "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
+  ],
+  [
+    "/archive/kfd-machine-life-roadmap/v0.1.0-alpha.2/",
+    "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+  ],
+]);
+
+function renderLegacyImmutablePublicationPage(version) {
+  const snapshotPath = LEGACY_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
+  if (!snapshotPath) {
+    throw new Error(`legacy immutable publication page is not snapshotted: ${version.immutablePath}`);
+  }
+  return fs.readFileSync(path.join(repoRoot, snapshotPath), "utf8");
+}
+
 function renderPublicationArchives() {
   const source = readPublicationRegistrySource();
   source.packages = source.packages.map((entry) => ({
@@ -1122,37 +1160,39 @@ function renderPublicationArchives() {
     renderedRoutes.push({ path: publication.latest.path, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "latest" });
 
     for (const version of publication.versions) {
+      const legacyImmutableIndex = LEGACY_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath);
+      const immutableIndexContract = legacyImmutableIndex
+        ? "libkungfu-dev-immutable-publication-page-legacy-v0"
+        : IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
+      const immutableIndexBody = legacyImmutableIndex
+        ? renderLegacyImmutablePublicationPage(version)
+        : renderImmutablePublicationPage({ publication, version });
+      const immutableIndexSha256 = sha256Buffer(Buffer.from(immutableIndexBody));
       writeFile(
         archiveOutputPath(version.immutablePath, "index.html"),
-        page({
-          title: `${publication.title} ${version.version} | papers.libkungfu.dev`,
-          description: `Immutable archive for ${publication.title} ${version.version}.`,
-          current: "papers",
-          preserveRelativeMachineEntries: true,
-          immutableArchive: true,
-          body: `<section class="hero">
-            <p class="eyebrow page-kicker"><a ${archiveLinkAttrs(`/${publication.id}/`)} aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">immutable / ${escapeHtml(version.version)}</span></p>
-            <h1>${escapeHtml(publication.title)} ${escapeHtml(version.version)}</h1>
-            <p class="lead">Immutable archive prefix. Later builds must preserve every file listed here.</p>
-          </section>
-
-          <section class="panel warning">
-            <h2>Immutable route</h2>
-            <p><strong>Append-only:</strong> <code>${escapeHtml(version.immutablePath)}</code></p>
-          </section>
-
-          <section class="panel" style="margin-top: 18px;">
-            <h2>Artifacts</h2>
-            <dl class="meta">
-              ${version.renderedArtifacts
-                .map((artifact) => `<dt>${escapeHtml(artifact.kind)}</dt>
-                <dd><a ${artifactLinkAttrs(version.immutablePath, artifact.path)}><code>${escapeHtml(artifact.path)}</code></a><br><code>${escapeHtml(artifact.sha256)}</code></dd>`)
-                .join("")}
-            </dl>
-          </section>`,
-        }),
+        immutableIndexBody,
       );
-      renderedRoutes.push({ path: version.immutablePath, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "version-index", immutable: true });
+      const immutableIndexRoute = {
+        path: version.immutablePath,
+        host: surfaceCanonicalHost("papers"),
+        source: source.source,
+        routeKind: "version-index",
+        immutable: true,
+        sha256: immutableIndexSha256,
+        mediaType: "text/html",
+      };
+      version.immutableIndex = {
+        contract: immutableIndexContract,
+        path: "index.html",
+        sha256: immutableIndexSha256,
+        mediaType: "text/html",
+      };
+      renderedRoutes.push(immutableIndexRoute);
+      immutableArtifacts.push({
+        publication: publication.id,
+        version: version.version,
+        ...immutableIndexRoute,
+      });
 
       for (const artifact of version.renderedArtifacts) {
         const outputPath = artifactOutputPath(version.immutablePath, artifact.path);
@@ -1205,6 +1245,7 @@ function renderPublicationArchives() {
         version: version.version,
         immutablePath: version.immutablePath,
         immutableUrl: archiveHref(version.immutablePath),
+        immutableIndex: version.immutableIndex,
         artifacts: version.renderedArtifacts.map((artifact) => ({
           kind: artifact.kind,
           path: artifact.path,
@@ -7409,11 +7450,26 @@ const runtimeAgentProjection = {
   },
 };
 
+const paperPropagationQualificationPath = path.resolve(
+  repoRoot,
+  process.env.PAPER_PROPAGATION_QUALIFICATION_PATH || ".buildchain/paper-propagation-qualification.json",
+);
+const paperPropagationQualification = fs.existsSync(paperPropagationQualificationPath)
+  ? verifyPaperPropagationQualification(readJsonFile(paperPropagationQualificationPath))
+  : undefined;
+const paperPropagationManifest = paperPropagationQualification?.propagation
+  ? paperPropagationQualification
+  : undefined;
+
 const manifest = {
   schemaVersion: 1,
   contract: "libkungfu-dev-generated-site-manifest",
   ...surfaceTimestampPolicy,
   canonicalHost: surfaceCanonicalHost("hub"),
+  paperPropagation: paperPropagationManifest,
+  publicationFastPath: paperPropagationManifest?.qualified
+    ? paperPropagationManifest.publicationFastPath
+    : undefined,
   brand: {
     signature: BRAND_SIGNATURE,
     context: BRAND_CONTEXT,

@@ -6,6 +6,7 @@ cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
 node scripts/check-dogfood-evidence.mjs
+node scripts/check-paper-propagation.cjs
 
 pnpm exec buildchain badges readme --check
 
@@ -21,6 +22,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const path = require("path");
 const { loadPublicationPackageSet, readPublicationArtifact } = require("./scripts/publication-packages.cjs");
+const { verifyPaperPropagationQualification } = require("./scripts/paper-propagation.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const webSurfaceWorkflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
 if (!webSurfaceWorkflow.includes("export DOGFOOD_EVIDENCE_REQUIRED=true")) {
@@ -168,6 +170,11 @@ const agentSupplyChain = JSON.parse(fs.readFileSync("dist/agent-supply-chain.jso
 const dogfoodProjection = JSON.parse(fs.readFileSync("dist/dogfood-evidence.json", "utf8"));
 const publicationManifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
 const publicationRenderedRegistry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
+const paperPropagationQualificationPath = process.env.PAPER_PROPAGATION_QUALIFICATION_PATH
+  || ".buildchain/paper-propagation-qualification.json";
+const paperPropagationQualification = fs.existsSync(paperPropagationQualificationPath)
+  ? verifyPaperPropagationQualification(JSON.parse(fs.readFileSync(paperPropagationQualificationPath, "utf8")))
+  : undefined;
 const badgeEndpointRegistry = JSON.parse(fs.readFileSync("dist/badges/v1/badge-endpoint-registry.json", "utf8"));
 const kfdAgentManifest = JSON.parse(fs.readFileSync("dist/kfd/manifest.json", "utf8"));
 const kfdRenderedRegistry = JSON.parse(fs.readFileSync("dist/kfd/registry.json", "utf8"));
@@ -1264,6 +1271,22 @@ if (publicationRenderedRegistry.publications?.length !== expectedPaperPackages.l
 if (publicationManifest.contract !== "libkungfu-dev-publication-archive-surface") {
   throw new Error("publication archive manifest contract mismatch");
 }
+if (paperPropagationQualification?.propagation) {
+  if (JSON.stringify(manifest.paperPropagation) !== JSON.stringify(paperPropagationQualification)) {
+    throw new Error("dist manifest paper propagation qualification drifted");
+  }
+  if (
+    paperPropagationQualification.qualified
+    && JSON.stringify(manifest.publicationFastPath) !== JSON.stringify(paperPropagationQualification.publicationFastPath)
+  ) {
+    throw new Error("dist manifest paper propagation fast path drifted");
+  }
+  if (!paperPropagationQualification.qualified && manifest.publicationFastPath !== undefined) {
+    throw new Error("unqualified paper propagation exposed a deployment fast path");
+  }
+} else if (manifest.paperPropagation !== undefined || manifest.publicationFastPath !== undefined) {
+  throw new Error("dist manifest exposes paper propagation without a qualification envelope");
+}
 if (
   publicationManifest.canonicalHost !== expectedSurfaceHost("papers") ||
   publicationManifest.source?.kind !== "paper-packages" ||
@@ -1335,6 +1358,32 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       if (!versionHtml.includes(`href="${href}"`)) {
         throw new Error(`immutable publication version page changed its legacy machine entry: ${publication.id}@${version.version} ${href}`);
       }
+    }
+    const versionIndexSha256 = sha256File(versionIndex);
+    if (
+      ![
+        "libkungfu-dev-immutable-publication-page-legacy-v0",
+        "libkungfu-dev-immutable-publication-page-v1",
+      ].includes(renderedVersion.immutableIndex?.contract)
+      || renderedVersion.immutableIndex?.path !== "index.html"
+      || renderedVersion.immutableIndex?.sha256 !== versionIndexSha256
+    ) {
+      throw new Error(`immutable publication index is not digest-bound: ${publication.id}@${version.version}`);
+    }
+    if (
+      renderedVersion.immutableIndex.contract === "libkungfu-dev-immutable-publication-page-v1"
+      && !versionHtml.includes('data-contract="libkungfu-dev-immutable-publication-page-v1"')
+    ) {
+      throw new Error(`frozen immutable publication renderer marker is missing: ${publication.id}@${version.version}`);
+    }
+    if (!publicationManifest.immutableArtifacts.some((entry) => (
+      entry.publication === publication.id
+      && entry.version === version.version
+      && entry.routeKind === "version-index"
+      && entry.path === version.immutablePath
+      && entry.sha256 === versionIndexSha256
+    ))) {
+      throw new Error(`publication manifest missing immutable index evidence: ${publication.id}@${version.version}`);
     }
     const expectedArtifacts = [
       ...version.artifacts,

@@ -9,6 +9,8 @@ node_modules/
 .buildchain/downloaded-manifests/
 .buildchain/downloaded-relay-manifests/
 .buildchain/logs/
+.buildchain/paper-propagation-changed-files.txt
+.buildchain/paper-propagation-qualification.json
 .buildchain/render-inputs/
 .buildchain/release-evidence/
 .buildchain/release-state/

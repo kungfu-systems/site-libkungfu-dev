@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facts, Trust, and Cooperation: The KFD Foundation Triad 0.1.0-alpha.8 | papers.libkungfu.dev</title>
+  <meta name="description" content="Immutable archive for Facts, Trust, and Cooperation: The KFD Foundation Triad 0.1.0-alpha.8.">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="/manifest.json">
+  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="/llms.txt">
+  <link rel="alternate" type="text/plain" title="Full agent index" href="/llms-full.txt">
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7f8;
+      --fg: #14171a;
+      --muted: #5b6470;
+      --line: #cbd5df;
+      --soft: #ffffff;
+      --accent: #0f766e;
+      --accent-strong: #0b4f4a;
+      --warn: #925a16;
+      --code: #eef2f3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1214;
+        --fg: #eef3f6;
+        --muted: #a8b2bd;
+        --line: #33404a;
+        --soft: #171c20;
+        --accent: #47c9ba;
+        --accent-strong: #83ded3;
+        --warn: #e2b15b;
+        --code: #20272d;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    a {
+      color: var(--accent-strong);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+
+    code {
+      border: 1px solid var(--line);
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font: 0.92em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--soft) 88%, transparent);
+    }
+
+    .bar {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      color: var(--fg);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      color: var(--accent-strong);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a[aria-current="page"] {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 64px 0 72px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 22px;
+      margin-bottom: 48px;
+    }
+
+    .visual {
+      display: block;
+      width: 100%;
+      max-width: 960px;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    .substrate-map {
+      position: relative;
+      aspect-ratio: 960 / 360;
+      overflow: hidden;
+    }
+
+    .substrate-map img {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-hotspot {
+      position: absolute;
+      border-radius: 8px;
+    }
+
+    .map-hotspot:hover,
+    .map-hotspot:focus-visible {
+      background: rgb(15 118 110 / 0.08);
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .map-hotspot.kfd {
+      left: 4.375%;
+      top: 26.667%;
+      width: 17.917%;
+      height: 35%;
+    }
+
+    .map-hotspot.buildchain {
+      left: 28.333%;
+      top: 26.667%;
+      width: 19.583%;
+      height: 35%;
+    }
+
+    .map-hotspot.core {
+      left: 53.958%;
+      top: 26.667%;
+      width: 17.917%;
+      height: 35%;
+    }
+
+    .map-hotspot.products {
+      left: 77.917%;
+      top: 26.667%;
+      width: 17.708%;
+      height: 35%;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow a {
+      color: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+
+    .page-kicker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+      width: 100%;
+    }
+
+    .page-kicker-state {
+      color: var(--muted);
+      margin-left: auto;
+      text-align: right;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 920px;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .lead {
+      max-width: 820px;
+      color: var(--fg);
+      font-size: 22px;
+      line-height: 1.35;
+    }
+
+    .badge-strip {
+      max-width: 100%;
+    }
+
+    .badge-strip p {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-strip img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .publication-grid {
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    }
+
+    .publication-card {
+      display: grid;
+      grid-row: span 5;
+      grid-template-rows: subgrid;
+      gap: 14px;
+      align-content: stretch;
+    }
+
+    .publication-card .card-actions {
+      align-self: end;
+    }
+
+    .publication-card .meta {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .publication-card .meta dd {
+      text-align: right;
+    }
+
+    .publication-card .meta code {
+      white-space: nowrap;
+    }
+
+    .archive-boundary {
+      margin-top: 18px;
+    }
+
+    .paper-primary-actions {
+      justify-content: flex-start;
+    }
+
+    .section-heading {
+      margin: 48px 0 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 20px;
+      min-width: 0;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .mechanism-chain {
+      counter-reset: mechanism-step;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    }
+
+    .mechanism-step {
+      display: grid;
+      grid-row: span 5;
+      grid-template-rows: subgrid;
+      gap: 14px;
+      align-content: stretch;
+    }
+
+    .mechanism-step::before {
+      counter-increment: mechanism-step;
+      content: counter(mechanism-step, decimal-leading-zero);
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .mechanism-step h3 {
+      margin-bottom: 0;
+      min-height: 2.6em;
+    }
+
+    .mechanism-step h3 a {
+      color: inherit;
+      text-decoration-color: var(--muted);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+    }
+
+    .mechanism-step h3 a:hover {
+      color: var(--accent);
+      text-decoration-color: currentColor;
+    }
+
+    .mechanism-role {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .mechanism-step .card-action {
+      align-self: end;
+      margin-top: 0;
+    }
+
+    .future-products {
+      margin-top: 18px;
+    }
+
+    .future-products h2 {
+      margin-bottom: 10px;
+    }
+
+    .foundation-model-list {
+      margin-top: 18px;
+      grid-template-rows: auto auto auto;
+    }
+
+    .foundation-layer {
+      display: grid;
+      grid-row: span 3;
+      grid-template-rows: subgrid;
+      gap: 14px;
+      align-content: stretch;
+    }
+
+    .foundation-layer h3 {
+      margin-bottom: 0;
+    }
+
+    .foundation-triad-card h3 a,
+    .foundation-layer h3 a {
+      color: inherit;
+      text-decoration-color: var(--muted);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+    }
+
+    .foundation-triad-card h3 a:hover,
+    .foundation-layer h3 a:hover {
+      color: var(--accent);
+      text-decoration-color: currentColor;
+    }
+
+    .foundation-commitment {
+      align-self: start;
+    }
+
+    .foundation-fields {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+    }
+
+    .foundation-fields div {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 10px 12px;
+      align-items: start;
+    }
+
+    .foundation-fields dt {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .foundation-fields dd {
+      margin: 0;
+      min-width: 0;
+    }
+
+    .foundation-fields p {
+      color: var(--fg);
+    }
+
+    .decision-card {
+      display: grid;
+      grid-row: span 4;
+      grid-template-rows: subgrid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .kfd-decision-list,
+    .practice-guideline-list {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-rows: auto minmax(6.5em, auto) auto auto;
+    }
+
+    .decision-card h3 {
+      margin-bottom: 0;
+    }
+
+    .decision-summary {
+      align-self: start;
+    }
+
+    .decision-meta {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 10px 12px;
+      margin: 0;
+    }
+
+    .decision-meta dt {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .decision-meta dd {
+      margin: 0;
+      min-width: 0;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 10px 18px;
+      margin: 0;
+    }
+
+    .meta dt {
+      color: var(--muted);
+    }
+
+    .meta dd {
+      margin: 0;
+      min-width: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--fg);
+      background: color-mix(in srgb, var(--code) 70%, transparent);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .doc-layout {
+      display: grid;
+      grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .doc-sidebar {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+
+    .doc-toc,
+    .doc-global-nav {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 16px;
+    }
+
+    .doc-global-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-toc {
+      position: sticky;
+      top: 18px;
+    }
+
+    .doc-sidebar .doc-toc {
+      position: static;
+      top: auto;
+    }
+
+    .doc-toc h2,
+    .doc-global-nav h2 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .doc-toc nav,
+    .doc-nav-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-nav-group + .doc-nav-group {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .doc-nav-heading {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .doc-toc a,
+    .doc-global-nav a {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+
+    .doc-toc a:hover,
+    .doc-toc a:focus,
+    .doc-global-nav a:hover,
+    .doc-global-nav a:focus,
+    .doc-global-nav a[aria-current="page"] {
+      color: var(--accent-strong);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .doc-toc .toc-related-link {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 750;
+    }
+
+    .doc-global-nav .doc-nav-child {
+      margin: -2px 0 2px 14px;
+      padding-left: 12px;
+      border-left: 2px solid var(--line);
+      font-size: 13px;
+    }
+
+    .doc-global-nav .doc-nav-child[aria-current="page"] {
+      border-left-color: var(--accent);
+      font-weight: 750;
+    }
+
+    .doc-page-sections {
+      display: grid;
+      gap: 6px;
+      margin: 2px 0 2px 10px;
+      padding-left: 10px;
+      border-left: 1px solid var(--line);
+    }
+
+    .doc-page-sections a {
+      font-size: 13px;
+    }
+
+    .toc-level-3 {
+      padding-left: 12px;
+    }
+
+    .toc-level-4 {
+      padding-left: 24px;
+    }
+
+    .doc-content {
+      min-width: 0;
+    }
+
+    .doc-content h2,
+    .doc-content h3,
+    .doc-content h4 {
+      scroll-margin-top: 18px;
+    }
+
+    .doc-content h2:not(:first-child),
+    .doc-content h3:not(:first-child),
+    .doc-content h4:not(:first-child) {
+      margin-top: 28px;
+    }
+
+    .doc-content p,
+    .doc-content li {
+      color: var(--fg);
+    }
+
+    .doc-content p + p,
+    .doc-content p + ul,
+    .doc-content p + ol,
+    .doc-content ul + p,
+    .doc-content ol + p {
+      margin-top: 14px;
+    }
+
+    .doc-content ul,
+    .doc-content ol {
+      margin: 14px 0 0;
+      color: var(--fg);
+    }
+
+    .doc-content pre {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--code);
+      padding: 14px 16px;
+    }
+
+    .doc-content pre code {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card-action {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      margin-top: 16px;
+      font-weight: 700;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 16px;
+      margin-top: 16px;
+    }
+
+    .card-actions .card-action {
+      margin-top: 0;
+    }
+
+    .warning {
+      border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
+    }
+
+    .warning strong {
+      color: var(--warn);
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      padding: 24px 0;
+      font-size: 14px;
+    }
+
+    footer div {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    footer p {
+      margin: 0;
+    }
+
+    @media (max-width: 820px) {
+      .bar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 18px 0;
+      }
+
+      main {
+        padding-top: 42px;
+      }
+
+      .grid,
+      .grid.three {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        grid-template-columns: 1fr;
+      }
+
+      .foundation-layer h3,
+      .mechanism-step h3,
+      .foundation-commitment,
+      .decision-summary {
+        min-height: 0;
+      }
+
+      .foundation-layer,
+      .decision-card,
+      .mechanism-step {
+        grid-row: auto;
+        grid-template-rows: none;
+      }
+
+      .mechanism-chain,
+      .kfd-decision-list,
+      .practice-guideline-list,
+      .publication-grid {
+        grid-template-rows: none;
+      }
+
+      .publication-card {
+        grid-row: auto;
+        grid-template-rows: none;
+      }
+
+      .doc-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .doc-sidebar {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+
+      .doc-toc {
+        position: static;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .foundation-fields div,
+      .decision-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .foundation-fields div {
+        gap: 4px;
+      }
+
+      .decision-meta {
+        gap: 4px 0;
+      }
+
+      .decision-meta dd + dt {
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <a class="brand" href="https://libkungfu.dev/" data-local-href="/" aria-label="Back to libkungfu.dev home">libkungfu.dev</a>
+      <nav aria-label="Primary"><a href="https://core.libkungfu.dev/" data-local-href="/core/">Core</a><a href="https://buildchain.libkungfu.dev/" data-local-href="/buildchain/">Buildchain</a><a href="https://kfd.libkungfu.dev/" data-local-href="/kfd/">KFD</a><a href="https://papers.libkungfu.dev/" data-local-href="/papers/" aria-current="page">Papers</a></nav>
+    </div>
+  </header>
+  <main><section class="hero">
+            <p class="eyebrow page-kicker"><a href="https://papers.libkungfu.dev/kfd-foundation-real-world-agent-work/" data-local-href="/papers/kfd-foundation-real-world-agent-work/" aria-label="Back to publication page">Back to publication page</a><span class="page-kicker-state">immutable / 0.1.0-alpha.8</span></p>
+            <h1>Facts, Trust, and Cooperation: The KFD Foundation Triad 0.1.0-alpha.8</h1>
+            <p class="lead">Immutable archive prefix. Later builds must preserve every file listed here.</p>
+          </section>
+
+          <section class="panel warning">
+            <h2>Immutable route</h2>
+            <p><strong>Append-only:</strong> <code>/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/</code></p>
+          </section>
+
+          <section class="panel" style="margin-top: 18px;">
+            <h2>Artifacts</h2>
+            <dl class="meta">
+              <dt>pdf</dt>
+                <dd><a href="https://papers.libkungfu.dev/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/kfd-foundation-model.pdf" data-local-href="/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/kfd-foundation-model.pdf"><code>kfd-foundation-model.pdf</code></a><br><code>sha256:0cc4d6b38649b562536db4b88cfd76ef38a65f1e9843019fb361f669bc690f00</code></dd><dt>manifest</dt>
+                <dd><a href="https://papers.libkungfu.dev/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/publication-artifact.json" data-local-href="/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/publication-artifact.json"><code>publication-artifact.json</code></a><br><code>sha256:38ce91fd76c8654dd4421e6a14a136f573377b9fc00baa634cb1c4daeef4ad1c</code></dd><dt>source</dt>
+                <dd><a href="https://papers.libkungfu.dev/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/source.tar.gz" data-local-href="/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/source.tar.gz"><code>source.tar.gz</code></a><br><code>sha256:5bf86f59dd7e8bc96ff5b02f5ad1ec1c77dc9fc3b4e3fc17c2167d4229ef94b6</code></dd><dt>passport</dt>
+                <dd><a href="https://papers.libkungfu.dev/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/publication-artifact-passport.json" data-local-href="/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/publication-artifact-passport.json"><code>publication-artifact-passport.json</code></a><br><code>sha256:698cdcae8612f45263dd695fef8983faf837b9a78610ec8a3b89a9bba6bc7763</code></dd>
+            </dl>
+          </section></main>
+  <footer>
+    <div>
+      <p>&copy; 2026 Kungfu Origin Technology Limited.</p>
+      <p>Open developer and agent substrate hub. Facts come from upstream packages and pinned release artifacts.</p>
+      <p>Open-source components are governed by their repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">kungfu-systems on GitHub</a>.</p>
+    </div>
+  </footer>
+  <script>
+    (() => {
+      const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+      if (!localHosts.has(window.location.hostname)) return;
+      for (const link of document.querySelectorAll("[data-local-href]")) {
+        link.setAttribute("href", link.getAttribute("data-local-href"));
+      }
+    })();
+  </script>
+</body>
+</html>

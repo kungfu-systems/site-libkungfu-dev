@@ -107,6 +107,12 @@ jobs:
         node scripts/prepare-kfd-upstream.mjs
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
+        mkdir -p .buildchain
+        git diff-tree --root --no-commit-id --name-only -r -m HEAD \
+          | sort -u > .buildchain/paper-propagation-changed-files.txt
+        node scripts/paper-propagation.cjs qualify \
+          --changed-files-file .buildchain/paper-propagation-changed-files.txt \
+          --output .buildchain/paper-propagation-qualification.json
         pnpm --config.minimumReleaseAge=0 run build
       verify-command: |
         export SITE_PREVIEW_ALIAS="${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}"
