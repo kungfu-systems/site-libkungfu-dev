@@ -79,17 +79,26 @@ test -f dist/papers/registry.json
 test -f dist/papers/llms.txt
 node - <<'NODE'
 const fs = require("node:fs");
-const registry = JSON.parse(fs.readFileSync("dist/papers/registry.json", "utf8"));
-for (const publication of registry.publications || []) {
+const manifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
+for (const publication of manifest.publications || []) {
   const required = [
     `dist/papers/${publication.id}/index.html`,
     `dist/papers/${publication.id}/latest/index.html`,
   ];
   for (const version of publication.versions || []) {
     const prefix = `dist/papers${version.immutablePath}`;
-    required.push(`${prefix}index.html`);
-    for (const artifact of [...version.artifacts, version.manifest, version.passport, version.source.bundle]) {
-      required.push(`${prefix}${artifact.path}`);
+    if (version.immutableIndex) {
+      required.push(`${prefix}${version.immutableIndex.path}`);
+    }
+    const currentPackageVersion = version.version === publication.latest.version;
+    for (const artifact of version.artifacts || []) {
+      const route = (manifest.routes || []).find((entry) => (
+        entry.path === `${version.immutablePath}${artifact.path}`
+      ));
+      if (currentPackageVersion && !route) {
+        throw new Error(`current publication artifact route is missing: ${publication.id}@${version.version}/${artifact.path}`);
+      }
+      if (route) required.push(`${prefix}${artifact.path}`);
     }
   }
   for (const file of required) {
