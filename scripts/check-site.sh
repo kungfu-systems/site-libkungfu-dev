@@ -1327,63 +1327,69 @@ for (const publication of publicationRenderedRegistry.publications || []) {
     if (!renderedVersion || renderedVersion.immutablePath !== version.immutablePath || !renderedVersion.immutableUrl.startsWith(expectedSurfaceHref("papers"))) {
       throw new Error(`publication manifest missing immutable version route: ${publication.id}@${version.version}`);
     }
-    const versionIndex = `dist/papers${version.immutablePath}index.html`;
-    if (!fs.existsSync(versionIndex)) {
-      throw new Error(`missing immutable publication version index: ${versionIndex}`);
+    const currentPackageVersion = version.version === publication.latest.version;
+    if (currentPackageVersion && !renderedVersion.immutableIndex) {
+      throw new Error(`current publication package version is missing its immutable index: ${publication.id}@${version.version}`);
     }
-    const versionHtml = fs.readFileSync(versionIndex, "utf8");
-    if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
-      throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
-    }
-    if (versionHtml.includes(".hero-answer {") || versionHtml.includes(".hero-claim-boundary {")) {
-      throw new Error(`immutable publication version page contains KFD-only hero styles: ${publication.id}@${version.version}`);
-    }
-    if (versionHtml.includes("--core-blue:") || versionHtml.includes(".core-runtime-map {")) {
-      throw new Error(`immutable publication version page contains Core-only runtime styles: ${publication.id}@${version.version}`);
-    }
-    if (versionHtml.includes("main-site-link") || versionHtml.includes("Back to the Kungfu main site")) {
-      throw new Error(`immutable publication version page changed after the main-site header addition: ${publication.id}@${version.version}`);
-    }
-    if (
-      versionHtml.includes(".reader-orientation {")
-      || versionHtml.includes(".reader-supply-chain {")
-      || versionHtml.includes(".page-kicker > * {")
-      || versionHtml.includes(".publication-featured {")
-      || versionHtml.includes(".publication-featured-grid {")
-      || versionHtml.includes(".publication-card-featured {")
-    ) {
-      throw new Error(`immutable publication version page contains mutable site styles: ${publication.id}@${version.version}`);
-    }
-    for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
-      if (!versionHtml.includes(`href="${href}"`)) {
-        throw new Error(`immutable publication version page changed its legacy machine entry: ${publication.id}@${version.version} ${href}`);
+    if (renderedVersion.immutableIndex) {
+      const versionIndex = `dist/papers${version.immutablePath}index.html`;
+      if (!fs.existsSync(versionIndex)) {
+        throw new Error(`missing immutable publication version index: ${versionIndex}`);
       }
-    }
-    const versionIndexSha256 = sha256File(versionIndex);
-    if (
-      ![
-        "libkungfu-dev-immutable-publication-page-legacy-v0",
-        "libkungfu-dev-immutable-publication-page-v1",
-      ].includes(renderedVersion.immutableIndex?.contract)
-      || renderedVersion.immutableIndex?.path !== "index.html"
-      || renderedVersion.immutableIndex?.sha256 !== versionIndexSha256
-    ) {
-      throw new Error(`immutable publication index is not digest-bound: ${publication.id}@${version.version}`);
-    }
-    if (
-      renderedVersion.immutableIndex.contract === "libkungfu-dev-immutable-publication-page-v1"
-      && !versionHtml.includes('data-contract="libkungfu-dev-immutable-publication-page-v1"')
-    ) {
-      throw new Error(`frozen immutable publication renderer marker is missing: ${publication.id}@${version.version}`);
-    }
-    if (!publicationManifest.immutableArtifacts.some((entry) => (
-      entry.publication === publication.id
-      && entry.version === version.version
-      && entry.routeKind === "version-index"
-      && entry.path === version.immutablePath
-      && entry.sha256 === versionIndexSha256
-    ))) {
-      throw new Error(`publication manifest missing immutable index evidence: ${publication.id}@${version.version}`);
+      const versionHtml = fs.readFileSync(versionIndex, "utf8");
+      if (!versionHtml.includes("Immutable archive prefix") || !versionHtml.includes(escapeHtml(version.immutablePath))) {
+        throw new Error(`publication version page does not expose immutable archive prefix: ${publication.id}@${version.version}`);
+      }
+      if (versionHtml.includes(".hero-answer {") || versionHtml.includes(".hero-claim-boundary {")) {
+        throw new Error(`immutable publication version page contains KFD-only hero styles: ${publication.id}@${version.version}`);
+      }
+      if (versionHtml.includes("--core-blue:") || versionHtml.includes(".core-runtime-map {")) {
+        throw new Error(`immutable publication version page contains Core-only runtime styles: ${publication.id}@${version.version}`);
+      }
+      if (versionHtml.includes("main-site-link") || versionHtml.includes("Back to the Kungfu main site")) {
+        throw new Error(`immutable publication version page changed after the main-site header addition: ${publication.id}@${version.version}`);
+      }
+      if (
+        versionHtml.includes(".reader-orientation {")
+        || versionHtml.includes(".reader-supply-chain {")
+        || versionHtml.includes(".page-kicker > * {")
+        || versionHtml.includes(".publication-featured {")
+        || versionHtml.includes(".publication-featured-grid {")
+        || versionHtml.includes(".publication-card-featured {")
+      ) {
+        throw new Error(`immutable publication version page contains mutable site styles: ${publication.id}@${version.version}`);
+      }
+      for (const href of ["/manifest.json", "/llms.txt", "/llms-full.txt"]) {
+        if (!versionHtml.includes(`href="${href}"`)) {
+          throw new Error(`immutable publication version page changed its legacy machine entry: ${publication.id}@${version.version} ${href}`);
+        }
+      }
+      const versionIndexSha256 = sha256File(versionIndex);
+      if (
+        ![
+          "libkungfu-dev-immutable-publication-page-legacy-v0",
+          "libkungfu-dev-immutable-publication-page-v1",
+        ].includes(renderedVersion.immutableIndex.contract)
+        || renderedVersion.immutableIndex.path !== "index.html"
+        || renderedVersion.immutableIndex.sha256 !== versionIndexSha256
+      ) {
+        throw new Error(`immutable publication index is not digest-bound: ${publication.id}@${version.version}`);
+      }
+      if (
+        renderedVersion.immutableIndex.contract === "libkungfu-dev-immutable-publication-page-v1"
+        && !versionHtml.includes('data-contract="libkungfu-dev-immutable-publication-page-v1"')
+      ) {
+        throw new Error(`frozen immutable publication renderer marker is missing: ${publication.id}@${version.version}`);
+      }
+      if (!publicationManifest.immutableArtifacts.some((entry) => (
+        entry.publication === publication.id
+        && entry.version === version.version
+        && entry.routeKind === "version-index"
+        && entry.path === version.immutablePath
+        && entry.sha256 === versionIndexSha256
+      ))) {
+        throw new Error(`publication manifest missing immutable index evidence: ${publication.id}@${version.version}`);
+      }
     }
     const expectedArtifacts = [
       ...version.artifacts,
@@ -1392,23 +1398,31 @@ for (const publication of publicationRenderedRegistry.publications || []) {
       { ...version.passport, kind: "passport" },
     ];
     for (const artifact of expectedArtifacts) {
-      const artifactPath = `dist/papers${version.immutablePath}${artifact.path}`;
-      if (!fs.existsSync(artifactPath)) {
-        throw new Error(`declared immutable publication artifact disappeared: ${artifactPath}`);
-      }
-      const digest = sha256File(artifactPath);
-      if (digest !== artifact.sha256) {
-        throw new Error(`immutable publication artifact digest drifted: ${artifactPath}`);
-      }
-      if (!fs.readFileSync(artifactPath).equals(readPublicationArtifact(artifact))) {
-        throw new Error(`immutable publication artifact does not match its npm package source: ${artifactPath}`);
-      }
       const manifestArtifact = renderedVersion.artifacts.find((entry) => entry.path === artifact.path);
       if (!manifestArtifact || manifestArtifact.sha256 !== artifact.sha256 || !manifestArtifact.url.startsWith(expectedSurfaceHref("papers"))) {
         throw new Error(`publication manifest missing immutable artifact facts: ${publication.id}@${version.version}/${artifact.path}`);
       }
-      if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("papers") && page.path === `${version.immutablePath}${artifact.path}` && page.immutable === true && page.sha256 === artifact.sha256)) {
-        throw new Error(`dist manifest missing immutable artifact route: ${publication.id}@${version.version}/${artifact.path}`);
+      const artifactPath = `dist/papers${version.immutablePath}${artifact.path}`;
+      const artifactRoute = manifest.pages.find((page) => (
+        page.host === expectedSurfaceHost("papers")
+        && page.path === `${version.immutablePath}${artifact.path}`
+      ));
+      if (currentPackageVersion) {
+        if (!fs.existsSync(artifactPath)) {
+          throw new Error(`declared current immutable publication artifact disappeared: ${artifactPath}`);
+        }
+        const digest = sha256File(artifactPath);
+        if (digest !== artifact.sha256) {
+          throw new Error(`immutable publication artifact digest drifted: ${artifactPath}`);
+        }
+        if (!fs.readFileSync(artifactPath).equals(readPublicationArtifact(artifact))) {
+          throw new Error(`immutable publication artifact does not match its npm package source: ${artifactPath}`);
+        }
+        if (artifactRoute?.immutable !== true || artifactRoute.sha256 !== artifact.sha256) {
+          throw new Error(`dist manifest missing immutable artifact route: ${publication.id}@${version.version}/${artifact.path}`);
+        }
+      } else if (fs.existsSync(artifactPath) || artifactRoute) {
+        throw new Error(`historical package registry artifact was rematerialized from the current package: ${publication.id}@${version.version}/${artifact.path}`);
       }
     }
   }
