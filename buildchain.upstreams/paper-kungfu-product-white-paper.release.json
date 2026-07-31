@@ -1,5 +1,4 @@
 {
-  "schemaVersion": 1,
   "contract": "kungfu-buildchain-release-propagation-lock",
   "upstream": {
     "node": "paper-kungfu-product-white-paper",
@@ -74,5 +73,6 @@
     "exact": true,
     "floatingTags": false
   },
-  "lockSha256": "6df55049f9c122bd03312fd65aeaac7fcdf0c69f69b00bc4d5c87422ed810c0a"
+  "lockSha256": "6df55049f9c122bd03312fd65aeaac7fcdf0c69f69b00bc4d5c87422ed810c0a",
+  "schemaVersion": 1
 }
