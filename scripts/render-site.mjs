@@ -790,7 +790,7 @@ function artifactOutputPath(versionPath, artifactPath) {
   return archiveOutputPath(`${versionPath}${artifactPath}`);
 }
 
-function renderPublicationArtifacts(version) {
+function publicationArtifactDescriptors(version) {
   return [
     ...version.artifacts,
     version.manifest,
@@ -801,14 +801,22 @@ function renderPublicationArtifacts(version) {
     if (!artifactPath || artifactPath.startsWith("/") || artifactPath.includes("..")) {
       throw new Error(`invalid publication artifact path: ${artifact.path}`);
     }
+    return {
+      ...artifact,
+      path: artifactPath,
+    };
+  });
+}
+
+function renderPublicationArtifacts(version) {
+  return publicationArtifactDescriptors(version).map((artifact) => {
     const body = readPublicationArtifact(artifact);
     const digest = sha256Buffer(body);
     if (digest !== artifact.sha256) {
-      throw new Error(`publication artifact digest mismatch for ${artifactPath}: expected ${artifact.sha256}, got ${digest}`);
+      throw new Error(`publication artifact digest mismatch for ${artifact.path}: expected ${artifact.sha256}, got ${digest}`);
     }
     const renderedArtifact = {
       ...artifact,
-      path: artifactPath,
       sha256: digest,
     };
     Object.defineProperty(renderedArtifact, "body", { value: body, enumerable: false });
@@ -897,7 +905,9 @@ function renderPublicationArchives() {
         ...version,
         version: versionId,
         immutablePath,
-        renderedArtifacts: renderPublicationArtifacts(version),
+        renderedArtifacts: versionId === publication.latest.version
+          ? renderPublicationArtifacts(version)
+          : publicationArtifactDescriptors(version),
       };
     });
     if (!versions.some((version) => version.version === publication.latest.version)) {
@@ -1160,41 +1170,44 @@ function renderPublicationArchives() {
     renderedRoutes.push({ path: publication.latest.path, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "latest" });
 
     for (const version of publication.versions) {
+      const currentPackageVersion = version.version === publication.latest.version;
       const legacyImmutableIndex = LEGACY_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath);
-      const immutableIndexContract = legacyImmutableIndex
-        ? "libkungfu-dev-immutable-publication-page-legacy-v0"
-        : IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
-      const immutableIndexBody = legacyImmutableIndex
-        ? renderLegacyImmutablePublicationPage(version)
-        : renderImmutablePublicationPage({ publication, version });
-      const immutableIndexSha256 = sha256Buffer(Buffer.from(immutableIndexBody));
-      writeFile(
-        archiveOutputPath(version.immutablePath, "index.html"),
-        immutableIndexBody,
-      );
-      const immutableIndexRoute = {
-        path: version.immutablePath,
-        host: surfaceCanonicalHost("papers"),
-        source: source.source,
-        routeKind: "version-index",
-        immutable: true,
-        sha256: immutableIndexSha256,
-        mediaType: "text/html",
-      };
-      version.immutableIndex = {
-        contract: immutableIndexContract,
-        path: "index.html",
-        sha256: immutableIndexSha256,
-        mediaType: "text/html",
-      };
-      renderedRoutes.push(immutableIndexRoute);
-      immutableArtifacts.push({
-        publication: publication.id,
-        version: version.version,
-        ...immutableIndexRoute,
-      });
+      if (currentPackageVersion || legacyImmutableIndex) {
+        const immutableIndexContract = legacyImmutableIndex
+          ? "libkungfu-dev-immutable-publication-page-legacy-v0"
+          : IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
+        const immutableIndexBody = legacyImmutableIndex
+          ? renderLegacyImmutablePublicationPage(version)
+          : renderImmutablePublicationPage({ publication, version });
+        const immutableIndexSha256 = sha256Buffer(Buffer.from(immutableIndexBody));
+        writeFile(
+          archiveOutputPath(version.immutablePath, "index.html"),
+          immutableIndexBody,
+        );
+        const immutableIndexRoute = {
+          path: version.immutablePath,
+          host: surfaceCanonicalHost("papers"),
+          source: source.source,
+          routeKind: "version-index",
+          immutable: true,
+          sha256: immutableIndexSha256,
+          mediaType: "text/html",
+        };
+        version.immutableIndex = {
+          contract: immutableIndexContract,
+          path: "index.html",
+          sha256: immutableIndexSha256,
+          mediaType: "text/html",
+        };
+        renderedRoutes.push(immutableIndexRoute);
+        immutableArtifacts.push({
+          publication: publication.id,
+          version: version.version,
+          ...immutableIndexRoute,
+        });
+      }
 
-      for (const artifact of version.renderedArtifacts) {
+      for (const artifact of currentPackageVersion ? version.renderedArtifacts : []) {
         const outputPath = artifactOutputPath(version.immutablePath, artifact.path);
         writeBinaryFile(outputPath, artifact.body);
         const route = {
