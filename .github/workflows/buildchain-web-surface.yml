@@ -108,8 +108,23 @@ jobs:
         pnpm install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         pnpm install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0
         mkdir -p .buildchain
-        git diff-tree --root --no-commit-id --name-only -r -m HEAD \
-          | sort -u > .buildchain/paper-propagation-changed-files.txt
+        event_name="${{ github.event_name }}"
+        before_sha="${{ github.event.before }}"
+        base_sha="${{ github.event.pull_request.base.sha }}"
+        head_sha="${{ github.event.pull_request.head.sha }}"
+        if [ "$event_name" = "push" ] \
+          && [ -n "$before_sha" ] \
+          && [ "$before_sha" != "0000000000000000000000000000000000000000" ] \
+          && git fetch --no-tags --depth=1 origin "$before_sha"; then
+          git diff --name-only "$before_sha" "$GITHUB_SHA"
+        elif [ "$event_name" = "pull_request" ] \
+          && [ -n "$base_sha" ] \
+          && [ -n "$head_sha" ] \
+          && git fetch --no-tags --depth=1 origin "$base_sha" "$head_sha"; then
+          git diff --name-only "$base_sha" "$head_sha"
+        else
+          git diff-tree --root --no-commit-id --name-only -r -m HEAD
+        fi | sort -u > .buildchain/paper-propagation-changed-files.txt
         node scripts/paper-propagation.cjs qualify \
           --changed-files-file .buildchain/paper-propagation-changed-files.txt \
           --output .buildchain/paper-propagation-qualification.json
