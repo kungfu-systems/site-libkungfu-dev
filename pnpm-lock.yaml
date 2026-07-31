@@ -24,8 +24,11 @@ importers:
         specifier: 0.1.0-alpha.4
         version: 0.1.0-alpha.4
       '@kungfu-tech/paper-kungfu-product-white-paper':
-        specifier: 0.1.0-alpha.10
-        version: 0.1.0-alpha.10
+        specifier: 0.1.0-alpha.11
+        version: 0.1.0-alpha.11
+      '@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain':
+        specifier: npm:@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10
+        version: '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10'
       '@kungfu-tech/paper-observer-declared-timelines':
         specifier: 0.1.0-alpha.9
         version: 0.1.0-alpha.9
@@ -65,6 +68,9 @@ packages:
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10':
     resolution: {integrity: sha512-E72T/WnVn9tLCHGdJVsORZzvwS281hUcWDmr3kIOcQQ0D/SK8Ktf8GlGv/Ov43dy9VtKlqMNm8BgO/P1zCQkMQ==}
+
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11':
+    resolution: {integrity: sha512-HcO5hdNwtHl2qW0u//izfqSFWOdE8eFCYcvurYkNYcGsMdpVGcIFUiSHjWAsDfP+nqC1zZcNV3pUWGt0LKthIg==}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9':
     resolution: {integrity: sha512-uixVi6Vic6KILqQoiqisiFv2NOWkOoZrlEhrXSVBPBaMxkg5HtDVqJE0XYiiGz85LIbArQ+DRVKl/E3U/pmH+Q==}
@@ -133,6 +139,8 @@ snapshots:
   '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.4': {}
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10': {}
+
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11': {}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9': {}
 

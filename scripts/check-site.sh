@@ -25,6 +25,22 @@ const { loadPublicationPackageSet, readPublicationArtifact } = require("./script
 const { verifyPaperPropagationQualification } = require("./scripts/paper-propagation.cjs");
 const renderSiteSource = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const webSurfaceWorkflow = fs.readFileSync(".github/workflows/buildchain-web-surface.yml", "utf8");
+for (const brandPaletteContract of [
+  "--bg: #f3f7f8;",
+  "--accent: #0b6f68;",
+  "--evidence: #2563eb;",
+  "--protocol: #6d4ec5;",
+  "--warn: #9a580b;",
+  "--danger: #b42318;",
+  "--unknown: #5f6f7d;",
+  '--publication-focus: var(--protocol);',
+  'border-top-color: var(--evidence);',
+  'border-top-color: var(--unknown);',
+]) {
+  if (!renderSiteSource.includes(brandPaletteContract)) {
+    throw new Error(`developer brand palette contract missing: ${brandPaletteContract}`);
+  }
+}
 if (!webSurfaceWorkflow.includes("export DOGFOOD_EVIDENCE_REQUIRED=true")) {
   throw new Error("published site builds must fail closed when the public dogfood snapshot cannot be admitted");
 }
