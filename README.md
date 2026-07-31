@@ -66,9 +66,12 @@ first decision to continue:
 The checker enforces a visible-word budget for every primary homepage and
 verifies that the removed detail still exists at its stable depth route.
 
-The five-layer Agent Supply Chain composition comes from the pinned product
-white-paper package. Buildchain, KFD, and Kungfu site package bundles remain
-authoritative for their own mechanics and product facts.
+The five-layer Agent Supply Chain composition retains the exact structured
+snapshot from product White Paper `0.1.0-alpha.10`, pinned through an npm alias,
+because `0.1.0-alpha.11` no longer exports that presentation contract. Current
+White Paper pages, artifacts, metadata, and evidence use `0.1.0-alpha.11`.
+Buildchain, KFD, and Kungfu site package bundles remain authoritative for their
+own mechanics and product facts.
 This renderer publishes the shared composition at `/agent-supply-chain.json`
 and keeps its human homepage projection aligned with that machine contract.
 

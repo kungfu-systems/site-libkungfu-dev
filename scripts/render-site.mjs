@@ -1394,39 +1394,47 @@ ${alternates}
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #f5f7f8;
-      --fg: #14171a;
-      --muted: #5b6470;
-      --line: #cbd5df;
+      --bg: #f3f7f8;
+      --fg: #111820;
+      --muted: #53636f;
+      --line: #c9d5da;
       --soft: #ffffff;
-      --accent: #0f766e;
-      --accent-strong: #0b4f4a;
-      --warn: #925a16;
-      --code: #eef2f3;
+      --accent: #0b6f68;
+      --accent-strong: #07534e;
+      --evidence: #2563eb;
+      --protocol: #6d4ec5;
+      --warn: #9a580b;
+      --danger: #b42318;
+      --unknown: #5f6f7d;
+      --code: #e8eef1;
 ${current === "core" ? `
-      --core-blue: #2563eb;
-      --core-violet: #7c3aed;
-      --core-green: #0f766e;
-      --core-amber: #b45309;
+      --core-blue: var(--evidence);
+      --core-violet: var(--protocol);
+      --core-green: var(--accent);
+      --core-amber: var(--warn);
       --core-grid: rgb(15 23 42 / 0.08);
 ` : ""}    }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0f1214;
-        --fg: #eef3f6;
-        --muted: #a8b2bd;
-        --line: #33404a;
-        --soft: #171c20;
-        --accent: #47c9ba;
-        --accent-strong: #83ded3;
-        --warn: #e2b15b;
-        --code: #20272d;
+        --bg: #0b1115;
+        --fg: #edf4f5;
+        --muted: #a7b4bc;
+        --line: #2a3942;
+        --soft: #121a20;
+        --accent: #4bd2c4;
+        --accent-strong: #8be4da;
+        --evidence: #60a5fa;
+        --protocol: #a78bfa;
+        --warn: #f0b35a;
+        --danger: #fb7185;
+        --unknown: #94a3b8;
+        --code: #0f171d;
 ${current === "core" ? `
-        --core-blue: #60a5fa;
-        --core-violet: #a78bfa;
-        --core-green: #47c9ba;
-        --core-amber: #f0b35a;
+        --core-blue: var(--evidence);
+        --core-violet: var(--protocol);
+        --core-green: var(--accent);
+        --core-amber: var(--warn);
         --core-grid: rgb(226 232 240 / 0.08);
 ` : ""}      }
     }
@@ -1436,7 +1444,11 @@ ${current === "core" ? `
     body {
       margin: 0;
       font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
+      background:
+        linear-gradient(color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
+        var(--bg);
+      background-size: 32px 32px;
       color: var(--fg);
     }
 
@@ -2091,7 +2103,7 @@ ${immutableArchive ? "" : `
     }
 
     .publication-card-featured[data-featured="future"] {
-      --publication-focus: var(--warn);
+      --publication-focus: var(--protocol);
     }
 
     .publication-card-featured::after {
@@ -3819,7 +3831,12 @@ const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/sit
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
 const whitePaperPackageRoot = packageRoot("@kungfu-tech/paper-kungfu-product-white-paper");
 const whitePaperEvidence = readJsonFile(path.join(whitePaperPackageRoot, "site", "evidence-site.json"));
-const agentSupplyChain = whitePaperEvidence.agentSupplyChain;
+const agentSupplyChainSnapshotPackage = "@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain";
+const agentSupplyChainSnapshotVersion = "0.1.0-alpha.10";
+const agentSupplyChainSnapshotRoot = packageRoot(agentSupplyChainSnapshotPackage);
+const agentSupplyChainSnapshotInfo = readJsonFile(path.join(agentSupplyChainSnapshotRoot, "package.json"));
+const agentSupplyChainSnapshotEvidence = readJsonFile(path.join(agentSupplyChainSnapshotRoot, "site", "evidence-site.json"));
+const agentSupplyChain = agentSupplyChainSnapshotEvidence.agentSupplyChain;
 const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
 const kfdTerminology = readPackageJson("@kungfu-tech/kfd/terminology.json");
@@ -3860,7 +3877,12 @@ if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("unexpected KFD site bundle contract");
 }
 if (
-  agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
+  agentSupplyChainSnapshotInfo.name !== "@kungfu-tech/paper-kungfu-product-white-paper"
+  || agentSupplyChainSnapshotInfo.version !== agentSupplyChainSnapshotVersion
+  || agentSupplyChainSnapshotEvidence.source?.packageVersion !== agentSupplyChainSnapshotVersion
+  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.11"
+  || Object.hasOwn(whitePaperEvidence, "agentSupplyChain")
+  || agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
   || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"
   || agentSupplyChain.maturityVocabulary?.join(",") !== "proved-now,enabled-by-protocol,not-claimed"
   || agentSupplyChain.notClaimed?.includes("two independent production Hubs") !== true
@@ -4823,12 +4845,12 @@ const runtimeHomepageStyles = `<style>
     transform: translateY(-50%);
   }
 
-  .action-step[data-action-kind="fact"] { border-top-color: #2784c7; }
-  .action-step[data-action-kind="geometry"] { border-top-color: #d69732; }
-  .action-step[data-action-kind="binding"] { border-top-color: #b16bd3; }
-  .action-step[data-action-kind="external"] { border-top-color: #7b8794; }
-  .action-step[data-action-kind="episode"] { border-top-color: #2e9d72; }
-  .action-step[data-action-kind="admission"] { border-top-color: #476dd0; }
+  .action-step[data-action-kind="fact"] { border-top-color: var(--evidence); }
+  .action-step[data-action-kind="geometry"] { border-top-color: var(--warn); }
+  .action-step[data-action-kind="binding"] { border-top-color: var(--protocol); }
+  .action-step[data-action-kind="external"] { border-top-color: var(--unknown); }
+  .action-step[data-action-kind="episode"] { border-top-color: var(--accent); }
+  .action-step[data-action-kind="admission"] { border-top-color: var(--evidence); }
 
   .architecture-node-label {
     color: var(--fg);
@@ -4861,7 +4883,7 @@ const runtimeHomepageStyles = `<style>
   }
 
   .action-components li {
-    border-left: 2px solid #d69732;
+    border-left: 2px solid var(--warn);
     padding-left: 7px;
     color: var(--fg);
     font-size: 11px;
@@ -4893,7 +4915,7 @@ const runtimeHomepageStyles = `<style>
     min-width: 0;
     gap: 7px;
     border: 1px solid var(--line);
-    border-left: 4px solid #2784c7;
+    border-left: 4px solid var(--evidence);
     border-radius: 7px;
     background: var(--soft);
     padding: 14px;
@@ -4952,9 +4974,9 @@ const runtimeHomepageStyles = `<style>
     min-width: 0;
     align-content: center;
     gap: 12px;
-    border: 1px solid color-mix(in srgb, #8b63d9 70%, var(--line));
+    border: 1px solid color-mix(in srgb, var(--protocol) 70%, var(--line));
     border-radius: 10px;
-    background: color-mix(in srgb, #8b63d9 8%, var(--soft));
+    background: color-mix(in srgb, var(--protocol) 8%, var(--soft));
     padding: 16px;
   }
 
@@ -5024,7 +5046,7 @@ const runtimeHomepageStyles = `<style>
   }
 
   .invariant-equation b {
-    color: #b24b4b;
+    color: var(--danger);
     font-size: 22px;
   }
 
