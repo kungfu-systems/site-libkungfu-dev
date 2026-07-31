@@ -68,8 +68,13 @@ verifies that the removed detail still exists at its stable depth route.
 
 The five-layer Agent Supply Chain composition retains the exact structured
 snapshot from product White Paper `0.1.0-alpha.10`, pinned through an npm alias,
-because `0.1.0-alpha.11` no longer exports that presentation contract. Current
-White Paper pages, artifacts, metadata, and evidence use `0.1.0-alpha.11`.
+because `0.1.0-alpha.12` no longer exports that presentation contract. Current
+White Paper pages, artifacts, metadata, and evidence use `0.1.0-alpha.12`.
+The `0.1.0-alpha.12` npm tarball authenticates its current evidence bundle
+inside the package-owned publication source archive even though the file is
+absent from the top-level package tree. The renderer verifies the extracted
+bytes against that version's publication-registry metadata and does not fall
+back to an older unverified evidence bundle.
 Buildchain, KFD, and Kungfu site package bundles remain authoritative for their
 own mechanics and product facts.
 This renderer publishes the shared composition at `/agent-supply-chain.json`
@@ -120,7 +125,7 @@ auditor disclosure. Every packaged
 `dist/site/format/**` artifact is copied byte-for-byte to the matching machine
 route. The Buildchain page consumes
 the pinned npm package artifact
-`@kungfu-tech/buildchain@3.0.2-alpha.2` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@3.0.3` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -256,12 +261,12 @@ production path enters Buildchain's publication authority, a production-only
 preflight uses the organization governance auditor App and the exact selected
 Buildchain runtime to collect a short-lived qualifying receipt for this repository
 and target ref. The workflow
-runs through the floating Buildchain `@v3-alpha` workflow ref and checks
+runs through an exact reviewed Buildchain v3 workflow revision and checks
 `.buildchain/contract-lock.json` before rendering. The lock records the accepted
-Buildchain runtime SHA and contract digests; `@v3-alpha` is allowed to move only when
-the current contract remains compatible with that accepted contract world. The
+Buildchain runtime SHA and contract digests; changing the runtime is a reviewed
+activation and must remain compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.2-alpha.2` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.3` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 

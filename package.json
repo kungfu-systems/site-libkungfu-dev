@@ -12,12 +12,12 @@
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
-    "@kungfu-tech/buildchain": "3.0.2-alpha.2",
+    "@kungfu-tech/buildchain": "3.0.3",
     "@kungfu-tech/kfd": "1.0.0-alpha.50",
     "@kungfu-tech/paper-episodes-to-primitives": "0.1.0-alpha.2",
     "@kungfu-tech/paper-kfd-foundation-real-world-agent-work": "0.1.0-alpha.8",
-    "@kungfu-tech/paper-kfd-machine-life-roadmap": "0.1.0-alpha.4",
-    "@kungfu-tech/paper-kungfu-product-white-paper": "0.1.0-alpha.11",
+    "@kungfu-tech/paper-kfd-machine-life-roadmap": "0.1.0-alpha.5",
+    "@kungfu-tech/paper-kungfu-product-white-paper": "0.1.0-alpha.12",
     "@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain": "npm:@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10",
     "@kungfu-tech/paper-observer-declared-timelines": "0.1.0-alpha.9",
     "@kungfu-tech/site": "4.0.0-alpha.1",

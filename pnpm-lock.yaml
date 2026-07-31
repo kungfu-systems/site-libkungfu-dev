@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@kungfu-tech/buildchain':
-        specifier: 3.0.2-alpha.2
-        version: 3.0.2-alpha.2
+        specifier: 3.0.3
+        version: 3.0.3
       '@kungfu-tech/kfd':
         specifier: 1.0.0-alpha.50
         version: 1.0.0-alpha.50
@@ -21,11 +21,11 @@ importers:
         specifier: 0.1.0-alpha.8
         version: 0.1.0-alpha.8
       '@kungfu-tech/paper-kfd-machine-life-roadmap':
-        specifier: 0.1.0-alpha.4
-        version: 0.1.0-alpha.4
+        specifier: 0.1.0-alpha.5
+        version: 0.1.0-alpha.5
       '@kungfu-tech/paper-kungfu-product-white-paper':
-        specifier: 0.1.0-alpha.11
-        version: 0.1.0-alpha.11
+        specifier: 0.1.0-alpha.12
+        version: 0.1.0-alpha.12
       '@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain':
         specifier: npm:@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10
         version: '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10'
@@ -44,8 +44,8 @@ importers:
 
 packages:
 
-  '@kungfu-tech/buildchain@3.0.2-alpha.2':
-    resolution: {integrity: sha512-phNnd7LxdifzHX/Vuk06u59MFpg4g9HpM06OKNJuzVQVoAOGh3GWJ/edDfL4TQ9fhbwNfbMfeq6LVxu5QKBkXA==}
+  '@kungfu-tech/buildchain@3.0.3':
+    resolution: {integrity: sha512-yCs+7C68vpP6+CJIUBz/DKwsniTZ/dJiTZmkrz0CVz/SWbhp37eXc3m4QUVP+1pqQ3yIOkN1E8JLlx6qZUB6uQ==}
     engines: {node: '>=22.14.0'}
     hasBin: true
 
@@ -63,14 +63,14 @@ packages:
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.8':
     resolution: {integrity: sha512-2eLq7poJ/Zb0l6OJhIwx2iG5GbPz7CD6dW5aKlPwQn/9tEjQpd06+K+NZIwrhiBlqj+EjF36PPgy6+6UldSs8g==}
 
-  '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.4':
-    resolution: {integrity: sha512-f3ORf1bDH9ovuTbX69DoxYYd2+3ez17VJFW0NtZNVbuZY1SjQ1mYPKv0j9Me+Qd87KlmIkJes+790OEEHlKz7g==}
+  '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.5':
+    resolution: {integrity: sha512-+8Hf8cdPHwT725IUHmgBfW/p5KMND7IvW5auDCCsz9lc/seik9dgHEj7A2BXGW+iDYZh4PQw6D0zkbKEEca8UQ==}
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10':
     resolution: {integrity: sha512-E72T/WnVn9tLCHGdJVsORZzvwS281hUcWDmr3kIOcQQ0D/SK8Ktf8GlGv/Ov43dy9VtKlqMNm8BgO/P1zCQkMQ==}
 
-  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11':
-    resolution: {integrity: sha512-HcO5hdNwtHl2qW0u//izfqSFWOdE8eFCYcvurYkNYcGsMdpVGcIFUiSHjWAsDfP+nqC1zZcNV3pUWGt0LKthIg==}
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.12':
+    resolution: {integrity: sha512-F0ok9Ejz6MCHr2cDaVxKFdgL2UB294vTyo0MawTG9HbmRtTIjedoqz/PC6eF40ik80cJyEMRAxRcEDYQesd/HA==}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9':
     resolution: {integrity: sha512-uixVi6Vic6KILqQoiqisiFv2NOWkOoZrlEhrXSVBPBaMxkg5HtDVqJE0XYiiGz85LIbArQ+DRVKl/E3U/pmH+Q==}
@@ -123,7 +123,7 @@ packages:
 
 snapshots:
 
-  '@kungfu-tech/buildchain@3.0.2-alpha.2':
+  '@kungfu-tech/buildchain@3.0.3':
     dependencies:
       '@kungfu-tech/kfd': 1.0.0-alpha.47
       smol-toml: 1.7.0
@@ -136,11 +136,11 @@ snapshots:
 
   '@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.8': {}
 
-  '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.4': {}
+  '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.5': {}
 
   '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.10': {}
 
-  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11': {}
+  '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.12': {}
 
   '@kungfu-tech/paper-observer-declared-timelines@0.1.0-alpha.9': {}
 

@@ -220,7 +220,7 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "3.0.2-alpha.2";
+const expectedBuildchainVersion = "3.0.3";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const expectedCoreSitePickup = "4.0.0-alpha.1";
@@ -2792,7 +2792,7 @@ grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '3.0.2-alpha.2' dist/buildchain/mechanism/index.html
+grep -q '3.0.3' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html

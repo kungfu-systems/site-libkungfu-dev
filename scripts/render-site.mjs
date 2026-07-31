@@ -2,6 +2,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
 import MarkdownIt from "markdown-it";
 import markdownItAnchor from "markdown-it-anchor";
 import { createSurfaceTimestampPolicy } from "@kungfu-tech/buildchain/surface-manifest";
@@ -44,6 +45,39 @@ function readPackageText(specifier) {
 
 function packageRoot(packageName) {
   return path.dirname(require.resolve(`${packageName}/package.json`));
+}
+
+function extractTarEntry(archivePath, entryPath) {
+  const archive = gunzipSync(fs.readFileSync(archivePath));
+  for (let offset = 0; offset + 512 <= archive.length;) {
+    const header = archive.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) break;
+    const readField = (start, end) => header.subarray(start, end).toString("utf8").replace(/\0.*$/, "").trim();
+    const name = [readField(345, 500), readField(0, 100)].filter(Boolean).join("/");
+    const size = Number.parseInt(readField(124, 136) || "0", 8);
+    if (!Number.isSafeInteger(size) || size < 0) throw new Error(`invalid source bundle entry size: ${name}`);
+    const contentOffset = offset + 512;
+    if (contentOffset + size > archive.length) throw new Error(`truncated source bundle entry: ${name}`);
+    if (name === entryPath) return archive.subarray(contentOffset, contentOffset + size);
+    offset = contentOffset + Math.ceil(size / 512) * 512;
+  }
+  throw new Error(`publication source bundle is missing ${entryPath}`);
+}
+
+function readPublicationPackageJson(packageName, relativePath) {
+  const root = packageRoot(packageName);
+  const directPath = path.join(root, relativePath);
+  if (fs.existsSync(directPath)) return readJsonFile(directPath);
+
+  const packageInfo = readJsonFile(path.join(root, "package.json"));
+  const registry = readJsonFile(path.join(root, ".buildchain", "publication", "publication-registry.json"));
+  const version = registry.versions?.find((entry) => entry.version === packageInfo.version);
+  const metadata = version?.metadata?.find((entry) => entry.path === relativePath);
+  if (!metadata?.sha256) throw new Error(`publication registry does not authenticate ${relativePath}`);
+  const content = extractTarEntry(path.join(root, ".buildchain", "publication", "source.tar.gz"), relativePath);
+  const digest = crypto.createHash("sha256").update(content).digest("hex");
+  if (digest !== metadata.sha256) throw new Error(`publication source bundle digest mismatch for ${relativePath}`);
+  return JSON.parse(content.toString("utf8"));
 }
 
 function readPnpmLockPackage(packageName, version) {
@@ -3830,7 +3864,10 @@ const buildchainProductMechanism = readPackageJson("@kungfu-tech/buildchain/site
 const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/site/release-provenance.json");
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
 const whitePaperPackageRoot = packageRoot("@kungfu-tech/paper-kungfu-product-white-paper");
-const whitePaperEvidence = readJsonFile(path.join(whitePaperPackageRoot, "site", "evidence-site.json"));
+const whitePaperEvidence = readPublicationPackageJson(
+  "@kungfu-tech/paper-kungfu-product-white-paper",
+  "site/evidence-site.json",
+);
 const agentSupplyChainSnapshotPackage = "@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain";
 const agentSupplyChainSnapshotVersion = "0.1.0-alpha.10";
 const agentSupplyChainSnapshotRoot = packageRoot(agentSupplyChainSnapshotPackage);
@@ -3855,7 +3892,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "3.0.2-alpha.2";
+const expectedBuildchainVersion = "3.0.3";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -3880,7 +3917,7 @@ if (
   agentSupplyChainSnapshotInfo.name !== "@kungfu-tech/paper-kungfu-product-white-paper"
   || agentSupplyChainSnapshotInfo.version !== agentSupplyChainSnapshotVersion
   || agentSupplyChainSnapshotEvidence.source?.packageVersion !== agentSupplyChainSnapshotVersion
-  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.11"
+  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.12"
   || Object.hasOwn(whitePaperEvidence, "agentSupplyChain")
   || agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
   || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"
