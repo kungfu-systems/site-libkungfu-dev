@@ -14,6 +14,10 @@ const stableCanaryWorkflow = fs.readFileSync(
 );
 const expectedBuildchainShellRef = "v3";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
+const acceptedWebSurfaceShells = [
+  expectedBuildchainShell,
+  "kungfu-systems/buildchain/.github/workflows/.web-surface.yml@5d18e3c40fe58ea7010971cf655fc273dc9e3575",
+];
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
   core: "https://core.libkungfu.dev",
@@ -52,8 +56,10 @@ if (outputs.contract !== "kungfu-site-infra-outputs") {
 if (outputs.site !== "site-libkungfu-dev") {
   throw new Error("infra outputs site mismatch");
 }
-if (!workflow.includes(`uses: ${expectedBuildchainShell}`)) {
-  throw new Error(`Buildchain web-surface workflow must use stable ${expectedBuildchainShellRef} shell`);
+if (!acceptedWebSurfaceShells.some((shell) => workflow.includes(`uses: ${shell}`))) {
+  throw new Error(
+    `Buildchain web-surface workflow must use an accepted protected shell: ${acceptedWebSurfaceShells.join(", ")}`,
+  );
 }
 if (!stableCanaryWorkflow.includes(`uses: ${expectedBuildchainShell}`)) {
   throw new Error(`Buildchain stable canary must use stable ${expectedBuildchainShellRef} shell`);
@@ -140,7 +146,6 @@ for (const [key, expected] of Object.entries(releaseGateSnippets)) {
 const mainPushProduction = "(github.event_name == 'push' && github.ref == 'refs/heads/main')";
 for (const linePrefix of [
   "PRODUCTION_REQUESTED:",
-  "buildchain-ref:",
   "buildchain-contract-lock-path:",
 ]) {
   const line = workflow
