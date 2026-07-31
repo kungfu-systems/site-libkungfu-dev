@@ -3,8 +3,8 @@
   "contract": "libkungfu-dev-publication-package-set",
   "packages": [
     {
-      "version": "0.1.0-alpha.11",
-      "name": "@kungfu-tech/paper-kungfu-product-white-paper"
+      "name": "@kungfu-tech/paper-kungfu-product-white-paper",
+      "version": "0.1.0-alpha.11"
     },
     {
       "name": "@kungfu-tech/paper-kfd-foundation-real-world-agent-work",

@@ -23,8 +23,5 @@
     "@kungfu-tech/site": "4.0.0-alpha.1",
     "markdown-it": "14.1.0",
     "markdown-it-anchor": "9.2.0"
-  },
-  "devDependencies": {
-    "@kungfu-tech/paper-kungfu-product-white-paper-propagation-replay": "npm:@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11"
   }
 }

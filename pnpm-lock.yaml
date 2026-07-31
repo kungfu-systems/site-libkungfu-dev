@@ -41,10 +41,6 @@ importers:
       markdown-it-anchor:
         specifier: 9.2.0
         version: 9.2.0(@types/markdown-it@14.1.2)(markdown-it@14.1.0)
-    devDependencies:
-      '@kungfu-tech/paper-kungfu-product-white-paper-propagation-replay':
-        specifier: npm:@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11
-        version: '@kungfu-tech/paper-kungfu-product-white-paper@0.1.0-alpha.11'
 
 packages:
 
