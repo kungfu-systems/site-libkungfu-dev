@@ -16,7 +16,7 @@ const expectedBuildchainShellRef = "v3";
 const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
 const acceptedWebSurfaceShells = [
   expectedBuildchainShell,
-  "kungfu-systems/buildchain/.github/workflows/.web-surface.yml@5d18e3c40fe58ea7010971cf655fc273dc9e3575",
+  "kungfu-systems/buildchain/.github/workflows/.web-surface.yml@969e6ec1315fc7395bce198e3e5252181bf4eb93",
 ];
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
