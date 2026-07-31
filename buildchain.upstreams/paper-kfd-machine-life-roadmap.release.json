@@ -1,6 +1,5 @@
 {
   "contract": "kungfu-buildchain-release-propagation-lock",
-  "schemaVersion": 1,
   "downstream": {
     "baseRef": "main",
     "channel": "alpha",
@@ -27,6 +26,7 @@
       "version": "0.1.0-alpha.4"
     }
   },
+  "schemaVersion": 1,
   "upstream": {
     "channel": "alpha",
     "node": "paper-kfd-machine-life-roadmap",
