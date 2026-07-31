@@ -38,6 +38,10 @@ importers:
       markdown-it-anchor:
         specifier: 9.2.0
         version: 9.2.0(@types/markdown-it@14.1.2)(markdown-it@14.1.0)
+    devDependencies:
+      '@kungfu-tech/paper-kfd-machine-life-roadmap-propagation-replay':
+        specifier: npm:@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.4
+        version: '@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.4'
 
 packages:
 
