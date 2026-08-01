@@ -891,6 +891,7 @@ const FROZEN_IMMUTABLE_PUBLICATION_PAGES = new Map([
     "0.1.0-alpha.8",
     "0.1.0-alpha.9",
     "0.1.0-alpha.11",
+    "0.1.0-alpha.12",
   ].map((version) => [
     `/archive/kungfu-product-white-paper/v${version}/`,
     {
@@ -903,6 +904,7 @@ const FROZEN_IMMUTABLE_PUBLICATION_PAGES = new Map([
     "0.1.0-alpha.1",
     "0.1.0-alpha.3",
     "0.1.0-alpha.4",
+    "0.1.0-alpha.5",
   ].map((version) => [
     `/archive/kfd-machine-life-roadmap/v${version}/`,
     {
@@ -952,7 +954,20 @@ function renderFrozenImmutablePublicationPage(version) {
   if (!snapshot) {
     throw new Error(`immutable publication page is not frozen: ${version.immutablePath}`);
   }
-  return fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
+  let body = fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
+  if (snapshot.contract === "libkungfu-dev-immutable-publication-page-legacy-v0") {
+    for (const surface of ["papers", "buildchain", "core", "kfd", "hub"]) {
+      const productionHref = {
+        hub: "https://libkungfu.dev/",
+        core: "https://core.libkungfu.dev/",
+        buildchain: "https://buildchain.libkungfu.dev/",
+        kfd: "https://kfd.libkungfu.dev/",
+        papers: "https://papers.libkungfu.dev/",
+      }[surface];
+      body = body.replaceAll(productionHref, surfaceCanonicalHref(surface));
+    }
+  }
+  return body;
 }
 
 function renderPublicationArchives() {
@@ -3966,7 +3981,7 @@ if (
   agentSupplyChainSnapshotInfo.name !== "@kungfu-tech/paper-kungfu-product-white-paper"
   || agentSupplyChainSnapshotInfo.version !== agentSupplyChainSnapshotVersion
   || agentSupplyChainSnapshotEvidence.source?.packageVersion !== agentSupplyChainSnapshotVersion
-  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.12"
+  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.13"
   || Object.hasOwn(whitePaperEvidence, "agentSupplyChain")
   || agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
   || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"

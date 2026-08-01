@@ -68,9 +68,9 @@ verifies that the removed detail still exists at its stable depth route.
 
 The five-layer Agent Supply Chain composition retains the exact structured
 snapshot from product White Paper `0.1.0-alpha.10`, pinned through an npm alias,
-because `0.1.0-alpha.12` no longer exports that presentation contract. Current
-White Paper pages, artifacts, metadata, and evidence use `0.1.0-alpha.12`.
-The `0.1.0-alpha.12` npm tarball authenticates its current evidence bundle
+because `0.1.0-alpha.13` no longer exports that presentation contract. Current
+White Paper pages, artifacts, metadata, and evidence use `0.1.0-alpha.13`.
+The `0.1.0-alpha.13` npm tarball authenticates its current evidence bundle
 inside the package-owned publication source archive even though the file is
 absent from the top-level package tree. The renderer verifies the extracted
 bytes against that version's publication-registry metadata and does not fall

@@ -258,6 +258,7 @@ for (const [file, expectedSha256] of Object.entries({
   "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.9/index.html": "e2dea88490af72d4bf2213e524789027f90913019ec9223531c72d3593353e77",
   "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html": "657de7684f118a49cdbbfbc0f473f794bedf47bd6766eeb2932973f64c94bebd",
   "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.11/index.html": "e04c2d783181048678138728ccafe7b4367f1cd540fc5148b8eecd180d8eb74a",
+  "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.12/index.html": "08cf197d939823dcd7d35aa535d4249c930ef88290b0fb6f5a585e513775cbb7",
   "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html": "bddba85c34fa25ea13c0607b36340b941b13aaa54c5b31720f70a32e406ba3f2",
   "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html": "919626b319231a676741d044d37d9a83f1231c31149577b5627e89010284de4f",
   "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html": "989251febddc66d51d9a9785a93ddbc9a259bf5f1ac251f834e298af07cbf4bb",
@@ -266,9 +267,25 @@ for (const [file, expectedSha256] of Object.entries({
   "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.1/index.html": "e071ade43a45080f1b700ef9882711799e81854331a6fe4db3e47531b7d37d84",
   "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.3/index.html": "4adc76f909b96925b884d191aea7dd1736a0308e072fcfcb023379d5596daba9",
   "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.4/index.html": "6aaf14a128350864383fd46d1ab37d1ca7841647cafe9a43dfcf58d50b2d8459",
+  "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.5/index.html": "c5f0470f4f1adb4e02177289f95ee6e3f625bc3c8106275051d394867d5e30a6",
 })) {
   const actualSha256 = crypto.createHash("sha256").update(fs.readFileSync(path.join(repoRoot, file))).digest("hex");
   assert.equal(actualSha256, expectedSha256, `frozen immutable publication snapshot drifted: ${file}`);
+}
+
+const legacyStagingPageSha256 = {
+  "episodes-to-primitives/v0.1.0-alpha.2/index.html": "20057177f2072c2ad1f394225a8b782dfe69d58d82df1f0e6f3b01fc7fcb1a23",
+  "kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html": "a620b67716070a93c65bcf223fd6bf96dfe0538b6162f2093f4ed7f98655f29f",
+  "kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html": "e1473a4fb135958be07ff8a26891a0035115054d1e34acab88e1bbac431de1ac",
+  "kungfu-product-white-paper/v0.1.0-alpha.10/index.html": "30e914720f46b16e3c1befa46e5f2e2db5b123273d2e4f63ff3fd15a481d79d7",
+  "observer-declared-timelines/v0.1.0-alpha.9/index.html": "a728901f5011430b6637e4423990431607c80449d3e3630f1ccbf89036d276b0",
+};
+if (process.env.SITE_SURFACE_CHANNEL === "staging") {
+  for (const [relativePath, expectedSha256] of Object.entries(legacyStagingPageSha256)) {
+    const file = path.join(repoRoot, "dist", "papers", "archive", relativePath);
+    const actualSha256 = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+    assert.equal(actualSha256, expectedSha256, `legacy staging immutable publication page drifted: ${relativePath}`);
+  }
 }
 
 process.stdout.write("paper propagation qualification and immutable page checks passed\n");
