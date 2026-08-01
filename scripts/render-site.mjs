@@ -878,35 +878,81 @@ function publicationVersionCards(publication, versions) {
     .join("\n");
 }
 
-const LEGACY_IMMUTABLE_PUBLICATION_PAGES = new Map([
+const FROZEN_IMMUTABLE_PUBLICATION_PAGES = new Map([
+  ...[
+    "0.1.0-alpha.0",
+    "0.1.0-alpha.1",
+    "0.1.0-alpha.2",
+    "0.1.0-alpha.3",
+    "0.1.0-alpha.4",
+    "0.1.0-alpha.5",
+    "0.1.0-alpha.6",
+    "0.1.0-alpha.7",
+    "0.1.0-alpha.8",
+    "0.1.0-alpha.9",
+    "0.1.0-alpha.11",
+  ].map((version) => [
+    `/archive/kungfu-product-white-paper/v${version}/`,
+    {
+      contract: IMMUTABLE_PUBLICATION_PAGE_CONTRACT,
+      path: `src/immutable-publication-pages/kungfu-product-white-paper/v${version}/index.html`,
+    },
+  ]),
+  ...[
+    "0.1.0-alpha.0",
+    "0.1.0-alpha.1",
+    "0.1.0-alpha.3",
+    "0.1.0-alpha.4",
+  ].map((version) => [
+    `/archive/kfd-machine-life-roadmap/v${version}/`,
+    {
+      contract: IMMUTABLE_PUBLICATION_PAGE_CONTRACT,
+      path: `src/immutable-publication-pages/kfd-machine-life-roadmap/v${version}/index.html`,
+    },
+  ]),
   [
     "/archive/kungfu-product-white-paper/v0.1.0-alpha.10/",
-    "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html",
+    },
   ],
   [
     "/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/",
-    "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
+    },
   ],
   [
     "/archive/observer-declared-timelines/v0.1.0-alpha.9/",
-    "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html",
+    },
   ],
   [
     "/archive/episodes-to-primitives/v0.1.0-alpha.2/",
-    "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
+    },
   ],
   [
     "/archive/kfd-machine-life-roadmap/v0.1.0-alpha.2/",
-    "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+    },
   ],
 ]);
 
-function renderLegacyImmutablePublicationPage(version) {
-  const snapshotPath = LEGACY_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
-  if (!snapshotPath) {
-    throw new Error(`legacy immutable publication page is not snapshotted: ${version.immutablePath}`);
+function renderFrozenImmutablePublicationPage(version) {
+  const snapshot = FROZEN_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
+  if (!snapshot) {
+    throw new Error(`immutable publication page is not frozen: ${version.immutablePath}`);
   }
-  return fs.readFileSync(path.join(repoRoot, snapshotPath), "utf8");
+  return fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
 }
 
 function renderPublicationArchives() {
@@ -946,6 +992,11 @@ function renderPublicationArchives() {
     });
     if (!versions.some((version) => version.version === publication.latest.version)) {
       throw new Error(`publication ${id} latest version is missing from versions: ${publication.latest.version}`);
+    }
+    for (const version of versions) {
+      if (version.version !== publication.latest.version && !FROZEN_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath)) {
+        throw new Error(`historical immutable publication page is not frozen: ${id}@${version.version}`);
+      }
     }
     return {
       ...publication,
@@ -1205,13 +1256,11 @@ function renderPublicationArchives() {
 
     for (const version of publication.versions) {
       const currentPackageVersion = version.version === publication.latest.version;
-      const legacyImmutableIndex = LEGACY_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath);
-      if (currentPackageVersion || legacyImmutableIndex) {
-        const immutableIndexContract = legacyImmutableIndex
-          ? "libkungfu-dev-immutable-publication-page-legacy-v0"
-          : IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
-        const immutableIndexBody = legacyImmutableIndex
-          ? renderLegacyImmutablePublicationPage(version)
+      const frozenImmutableIndex = FROZEN_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
+      if (currentPackageVersion || frozenImmutableIndex) {
+        const immutableIndexContract = frozenImmutableIndex?.contract || IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
+        const immutableIndexBody = frozenImmutableIndex
+          ? renderFrozenImmutablePublicationPage(version)
           : renderImmutablePublicationPage({ publication, version });
         const immutableIndexSha256 = sha256Buffer(Buffer.from(immutableIndexBody));
         writeFile(
