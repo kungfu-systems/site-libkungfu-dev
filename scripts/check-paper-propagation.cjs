@@ -32,6 +32,9 @@ const registry = JSON.parse(
 );
 const primary = version.artifacts.find((entry) => entry.kind === "pdf") || version.artifacts[0];
 const immutableVersionUrl = `https://papers.libkungfu.dev${version.immutablePath}`;
+const releaseEvidence = Buffer.from('{"contract":"test-release-evidence"}\n');
+const releaseEvidenceSha256 = crypto.createHash("sha256").update(releaseEvidence).digest("hex");
+const releaseEvidencePath = `src/upstream-release-evidence/${publication.id}/buildchain.release.json`;
 const propagationLock = {
   schemaVersion: 1,
   contract: "kungfu-buildchain-release-propagation-lock",
@@ -77,8 +80,8 @@ const propagationLock = {
       },
     },
     releasePassport: {
-      url: `https://example.invalid/${publication.id}/buildchain.release.json`,
-      sha256: "1".repeat(64),
+      url: `https://github.com/kungfu-systems/paper-${publication.id}/releases/download/v${version.version}/buildchain.release.json`,
+      sha256: releaseEvidenceSha256,
     },
   },
   downstream: {
@@ -127,6 +130,7 @@ const changedFiles = [
   lockPath,
   "package.json",
   "pnpm-lock.yaml",
+  releaseEvidencePath,
   "src/publication-packages.json",
 ];
 fs.mkdirSync(path.join(repoRoot, "buildchain.upstreams"), { recursive: true });
@@ -140,6 +144,7 @@ try {
       path.relative(repoRoot, repoFixtureLock),
       "package.json",
       "pnpm-lock.yaml",
+      releaseEvidencePath,
       "src/publication-packages.json",
     ],
   });
@@ -199,8 +204,14 @@ for (const file of ["package.json", "src/publication-packages.json", lockPath]) 
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(sourceFile, target);
 }
-const consumed = consumePaperPropagation({ repoRoot: consumeRoot, lockPath });
+const consumed = consumePaperPropagation({
+  repoRoot: consumeRoot,
+  lockPath,
+  readReleaseEvidence: () => releaseEvidence,
+});
 assert.equal(consumed.package, packageFact.name);
+assert.equal(consumed.releaseEvidencePath, releaseEvidencePath);
+assert.deepEqual(fs.readFileSync(path.join(consumeRoot, releaseEvidencePath)), releaseEvidence);
 assert.equal(
   JSON.parse(fs.readFileSync(path.join(consumeRoot, "package.json"), "utf8")).dependencies[packageFact.name],
   packageFact.version,

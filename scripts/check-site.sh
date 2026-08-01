@@ -2820,4 +2820,26 @@ fi
 grep -q 'docs_url' dist/core/runtime/index.html
 grep -q 'llms-full.txt' dist/llms.txt
 
+node - <<'NODE'
+const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+
+const lock = JSON.parse(fs.readFileSync("buildchain.upstreams/paper-kfd-machine-life-roadmap.release.json", "utf8"));
+const status = JSON.parse(fs.readFileSync("dist/.well-known/kungfu-release-status.json", "utf8"));
+const papersStatus = JSON.parse(fs.readFileSync("dist/papers/.well-known/kungfu-release-status.json", "utf8"));
+const canonicalEvidence = fs.readFileSync("dist/papers/kfd-machine-life-roadmap/latest/buildchain.release.json");
+const compatibilityEvidence = fs.readFileSync("dist/papers/paper-kfd-machine-life-roadmap/latest/buildchain.release.json");
+const evidenceDigest = crypto.createHash("sha256").update(canonicalEvidence).digest("hex");
+
+assert.equal(status.contract, "kungfu-buildchain-web-surface-production-status");
+assert.deepEqual(papersStatus, status);
+assert.match(status.revision, /^[0-9a-f]{40}$/);
+const machineEvidence = status.releaseEvidence.find((entry) => entry.publication === "kfd-machine-life-roadmap");
+assert.equal(machineEvidence.lockSha256, `sha256:${lock.lockSha256}`);
+assert.equal(evidenceDigest, lock.upstream.releasePassport.sha256);
+assert.deepEqual(compatibilityEvidence, canonicalEvidence);
+assert.ok(fs.statSync("dist/papers/paper-kfd-machine-life-roadmap/index.html").size > 0);
+NODE
+
 echo "site-libkungfu-dev checks passed"
