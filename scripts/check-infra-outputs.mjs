@@ -166,16 +166,10 @@ if (surfaceChannelLines.length !== 2) {
   throw new Error("Buildchain build and verify commands must both declare SITE_SURFACE_CHANNEL");
 }
 for (const line of surfaceChannelLines) {
-  for (const snippet of [
-    "github.event_name == 'workflow_dispatch'",
-    "github.event_name == 'push'",
-    "github.event.head_commit.message",
-    " from kungfu-systems/release/",
-    "github.event_name == 'pull_request'",
-  ]) {
-    if (!line.includes(snippet)) {
-      throw new Error(`SITE_SURFACE_CHANNEL must distinguish manual, release-main, and PR events by ${snippet}`);
-    }
+  if (line !== 'export SITE_SURFACE_CHANNEL="$BUILDCHAIN_WEB_SURFACE_CHANNEL"') {
+    throw new Error(
+      "SITE_SURFACE_CHANNEL must consume Buildchain's resolved web-surface channel without reclassifying GitHub events",
+    );
   }
 }
 const buildchainRefLine = workflow
