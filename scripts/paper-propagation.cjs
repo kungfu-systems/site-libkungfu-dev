@@ -14,6 +14,7 @@ const FAST_PATH_CONTRACT = "kungfu-buildchain-publication-package-pin-fast-path"
 const SITE_REPOSITORY = "kungfu-systems/site-libkungfu-dev";
 const DEFAULT_OUTPUT = ".buildchain/paper-propagation-qualification.json";
 const LOCK_PATH_PATTERN = /^(?:buildchain\.upstreams|\.buildchain\/upstreams)\/[^/]+\.release\.json$/;
+const UPSTREAM_RELEASE_EVIDENCE_ROOT = "src/upstream-release-evidence";
 const PACKAGE_PIN_PATHS = new Set([
   "package.json",
   "pnpm-lock.yaml",
@@ -81,6 +82,30 @@ function normalizeRepoPath(value, label = "repository path") {
   return normalized;
 }
 
+function releaseEvidencePath(publicationId) {
+  return `${UPSTREAM_RELEASE_EVIDENCE_ROOT}/${normalizeRepoPath(publicationId, "publication id")}/buildchain.release.json`;
+}
+
+function papersReadbackPath(urlValue) {
+  const url = new URL(String(urlValue || ""));
+  if (url.protocol !== "https:" || url.host !== "papers.libkungfu.dev" || url.search || url.hash) {
+    throw new Error("paper readback URL must be a stable papers.libkungfu.dev URL");
+  }
+  return url.pathname.replace(/^\/+/, "");
+}
+
+function readReleaseEvidenceUrl(url) {
+  const parsed = new URL(String(url || ""));
+  if (parsed.protocol !== "https:" || parsed.host !== "github.com" || !parsed.pathname.includes("/releases/download/")) {
+    throw new Error("paper release passport URL must be an exact GitHub release asset");
+  }
+  return execFileSync(
+    "curl",
+    ["--fail", "--location", "--silent", "--show-error", parsed.href],
+    { encoding: null, maxBuffer: 16 * 1024 * 1024 },
+  );
+}
+
 function readPnpmLockPackage(repoRoot, packageName, version) {
   const lockText = fs.readFileSync(path.join(repoRoot, "pnpm-lock.yaml"), "utf8");
   const escapedName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -136,7 +161,7 @@ function assertPaperLock(lock) {
   return { packageFact, publication };
 }
 
-function consumePaperPropagation({ repoRoot = process.cwd(), lockPath } = {}) {
+function consumePaperPropagation({ repoRoot = process.cwd(), lockPath, readReleaseEvidence = readReleaseEvidenceUrl } = {}) {
   const absoluteLockPath = path.resolve(repoRoot, lockPath);
   const lock = readJson(absoluteLockPath);
   const { packageFact, publication } = assertPaperLock(lock);
@@ -156,10 +181,20 @@ function consumePaperPropagation({ repoRoot = process.cwd(), lockPath } = {}) {
     throw new Error(`paper publication id does not match package: ${publication.id}`);
   }
   const previousVersion = packageJson.dependencies[packageFact.name];
+  const releaseEvidence = Buffer.from(readReleaseEvidence(lock.upstream.releasePassport.url));
+  compareDigest(
+    crypto.createHash("sha256").update(releaseEvidence).digest("hex"),
+    lock.upstream.releasePassport.sha256,
+    "paper release passport content",
+  );
+  const evidencePath = releaseEvidencePath(publication.id || expectedId);
   packageJson.dependencies[packageFact.name] = packageFact.version;
   packageEntry.version = packageFact.version;
   writePrettyJson(packageJsonPath, packageJson);
   writePrettyJson(packageSetPath, packageSet);
+  const absoluteEvidencePath = path.join(repoRoot, evidencePath);
+  fs.mkdirSync(path.dirname(absoluteEvidencePath), { recursive: true });
+  fs.writeFileSync(absoluteEvidencePath, releaseEvidence);
   return {
     schemaVersion: 1,
     contract: "libkungfu-dev-paper-propagation-consume-result",
@@ -168,6 +203,7 @@ function consumePaperPropagation({ repoRoot = process.cwd(), lockPath } = {}) {
     version: packageFact.version,
     lockPath: normalizeRepoPath(path.relative(repoRoot, absoluteLockPath), "propagation lock path"),
     lockSha256: `sha256:${normalizeDigest(lock.lockSha256, "paper propagation lock root")}`,
+    releaseEvidencePath: evidencePath,
     nextAction: "refresh pnpm-lock.yaml with pnpm install --lockfile-only, then run paper propagation qualification",
   };
 }
@@ -235,11 +271,12 @@ function normalizeChangedFiles(values) {
     .sort();
 }
 
-function classifyChangedFiles({ changedFiles, lockPath }) {
+function classifyChangedFiles({ changedFiles, lockPath, evidencePath = "" }) {
   const normalizedLockPath = normalizeRepoPath(lockPath, "propagation lock path");
-  const allowed = new Set([...PACKAGE_PIN_PATHS, normalizedLockPath]);
+  const required = [...PACKAGE_PIN_PATHS, normalizedLockPath, ...(evidencePath ? [evidencePath] : [])];
+  const allowed = new Set(required);
   const unexpected = changedFiles.filter((entry) => !allowed.has(entry));
-  const missing = [...PACKAGE_PIN_PATHS, normalizedLockPath].filter((entry) => !changedFiles.includes(entry));
+  const missing = required.filter((entry) => !changedFiles.includes(entry));
   return {
     mode: unexpected.length === 0 && missing.length === 0 ? "package-pin-only" : "full-site",
     allowed: [...allowed].sort(),
@@ -300,7 +337,12 @@ function qualifyPaperPropagation({
       lockPath: selectedLockPath,
     });
   }
-  const classification = classifyChangedFiles({ changedFiles: normalizedChangedFiles, lockPath: selectedLockPath });
+  const evidencePath = releaseEvidencePath(lock.upstream.publicationArtifact.id);
+  const classification = classifyChangedFiles({
+    changedFiles: normalizedChangedFiles,
+    lockPath: selectedLockPath,
+    evidencePath,
+  });
   let facts;
   let controllerReceipt;
   try {
@@ -325,25 +367,33 @@ function qualifyPaperPropagation({
   }
 
   const prefix = facts.version.immutablePath.replace(/^\/+|\/+$/g, "");
-  const mutableFiles = [
+  const readbackPaths = (lock.downstream.executionProfile?.readbackUrls || [])
+    .map(papersReadbackPath);
+  const mutableFiles = [...new Set([
     "archive/index.html",
     `${facts.publication.id}/index.html`,
     `${facts.publication.id}/latest/index.html`,
+    `${facts.publication.id}/latest/buildchain.release.json`,
+    ".well-known/kungfu-release-status.json",
     "index.html",
     "llms.txt",
     "manifest.json",
     "registry.json",
-  ].sort();
-  const invalidationPaths = [
+    ...readbackPaths.map((entry) => entry.endsWith("/") ? `${entry}index.html` : entry),
+  ])].sort();
+  const invalidationPaths = [...new Set([
     "/",
     "/archive/",
     `/${facts.publication.id}/`,
     `/${facts.publication.id}/latest/`,
+    `/${facts.publication.id}/latest/buildchain.release.json`,
+    "/.well-known/kungfu-release-status.json",
     `/${prefix}*`,
     "/llms.txt",
     "/manifest.json",
     "/registry.json",
-  ].sort();
+    ...readbackPaths.map((entry) => `/${entry}`),
+  ])].sort();
   const states = {
     "package-published": {
       state: "complete",

@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "contract": "kungfu-buildchain-release-passport",
+  "generatedAt": "2026-08-01T14:23:19.189Z",
+  "surfaceTimestampPolicy": {
+    "generatedAt": "2026-08-01T14:23:19.189Z",
+    "publishedAt": "2026-08-01T14:23:19.189Z",
+    "reproducible": true,
+    "timestampPolicy": "ci-injected",
+    "deterministicInputs": [
+      "release.sourceSha",
+      "release.releaseSha",
+      "release.releaseMaterialSha",
+      "artifact-evidence.json",
+      "publish evidence",
+      "release-state transaction",
+      "controller receipt references",
+      "sourceRevision",
+      "sourceDateEpoch",
+      "package content",
+      "declared Buildchain surface manifest contract"
+    ],
+    "sourceDateEpoch": "0",
+    "sourceRevision": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "timestampPolicyDetails": {
+      "contract": "kungfu-buildchain-surface-timestamp-policy",
+      "timestampFields": [
+        "generatedAt",
+        "publishedAt",
+        "surfaceTimestampPolicy.generatedAt",
+        "surfaceTimestampPolicy.publishedAt"
+      ],
+      "timestampFieldsParticipateInArtifactDigest": true,
+      "artifactDigestScope": "release passport JSON and release evidence bundle",
+      "note": "Human-readable timestamps are separate from reproducibility inputs; do not infer reproducibility from epoch timestamps."
+    }
+  },
+  "product": {
+    "name": "Semantic Autopoiesis: An Engineering Roadmap for Machine Life",
+    "repository": "kungfu-systems/paper-kfd-machine-life-roadmap",
+    "mechanism": "product-mechanism.json"
+  },
+  "release": {
+    "tag": "v0.1.0-alpha.11",
+    "publicTag": "v0.1.0-alpha.11",
+    "internalTag": "v0.1.0-alpha.11",
+    "internalVersion": "0.1.0-alpha.11",
+    "publishedVersion": "0.1.0-alpha.11",
+    "versionLabel": "0.1.0-alpha.11",
+    "line": "v0.1",
+    "sourceSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "channel": "alpha",
+    "targetRef": "alpha/v0/v0.1",
+    "releaseSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "releaseMaterialSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "builtSourceSha": "",
+    "builtSourceTreeSha": "",
+    "promotionChannelSha": "",
+    "promotionChannelTreeSha": "",
+    "publishToolingSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "releaseStateRef": "refs/heads/buildchain/release-state/0-1-0-alpha-11",
+    "releaseStateSha": "50bcf5ad83c9b87d256566be5b136af5e7ab36ab",
+    "package": {
+      "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
+      "version": "0.1.0-alpha.11"
+    },
+    "exactRef": "refs/tags/v0.1.0-alpha.11"
+  },
+  "workflow": {
+    "name": "Paper Release",
+    "runId": "30703527879",
+    "runAttempt": "2",
+    "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/actions/runs/30703527879"
+  },
+  "runnerPolicy": {
+    "productionDefault": "github-hosted",
+    "compatibilityFixture": "self-hosted",
+    "note": "Runner facts are recorded in artifact evidence; the protocol does not require self-hosted runners."
+  },
+  "trustedPublishing": {
+    "provider": "npm",
+    "enabled": true,
+    "auth": "trusted-publishing",
+    "workflowRunId": "30703527879",
+    "workflowRunAttempt": "2",
+    "evidence": ""
+  },
+  "transaction": {
+    "id": "d251775abf2999859732004ded442940b729351617628f58de76323ac6c65cca",
+    "version": "0.1.0-alpha.11",
+    "state": "complete",
+    "previousState": "finalizing",
+    "exactTag": "v0.1.0-alpha.11",
+    "releaseSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "releaseMaterialSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "stateRef": "buildchain/release-state/0-1-0-alpha-11",
+    "statePath": "/home/runner/work/paper-kfd-machine-life-roadmap/paper-kfd-machine-life-roadmap/.buildchain/release-state/v0.1.0-alpha.11.json",
+    "stateSha": "",
+    "evidencePath": "/home/runner/work/paper-kfd-machine-life-roadmap/paper-kfd-machine-life-roadmap/.buildchain/release-evidence/v0.1.0-alpha.11/evidence.json",
+    "updatedAt": "2026-08-01T14:23:17.415Z",
+    "result": {
+      "command": "finalize",
+      "validation": {
+        "valid": true,
+        "errors": []
+      }
+    }
+  },
+  "buildSummary": {
+    "path": "../admitted/artifact/.buildchain/paper-release/build-summary.json",
+    "sha256": "6df60ca7e717a25dfabcbd0bbfa7cdd08a2aeb1ba19abcffe7c56733dcc642d8",
+    "fields": {
+      "schemaVersion": 1,
+      "contract": "kungfu-buildchain-paper-release-build-summary",
+      "repository": "kungfu-systems/paper-kfd-machine-life-roadmap",
+      "sourceSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+      "package": {
+        "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
+        "version": "0.1.0-alpha.11"
+      },
+      "reproducibility": {
+        "receiptPath": ".buildchain/publication/reproducibility-receipt.json",
+        "receiptDigest": "sha256:d05cc76a105945c47613d27e3dd6a201085db4451dc02726ee2b6b7aa510be88",
+        "npmIntegrity": "sha512-HuVN4IezIL14cRm3nyrcQAptqt2/6liZgEvOVEGCpwDZgPjxElIKXbJm/V+IlJSajNaW/OtHJGzid0RZXFX0lQ==",
+        "npmSha256": "034ded9d92a5f3faf2ed8e4c6691f276db3c266d05a8e2a6e5222b23a1ad1b69"
+      },
+      "publication": {
+        "manifestPath": ".buildchain/publication/publication-artifact.json",
+        "passportPath": ".buildchain/publication/publication-artifact-passport.json",
+        "registryPath": ".buildchain/publication/publication-registry.json",
+        "primaryArtifact": "_build/main.pdf"
+      },
+      "platforms": [
+        {
+          "id": "paper",
+          "manifestPath": ".buildchain/publication/publication-artifact.json"
+        }
+      ]
+    }
+  },
+  "platformArtifactManifests": [
+    {
+      "path": "../admitted/artifact/.buildchain/publication/publication-artifact.json",
+      "sha256": "311866f6d6ac809738e83d3dd346ea285ddf8d7994cf2755463779046849bfb9",
+      "fields": {
+        "schemaVersion": 1,
+        "contract": "kungfu-buildchain-publication-artifact-manifest",
+        "project": {
+          "name": "paper-kfd-machine-life-roadmap",
+          "type": "publication-artifact"
+        },
+        "publication": {
+          "kind": "paper",
+          "title": "Semantic Autopoiesis: An Engineering Roadmap for Machine Life",
+          "version": "0.1.0-alpha.11",
+          "abstract": "A functional and falsifiable engineering roadmap for a low-level machine organism built from semantic continuity, replaceable agents, executable organs, ordinary computing infrastructure, and governed self-modification.",
+          "authors": [
+            "Keren Dong"
+          ],
+          "primaryArtifact": "_build/main.pdf",
+          "siteConsumers": [
+            "kungfu.tech",
+            "papers.libkungfu.dev"
+          ],
+          "archive": {
+            "contract": "kungfu-buildchain-publication-artifact-archive",
+            "id": "kfd-machine-life-roadmap",
+            "version": "0.1.0-alpha.11",
+            "appendOnly": true,
+            "sameVersionRepublish": "fail-on-digest-change",
+            "immutablePathPolicy": "do-not-sync-delete-immutable-prefixes",
+            "routes": {
+              "canonicalUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/",
+              "latestUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/",
+              "latestEvidenceUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/buildchain.release.json",
+              "immutableVersionPrefix": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/",
+              "immutableVersionUrl": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/",
+              "artifactUrlPrefix": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/"
+            },
+            "registry": {
+              "contract": "kungfu-buildchain-publication-artifact-registry",
+              "path": ".buildchain/publication/publication-registry.json"
+            },
+            "publicArtifacts": {
+              "manifest": {
+                "path": ".buildchain/publication/publication-artifact.json",
+                "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/publication-artifact.json"
+              },
+              "passport": {
+                "path": ".buildchain/publication/publication-artifact-passport.json",
+                "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/publication-artifact-passport.json"
+              },
+              "sourceBundle": {
+                "path": ".buildchain/publication/source.tar.gz",
+                "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/source.tar.gz",
+                "sha256": "bafb5c78e734b3f7ec4e71c0154ac8fdc5396740caa74004e4064b91285992a6",
+                "bytes": 59177
+              },
+              "artifacts": [
+                {
+                  "path": "_build/main.pdf",
+                  "bytes": 406200,
+                  "sha256": "3ff80be1b542235caa42c520e3b3dcc0bfcce2241aa05e60259aa9683c3c7706",
+                  "role": "primary",
+                  "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/main.pdf"
+                }
+              ]
+            }
+          }
+        },
+        "toolchain": {
+          "type": "latex-docker",
+          "trustClassification": "pinned-docker-toolchain",
+          "command": "mkdir -p _build && cd paper && latexmk -pdf -outdir=../_build main.tex",
+          "image": "ghcr.io/kungfu-systems/build-images/latex-pdf-builder",
+          "digest": "sha256:5ae0e5211ade2937b17a76502a4fd2bcecc5220bd10086ffe9739d5dbbc18d38",
+          "machineVerifiable": true,
+          "invocation": "docker-image-digest"
+        },
+        "source": {
+          "repository": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap",
+          "sha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+          "treeSha": "5dbf4cead2a82827500960c49eba684e5f68ded7",
+          "sourcePaths": [
+            "paper",
+            "README.md",
+            "LICENSE",
+            "Makefile",
+            "scripts",
+            "site"
+          ],
+          "sourceFiles": [
+            {
+              "path": "LICENSE",
+              "bytes": 11357,
+              "sha256": "aaa62ccb6cf175f529bfc10e3e979353178ac122ce331dce2ca43475a9ff7706"
+            },
+            {
+              "path": "Makefile",
+              "bytes": 562,
+              "sha256": "8682ceb92c37ccf96cd8c44d1b75004cfc9aeb2aad487883a6a2f346fdfa4b30"
+            },
+            {
+              "path": "paper/kungfu-machine-life.sty",
+              "bytes": 6104,
+              "sha256": "78764cd5e748ce72cae2c0a84a91770dd1a7e85b58d700fa026da87a54db9095"
+            },
+            {
+              "path": "paper/main.tex",
+              "bytes": 10688,
+              "sha256": "be8bc6f27505faeffdb520b3c78f5a706a8e24c00d093a13a4293eeab09b8fee"
+            },
+            {
+              "path": "paper/references.bib",
+              "bytes": 6508,
+              "sha256": "4bb7b1d914b1abb7675a8bf0f8919c91291495301402f7d70889abcc4cc56639"
+            },
+            {
+              "path": "paper/sections/01-introduction.tex",
+              "bytes": 10195,
+              "sha256": "91870f8c8cdb9d4fa4c65f7b2283fb69e22c2e3e063eb607a82c038f9efbc9ef"
+            },
+            {
+              "path": "paper/sections/02-life-as-an-engineering-property.tex",
+              "bytes": 5370,
+              "sha256": "02caa4bb55f6191b37544beb78a23d794c51555aa9faafc7a4eddb525e7cabeb"
+            },
+            {
+              "path": "paper/sections/03-semantic-kernel.tex",
+              "bytes": 4699,
+              "sha256": "67480cdc0658260b30adad0bf63b6f93fa98c2a9e2d3108bf03fe2c93fab676e"
+            },
+            {
+              "path": "paper/sections/04-recursive-dogfood.tex",
+              "bytes": 4634,
+              "sha256": "216af30b12d15f79a7f324376feb578cc46c9c43f97d2068bc787e6247b3b315"
+            },
+            {
+              "path": "paper/sections/05-material-anatomy.tex",
+              "bytes": 5901,
+              "sha256": "fe967b53b78f0ba587bd1956d5112532561e3396799e33698dd491bb8932fa84"
+            },
+            {
+              "path": "paper/sections/06-kungfu-evidence.tex",
+              "bytes": 11515,
+              "sha256": "24d746c39ea4c58aad45a5e116202ccab19b9dcb5cd703c0fb9b140d95ac1b73"
+            },
+            {
+              "path": "paper/sections/07-prototype-and-roadmap.tex",
+              "bytes": 7104,
+              "sha256": "123772b1fff9df08007f0ec87678c0195caeea8a29ca3075478b90bbb7f1f0bd"
+            },
+            {
+              "path": "paper/sections/08-evaluation-and-safety.tex",
+              "bytes": 4591,
+              "sha256": "603a58da9536ea0ff4e3b56ae2d6e8fda51a9284a3be3f42bf52f49b1ea353af"
+            },
+            {
+              "path": "paper/sections/09-related-work.tex",
+              "bytes": 3902,
+              "sha256": "524ba9f64a5101ee77269b3991403644b76104328abbd95bd45f188840249365"
+            },
+            {
+              "path": "paper/sections/10-discussion.tex",
+              "bytes": 4221,
+              "sha256": "bb47c6d89f6274926a755361ec30f43ac82615f5574755328e779968a0d0a2a5"
+            },
+            {
+              "path": "paper/sections/11-conclusion.tex",
+              "bytes": 2439,
+              "sha256": "0d375c539ab50f2b4af5869ff472cf3bbb0a69b59c1c96093ee8000070c4b67e"
+            },
+            {
+              "path": "README.md",
+              "bytes": 3724,
+              "sha256": "5b9f8a2638af059fae34fe9be50e3bf5201a06e07822cca8c0ea8dfc3ae1b72f"
+            },
+            {
+              "path": "scripts/check-site-bundles.mjs",
+              "bytes": 3076,
+              "sha256": "b7eeaab7730f6835a386363811caac308beec7db206b87dad3f62bea76cc3b18"
+            },
+            {
+              "path": "scripts/update-site-bundles.mjs",
+              "bytes": 8382,
+              "sha256": "c1e3101a4b83473cd6f6e228c253c1939dc51771451c9e4086155f78b6d2eecd"
+            },
+            {
+              "path": "site/brand-site.json",
+              "bytes": 65865,
+              "sha256": "1d253fd98187dd314a921fb51601de71fad331f3e1913655a34c208c2ad0551a"
+            },
+            {
+              "path": "site/site-bundles.json",
+              "bytes": 1309,
+              "sha256": "7a380dea245e0242fc2423e0a6c4bb863fe336569d32b7825bb8c3571d351afb"
+            }
+          ],
+          "sourceBundle": {
+            "path": ".buildchain/publication/source.tar.gz",
+            "bytes": 59177,
+            "sha256": "bafb5c78e734b3f7ec4e71c0154ac8fdc5396740caa74004e4064b91285992a6"
+          }
+        },
+        "artifacts": [
+          {
+            "path": "_build/main.pdf",
+            "bytes": 406200,
+            "sha256": "3ff80be1b542235caa42c520e3b3dcc0bfcce2241aa05e60259aa9683c3c7706"
+          }
+        ],
+        "metadata": [
+          {
+            "path": "docs/MAP.md",
+            "bytes": 1720,
+            "sha256": "bd3779b4904093854b4469bb9e82a83347d2b968a7bbcbd008409157388e2e3c"
+          },
+          {
+            "path": "README.md",
+            "bytes": 3724,
+            "sha256": "5b9f8a2638af059fae34fe9be50e3bf5201a06e07822cca8c0ea8dfc3ae1b72f"
+          },
+          {
+            "path": "site/brand-site.json",
+            "bytes": 65865,
+            "sha256": "1d253fd98187dd314a921fb51601de71fad331f3e1913655a34c208c2ad0551a"
+          },
+          {
+            "path": "site/site-bundles.json",
+            "bytes": 1309,
+            "sha256": "7a380dea245e0242fc2423e0a6c4bb863fe336569d32b7825bb8c3571d351afb"
+          }
+        ],
+        "generatedAt": "2026-08-01T14:19:14.000Z",
+        "publishedAt": "2026-08-01T14:19:14.000Z",
+        "reproducible": true,
+        "timestampPolicy": "ci-injected",
+        "deterministicInputs": [
+          "publication source paths",
+          "publication metadata paths",
+          "publication primary artifact",
+          "Buildchain publication contract",
+          "source SHA",
+          "source tree SHA"
+        ],
+        "timestampPolicyDetails": {
+          "contract": "kungfu-buildchain-surface-timestamp-policy",
+          "timestampFields": [
+            "generatedAt",
+            "publishedAt"
+          ],
+          "timestampFieldsParticipateInArtifactDigest": false,
+          "artifactDigestScope": "publication artifact digests cover files and source bundle, not manifest timestamps"
+        }
+      },
+      "platform": "",
+      "artifactName": ""
+    }
+  ],
+  "distTagPromotion": {
+    "path": "../release-evidence/v0.1.0-alpha.11/dist-tag-evidence.json",
+    "sha256": "bbaff97a98cd8e09dae25f3d4bd7daf37ddd1ee158ba05b8f918b4b1fc64a59e",
+    "fields": {
+      "schema": 1,
+      "contract": "kungfu-buildchain-dist-tag-promotion-evidence",
+      "mode": "publish-final-version",
+      "auth": "trusted-publishing",
+      "distTag": "alpha",
+      "source": "existing-evidence",
+      "packages": [
+        {
+          "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
+          "version": "0.1.0-alpha.11",
+          "distTag": "alpha",
+          "role": "",
+          "digest": "sha512-HuVN4IezIL14cRm3nyrcQAptqt2/6liZgEvOVEGCpwDZgPjxElIKXbJm/V+IlJSajNaW/OtHJGzid0RZXFX0lQ=="
+        }
+      ]
+    }
+  },
+  "versionImpact": {
+    "final": "unknown",
+    "source": "default",
+    "rationale": "No surface impact classification was supplied."
+  },
+  "surfaceImpacts": [],
+  "artifacts": [
+    {
+      "group": "node",
+      "kind": "npm",
+      "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
+      "ref": "0.1.0-alpha.11",
+      "digest": "sha512-HuVN4IezIL14cRm3nyrcQAptqt2/6liZgEvOVEGCpwDZgPjxElIKXbJm/V+IlJSajNaW/OtHJGzid0RZXFX0lQ==",
+      "evidence": "../release-evidence/v0.1.0-alpha.11/evidence.json"
+    }
+  ],
+  "evidence": {
+    "artifactEvidence": "artifact-evidence.json",
+    "publishEvidence": "evidence.json",
+    "transactionState": "",
+    "buildSummary": "../admitted/artifact/.buildchain/paper-release/build-summary.json",
+    "buildFacts": [],
+    "platformArtifactManifests": [
+      {
+        "path": "../admitted/artifact/.buildchain/publication/publication-artifact.json",
+        "sha256": "311866f6d6ac809738e83d3dd346ea285ddf8d7994cf2755463779046849bfb9",
+        "platform": "",
+        "artifactName": ""
+      }
+    ],
+    "distTagPromotionEvidence": "../release-evidence/v0.1.0-alpha.11/dist-tag-evidence.json",
+    "kfd1": "",
+    "kfd2": "",
+    "kfd3": "",
+    "kfdSupport": "",
+    "kfdAgentHub": "",
+    "invariantPassports": "",
+    "releaseEvidence": [],
+    "impact": "impact.json",
+    "checkReport": "check-report.json",
+    "agentIndex": "agent-index.json"
+  },
+  "recovery": {
+    "rollback": "Use the previous exact release tag or previous floating channel ref.",
+    "verify": "buildchain verify release-passport buildchain.release.json"
+  }
+}

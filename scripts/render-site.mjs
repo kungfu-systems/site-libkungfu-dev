@@ -824,6 +824,53 @@ function artifactOutputPath(versionPath, artifactPath) {
   return archiveOutputPath(`${versionPath}${artifactPath}`);
 }
 
+function papersOutputPath(urlValue, label) {
+  const url = new URL(String(urlValue || ""));
+  if (url.protocol !== "https:" || url.host !== "papers.libkungfu.dev" || url.search || url.hash) {
+    throw new Error(`${label} must be a stable papers.libkungfu.dev URL`);
+  }
+  return archiveOutputPath(url.pathname);
+}
+
+function readPublicationReleaseEvidence(publication) {
+  const lockPath = path.join(repoRoot, "buildchain.upstreams", `paper-${publication.id}.release.json`);
+  if (!fs.existsSync(lockPath)) return undefined;
+  const lock = readJsonFile(lockPath);
+  if (
+    lock.upstream?.package?.name !== publication.package
+    || lock.upstream?.package?.version !== publication.latest.version
+    || lock.upstream?.publicationArtifact?.id !== publication.id
+  ) {
+    return undefined;
+  }
+  const evidencePath = path.join(
+    repoRoot,
+    "src",
+    "upstream-release-evidence",
+    publication.id,
+    "buildchain.release.json",
+  );
+  if (!fs.existsSync(evidencePath)) {
+    throw new Error(`current publication release evidence is missing: ${publication.id}@${publication.latest.version}`);
+  }
+  const content = fs.readFileSync(evidencePath);
+  const contentSha256 = sha256Buffer(content);
+  if (contentSha256 !== `sha256:${lock.upstream.releasePassport.sha256}`) {
+    throw new Error(`publication release evidence digest mismatch: ${publication.id}@${publication.latest.version}`);
+  }
+  JSON.parse(content.toString("utf8"));
+  return {
+    content,
+    contentSha256,
+    lockPath: path.relative(repoRoot, lockPath).split(path.sep).join("/"),
+    lockSha256: `sha256:${lock.lockSha256}`,
+    sourceSha: lock.upstream.sourceSha,
+    version: lock.upstream.package.version,
+    canonicalUrl: publication.latest.evidenceUrl,
+    executionProfile: lock.downstream.executionProfile,
+  };
+}
+
 function publicationArtifactDescriptors(version) {
   return [
     ...version.artifacts,
@@ -1028,6 +1075,11 @@ function renderPublicationArchives() {
       versions,
     };
   });
+  const releaseEvidenceByPublication = new Map(
+    normalizedPublications
+      .map((publication) => [publication.id, readPublicationReleaseEvidence(publication)])
+      .filter(([, evidence]) => evidence),
+  );
 
   const featuredPublicationFrames = [
     {
@@ -1199,9 +1251,7 @@ function renderPublicationArchives() {
       .map((reader) => `<a class="card-action" href="${escapeAttr(reader.url)}">${escapeHtml(reader.label)}</a>`)
       .join("\n");
 
-    writeFile(
-      archiveOutputPath(publicationBasePath, "index.html"),
-      page({
+    const publicationPageBody = page({
         title: `${publication.title} | papers.libkungfu.dev`,
         description: publication.summary,
         current: "papers",
@@ -1239,9 +1289,19 @@ function renderPublicationArchives() {
         <section class="grid">
           ${publicationVersionCards(publication, publication.versions)}
         </section>`,
-      }),
-    );
+      });
+    writeFile(archiveOutputPath(publicationBasePath, "index.html"), publicationPageBody);
     renderedRoutes.push({ path: publicationBasePath, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "publication-index" });
+
+    const releaseEvidence = releaseEvidenceByPublication.get(publication.id);
+    if (releaseEvidence) {
+      const pageAliases = (releaseEvidence.executionProfile?.readbackUrls || [])
+        .filter((url) => new URL(url).pathname.endsWith("/") && url !== publication.canonicalReader.url);
+      for (const alias of pageAliases) {
+        writeFile(path.posix.join(papersOutputPath(alias, `${publication.id} readback page`), "index.html"), publicationPageBody);
+        renderedRoutes.push({ path: new URL(alias).pathname, host: surfaceCanonicalHost("papers"), source: releaseEvidence.lockPath, routeKind: "publication-readback-alias" });
+      }
+    }
 
     writeFile(
       archiveOutputPath(publication.latest.path, "index.html"),
@@ -1273,6 +1333,24 @@ function renderPublicationArchives() {
       }),
     );
     renderedRoutes.push({ path: publication.latest.path, host: surfaceCanonicalHost("papers"), source: source.source, routeKind: "latest" });
+
+    if (releaseEvidence) {
+      const evidenceUrls = new Set([
+        releaseEvidence.canonicalUrl,
+        ...(releaseEvidence.executionProfile?.readbackUrls || []).filter((url) => url.endsWith("/buildchain.release.json")),
+      ]);
+      for (const evidenceUrl of evidenceUrls) {
+        writeBinaryFile(papersOutputPath(evidenceUrl, `${publication.id} release evidence`), releaseEvidence.content);
+        renderedRoutes.push({
+          path: new URL(evidenceUrl).pathname,
+          host: surfaceCanonicalHost("papers"),
+          source: releaseEvidence.lockPath,
+          routeKind: "latest-release-evidence",
+          sha256: releaseEvidence.contentSha256,
+          mediaType: "application/json",
+        });
+      }
+    }
 
     for (const version of publication.versions) {
       const currentPackageVersion = version.version === publication.latest.version;
@@ -1410,6 +1488,15 @@ ${registry.archivePolicy.rule}
     manifest: archiveManifest,
     routes: renderedRoutes,
     immutableArtifacts,
+    releaseEvidence: [...releaseEvidenceByPublication.entries()].map(([publication, evidence]) => ({
+      publication,
+      version: evidence.version,
+      sourceSha: evidence.sourceSha,
+      lockPath: evidence.lockPath,
+      lockSha256: evidence.lockSha256,
+      contentSha256: evidence.contentSha256,
+      url: evidence.canonicalUrl,
+    })),
   };
 }
 
@@ -4101,6 +4188,8 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
     "scripts/publication-packages.cjs",
     "src/fixtures/*.json",
     "src/publication-packages.json",
+    "buildchain.upstreams/paper-*.release.json",
+    "src/upstream-release-evidence/**/buildchain.release.json",
     "resolved dogfood immutable snapshot URL and SHA-256",
     "pnpm-lock.yaml",
     "@kungfu-tech/buildchain package content",
@@ -4112,6 +4201,17 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
 });
 const buildchainBadgeEndpoints = renderBuildchainBadgeEndpoints();
 const publicationArchives = renderPublicationArchives();
+const productionStatus = {
+  schemaVersion: 1,
+  contract: "kungfu-buildchain-web-surface-production-status",
+  ...surfaceTimestampPolicy,
+  channel: (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim(),
+  repository: "kungfu-systems/site-libkungfu-dev",
+  revision: surfaceTimestampPolicy.sourceRevision,
+  releaseEvidence: publicationArchives.releaseEvidence,
+};
+writeFile(".well-known/kungfu-release-status.json", `${JSON.stringify(productionStatus, null, 2)}\n`);
+writeFile("papers/.well-known/kungfu-release-status.json", `${JSON.stringify(productionStatus, null, 2)}\n`);
 const buildchainPrimarySectionIds = buildchainSite.homepage.displayPlan?.primary || [];
 const buildchainSupportSectionIds = buildchainSite.homepage.displayPlan?.support || [];
 const buildchainFirstScreenSectionIds = (buildchainSite.homepage.displayPlan?.firstScreen?.include || [])

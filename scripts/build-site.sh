@@ -71,12 +71,17 @@ test -f dist/agent-supply-chain.json
 test -f dist/dogfood/index.html
 test -f dist/dogfood-evidence.json
 test -f dist/.buildchain/observed-evidence-ownership.json
+test -f dist/.well-known/kungfu-release-status.json
 test -f dist/llms.txt
 test -f dist/papers/index.html
 test -f dist/papers/archive/index.html
 test -f dist/papers/manifest.json
 test -f dist/papers/registry.json
 test -f dist/papers/llms.txt
+test -f dist/papers/.well-known/kungfu-release-status.json
+test -f dist/papers/kfd-machine-life-roadmap/latest/buildchain.release.json
+test -f dist/papers/paper-kfd-machine-life-roadmap/index.html
+test -f dist/papers/paper-kfd-machine-life-roadmap/latest/buildchain.release.json
 node - <<'NODE'
 const fs = require("node:fs");
 const manifest = JSON.parse(fs.readFileSync("dist/papers/manifest.json", "utf8"));
