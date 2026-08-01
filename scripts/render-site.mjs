@@ -952,7 +952,20 @@ function renderFrozenImmutablePublicationPage(version) {
   if (!snapshot) {
     throw new Error(`immutable publication page is not frozen: ${version.immutablePath}`);
   }
-  return fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
+  let body = fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
+  if (snapshot.contract === "libkungfu-dev-immutable-publication-page-legacy-v0") {
+    for (const surface of ["papers", "buildchain", "core", "kfd", "hub"]) {
+      const productionHref = {
+        hub: "https://libkungfu.dev/",
+        core: "https://core.libkungfu.dev/",
+        buildchain: "https://buildchain.libkungfu.dev/",
+        kfd: "https://kfd.libkungfu.dev/",
+        papers: "https://papers.libkungfu.dev/",
+      }[surface];
+      body = body.replaceAll(productionHref, surfaceCanonicalHref(surface));
+    }
+  }
+  return body;
 }
 
 function renderPublicationArchives() {
