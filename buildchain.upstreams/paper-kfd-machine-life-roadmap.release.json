@@ -1,78 +1,96 @@
 {
+  "schemaVersion": 1,
   "contract": "kungfu-buildchain-release-propagation-lock",
-  "downstream": {
-    "baseRef": "main",
+  "upstream": {
+    "node": "paper-kfd-machine-life-roadmap",
+    "repository": "kungfu-systems/paper-kfd-machine-life-roadmap",
     "channel": "alpha",
-    "lockPath": "buildchain.upstreams/paper-kfd-machine-life-roadmap.release.json",
-    "node": "site-libkungfu-dev",
-    "repository": "kungfu-systems/site-libkungfu-dev"
+    "tag": "v0.1.0-alpha.11",
+    "tagTargetSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "sourceSha": "1eed2d9789636332b0a1f375d50a19dfad5e2485",
+    "package": {
+      "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
+      "version": "0.1.0-alpha.11",
+      "integrity": "sha512-HuVN4IezIL14cRm3nyrcQAptqt2/6liZgEvOVEGCpwDZgPjxElIKXbJm/V+IlJSajNaW/OtHJGzid0RZXFX0lQ==",
+      "gitHead": "1eed2d9789636332b0a1f375d50a19dfad5e2485"
+    },
+    "publicationArtifact": {
+      "id": "kfd-machine-life-roadmap",
+      "kind": "paper",
+      "version": "0.1.0-alpha.11",
+      "canonicalUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/",
+      "latestUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/",
+      "latestEvidenceUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/buildchain.release.json",
+      "immutableVersionUrl": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/",
+      "immutableVersionPrefix": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/",
+      "registry": {
+        "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/releases/download/v0.1.0-alpha.11/publication-registry.json",
+        "sha256": "618347ecd5d804904e223e8b8924ef9840482635dae1612d221ea95ebd79ef85"
+      },
+      "manifest": {
+        "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/releases/download/v0.1.0-alpha.11/publication-artifact.json",
+        "sha256": "311866f6d6ac809738e83d3dd346ea285ddf8d7994cf2755463779046849bfb9"
+      },
+      "passport": {
+        "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/releases/download/v0.1.0-alpha.11/publication-artifact-passport.json",
+        "sha256": "75d688c3d48c2e3a39bd7bb0935f2163c0cfe6de3e7a7e3c302016b56c3d2c2e"
+      },
+      "primaryArtifact": {
+        "path": "_build/main.pdf",
+        "bytes": 406200,
+        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/main.pdf",
+        "sha256": "3ff80be1b542235caa42c520e3b3dcc0bfcce2241aa05e60259aa9683c3c7706"
+      },
+      "sourceBundle": {
+        "path": ".buildchain/publication/source.tar.gz",
+        "bytes": 59177,
+        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.11/source.tar.gz",
+        "sha256": "bafb5c78e734b3f7ec4e71c0154ac8fdc5396740caa74004e4064b91285992a6"
+      }
+    },
+    "releasePassport": {
+      "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/releases/download/v0.1.0-alpha.11/buildchain.release.json",
+      "sha256": "0355862d7a833d9d63ac8c6656955588576da2acb70d3c68823d2326dea2a7eb"
+    }
   },
-  "lockSha256": "3c7f59dd27f9a2f58db9942a04381857c2d9bf7655a3712f070a3ca5b3b77b85",
+  "downstream": {
+    "node": "site-libkungfu-dev",
+    "repository": "kungfu-systems/site-libkungfu-dev",
+    "channel": "alpha",
+    "baseRef": "main",
+    "lockPath": "buildchain.upstreams/paper-kfd-machine-life-roadmap.release.json",
+    "executionProfile": {
+      "contract": "kungfu-buildchain-github-web-surface-execution",
+      "workflow": "buildchain-web-surface.yml",
+      "productionReleaseLabel": "buildchain-release",
+      "productionReleaseHeadPrefix": "release/",
+      "productionStatusUrl": "https://libkungfu.dev/.well-known/kungfu-release-status.json",
+      "readbackUrls": [
+        "https://papers.libkungfu.dev/paper-kfd-machine-life-roadmap/",
+        "https://papers.libkungfu.dev/paper-kfd-machine-life-roadmap/latest/buildchain.release.json"
+      ],
+      "updateCommand": "node scripts/paper-propagation.cjs consume --lock \"$BUILDCHAIN_PROPAGATION_LOCK_PATH\"",
+      "prepareCommand": "corepack pnpm@11.9.0 install --lockfile-only --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0 && corepack pnpm@11.9.0 install --frozen-lockfile --ignore-scripts --registry=https://registry.npmjs.org/ --config.minimumReleaseAge=0",
+      "verifyCommand": "pnpm run check"
+    }
+  },
   "propagation": {
-    "branch": "buildchain/release-propagation/kungfu-systems-paper-kfd-machine-life-roadmap/0.1.0-alpha.5-alpha-950a66a1809c",
+    "graphContract": "kungfu-buildchain-release-propagation-graph",
+    "edge": "paper-kfd-machine-life-roadmap-to-site-libkungfu-dev",
+    "channelPolicy": "preserve",
     "channelMap": {
       "alpha": "alpha",
       "release": "release"
     },
-    "channelPolicy": "preserve",
-    "edge": "paper-kfd-machine-life-roadmap-to-site-libkungfu-dev",
-    "exact": true,
-    "floatingTags": false,
-    "graphContract": "kungfu-buildchain-release-propagation-graph",
-    "propagationKey": "950a66a1809c7ab20ed306203e2646592578966906b2869c5408f5cf87446d43",
     "releaseIdentity": {
-      "channel": "alpha",
       "repository": "kungfu-systems/paper-kfd-machine-life-roadmap",
-      "version": "0.1.0-alpha.5"
-    }
+      "version": "0.1.0-alpha.11",
+      "channel": "alpha"
+    },
+    "propagationKey": "a4bc640074968a56139b297084a9f559dd5b194996e9b9bbb7cbe12697148fc1",
+    "branch": "buildchain/release-propagation/kungfu-systems-paper-kfd-machine-life-roadmap/0.1.0-alpha.11-alpha-a4bc64007496",
+    "exact": true,
+    "floatingTags": false
   },
-  "schemaVersion": 1,
-  "upstream": {
-    "channel": "alpha",
-    "node": "paper-kfd-machine-life-roadmap",
-    "package": {
-      "integrity": "sha512-+8Hf8cdPHwT725IUHmgBfW/p5KMND7IvW5auDCCsz9lc/seik9dgHEj7A2BXGW+iDYZh4PQw6D0zkbKEEca8UQ==",
-      "name": "@kungfu-tech/paper-kfd-machine-life-roadmap",
-      "version": "0.1.0-alpha.5"
-    },
-    "publicationArtifact": {
-      "canonicalUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/",
-      "id": "kfd-machine-life-roadmap",
-      "immutableVersionPrefix": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/",
-      "immutableVersionUrl": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/",
-      "kind": "paper",
-      "latestEvidenceUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/buildchain.release.json",
-      "latestUrl": "https://papers.libkungfu.dev/kfd-machine-life-roadmap/latest/",
-      "manifest": {
-        "sha256": "866e2cd8f28da4251e54bb0b05fda0aef7bf39aeda545a5f73c7eeaa00aba443",
-        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/publication-artifact.json"
-      },
-      "passport": {
-        "sha256": "1e849b029d88148388ab99b3f7de84429f8b3fc9cb4949b450323c86b4ebb805",
-        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/publication-artifact-passport.json"
-      },
-      "primaryArtifact": {
-        "path": "_build/main.pdf",
-        "sha256": "5f7e8ddc891ece0f1bd9a8b10f5f8b5d29c0142bfcdef9512738e7a6b8d0626a",
-        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/main.pdf"
-      },
-      "registry": {
-        "sha256": "12ada0c537a491733432eb0cad018821513ac3e96bcb0bc3288c02d7e40e4c89",
-        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/publication-registry.json"
-      },
-      "sourceBundle": {
-        "path": ".buildchain/publication/source.tar.gz",
-        "sha256": "9ad1319cc038a7f5ef8810d7cad6c493f1f21bcb5d19868edd2797ecd311f401",
-        "url": "https://papers.libkungfu.dev/archive/kfd-machine-life-roadmap/v0.1.0-alpha.5/source.tar.gz"
-      },
-      "version": "0.1.0-alpha.5"
-    },
-    "releasePassport": {
-      "sha256": "8f5178aef5d5388f304e3f008a7be59556b41a92ed4d9f6fdb95dc1d3aaf906a",
-      "url": "https://github.com/kungfu-systems/paper-kfd-machine-life-roadmap/releases/download/v0.1.0-alpha.5/buildchain.release.json"
-    },
-    "repository": "kungfu-systems/paper-kfd-machine-life-roadmap",
-    "sourceSha": "6d5d32b7df62603716c3728a077607ab1f24154b",
-    "tag": "v0.1.0-alpha.5"
-  }
+  "lockSha256": "c931c54f88f885dddbeee9300e8b818e3fdc01d03bf79415b8855999d0ec543f"
 }

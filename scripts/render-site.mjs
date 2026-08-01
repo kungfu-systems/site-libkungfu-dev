@@ -905,6 +905,11 @@ const FROZEN_IMMUTABLE_PUBLICATION_PAGES = new Map([
     "0.1.0-alpha.3",
     "0.1.0-alpha.4",
     "0.1.0-alpha.5",
+    "0.1.0-alpha.6",
+    "0.1.0-alpha.7",
+    "0.1.0-alpha.8",
+    "0.1.0-alpha.9",
+    "0.1.0-alpha.10",
   ].map((version) => [
     `/archive/kfd-machine-life-roadmap/v${version}/`,
     {
