@@ -2,6 +2,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
 import MarkdownIt from "markdown-it";
 import markdownItAnchor from "markdown-it-anchor";
 import { createSurfaceTimestampPolicy } from "@kungfu-tech/buildchain/surface-manifest";
@@ -44,6 +45,39 @@ function readPackageText(specifier) {
 
 function packageRoot(packageName) {
   return path.dirname(require.resolve(`${packageName}/package.json`));
+}
+
+function extractTarEntry(archivePath, entryPath) {
+  const archive = gunzipSync(fs.readFileSync(archivePath));
+  for (let offset = 0; offset + 512 <= archive.length;) {
+    const header = archive.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) break;
+    const readField = (start, end) => header.subarray(start, end).toString("utf8").replace(/\0.*$/, "").trim();
+    const name = [readField(345, 500), readField(0, 100)].filter(Boolean).join("/");
+    const size = Number.parseInt(readField(124, 136) || "0", 8);
+    if (!Number.isSafeInteger(size) || size < 0) throw new Error(`invalid source bundle entry size: ${name}`);
+    const contentOffset = offset + 512;
+    if (contentOffset + size > archive.length) throw new Error(`truncated source bundle entry: ${name}`);
+    if (name === entryPath) return archive.subarray(contentOffset, contentOffset + size);
+    offset = contentOffset + Math.ceil(size / 512) * 512;
+  }
+  throw new Error(`publication source bundle is missing ${entryPath}`);
+}
+
+function readPublicationPackageJson(packageName, relativePath) {
+  const root = packageRoot(packageName);
+  const directPath = path.join(root, relativePath);
+  if (fs.existsSync(directPath)) return readJsonFile(directPath);
+
+  const packageInfo = readJsonFile(path.join(root, "package.json"));
+  const registry = readJsonFile(path.join(root, ".buildchain", "publication", "publication-registry.json"));
+  const version = registry.versions?.find((entry) => entry.version === packageInfo.version);
+  const metadata = version?.metadata?.find((entry) => entry.path === relativePath);
+  if (!metadata?.sha256) throw new Error(`publication registry does not authenticate ${relativePath}`);
+  const content = extractTarEntry(path.join(root, ".buildchain", "publication", "source.tar.gz"), relativePath);
+  const digest = crypto.createHash("sha256").update(content).digest("hex");
+  if (digest !== metadata.sha256) throw new Error(`publication source bundle digest mismatch for ${relativePath}`);
+  return JSON.parse(content.toString("utf8"));
 }
 
 function readPnpmLockPackage(packageName, version) {
@@ -844,35 +878,81 @@ function publicationVersionCards(publication, versions) {
     .join("\n");
 }
 
-const LEGACY_IMMUTABLE_PUBLICATION_PAGES = new Map([
+const FROZEN_IMMUTABLE_PUBLICATION_PAGES = new Map([
+  ...[
+    "0.1.0-alpha.0",
+    "0.1.0-alpha.1",
+    "0.1.0-alpha.2",
+    "0.1.0-alpha.3",
+    "0.1.0-alpha.4",
+    "0.1.0-alpha.5",
+    "0.1.0-alpha.6",
+    "0.1.0-alpha.7",
+    "0.1.0-alpha.8",
+    "0.1.0-alpha.9",
+    "0.1.0-alpha.11",
+  ].map((version) => [
+    `/archive/kungfu-product-white-paper/v${version}/`,
+    {
+      contract: IMMUTABLE_PUBLICATION_PAGE_CONTRACT,
+      path: `src/immutable-publication-pages/kungfu-product-white-paper/v${version}/index.html`,
+    },
+  ]),
+  ...[
+    "0.1.0-alpha.0",
+    "0.1.0-alpha.1",
+    "0.1.0-alpha.3",
+    "0.1.0-alpha.4",
+  ].map((version) => [
+    `/archive/kfd-machine-life-roadmap/v${version}/`,
+    {
+      contract: IMMUTABLE_PUBLICATION_PAGE_CONTRACT,
+      path: `src/immutable-publication-pages/kfd-machine-life-roadmap/v${version}/index.html`,
+    },
+  ]),
   [
     "/archive/kungfu-product-white-paper/v0.1.0-alpha.10/",
-    "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kungfu-product-white-paper/v0.1.0-alpha.10/index.html",
+    },
   ],
   [
     "/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/",
-    "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
+    },
   ],
   [
     "/archive/observer-declared-timelines/v0.1.0-alpha.9/",
-    "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/observer-declared-timelines/v0.1.0-alpha.9/index.html",
+    },
   ],
   [
     "/archive/episodes-to-primitives/v0.1.0-alpha.2/",
-    "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/episodes-to-primitives/v0.1.0-alpha.2/index.html",
+    },
   ],
   [
     "/archive/kfd-machine-life-roadmap/v0.1.0-alpha.2/",
-    "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+    {
+      contract: "libkungfu-dev-immutable-publication-page-legacy-v0",
+      path: "src/immutable-publication-pages/kfd-machine-life-roadmap/v0.1.0-alpha.2/index.html",
+    },
   ],
 ]);
 
-function renderLegacyImmutablePublicationPage(version) {
-  const snapshotPath = LEGACY_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
-  if (!snapshotPath) {
-    throw new Error(`legacy immutable publication page is not snapshotted: ${version.immutablePath}`);
+function renderFrozenImmutablePublicationPage(version) {
+  const snapshot = FROZEN_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
+  if (!snapshot) {
+    throw new Error(`immutable publication page is not frozen: ${version.immutablePath}`);
   }
-  return fs.readFileSync(path.join(repoRoot, snapshotPath), "utf8");
+  return fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
 }
 
 function renderPublicationArchives() {
@@ -912,6 +992,11 @@ function renderPublicationArchives() {
     });
     if (!versions.some((version) => version.version === publication.latest.version)) {
       throw new Error(`publication ${id} latest version is missing from versions: ${publication.latest.version}`);
+    }
+    for (const version of versions) {
+      if (version.version !== publication.latest.version && !FROZEN_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath)) {
+        throw new Error(`historical immutable publication page is not frozen: ${id}@${version.version}`);
+      }
     }
     return {
       ...publication,
@@ -1171,13 +1256,11 @@ function renderPublicationArchives() {
 
     for (const version of publication.versions) {
       const currentPackageVersion = version.version === publication.latest.version;
-      const legacyImmutableIndex = LEGACY_IMMUTABLE_PUBLICATION_PAGES.has(version.immutablePath);
-      if (currentPackageVersion || legacyImmutableIndex) {
-        const immutableIndexContract = legacyImmutableIndex
-          ? "libkungfu-dev-immutable-publication-page-legacy-v0"
-          : IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
-        const immutableIndexBody = legacyImmutableIndex
-          ? renderLegacyImmutablePublicationPage(version)
+      const frozenImmutableIndex = FROZEN_IMMUTABLE_PUBLICATION_PAGES.get(version.immutablePath);
+      if (currentPackageVersion || frozenImmutableIndex) {
+        const immutableIndexContract = frozenImmutableIndex?.contract || IMMUTABLE_PUBLICATION_PAGE_CONTRACT;
+        const immutableIndexBody = frozenImmutableIndex
+          ? renderFrozenImmutablePublicationPage(version)
           : renderImmutablePublicationPage({ publication, version });
         const immutableIndexSha256 = sha256Buffer(Buffer.from(immutableIndexBody));
         writeFile(
@@ -3830,7 +3913,10 @@ const buildchainProductMechanism = readPackageJson("@kungfu-tech/buildchain/site
 const buildchainReleaseProvenance = readPackageJson("@kungfu-tech/buildchain/site/release-provenance.json");
 const buildchainAgentIndex = readPackageJson("@kungfu-tech/buildchain/site/agent-index.json");
 const whitePaperPackageRoot = packageRoot("@kungfu-tech/paper-kungfu-product-white-paper");
-const whitePaperEvidence = readJsonFile(path.join(whitePaperPackageRoot, "site", "evidence-site.json"));
+const whitePaperEvidence = readPublicationPackageJson(
+  "@kungfu-tech/paper-kungfu-product-white-paper",
+  "site/evidence-site.json",
+);
 const agentSupplyChainSnapshotPackage = "@kungfu-tech/paper-kungfu-product-white-paper-agent-supply-chain";
 const agentSupplyChainSnapshotVersion = "0.1.0-alpha.10";
 const agentSupplyChainSnapshotRoot = packageRoot(agentSupplyChainSnapshotPackage);
@@ -3855,7 +3941,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "3.0.2-alpha.2";
+const expectedBuildchainVersion = "3.0.3";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
@@ -3880,7 +3966,7 @@ if (
   agentSupplyChainSnapshotInfo.name !== "@kungfu-tech/paper-kungfu-product-white-paper"
   || agentSupplyChainSnapshotInfo.version !== agentSupplyChainSnapshotVersion
   || agentSupplyChainSnapshotEvidence.source?.packageVersion !== agentSupplyChainSnapshotVersion
-  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.11"
+  || whitePaperEvidence.source?.packageVersion !== "0.1.0-alpha.12"
   || Object.hasOwn(whitePaperEvidence, "agentSupplyChain")
   || agentSupplyChain?.contract !== "kungfu-agent-supply-chain-public-narrative/v1"
   || agentSupplyChain.layers?.map((layer) => layer.id).join(",") !== "kfd-3,buildchain,kfd-2,libkungfu,agent-hub-portability"

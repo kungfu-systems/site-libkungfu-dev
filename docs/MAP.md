@@ -97,7 +97,7 @@ must understand, while the depth page preserves the complete cited authority.
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@3.0.2-alpha.2` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@3.0.3` supplies the Buildchain `dist/site` bundle.
 - `@kungfu-tech/kfd@1.0.0-alpha.47` supplies the KFD site bundle, registry,
   standards and terminology metadata, schemas, reference pages, and decision
   markdown.
