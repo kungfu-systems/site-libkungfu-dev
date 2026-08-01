@@ -158,6 +158,26 @@ for (const linePrefix of [
     );
   }
 }
+const surfaceChannelLines = workflow
+  .split(/\r?\n/)
+  .map((candidate) => candidate.trim())
+  .filter((candidate) => candidate.startsWith("export SITE_SURFACE_CHANNEL="));
+if (surfaceChannelLines.length !== 2) {
+  throw new Error("Buildchain build and verify commands must both declare SITE_SURFACE_CHANNEL");
+}
+for (const line of surfaceChannelLines) {
+  for (const snippet of [
+    "github.event_name == 'workflow_dispatch'",
+    "github.event_name == 'push'",
+    "github.event.head_commit.message",
+    " from kungfu-systems/release/",
+    "github.event_name == 'pull_request'",
+  ]) {
+    if (!line.includes(snippet)) {
+      throw new Error(`SITE_SURFACE_CHANNEL must distinguish manual, release-main, and PR events by ${snippet}`);
+    }
+  }
+}
 const buildchainRefLine = workflow
   .split(/\r?\n/)
   .find((line) => line.trimStart().startsWith("buildchain-ref:"));
