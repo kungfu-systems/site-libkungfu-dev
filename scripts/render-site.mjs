@@ -452,6 +452,9 @@ function surfaceEndpointHref(id, pathPart = "") {
 }
 
 function pageMachineEntryHref(current, pathPart) {
+  if (current === "buildchain" && pathPart === "manifest.json") {
+    return "/manifest.json";
+  }
   const owningSurface = pathPart === "llms-full.txt" || ["core", "buildchain"].includes(current)
     ? "hub"
     : current;
@@ -4010,6 +4013,7 @@ const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
 };
 const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
+const buildchainSurfaceManifest = readPackageJson("@kungfu-tech/buildchain/site/site-manifest.json");
 const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage);
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
 const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
@@ -4065,6 +4069,13 @@ if (kfdPropagationLock && kfdLock.integrity !== kfdPropagationLock.upstream?.pac
 }
 if (buildchainSite.contract !== "kungfu-buildchain-site-bundle") {
   throw new Error("unexpected Buildchain site bundle contract");
+}
+if (
+  buildchainSurfaceManifest.contract !== "kungfu-buildchain-site-manifest"
+  || buildchainSurfaceManifest.package?.name !== buildchainPackage.name
+  || buildchainSurfaceManifest.package?.version !== buildchainPackage.version
+) {
+  throw new Error("unexpected Buildchain surface manifest authority");
 }
 if (kfdSite.contract !== "kfd-site-bundle") {
   throw new Error("unexpected KFD site bundle contract");
@@ -7787,6 +7798,11 @@ const manifest = {
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
     },
     {
+      path: "/manifest.json",
+      host: surfaceCanonicalHost("buildchain"),
+      source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/site-manifest.json`,
+    },
+    {
       path: "/mechanism/",
       host: surfaceCanonicalHost("buildchain"),
       source: `@kungfu-tech/buildchain@${buildchainPackage.version}/dist/site/buildchain-site.json`,
@@ -7971,6 +7987,7 @@ writeFile("runtime.json", `${JSON.stringify(runtimeAgentProjection, null, 2)}\n`
 writeFile("agent-supply-chain.json", `${JSON.stringify(agentSupplyChain, null, 2)}\n`);
 writeFile("dogfood-evidence.json", `${JSON.stringify(dogfoodEvidence, null, 2)}\n`);
 writeFile("manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
+writeFile("buildchain/manifest.json", `${JSON.stringify(buildchainSurfaceManifest, null, 2)}\n`);
 
 const kfdDecisionEntries = kfdRegistry.entries.map((entry) => ({
   usage: kfdUsagePageByDecisionNumber.get(String(entry.number))?.sourceExists

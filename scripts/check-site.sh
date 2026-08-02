@@ -102,6 +102,7 @@ const requiredBaseFiles = [
   "dist/core/llms.txt",
   "dist/core/llms-full.txt",
   "dist/buildchain/index.html",
+  "dist/buildchain/manifest.json",
   "dist/buildchain/mechanism/index.html",
   "dist/kfd/index.html",
   "dist/kfd/decisions/index.html",
@@ -213,6 +214,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const buildchainPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/package.json", "utf8"));
 const buildchainSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/buildchain-site.json", "utf8"));
+const buildchainSurfaceManifest = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/site-manifest.json", "utf8"));
 const kfdPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/package.json", "utf8"));
 const kfdSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/site/kfd-site.json", "utf8"));
 const kfdRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json", "utf8"));
@@ -1500,7 +1502,11 @@ if (manifest.upstreamPackages.buildchain.version !== expectedBuildchainVersion) 
 }
 const buildchainHomeHtml = fs.readFileSync("dist/buildchain/index.html", "utf8");
 const buildchainDetailHtml = fs.readFileSync("dist/buildchain/mechanism/index.html", "utf8");
+const renderedBuildchainSurfaceManifest = JSON.parse(fs.readFileSync("dist/buildchain/manifest.json", "utf8"));
 const kfdDetailHtml = fs.readFileSync("dist/kfd/decisions/index.html", "utf8");
+if (JSON.stringify(renderedBuildchainSurfaceManifest) !== JSON.stringify(buildchainSurfaceManifest)) {
+  throw new Error("Buildchain surface manifest must preserve the exact published package authority");
+}
 const expectedBuildchainBadgeHost = expectedSurfaceEndpoint("buildchain", "badges/v1/");
 if (!buildchainDetailHtml.includes('class="lead badge-strip"')) {
   throw new Error("Buildchain mechanism page must render the README badge block as a badge strip");
@@ -2108,7 +2114,7 @@ for (const [className, href, label] of [
 for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   ["Hub", hubHtml, "/manifest.json", "/llms.txt", "/llms-full.txt"],
   ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "/manifest.json", "/llms.txt", "/llms-full.txt"],
-  ["Buildchain", buildchainHomeHtml, expectedSurfaceEndpoint("hub", "manifest.json"), expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["Buildchain", buildchainHomeHtml, "/manifest.json", expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["Papers", papersIndex, "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
 ]) {
