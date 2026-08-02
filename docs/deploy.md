@@ -89,7 +89,7 @@ action remains a separate, explicitly admitted step.
 The Core `/format/` human page is generated from the package's
 `formatAuthority` projection, while the complete packaged `dist/site/format/**`
 tree is copied byte-for-byte to the matching Core machine routes.
-Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.3` npm package
+Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.4` npm package
 and its exported `dist/site` bundle. KFD uses the pinned
 `@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
 use the exact package set in
@@ -103,6 +103,30 @@ index/registry/latest files. Any non-pin change omits that envelope and retains
 the full deployment path. Qualification does not promote channels:
 package-published, alpha-complete, staging-visible, and production-visible are
 separate facts.
+
+### Manual code-upstream pickup
+
+Buildchain and Kungfu Core package publication is intentionally inert for Site:
+there is no webhook, scheduled poll, generated pull request, or automatic Work
+capture for those two high-frequency code repositories. A user-requested Agent
+session runs `pnpm run upstream:pickup -- plan ... --json`, freezes an exact
+eligible published npm package with registry provenance via `create`, claims
+the paused Work under Family State v2 and an active Warrant, and only then runs
+`apply`. A current coordinate is an explicit no-op and creates no Work.
+
+After materialization, the normal Buildchain web-surface stages remain
+unchanged: protected branch, pull request, preview, independent review,
+protected merge, staging, release pull request, production deployment, and
+exact online readback. Production Kungfu Core content can come only from the
+published `@kungfu-tech/site` package; local Core builds are preview-only and
+cannot qualify merge, deployment, or completion evidence.
+
+The direct `@kungfu-tech/buildchain` package supplies Site content. The exact
+`@kungfu-tech/buildchain-runtime` alias performs registry resolution and Work
+materialization. The workflow ref and `.buildchain/contract-lock.json` remain
+separate execution and contract authorities, so a content update cannot
+silently move the workflow runtime.
+
 The infrastructure contract publishes Papers as a first-class surface in every
 channel: `papers-{alias}.preview.libkungfu.dev`,
 `papers.staging.libkungfu.dev`, and `papers.libkungfu.dev`.

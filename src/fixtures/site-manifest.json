@@ -169,7 +169,7 @@
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "3.0.3",
+        "version": "3.0.4",
         "path": "docs/release-passport.md",
         "sha256": "e1ca1d470de4faeb9f7f0a57228aebbc166d0c96d03a5603fc576ad955c497a4"
       },
@@ -178,7 +178,7 @@
         "owner": "@kungfu-tech/buildchain",
         "kind": "package-document",
         "package": "@kungfu-tech/buildchain",
-        "version": "3.0.3",
+        "version": "3.0.4",
         "path": "docs/kfd-support.md",
         "sha256": "3a6143e450ab7976a50788fee48ec4d7313706774ff5cf8f71075a7b9e196e01"
       }

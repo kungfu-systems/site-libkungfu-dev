@@ -1,0 +1,69 @@
+{
+  "contract": "kungfu-buildchain-release-propagation-lock",
+  "downstream": {
+    "baseRef": "main",
+    "channel": "release",
+    "executionProfile": {
+      "contract": "kungfu-buildchain-github-web-surface-execution",
+      "prepareCommand": "pnpm install --lockfile-only --ignore-scripts",
+      "productionReleaseHeadPrefix": "release/",
+      "productionReleaseLabel": "buildchain-release",
+      "productionStatusUrl": "https://libkungfu.dev/.well-known/kungfu-release-status.json",
+      "readbackUrls": [
+        "https://buildchain.libkungfu.dev/manifest.json",
+        "https://core.libkungfu.dev/manifest.json"
+      ],
+      "updateCommand": "pnpm run upstream:pickup -- apply <capture.json> <claimed-work.json>",
+      "verifyCommand": "pnpm run check",
+      "workflow": "buildchain-web-surface.yml"
+    },
+    "lockPath": "buildchain.upstreams/buildchain.release.json",
+    "node": "site-libkungfu-dev",
+    "repository": "kungfu-systems/site-libkungfu-dev"
+  },
+  "lockSha256": "958c444cae8cc8d7f1ff2a05be97bfbc832ddb0a333850848746a7158746d0c3",
+  "propagation": {
+    "branch": "buildchain/release-propagation/kungfu-systems-buildchain/3.0.4-release-099fbdd5db9e",
+    "channelMap": {
+      "alpha": "alpha",
+      "release": "release"
+    },
+    "channelPolicy": "preserve",
+    "edge": "buildchain-manual-pickup",
+    "exact": true,
+    "floatingTags": false,
+    "graphContract": "kungfu-buildchain-release-propagation-graph",
+    "propagationKey": "099fbdd5db9e2c332b6a7e8ff727b990f39e3152b3d34f0b0781e156b3638fea",
+    "releaseIdentity": {
+      "channel": "release",
+      "repository": "kungfu-systems/buildchain",
+      "version": "3.0.4"
+    }
+  },
+  "schemaVersion": 1,
+  "upstream": {
+    "channel": "release",
+    "node": "buildchain",
+    "package": {
+      "gitHead": "60df93f1e632388806bd1249daa392ec7c18cdbd",
+      "integrity": "sha512-pYDIGQJb//8P9DpaZBR0qYkLbarS/rfEzlPViYS/v2coDFCqqU8VDj521Y96NkBWifVqo66Vcsu5EYtoqFKTTA==",
+      "name": "@kungfu-tech/buildchain",
+      "version": "3.0.4"
+    },
+    "registryProvenance": {
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@kungfu-tech%2fbuildchain@3.0.4",
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "registry": "https://registry.npmjs.org",
+      "repository": "kungfu-systems/buildchain",
+      "runUrl": "https://github.com/kungfu-systems/buildchain/actions/runs/30716449746/attempts/1",
+      "sourceSha": "1e7ced9245a0ad9811327a90f6420fc745852c98",
+      "subjectSha512": "a580c819025bffff0ff43a5a641474a9890b6daad2feb7c4ce53d58984bfbf67280c50aaa94f150e3e76d58f7a36405689f56aa3ae9572cbb9118b68a852934c",
+      "workflowPath": ".github/workflows/buildchain-ref-promotion.yml",
+      "workflowRef": "refs/heads/dev/v3/v3.0"
+    },
+    "repository": "kungfu-systems/buildchain",
+    "sourceSha": "1e7ced9245a0ad9811327a90f6420fc745852c98",
+    "tag": "",
+    "tagTargetSha": ""
+  }
+}

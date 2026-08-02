@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@kungfu-tech/buildchain':
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       '@kungfu-tech/kfd':
         specifier: 1.0.0-alpha.53
         version: 1.0.0-alpha.53
@@ -41,11 +41,20 @@ importers:
       markdown-it-anchor:
         specifier: 9.2.0
         version: 9.2.0(@types/markdown-it@14.1.2)(markdown-it@14.1.0)
+    devDependencies:
+      '@kungfu-tech/buildchain-runtime':
+        specifier: npm:@kungfu-tech/buildchain@3.0.5-alpha.8
+        version: '@kungfu-tech/buildchain@3.0.5-alpha.8'
 
 packages:
 
-  '@kungfu-tech/buildchain@3.0.3':
-    resolution: {integrity: sha512-yCs+7C68vpP6+CJIUBz/DKwsniTZ/dJiTZmkrz0CVz/SWbhp37eXc3m4QUVP+1pqQ3yIOkN1E8JLlx6qZUB6uQ==}
+  '@kungfu-tech/buildchain@3.0.4':
+    resolution: {integrity: sha512-pYDIGQJb//8P9DpaZBR0qYkLbarS/rfEzlPViYS/v2coDFCqqU8VDj521Y96NkBWifVqo66Vcsu5EYtoqFKTTA==}
+    engines: {node: '>=22.14.0'}
+    hasBin: true
+
+  '@kungfu-tech/buildchain@3.0.5-alpha.8':
+    resolution: {integrity: sha512-SjEjCsA6dRGdiqTnsVQs4hHpNwV63MuNK8UqjNuDXQsPdFdve9EdMxBg3Krv6NmNq3tys4tvEx4qlFn7dljv7A==}
     engines: {node: '>=22.14.0'}
     hasBin: true
 
@@ -123,7 +132,12 @@ packages:
 
 snapshots:
 
-  '@kungfu-tech/buildchain@3.0.3':
+  '@kungfu-tech/buildchain@3.0.4':
+    dependencies:
+      '@kungfu-tech/kfd': 1.0.0-alpha.47
+      smol-toml: 1.7.0
+
+  '@kungfu-tech/buildchain@3.0.5-alpha.8':
     dependencies:
       '@kungfu-tech/kfd': 1.0.0-alpha.47
       smol-toml: 1.7.0

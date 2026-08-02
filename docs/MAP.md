@@ -97,7 +97,14 @@ must understand, while the depth page preserves the complete cited authority.
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@3.0.3` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@3.0.4` supplies the Buildchain `dist/site` bundle.
+- `.buildchain/manual-code-upstreams.json` declares the downstream-only manual
+  pickup profiles for Buildchain and Kungfu Core. Its runtime pin is distinct
+  from the Buildchain content package and from workflow contract locks.
+- `scripts/code-upstream-pickup.cjs` plans and captures exact published package
+  coordinates without an upstream trigger, and applies only claimed Family
+  State v2 / Warrant-bound Work. Paper and KFD automatic capture remain owned
+  by their existing release propagation surfaces.
 - `@kungfu-tech/kfd@1.0.0-alpha.47` supplies the KFD site bundle, registry,
   standards and terminology metadata, schemas, reference pages, and decision
   markdown.

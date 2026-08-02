@@ -125,7 +125,7 @@ auditor disclosure. Every packaged
 `dist/site/format/**` artifact is copied byte-for-byte to the matching machine
 route. The Buildchain page consumes
 the pinned npm package artifact
-`@kungfu-tech/buildchain@3.0.3` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@3.0.4` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -168,6 +168,37 @@ Do not invent upstream facts in this repository. Every Core product claim must
 come from the pinned `@kungfu-tech/site` bundle, preserve its exact source,
 maturity, qualification, and non-claim boundaries, and remain aligned across
 human pages and machine entries.
+
+### Upstream pickup modes
+
+Paper and KFD releases keep their release-owned automatic capture path: an
+exact published release can arrive as a paused downstream Work handoff. The
+high-frequency Buildchain and Kungfu Core repositories are deliberately
+different. Publishing an alpha or stable package there is inert for this
+repository; it neither opens a pull request nor creates or mutates Site Work.
+
+An Agent starts a code-upstream update only after an explicit downstream user
+request:
+
+```bash
+pnpm run upstream:pickup -- plan buildchain release --json
+pnpm run upstream:pickup -- plan kungfu-core alpha --json
+pnpm run upstream:pickup -- create buildchain release --output capture.json --json
+pnpm run upstream:pickup -- apply capture.json claimed-work.json --json
+```
+
+`plan` is read-only. `create` freezes one exact published npm coordinate and
+produces paused, unclaimed Work; it does not edit the repository. `apply`
+requires that exact Work to have been claimed under Family State v2 and an
+active execution Warrant, then updates only the declared package content and
+release lock. The existing protected branch, pull request, preview, review,
+staging, production, and online-readback stages remain the delivery authority.
+Kungfu Core production accepts published `@kungfu-tech/site` bytes only.
+
+The direct `@kungfu-tech/buildchain` dependency is the content input rendered
+on the Buildchain surface. The aliased `@kungfu-tech/buildchain-runtime`
+dependency runs manual pickup. Neither replaces the independently reviewed
+workflow revision or `.buildchain/contract-lock.json`.
 
 ### Preview an unpublished local Site bundle
 
@@ -266,7 +297,7 @@ runs through an exact reviewed Buildchain v3 workflow revision and checks
 Buildchain runtime SHA and contract digests; changing the runtime is a reviewed
 activation and must remain compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.3` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.4` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 
