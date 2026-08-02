@@ -4048,7 +4048,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "3.0.3";
+const expectedBuildchainVersion = "3.0.4";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
