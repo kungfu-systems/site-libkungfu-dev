@@ -4051,6 +4051,11 @@ const agentSupplyChainSnapshotEvidence = readJsonFile(path.join(agentSupplyChain
 const agentSupplyChain = agentSupplyChainSnapshotEvidence.agentSupplyChain;
 const kfdSite = readPackageJson("@kungfu-tech/kfd/site/kfd-site.json");
 const kfdPackage = readPackageJson("@kungfu-tech/kfd/package.json");
+const kfdActivationContracts = readPackageJson("@kungfu-tech/kfd/activation-contracts.json");
+const kfdActivationSchemas = Object.values(kfdActivationContracts.interfaces).map((entry) => ({
+  ...entry,
+  body: readPackageJson(`@kungfu-tech/kfd/${entry.schemaPath}`),
+}));
 const kfdTerminology = readPackageJson("@kungfu-tech/kfd/terminology.json");
 const kfdTerminologySchema = readPackageJson("@kungfu-tech/kfd/schemas/kfd-terminology.schema.json");
 const kfdRegistry = readPackageJson("@kungfu-tech/kfd/registry.json");
@@ -4282,6 +4287,8 @@ const kfdPageRouteBySourcePath = new Map([
   [kfdSite.formalPage.sourcePath, kfdFormalModelPath],
   [kfdSite.terminologyPage.sourcePath, kfdTerminologyPath],
   [kfdSite.casesPage.sourcePath, kfdCasesPath],
+  [kfdSite.activationContracts.source, "/activation-contracts.json"],
+  ...kfdActivationSchemas.map((entry) => [entry.schemaPath, `/${entry.schemaPath}`]),
   ...kfdStandalonePages.map((pageEntry) => [
     pageEntry.sourcePath,
     `${pageEntry.url.replace(/\/+$/, "")}/`,
@@ -6873,6 +6880,16 @@ writeFile(
       </div>
     </section>
 
+    <section class="panel" id="activation-contracts">
+      <p class="eyebrow">${escapeHtml(kfdSite.activationContracts.contract.status)} machine interfaces</p>
+      <h2>KFD-11–13 activation interfaces</h2>
+      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="/activation-contracts.json">Inspect manifest</a>
+        <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#activation-contracts">Read schemas</a>
+      </div>
+    </section>
+
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
       <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
@@ -6927,6 +6944,25 @@ const kfdAgentHubPageHtml = page({
 ${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></pre>
       <p>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership)}</p>
       <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSite.agentHubPage.claimBoundary)}</p>
+    </section>
+
+    <section class="panel" id="activation-contracts" style="margin-top: 18px;">
+      <p class="eyebrow">${escapeHtml(kfdActivationContracts.status)} / ${escapeHtml(kfdSite.activationContracts.relationship)}</p>
+      <h2>KFD-11 through KFD-13 activation interfaces</h2>
+      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
+      <div class="grid" style="margin-top: 18px;">
+        ${Object.values(kfdActivationContracts.interfaces)
+          .map((entry) => `<article class="panel">
+            <h3>${escapeHtml(entry.contract)}</h3>
+            <p><a href="/${escapeAttr(entry.schemaPath)}"><code>${escapeHtml(entry.schemaPath)}</code></a></p>
+          </article>`)
+          .join("\n")}
+      </div>
+      <p class="reader-claim-boundary"><strong>Normative:</strong> <code>${escapeHtml(String(kfdSite.activationContracts.normative))}</code></p>
+      <ul>${kfdActivationContracts.nonClaims.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+      <div class="card-actions">
+        <a class="card-action" href="/activation-contracts.json">Inspect the discovery manifest</a>
+      </div>
     </section>
 
     <section class="doc-layout" style="margin-top: 18px;">
@@ -7870,6 +7906,16 @@ const manifest = {
       source: `@kungfu-tech/kfd@${kfdPackage.version}/terminology.json`,
     },
     {
+      path: "/activation-contracts.json",
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.activationContracts.source}`,
+    },
+    ...kfdActivationSchemas.map((entry) => ({
+      path: `/${entry.schemaPath}`,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.schemaPath}`,
+    })),
+    {
       path: "/schemas/kfd-terminology.schema.json",
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/schemas/kfd-terminology.schema.json`,
@@ -7994,6 +8040,13 @@ const manifest = {
       decisionCount: kfdRegistry.entries.length,
       candidateCount: kfdCandidatePages.length,
       candidateFormalCount: kfdCandidateFormalPages.length,
+      activationContracts: {
+        contract: kfdActivationContracts.contract,
+        status: kfdActivationContracts.status,
+        normative: kfdSite.activationContracts.normative,
+        discovery: surfaceEndpointHref("kfd", "activation-contracts.json"),
+        schemaCount: kfdActivationSchemas.length,
+      },
     },
   },
 };
@@ -8056,6 +8109,10 @@ const kfdAgentManifest = {
     standards: surfaceEndpointHref("kfd", "standards.json"),
     terminology: surfaceEndpointHref("kfd", "terminology.json"),
     terminologySchema: surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
+    activationContracts: surfaceEndpointHref("kfd", "activation-contracts.json"),
+    activationSchemas: Object.fromEntries(
+      kfdActivationSchemas.map((entry) => [entry.contract, surfaceEndpointHref("kfd", entry.schemaPath)]),
+    ),
   },
   readerContract: {
     contract: site.readerContract.contract,
@@ -8086,6 +8143,8 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", kfdTerminologyPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", "terminology.json"),
     surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
+    surfaceEndpointHref("kfd", "activation-contracts.json"),
+    ...kfdActivationSchemas.map((entry) => surfaceEndpointHref("kfd", entry.schemaPath)),
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
@@ -8137,6 +8196,21 @@ const kfdAgentManifest = {
     schema: surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
     relationship: kfdSite.terminologyPage.relationship,
     normative: kfdSite.terminologyPage.normative,
+  },
+  activationContracts: {
+    path: "/activation-contracts.json",
+    url: surfaceEndpointHref("kfd", "activation-contracts.json"),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.activationContracts.source}`,
+    relationship: kfdSite.activationContracts.relationship,
+    normative: kfdSite.activationContracts.normative,
+    authorityNote: kfdSite.activationContracts.authorityNote,
+    contract: kfdActivationContracts,
+    schemas: kfdActivationSchemas.map(({ body: _body, ...entry }) => ({
+      ...entry,
+      path: `/${entry.schemaPath}`,
+      url: surfaceEndpointHref("kfd", entry.schemaPath),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.schemaPath}`,
+    })),
   },
   cases: {
     path: kfdCasesPath,
@@ -8197,6 +8271,12 @@ writeFile("kfd/terminology.json", `${JSON.stringify(kfdTerminology, null, 2)}\n`
 writeFile("terminology.json", `${JSON.stringify(kfdTerminology, null, 2)}\n`);
 writeFile("kfd/schemas/kfd-terminology.schema.json", `${JSON.stringify(kfdTerminologySchema, null, 2)}\n`);
 writeFile("schemas/kfd-terminology.schema.json", `${JSON.stringify(kfdTerminologySchema, null, 2)}\n`);
+writeFile("kfd/activation-contracts.json", `${JSON.stringify(kfdActivationContracts, null, 2)}\n`);
+writeFile("activation-contracts.json", `${JSON.stringify(kfdActivationContracts, null, 2)}\n`);
+for (const entry of kfdActivationSchemas) {
+  writeFile(`kfd/${entry.schemaPath}`, `${JSON.stringify(entry.body, null, 2)}\n`);
+  writeFile(entry.schemaPath, `${JSON.stringify(entry.body, null, 2)}\n`);
+}
 writeFile("kfd/cases/registry.json", `${JSON.stringify(kfdCaseRegistry, null, 2)}\n`);
 writeFile("cases/registry.json", `${JSON.stringify(kfdCaseRegistry, null, 2)}\n`);
 writeFile("kfd/standards.json", `${JSON.stringify(kfdStandards, null, 2)}\n`);
@@ -8221,6 +8301,15 @@ Installed Kungfu Agent Hub qualification:
 - Ownership: ${kfdSite.agentHubPage.firstPartyProductProjection.ownership}
 - Claim boundary: ${kfdSite.agentHubPage.claimBoundary}
 
+KFD-11 through KFD-13 activation interfaces:
+- Status: ${kfdActivationContracts.status}
+- Relationship: ${kfdSite.activationContracts.relationship}
+- Normative: ${kfdSite.activationContracts.normative}
+- Authority: ${kfdSite.activationContracts.authorityNote}
+- Discovery: ${surfaceEndpointHref("kfd", "activation-contracts.json")}
+${kfdActivationSchemas.map((entry) => `- ${entry.contract}: ${surfaceEndpointHref("kfd", entry.schemaPath)}`).join("\n")}
+- Non-claims: ${kfdActivationContracts.nonClaims.join(" ")}
+
 Agent-first entries:
 - ${surfaceEndpointHref("kfd", "manifest.json")}
 - ${surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, ""))}
@@ -8230,6 +8319,8 @@ Agent-first entries:
 - ${surfaceEndpointHref("kfd", "standards.json")}
 - ${surfaceEndpointHref("kfd", "terminology.json")}
 - ${surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json")}
+- ${surfaceEndpointHref("kfd", "activation-contracts.json")}
+${kfdActivationSchemas.map((entry) => `- ${surfaceEndpointHref("kfd", entry.schemaPath)}`).join("\n")}
 - ${surfaceEndpointHref("kfd", "llms.txt")}
 
 Read order:

@@ -30,3 +30,4 @@ removing or reinterpreting that field is major.
 | Date | Action | Line | Faces | Class | Rationale | PR |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-22 | open-minor | `site-manifest/v1` | reader-contract, first-screen paths, guided synthesis, root/runtime/Core/KFD agent projections | additive | The site adds a public reader contract, source-bound claim classes, and additive machine projections while preserving all existing routes, upstream content, and claim boundaries. | |
+| 2026-08-03 | open-minor | `kfd-activation-contract-discovery/v1` | KFD overview, Agent Hub, KFD agent manifest, root manifest, activation discovery and schema routes | additive | The site publishes package-owned KFD-11 through KFD-13 draft activation interfaces while preserving their non-normative status, authority, and non-claim boundaries. | |
