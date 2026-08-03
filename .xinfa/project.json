@@ -1,0 +1,161 @@
+{
+  "$schema": "https://xinfa.dev/schema/project-v1.schema.json",
+  "schema": "xinfa.project/v1",
+  "project": {
+    "id": "site-libkungfu-dev-context",
+    "title": "Site release and preview context"
+  },
+  "cut": {
+    "id": "site-libkungfu-dev-context.main",
+    "revision": "sha256:058d0bf5df6c0571d5e0091b0708d3004b41b1c52b12304d14f705c23ebdfc48"
+  },
+  "roots": [
+    {
+      "id": "repository",
+      "path": ".",
+      "visibility": "public"
+    }
+  ],
+  "providers": [
+    {
+      "id": "site.files",
+      "kind": "exact-file-manifest",
+      "authority": "project",
+      "visibility": "public",
+      "root": "repository",
+      "paths": [
+        "AGENTS.md",
+        "README.md"
+      ],
+      "revision": "sha256:c8a4e05ca82ede63b03885b8cd68864cdadd84752c8ec3a88b6adb06b65d9224"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "site.source.agents",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:22dbd037eafcc77500b00fdcad9df4bcd09097a6319f6f912c1310fbd5d14ca7",
+      "provenance": {
+        "kind": "project-source",
+        "authority": "site-context"
+      },
+      "source": {
+        "provider": "site.files",
+        "path": "AGENTS.md"
+      },
+      "verification": {
+        "mode": "non-claim",
+        "status": "non-claim",
+        "dependencies": [],
+        "waiver": null
+      }
+    },
+    {
+      "id": "site.source.readme",
+      "kind": "document",
+      "visibility": "public",
+      "revision": "sha256:7a95813cc8d77217b8523cacade64e17c0e2c2251ce60217e36e197aa4fa655c",
+      "provenance": {
+        "kind": "project-source",
+        "authority": "site-context"
+      },
+      "source": {
+        "provider": "site.files",
+        "path": "README.md"
+      },
+      "verification": {
+        "mode": "non-claim",
+        "status": "non-claim",
+        "dependencies": [],
+        "waiver": null
+      }
+    }
+  ],
+  "edges": [],
+  "routes": [
+    {
+      "id": "site-release-agent",
+      "audience": "agent",
+      "parityGroup": "site-release",
+      "visibility": "public",
+      "nodes": [
+        "site.source.agents",
+        "site.source.readme"
+      ],
+      "entrypoints": [
+        "AGENTS.md"
+      ],
+      "resolution": {
+        "subjects": [
+          "site-preview",
+          "upstream-release"
+        ],
+        "capabilities": [
+          "consumer-validation",
+          "evidence",
+          "release-governance"
+        ],
+        "owners": [
+          "site-libkungfu-dev"
+        ],
+        "roles": [
+          "implementer"
+        ],
+        "mission_tracks": [
+          "kfd-release-adoption"
+        ],
+        "terms": [
+          "buildchain",
+          "kfd",
+          "preview"
+        ]
+      }
+    },
+    {
+      "id": "site-release-human",
+      "audience": "human",
+      "parityGroup": "site-release",
+      "visibility": "public",
+      "nodes": [
+        "site.source.agents",
+        "site.source.readme"
+      ],
+      "entrypoints": [
+        "README.md"
+      ],
+      "resolution": {
+        "subjects": [
+          "site-preview",
+          "upstream-release"
+        ],
+        "capabilities": [
+          "consumer-validation",
+          "evidence",
+          "release-governance"
+        ],
+        "owners": [
+          "site-libkungfu-dev"
+        ],
+        "roles": [
+          "implementer"
+        ],
+        "mission_tracks": [
+          "kfd-release-adoption"
+        ],
+        "terms": [
+          "buildchain",
+          "kfd",
+          "preview"
+        ]
+      }
+    }
+  ],
+  "policies": {
+    "unknownFields": "reject",
+    "pathSemantics": "repository-relative-posix",
+    "visibility": "fail-closed",
+    "dualFirstParity": "required",
+    "verification": "declared-dependencies"
+  }
+}
