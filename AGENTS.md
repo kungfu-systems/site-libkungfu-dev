@@ -28,13 +28,15 @@ developer and agent substrate hub.
 - Keep generated product facts sourced from manifests under `src/fixtures/` or
   pinned upstream package artifacts. Core product facts come from
   `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
-  `@kungfu-tech/buildchain@3.0.4`; KFD facts come from
+  `@kungfu-tech/buildchain@3.0.6-alpha.0`; KFD facts come from
   `@kungfu-tech/kfd@1.0.0-alpha.50`.
 - Buildchain and Kungfu Core are high-frequency code upstreams. Their package
-  publications never trigger Site work. Start with the explicit, read-only
-  `pnpm run upstream:pickup -- plan <buildchain|kungfu-core> <alpha|release> --json`;
-  only a user-requested downstream session may create, claim, and apply the
-  exact paused Work before reusing the protected Site delivery path.
+  publications never trigger Site work. Start every requested Site upstream
+  outcome through the explicit, read-only `pnpm run site:update -- plan
+  <intent> [alpha|release] --json`; the entry selects the established automatic
+  Paper/KFD handoff or downstream-manual Buildchain/Core policy. Only a
+  user-requested downstream session may create, claim, and apply manual paused
+  Work before reusing the protected Site delivery path.
 - Keep content packages separate from execution authority. The direct
   `@kungfu-tech/buildchain` dependency supplies rendered Buildchain content;
   `@kungfu-tech/buildchain-runtime` supplies the exact manual-pickup runtime;

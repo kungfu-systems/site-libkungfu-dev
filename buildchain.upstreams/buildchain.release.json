@@ -2,7 +2,7 @@
   "contract": "kungfu-buildchain-release-propagation-lock",
   "downstream": {
     "baseRef": "main",
-    "channel": "release",
+    "channel": "alpha",
     "executionProfile": {
       "contract": "kungfu-buildchain-github-web-surface-execution",
       "prepareCommand": "pnpm install --lockfile-only --ignore-scripts",
@@ -13,7 +13,7 @@
         "https://buildchain.libkungfu.dev/manifest.json",
         "https://core.libkungfu.dev/manifest.json"
       ],
-      "updateCommand": "pnpm run upstream:pickup -- apply <capture.json> <claimed-work.json>",
+      "updateCommand": "pnpm run site:update -- apply <capture.json> <claimed-work.json>",
       "verifyCommand": "pnpm run check",
       "workflow": "buildchain-web-surface.yml"
     },
@@ -21,9 +21,9 @@
     "node": "site-libkungfu-dev",
     "repository": "kungfu-systems/site-libkungfu-dev"
   },
-  "lockSha256": "958c444cae8cc8d7f1ff2a05be97bfbc832ddb0a333850848746a7158746d0c3",
+  "lockSha256": "7b0cd7873f4ba5829b611056dbde25af96ec757a5872259d3fa26823f54ba644",
   "propagation": {
-    "branch": "buildchain/release-propagation/kungfu-systems-buildchain/3.0.4-release-099fbdd5db9e",
+    "branch": "buildchain/release-propagation/kungfu-systems-buildchain/3.0.6-alpha.0-alpha-1ea030f68b26",
     "channelMap": {
       "alpha": "alpha",
       "release": "release"
@@ -33,36 +33,36 @@
     "exact": true,
     "floatingTags": false,
     "graphContract": "kungfu-buildchain-release-propagation-graph",
-    "propagationKey": "099fbdd5db9e2c332b6a7e8ff727b990f39e3152b3d34f0b0781e156b3638fea",
+    "propagationKey": "1ea030f68b26200eb114fa89acc3d87105f7041f99e7478a3dc71c032d297337",
     "releaseIdentity": {
-      "channel": "release",
+      "channel": "alpha",
       "repository": "kungfu-systems/buildchain",
-      "version": "3.0.4"
+      "version": "3.0.6-alpha.0"
     }
   },
   "schemaVersion": 1,
   "upstream": {
-    "channel": "release",
+    "channel": "alpha",
     "node": "buildchain",
     "package": {
-      "gitHead": "60df93f1e632388806bd1249daa392ec7c18cdbd",
-      "integrity": "sha512-pYDIGQJb//8P9DpaZBR0qYkLbarS/rfEzlPViYS/v2coDFCqqU8VDj521Y96NkBWifVqo66Vcsu5EYtoqFKTTA==",
+      "gitHead": "83280a3d21c4c75774be91ee802286b48c17fc54",
+      "integrity": "sha512-sjil8JkZn/xTH0oSTVqYQKrg4A5vQSL0TwD3M4kaXBahlHwqXS8bFnbpTtzYexom4lbW0snyiIoZDMu0E+v60w==",
       "name": "@kungfu-tech/buildchain",
-      "version": "3.0.4"
+      "version": "3.0.6-alpha.0"
     },
     "registryProvenance": {
-      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@kungfu-tech%2fbuildchain@3.0.4",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@kungfu-tech%2fbuildchain@3.0.6-alpha.0",
       "predicateType": "https://slsa.dev/provenance/v1",
       "registry": "https://registry.npmjs.org",
       "repository": "kungfu-systems/buildchain",
-      "runUrl": "https://github.com/kungfu-systems/buildchain/actions/runs/30716449746/attempts/1",
-      "sourceSha": "1e7ced9245a0ad9811327a90f6420fc745852c98",
-      "subjectSha512": "a580c819025bffff0ff43a5a641474a9890b6daad2feb7c4ce53d58984bfbf67280c50aaa94f150e3e76d58f7a36405689f56aa3ae9572cbb9118b68a852934c",
+      "runUrl": "https://github.com/kungfu-systems/buildchain/actions/runs/30779392823/attempts/1",
+      "sourceSha": "1659da98053f8ea8c75471e414b7732e3a491580",
+      "subjectSha512": "b238a5f099199ffc531f4a124d5a9840aae0e00e6f4122f44f00f733891a5c16a1947c2a5d2f1b1676e94edcd87b1a26e256d6d2c9f2888a190ccbb413ebfad3",
       "workflowPath": ".github/workflows/buildchain-ref-promotion.yml",
       "workflowRef": "refs/heads/dev/v3/v3.0"
     },
     "repository": "kungfu-systems/buildchain",
-    "sourceSha": "1e7ced9245a0ad9811327a90f6420fc745852c98",
+    "sourceSha": "1659da98053f8ea8c75471e414b7732e3a491580",
     "tag": "",
     "tagTargetSha": ""
   }

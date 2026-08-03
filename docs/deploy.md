@@ -89,7 +89,7 @@ action remains a separate, explicitly admitted step.
 The Core `/format/` human page is generated from the package's
 `formatAuthority` projection, while the complete packaged `dist/site/format/**`
 tree is copied byte-for-byte to the matching Core machine routes.
-Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.4` npm package
+Buildchain uses the pinned `@kungfu-tech/buildchain@3.0.6-alpha.0` npm package
 and its exported `dist/site` bundle. KFD uses the pinned
 `@kungfu-tech/kfd@1.0.0-alpha.47` package and its exported site bundle. Papers
 use the exact package set in
