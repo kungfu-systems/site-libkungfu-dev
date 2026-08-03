@@ -224,6 +224,11 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
+const kfdActivationContracts = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/activation-contracts.json", "utf8"));
+const kfdActivationSchemas = Object.values(kfdActivationContracts.interfaces).map((entry) => ({
+  ...entry,
+  body: JSON.parse(fs.readFileSync(`node_modules/@kungfu-tech/kfd/${entry.schemaPath}`, "utf8")),
+}));
 const expectedBuildchainVersion = "3.0.6-alpha.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
@@ -247,6 +252,12 @@ const requiredFiles = [
   "dist/drafts/registry.json",
   "dist/kfd/cases/registry.json",
   "dist/cases/registry.json",
+  "dist/kfd/activation-contracts.json",
+  "dist/activation-contracts.json",
+  ...kfdActivationSchemas.flatMap((entry) => [
+    `dist/kfd/${entry.schemaPath}`,
+    `dist/${entry.schemaPath}`,
+  ]),
   ...kfdCandidatePages.flatMap((entry) => [
     `dist/kfd/drafts/${entry.id}/index.html`,
     `dist/drafts/${entry.id}/index.html`,
@@ -460,8 +471,10 @@ if (
   !versioningPolicy.includes("libkungfu-dev-reader-contract/v1")
   || !versioningPolicy.includes("| 2026-07-22 | open-minor | `site-manifest/v1` |")
   || !versioningPolicy.includes("while preserving all existing routes, upstream content, and claim boundaries")
+  || !versioningPolicy.includes("| 2026-08-03 | open-minor | `kfd-activation-contract-discovery/v1` |")
+  || !versioningPolicy.includes("while preserving their non-normative status, authority, and non-claim boundaries")
 ) {
-  throw new Error("KFD-1 version review must register the additive reader-contract impact");
+  throw new Error("KFD-1 version review must register the additive reader and activation-discovery impacts");
 }
 const readerContract = site.readerContract;
 if (
@@ -793,6 +806,15 @@ if (packageJson.dependencies["@kungfu-tech/buildchain"] !== expectedBuildchainVe
 if (packageJson.dependencies["@kungfu-tech/kfd"] !== expectedKfdVersion) {
   throw new Error(`KFD dependency must be pinned to ${expectedKfdVersion}`);
 }
+for (const documentationPath of ["AGENTS.md", "README.md", "docs/MAP.md"]) {
+  const documentation = fs.readFileSync(documentationPath, "utf8");
+  if (
+    !documentation.includes(`@kungfu-tech/buildchain@${expectedBuildchainVersion}`)
+    || !documentation.includes(`@kungfu-tech/kfd@${expectedKfdVersion}`)
+  ) {
+    throw new Error(`${documentationPath} must name the installed Buildchain and KFD package coordinates`);
+  }
+}
 if (packageJson.dependencies["@kungfu-tech/site"] !== expectedCoreSitePickup) {
   throw new Error(`Core site dependency must use the immutable pickup ${expectedCoreSitePickup}`);
 }
@@ -801,6 +823,25 @@ if (!buildchainLock || buildchainLock.version !== expectedBuildchainVersion) {
 }
 if (!kfdLock || kfdLock.version !== expectedKfdVersion) {
   throw new Error(`KFD lockfile entry must resolve to ${expectedKfdVersion}`);
+}
+if (
+  kfdSite.activationContracts?.source !== "activation-contracts.json"
+  || kfdSite.activationContracts?.normative !== false
+  || JSON.stringify(kfdSite.activationContracts?.contract) !== JSON.stringify(kfdActivationContracts)
+) {
+  throw new Error("KFD site bundle activation-contract projection must preserve the package discovery manifest and non-normative boundary");
+}
+for (const entry of kfdActivationSchemas) {
+  const canonical = JSON.parse(fs.readFileSync(`dist/kfd/${entry.schemaPath}`, "utf8"));
+  const alias = JSON.parse(fs.readFileSync(`dist/${entry.schemaPath}`, "utf8"));
+  if (JSON.stringify(canonical) !== JSON.stringify(entry.body) || JSON.stringify(alias) !== JSON.stringify(entry.body)) {
+    throw new Error(`KFD activation schema must be published without semantic drift: ${entry.schemaPath}`);
+  }
+}
+for (const renderedPath of ["dist/kfd/activation-contracts.json", "dist/activation-contracts.json"]) {
+  if (JSON.stringify(JSON.parse(fs.readFileSync(renderedPath, "utf8"))) !== JSON.stringify(kfdActivationContracts)) {
+    throw new Error(`KFD activation discovery manifest must be published without semantic drift: ${renderedPath}`);
+  }
 }
 if (!coreSiteLock || coreSiteLock.version !== expectedCoreSiteVersion) {
   throw new Error(`Core site lockfile entry must resolve to ${expectedCoreSiteVersion}`);
@@ -1630,6 +1671,14 @@ if (
 if (kfdPropagationLock && manifest.upstreamPackages.kfd.releaseLock?.lockSha256 !== kfdPropagationLock.lockSha256) {
   throw new Error("dist manifest does not record the KFD release propagation lock");
 }
+if (
+  manifest.upstreamPackages.kfd.activationContracts?.contract !== kfdActivationContracts.contract
+  || manifest.upstreamPackages.kfd.activationContracts?.status !== kfdActivationContracts.status
+  || manifest.upstreamPackages.kfd.activationContracts?.normative !== false
+  || manifest.upstreamPackages.kfd.activationContracts?.schemaCount !== kfdActivationSchemas.length
+) {
+  throw new Error("dist manifest does not preserve the KFD activation contract discovery boundary");
+}
 if (manifest.canonicalHost !== expectedSurfaceHost("hub")) {
   throw new Error(`dist manifest canonicalHost must match channel hub host: ${expectedSurfaceHost("hub")}`);
 }
@@ -1646,6 +1695,28 @@ if (
   )
 ) {
   throw new Error("dist manifest does not record the KFD Agent Hub qualification route");
+}
+if (
+  !manifest.pages.some(
+    (page) =>
+      page.host === expectedSurfaceHost("kfd")
+      && page.path === "/activation-contracts.json"
+      && page.source.endsWith("/activation-contracts.json"),
+  )
+) {
+  throw new Error("dist manifest does not record the KFD activation discovery manifest");
+}
+for (const entry of kfdActivationSchemas) {
+  if (
+    !manifest.pages.some(
+      (page) =>
+        page.host === expectedSurfaceHost("kfd")
+        && page.path === `/${entry.schemaPath}`
+        && page.source.endsWith(`/${entry.schemaPath}`),
+    )
+  ) {
+    throw new Error(`dist manifest does not record KFD activation schema: ${entry.schemaPath}`);
+  }
 }
 for (const pageEntry of kfdStandalonePages) {
   const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
@@ -1738,6 +1809,7 @@ if (
   kfdAgentManifest.agentEntries?.manifest !== expectedSurfaceEndpoint("kfd", "manifest.json") ||
   kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt") ||
   kfdAgentManifest.agentEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/")
+  || kfdAgentManifest.agentEntries?.activationContracts !== expectedSurfaceEndpoint("kfd", "activation-contracts.json")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
 }
@@ -1755,6 +1827,30 @@ if (
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "agent-hub/"))
 ) {
   throw new Error("KFD agent manifest must explain and route the installed Kungfu Agent Hub qualification");
+}
+if (
+  kfdAgentManifest.activationContracts?.path !== "/activation-contracts.json"
+  || kfdAgentManifest.activationContracts?.url !== expectedSurfaceEndpoint("kfd", "activation-contracts.json")
+  || kfdAgentManifest.activationContracts?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/activation-contracts.json`
+  || kfdAgentManifest.activationContracts?.relationship !== kfdSite.activationContracts.relationship
+  || kfdAgentManifest.activationContracts?.normative !== false
+  || JSON.stringify(kfdAgentManifest.activationContracts?.contract) !== JSON.stringify(kfdActivationContracts)
+  || kfdAgentManifest.activationContracts?.schemas?.length !== kfdActivationSchemas.length
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "activation-contracts.json"))
+) {
+  throw new Error("KFD agent manifest must expose the package-owned draft activation contracts without strengthening their claim");
+}
+for (const entry of kfdActivationSchemas) {
+  const renderedEntry = kfdAgentManifest.activationContracts.schemas.find((candidate) => candidate.contract === entry.contract);
+  if (
+    renderedEntry?.path !== `/${entry.schemaPath}`
+    || renderedEntry?.url !== expectedSurfaceEndpoint("kfd", entry.schemaPath)
+    || renderedEntry?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${entry.schemaPath}`
+    || kfdAgentManifest.agentEntries?.activationSchemas?.[entry.contract] !== expectedSurfaceEndpoint("kfd", entry.schemaPath)
+    || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", entry.schemaPath))
+  ) {
+    throw new Error(`KFD agent manifest is missing activation schema facts for ${entry.contract}`);
+  }
 }
 if (kfdAgentManifest.standalonePages?.length !== kfdStandalonePages.length) {
   throw new Error("KFD agent manifest standalone page count mismatch");
@@ -2227,6 +2323,20 @@ if (
 ) {
   throw new Error("KFD first entries must expose and explain the installed Kungfu Agent Hub qualification");
 }
+if (
+  !kfdHomeHtml.includes('id="activation-contracts"')
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.activationContracts.authorityNote))
+  || !kfdHomeHtml.includes('href="/activation-contracts.json"')
+  || !kfdHomeHtml.includes(`href="${escapeHtml(kfdAgentHubPath)}#activation-contracts"`)
+  || !kfdLlms.includes(expectedSurfaceEndpoint("kfd", "activation-contracts.json"))
+) {
+  throw new Error("KFD first entries must expose the draft activation discovery contract and preserve its authority boundary");
+}
+for (const entry of kfdActivationSchemas) {
+  if (!kfdLlms.includes(expectedSurfaceEndpoint("kfd", entry.schemaPath))) {
+    throw new Error(`KFD first entries are missing activation schema discovery for ${entry.contract}`);
+  }
+}
 for (const sectionId of kfdSite.homepage.displayPlan.support) {
   const section = kfdSite.homepage.sections.find((entry) => entry.id === sectionId);
   if (!section) {
@@ -2292,6 +2402,19 @@ if (
   || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.suite.id))
 ) {
   throw new Error("KFD Agent Hub page is missing bundle-owned commands, explanation, boundaries, navigation, or metadata");
+}
+if (
+  !kfdAgentHubCanonicalHtml.includes('id="activation-contracts"')
+  || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.activationContracts.authorityNote))
+  || !kfdAgentHubCanonicalHtml.includes(`<code>${escapeHtml(String(kfdSite.activationContracts.normative))}</code>`)
+  || kfdActivationContracts.nonClaims.some((entry) => !kfdAgentHubCanonicalHtml.includes(escapeHtml(entry)))
+) {
+  throw new Error("KFD Agent Hub page must preserve the draft activation authority and non-claim boundaries");
+}
+for (const entry of kfdActivationSchemas) {
+  if (!kfdAgentHubCanonicalHtml.includes(`href="/${escapeHtml(entry.schemaPath)}"`)) {
+    throw new Error(`KFD Agent Hub page is missing activation schema discovery for ${entry.contract}`);
+  }
 }
 const kfdFoundationPath = `${kfdSite.foundationPage.url.replace(/\/+$/, "")}/`;
 const kfdFoundationCanonicalHtml = fs.readFileSync("dist/kfd/foundation/index.html", "utf8");

@@ -135,7 +135,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.47` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.53` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -148,6 +148,10 @@ Bundle-declared formal candidate children are rendered under
 authority and both human and agent surfaces expose the declared relationship.
 Bundle-declared pre-number candidates are rendered under `/drafts/` with their
 non-normative status, claim boundary, and machine registry preserved.
+The package-owned KFD-11 through KFD-13 draft activation discovery manifest and
+its adopter-witness, qualification-report, and activation-record schemas are
+published as stable machine entries. Their draft, non-normative status and
+non-claim boundaries remain visible on the KFD reader and agent surfaces.
 The papers surface consumes the exact `@kungfu-tech/paper-*` packages declared
 in `src/publication-packages.json`. Package-local publication registries and
 manifests own titles, abstracts, authors, routes, versions, PDFs, passports,
