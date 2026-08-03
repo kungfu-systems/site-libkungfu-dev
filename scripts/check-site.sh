@@ -8,6 +8,7 @@ node scripts/check-infra-outputs.mjs
 node scripts/check-dogfood-evidence.mjs
 node scripts/check-paper-propagation.cjs
 node scripts/code-upstream-pickup.cjs check
+node scripts/site-upstream-agent.cjs check
 
 pnpm exec buildchain badges readme --check
 
@@ -223,7 +224,7 @@ const kfdCaseRegistry = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kf
 const kfdStandards = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/standards.json", "utf8"));
 const kfdTerminology = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/terminology.json", "utf8"));
 const kfdTerminologySchema = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/schemas/kfd-terminology.schema.json", "utf8"));
-const expectedBuildchainVersion = "3.0.4";
+const expectedBuildchainVersion = "3.0.6-alpha.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const expectedCoreSitePickup = "4.0.0-alpha.1";
@@ -1520,6 +1521,9 @@ if (
 if (buildchainDetailHtml.includes("<!-- buildchain:badges:") || buildchainDetailHtml.includes("[![KFD-1:")) {
   throw new Error("Buildchain mechanism page must not expose raw README badge markdown");
 }
+if (buildchainDetailHtml.includes("buildchain-auditable-demo:start")) {
+  throw new Error("Buildchain mechanism badge lead must not expose unrelated README control markers");
+}
 const expectedBadgeStates = ["passed", "aligned", "declared", "planned", "draft", "downgraded", "failed", "missing"];
 const expectedBadgeIds = [
   ...kfdRegistry.entries.map((entry) => `kfd-${entry.number}`),
@@ -2799,7 +2803,7 @@ grep -q 'Projection source' dist/architecture/index.html
 grep -q 'pinned release artifacts' dist/architecture/index.html
 grep -q 'Kungfu Origin Technology Limited' dist/index.html
 grep -q '@kungfu-tech/buildchain' dist/buildchain/mechanism/index.html
-grep -q '3.0.4' dist/buildchain/mechanism/index.html
+grep -q '3.0.6-alpha.0' dist/buildchain/mechanism/index.html
 grep -q 'grid-auto-rows: 1fr;' dist/index.html
 grep -q 'Bundle facts' dist/buildchain/mechanism/index.html
 grep -q 'Install and Verify' dist/buildchain/mechanism/index.html

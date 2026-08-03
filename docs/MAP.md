@@ -97,7 +97,7 @@ must understand, while the depth page preserves the complete cited authority.
 - `src/publication-packages.json` declares the exact paper packages rendered by
   the papers surface; `scripts/publication-packages.cjs` verifies and aggregates
   their package-local publication registries and artifacts.
-- `@kungfu-tech/buildchain@3.0.4` supplies the Buildchain `dist/site` bundle.
+- `@kungfu-tech/buildchain@3.0.6-alpha.0` supplies the Buildchain `dist/site` bundle.
 - `.buildchain/manual-code-upstreams.json` declares the downstream-only manual
   pickup profiles for Buildchain and Kungfu Core. Its runtime pin is distinct
   from the Buildchain content package and from workflow contract locks.

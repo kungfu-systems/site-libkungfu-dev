@@ -3,7 +3,7 @@
   "contract": "kungfu-buildchain-manual-upstream-pickup",
   "runtime": {
     "package": "@kungfu-tech/buildchain",
-    "version": "3.0.5-alpha.8"
+    "version": "3.0.6-alpha.0"
   },
   "downstream": {
     "id": "site-libkungfu-dev",
@@ -19,7 +19,7 @@
         "https://buildchain.libkungfu.dev/manifest.json",
         "https://core.libkungfu.dev/manifest.json"
       ],
-      "updateCommand": "pnpm run upstream:pickup -- apply <capture.json> <claimed-work.json>",
+      "updateCommand": "pnpm run site:update -- apply <capture.json> <claimed-work.json>",
       "prepareCommand": "pnpm install --lockfile-only --ignore-scripts",
       "verifyCommand": "pnpm run check"
     }

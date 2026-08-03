@@ -125,7 +125,7 @@ auditor disclosure. Every packaged
 `dist/site/format/**` artifact is copied byte-for-byte to the matching machine
 route. The Buildchain page consumes
 the pinned npm package artifact
-`@kungfu-tech/buildchain@3.0.4` through its exported `dist/site` bundle.
+`@kungfu-tech/buildchain@3.0.6-alpha.0` through its exported `dist/site` bundle.
 The hosted Buildchain README badge endpoints are rendered at
 `/badges/v1/{badge}/{state}.svg` and `/badges/v1/{badge}/{state}.json`. They
 prefer the future Buildchain bundle registry
@@ -181,19 +181,27 @@ An Agent starts a code-upstream update only after an explicit downstream user
 request:
 
 ```bash
-pnpm run upstream:pickup -- plan buildchain release --json
-pnpm run upstream:pickup -- plan kungfu-core alpha --json
-pnpm run upstream:pickup -- create buildchain release --output capture.json --json
-pnpm run upstream:pickup -- apply capture.json claimed-work.json --json
+pnpm run site:update -- plan "update the latest Buildchain content" alpha --json
+pnpm run site:update -- plan kfd --handoff-work kfd-work.json --json
+pnpm run site:update -- create buildchain alpha --output capture.json --json
+pnpm run site:update -- apply capture.json claimed-work.json
+pnpm run site:update -- work push-branch --work claimed-work.json --execute --json
 ```
 
-`plan` is read-only. `create` freezes one exact published npm coordinate and
-produces paused, unclaimed Work; it does not edit the repository. `apply`
+`site:update` is the single Agent-facing entry for Paper, KFD, Buildchain, and
+Kungfu Core. It reports the selected policy before any mutation: Paper and KFD
+consume their exact release-owned paused Work handoff, while Buildchain and
+Kungfu Core resolve a published package only after explicit downstream intent.
+`plan` is read-only. Manual `create` freezes one exact published npm coordinate
+and produces paused, unclaimed Work; it does not edit the repository. `apply`
 requires that exact Work to have been claimed under Family State v2 and an
 active execution Warrant, then updates only the declared package content and
-release lock. The existing protected branch, pull request, preview, review,
-staging, production, and online-readback stages remain the delivery authority.
-Kungfu Core production accepts published `@kungfu-tech/site` bytes only.
+release lock. `work push-branch` uses the released Buildchain executor, which
+requires the exact repository, source `HEAD`, destination `refs/heads/*`, base
+ancestry, and remote readback and never force-pushes. The existing protected
+pull request, preview, review, staging, production, and online-readback stages
+remain the delivery authority. Kungfu Core production accepts published
+`@kungfu-tech/site` bytes only.
 
 The direct `@kungfu-tech/buildchain` dependency is the content input rendered
 on the Buildchain surface. The aliased `@kungfu-tech/buildchain-runtime`
@@ -297,7 +305,7 @@ runs through an exact reviewed Buildchain v3 workflow revision and checks
 Buildchain runtime SHA and contract digests; changing the runtime is a reviewed
 activation and must remain compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
-generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.4` and the
+generated Buildchain page is based on `@kungfu-tech/buildchain@3.0.6-alpha.0` and the
 generated KFD page is based on the exact `@kungfu-tech/kfd` release recorded in
 `.buildchain/upstreams/kfd.release.json`.
 

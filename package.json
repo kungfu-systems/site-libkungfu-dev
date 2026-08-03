@@ -9,11 +9,12 @@
     "check:local-site-bundle": "node scripts/check-local-site-bundle.mjs",
     "check:dogfood": "node scripts/check-dogfood-evidence.mjs && node scripts/check-dogfood-history.mjs",
     "check:paper-propagation": "node scripts/check-paper-propagation.cjs",
+    "site:update": "node scripts/site-upstream-agent.cjs",
     "upstream:pickup": "node scripts/code-upstream-pickup.cjs",
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {
-    "@kungfu-tech/buildchain": "3.0.4",
+    "@kungfu-tech/buildchain": "3.0.6-alpha.0",
     "@kungfu-tech/kfd": "1.0.0-alpha.53",
     "@kungfu-tech/paper-episodes-to-primitives": "0.1.0-alpha.2",
     "@kungfu-tech/paper-kfd-foundation-real-world-agent-work": "0.1.0-alpha.8",
@@ -26,6 +27,6 @@
     "markdown-it-anchor": "9.2.0"
   },
   "devDependencies": {
-    "@kungfu-tech/buildchain-runtime": "npm:@kungfu-tech/buildchain@3.0.5-alpha.8"
+    "@kungfu-tech/buildchain-runtime": "npm:@kungfu-tech/buildchain@3.0.6-alpha.0"
   }
 }

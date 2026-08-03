@@ -339,9 +339,24 @@ function renderBuildchainLead(source) {
   return markdown.render(rewriteBuildchainHostedBadgeLinks(source));
 }
 
-function normalizeBuildchainHomepageCopy(homepage) {
+function extractBuildchainBadgeBlock(source) {
+  const markdown = String(source || "");
+  const startMarker = "<!-- buildchain:badges:start -->";
+  const endMarker = "<!-- buildchain:badges:end -->";
+  const start = markdown.indexOf(startMarker);
+  const end = markdown.indexOf(endMarker, start + startMarker.length);
+  return start >= 0 && end >= start
+    ? markdown.slice(start, end + endMarker.length)
+    : "";
+}
+
+function normalizeBuildchainHomepageCopy(homepage, pages = []) {
   const mechanismSummary = [...(homepage.mechanismSummary || [])];
-  const leadParts = [homepage.lead || ""];
+  const overviewMarkdown = pages.find((page) => page.sourcePath === "README.md")?.markdown || "";
+  const leadParts = [extractBuildchainBadgeBlock(homepage.lead) || extractBuildchainBadgeBlock(overviewMarkdown)];
+  if (!leadParts[0]) {
+    leadParts[0] = homepage.lead || "";
+  }
   if (
     leadParts[0].includes("<!-- buildchain:badges:start -->") &&
     mechanismSummary[0]?.includes("<!-- buildchain:badges:end -->")
@@ -4014,7 +4029,7 @@ const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
 const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainSurfaceManifest = readPackageJson("@kungfu-tech/buildchain/site/site-manifest.json");
-const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage);
+const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage, buildchainSite.pages);
 const buildchainPackage = readPackageJson("@kungfu-tech/buildchain/package.json");
 const buildchainCli = readPackageJson("@kungfu-tech/buildchain/site/cli-registry.json");
 const buildchainWorkflow = readPackageJson("@kungfu-tech/buildchain/site/workflow-registry.json");
@@ -4052,7 +4067,7 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
-const expectedBuildchainVersion = "3.0.4";
+const expectedBuildchainVersion = "3.0.6-alpha.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
 const buildchainLock = readPnpmLockPackage("@kungfu-tech/buildchain", expectedBuildchainVersion);
