@@ -2416,6 +2416,136 @@ ${current === "papers" ? "" : `
       max-width: 820px;
     }
 
+    .kfd-reader-orientation {
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+    }
+
+    .kfd-reader-orientation h1 {
+      font-size: clamp(34px, 4.4vw, 56px);
+      line-height: 1.02;
+    }
+
+    .kfd-independent {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 28px;
+      border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+      border-top: 5px solid var(--accent);
+      background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 40%),
+        var(--soft);
+      padding: clamp(20px, 3vw, 30px);
+    }
+
+    .kfd-independent h2 {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(28px, 3.5vw, 44px);
+      line-height: 1.08;
+    }
+
+    .kfd-language-list,
+    .kfd-independent-steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .kfd-language-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .kfd-language-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg);
+      padding: 5px 10px;
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .kfd-independent-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      counter-reset: kfd-independent-step;
+    }
+
+    .kfd-independent-step {
+      display: grid;
+      min-width: 0;
+      gap: 10px;
+      align-content: start;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+      padding: 14px;
+    }
+
+    .kfd-independent-step h3 {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0;
+    }
+
+    .kfd-independent-step h3::before {
+      counter-increment: kfd-independent-step;
+      content: counter(kfd-independent-step, decimal-leading-zero);
+      color: var(--accent-strong);
+      font: 750 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .kfd-command {
+      min-width: 0;
+      overflow-x: auto;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--code);
+      padding: 10px;
+    }
+
+    .kfd-command code {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      overflow-wrap: normal;
+      white-space: pre;
+    }
+
+    .copy-command {
+      width: fit-content;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--accent-strong);
+      padding: 5px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .kfd-boundaries {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .kfd-boundaries p {
+      border-left: 3px solid var(--warn);
+      padding-left: 10px;
+      font-size: 13px;
+    }
+
     .authority-title {
       max-width: 820px;
       font-size: clamp(34px, 4.2vw, 56px);
@@ -3181,6 +3311,11 @@ ${immutableArchive ? "" : `
         grid-template-columns: 1fr;
       }
 
+      .kfd-independent-steps,
+      .kfd-boundaries {
+        grid-template-columns: 1fr;
+      }
+
       .buildchain-trust-loop .buildchain-story-card:not(:last-child)::after,
       .buildchain-ecosystem-loop .buildchain-story-card:not(:last-child)::after {
         content: "↓";
@@ -3385,9 +3520,18 @@ ${immutableArchive
   <script>
     (() => {
       const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
-      if (!localHosts.has(window.location.hostname)) return;
-      for (const link of document.querySelectorAll("[data-local-href]")) {
-        link.setAttribute("href", link.getAttribute("data-local-href"));
+      if (localHosts.has(window.location.hostname)) {
+        for (const link of document.querySelectorAll("[data-local-href]")) {
+          link.setAttribute("href", link.getAttribute("data-local-href"));
+        }
+      }
+      for (const button of document.querySelectorAll("[data-copy-command]")) {
+        button.addEventListener("click", async () => {
+          const command = button.parentElement?.querySelector("code")?.textContent || "";
+          if (!command || !navigator.clipboard) return;
+          await navigator.clipboard.writeText(command);
+          button.textContent = "Copied";
+        });
       }
     })();
   </script>
@@ -4632,7 +4776,8 @@ function renderReaderSources(sourceRefs) {
 
 function renderReaderOrientation(surfaceId, stateLabel) {
   const pathEntry = readerPath(surfaceId);
-  return `<section class="reader-orientation" data-reader-surface="${escapeAttr(surfaceId)}">
+  const surfaceClass = surfaceId === "kfd" ? " kfd-reader-orientation" : "";
+  return `<section class="reader-orientation${surfaceClass}" data-reader-surface="${escapeAttr(surfaceId)}">
     <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">${escapeHtml(stateLabel)}</span></p>
     <p class="eyebrow">Start here · ${escapeHtml(pathEntry.audience)}</p>
     <h1>${escapeHtml(pathEntry.question)}</h1>
@@ -4640,6 +4785,37 @@ function renderReaderOrientation(surfaceId, stateLabel) {
     <div class="reader-actions">
       <a class="reader-action" ${readerActionLinkAttrs(surfaceId, pathEntry.authorityHref)}>${escapeHtml(pathEntry.authorityLabel)}</a>
       <a class="reader-action secondary" ${readerActionLinkAttrs(surfaceId, pathEntry.evidenceHref)}>${escapeHtml(pathEntry.evidenceLabel)}</a>
+    </div>
+  </section>`;
+}
+
+function kfdIndependentImplementationPanel() {
+  const contract = kfdSite.homepage.independentImplementation;
+  if (!contract) {
+    throw new Error("KFD site bundle must expose homepage.independentImplementation");
+  }
+  return `<section class="panel kfd-independent" id="independent-implementation" data-kfd-independent-implementation>
+    <div>
+      <p class="eyebrow">${escapeHtml(contract.label)}</p>
+      <h2>${escapeHtml(contract.promise)}</h2>
+    </div>
+    <ul class="kfd-language-list" aria-label="Supported adapter languages">
+      ${contract.supportedLanguages.map((entry) => `<li data-language="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
+    </ul>
+    <ol class="kfd-independent-steps" aria-label="Scaffold, test, and verify KFD independently">
+      ${contract.steps.map((entry) => `<li class="kfd-independent-step" data-independent-step="${escapeAttr(entry.id)}">
+        <h3>${escapeHtml(entry.label)}</h3>
+        <pre class="kfd-command"><code>${escapeHtml(entry.command)}</code></pre>
+        <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(entry.label)} command">Copy command</button>
+      </li>`).join("\n")}
+    </ol>
+    <nav class="card-actions" aria-label="Independent implementation reading paths">
+      ${contract.links.map((entry, index) => `<a class="card-action${index > 0 ? " secondary" : ""}" href="${escapeAttr(entry.url)}">${escapeHtml(entry.label)}</a>`).join("\n")}
+    </nav>
+    <div class="kfd-boundaries" aria-label="Independent implementation claim boundaries">
+      <p><strong>Starter boundary.</strong> ${escapeHtml(contract.starterBoundary)}</p>
+      <p><strong>Offline boundary.</strong> ${escapeHtml(contract.offlineBoundary)}</p>
+      <p><strong>Claim boundary.</strong> ${inlineMarkdown(contract.claimBoundary)}</p>
     </div>
   </section>`;
 }
@@ -6889,6 +7065,7 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
+    ${kfdIndependentImplementationPanel()}
     <section class="hero" id="kfd-authority">
       <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
       ${kfdFuturePictureHero()}
@@ -8185,6 +8362,7 @@ const kfdAgentManifest = {
     registryContract: kfdRegistry.contract,
     standardsContract: kfdStandards.contract,
   },
+  independentImplementation: kfdSite.homepage.independentImplementation,
   readOrder: [
     surfaceCanonicalHref("kfd"),
     surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
@@ -8380,6 +8558,13 @@ ${kfdActivationSchemas.map((entry) => `- ${entry.contract}: ${surfaceEndpointHre
 - Non-claims: ${kfdActivationContracts.nonClaims.join(" ")}
 
 Independent implementation and verification:
+- Promise: ${kfdSite.homepage.independentImplementation.promise}
+- Languages: ${kfdSite.homepage.independentImplementation.supportedLanguages.map((entry) => entry.label).join(", ")}
+${kfdSite.homepage.independentImplementation.steps.map((entry) => `- ${entry.label}: ${entry.command}`).join("\n")}
+- Starter boundary: ${kfdSite.homepage.independentImplementation.starterBoundary}
+- Offline boundary: ${kfdSite.homepage.independentImplementation.offlineBoundary}
+- Claim boundary: ${kfdSite.homepage.independentImplementation.claimBoundary}
+- Agent Hub: ${surfaceEndpointHref("kfd", "agent-hub/")}
 - Guide: ${surfaceEndpointHref("kfd", "verify/")}
 ${kfdIndependentVerificationAssets.map((entry) => `- ${entry.role}: ${surfaceEndpointHref("kfd", entry.outputPath)} (${entry.digest})`).join("\n")}
 - Claim boundary: ${kfdIndependentVerificationPage?.warrantEvidence?.claimBoundary || kfdIndependentVerificationPage?.authorityNote || "See the package-owned verification guide."}

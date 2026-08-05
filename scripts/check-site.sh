@@ -2302,6 +2302,64 @@ for (const [label, html, state] of [
 }
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
 const kfdLlms = fs.readFileSync("dist/kfd/llms.txt", "utf8");
+const kfdIndependentImplementation = kfdSite.homepage.independentImplementation;
+if (
+  !kfdIndependentImplementation
+  || kfdIndependentImplementation.promise !== "Implement KFD without Kungfu — scaffold an adapter in Python, Rust, Node.js, or C++, then verify it offline."
+  || kfdIndependentImplementation.release?.package !== "@kungfu-tech/kfd"
+  || kfdIndependentImplementation.release?.version !== kfdPackage.version
+  || kfdIndependentImplementation.release?.immutable !== true
+  || kfdIndependentImplementation.supportedLanguages?.map((entry) => entry.id).join(",") !== "python,rust,node,cpp"
+  || kfdIndependentImplementation.steps?.map((entry) => entry.id).join(",") !== "scaffold,test,verify"
+  || kfdIndependentImplementation.links?.map((entry) => entry.url).join(",") !== "/agent-hub/,/verify/"
+) {
+  throw new Error("KFD package must own the exact independent implementation first-screen contract");
+}
+if (JSON.stringify(kfdAgentManifest.independentImplementation) !== JSON.stringify(kfdIndependentImplementation)) {
+  throw new Error("KFD machine manifest must project homepage.independentImplementation exactly");
+}
+const kfdIndependentPosition = kfdHomeHtml.indexOf('id="independent-implementation"');
+const kfdAuthorityPositionOnHome = kfdHomeHtml.indexOf('id="kfd-authority"');
+const kfdInstalledProjectionPosition = kfdHomeHtml.indexOf('id="agent-hub-qualification"');
+if (
+  kfdIndependentPosition < 0
+  || kfdAuthorityPositionOnHome <= kfdIndependentPosition
+  || kfdInstalledProjectionPosition <= kfdIndependentPosition
+  || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.promise))
+  || !kfdHomeHtml.includes('aria-label="Supported adapter languages"')
+  || !kfdHomeHtml.includes('href="/agent-hub/"')
+  || !kfdHomeHtml.includes('href="/verify/"')
+) {
+  throw new Error("KFD homepage must render the independent path before authority detail and installed Kungfu projection");
+}
+for (const language of kfdIndependentImplementation.supportedLanguages) {
+  if (!kfdHomeHtml.includes(`data-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)) {
+    throw new Error(`KFD homepage is missing independent adapter language: ${language.id}`);
+  }
+}
+for (const step of kfdIndependentImplementation.steps) {
+  if (
+    !kfdHomeHtml.includes(`data-independent-step="${escapeHtml(step.id)}"`)
+    || !kfdHomeHtml.includes(`<code>${escapeHtml(step.command)}</code>`)
+    || !kfdLlms.includes(`- ${step.label}: ${step.command}`)
+  ) {
+    throw new Error(`KFD homepage or llms entry drifted from independent step: ${step.id}`);
+  }
+}
+if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 3) {
+  throw new Error("KFD independent path must expose one copy control for each package-owned command");
+}
+const claimBoundaryText = kfdIndependentImplementation.claimBoundary.split(" [", 1)[0];
+if (
+  !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.starterBoundary))
+  || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.offlineBoundary))
+  || !kfdHomeHtml.includes(escapeHtml(claimBoundaryText))
+  || !kfdLlms.includes(kfdIndependentImplementation.starterBoundary)
+  || !kfdLlms.includes(kfdIndependentImplementation.offlineBoundary)
+  || !kfdLlms.includes(kfdIndependentImplementation.claimBoundary)
+) {
+  throw new Error("KFD human and machine entries must retain all independent implementation boundaries");
+}
 const visibleWordCount = (html) => html
   .replace(/<style[\s\S]*?<\/style>/gi, " ")
   .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -2314,7 +2372,7 @@ for (const [label, html, maximum] of [
   ["Hub", hubHtml, 650],
   ["Core", coreHtml, 350],
   ["Buildchain", buildchainHomeHtml, 550],
-  ["KFD", kfdHomeHtml, 400],
+  ["KFD", kfdHomeHtml, 650],
   ["Papers", papersIndex, 350],
 ]) {
   const count = visibleWordCount(html);
