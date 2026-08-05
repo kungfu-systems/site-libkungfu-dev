@@ -12,8 +12,8 @@ importers:
         specifier: 3.0.6-alpha.0
         version: 3.0.6-alpha.0
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.54
-        version: 1.0.0-alpha.54
+        specifier: 1.0.0-alpha.55
+        version: 1.0.0-alpha.55
       '@kungfu-tech/paper-episodes-to-primitives':
         specifier: 0.1.0-alpha.2
         version: 0.1.0-alpha.2
@@ -57,8 +57,8 @@ packages:
     resolution: {integrity: sha512-tFyFev5UKm2snujWB0FXwHkwLpKhWxmE16MPjn1zSyl0X/y7QTERG7oCL0TIBuMpKC20QnNi6r0oVKRawyQ7fA==}
     hasBin: true
 
-  '@kungfu-tech/kfd@1.0.0-alpha.54':
-    resolution: {integrity: sha512-h7LhEZ9n3r2ZaNwSagweG+dSRGM9oOJLL6Mx2oZ/ATUJ4+8tGtnAbFfK/dbkUpCQb+YeEDM6cayfKdajHcBU4g==}
+  '@kungfu-tech/kfd@1.0.0-alpha.55':
+    resolution: {integrity: sha512-C8BMvrtQFJnFE/+XanFvtLiDrtYOOSs2gxYyEhLF2uDPYJLCvfTQLQxFqrbrvpxtRs7bCLFb6GvnyOZSdXveag==}
     hasBin: true
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2':
@@ -134,7 +134,7 @@ snapshots:
 
   '@kungfu-tech/kfd@1.0.0-alpha.47': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.54': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.55': {}
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2': {}
 
