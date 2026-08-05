@@ -4262,6 +4262,29 @@ const kfdCandidateFormalPageByCandidateId = new Map(
 const kfdStandalonePages = (kfdSite.standalonePages || [])
   .slice()
   .sort((left, right) => (left.rendering?.navigationOrder || 0) - (right.rendering?.navigationOrder || 0));
+const kfdIndependentVerificationPage = kfdStandalonePages.find(
+  (entry) => entry.id === "independent-verification",
+);
+const kfdPackageRoot = packageRoot("@kungfu-tech/kfd");
+const kfdIndependentVerificationAssets = (kfdIndependentVerificationPage?.machineAssets || []).map((entry) => {
+  const sourcePath = path.posix.normalize(entry.sourcePath || "");
+  const outputPath = path.posix.normalize(String(entry.url || "").replace(/^\/+/, ""));
+  if (
+    !sourcePath
+    || sourcePath !== entry.sourcePath
+    || sourcePath.startsWith("../")
+    || !outputPath
+    || outputPath.startsWith("../")
+    || `/${outputPath}` !== entry.url
+  ) {
+    throw new Error(`Invalid KFD independent-verification machine asset: ${entry.sourcePath || entry.url}`);
+  }
+  const content = fs.readFileSync(path.join(kfdPackageRoot, sourcePath));
+  if (sha256Buffer(content) !== entry.digest) {
+    throw new Error(`KFD independent-verification machine asset digest drifted: ${sourcePath}`);
+  }
+  return { ...entry, outputPath, content };
+});
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -4293,6 +4316,7 @@ const kfdPageRouteBySourcePath = new Map([
     pageEntry.sourcePath,
     `${pageEntry.url.replace(/\/+$/, "")}/`,
   ]),
+  ...kfdIndependentVerificationAssets.map((entry) => [entry.sourcePath, `/${entry.outputPath}`]),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
   ...kfdRegistry.entries.map((entry) => [entry.path, `/${entry.number}/`]),
@@ -7056,6 +7080,22 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
     tocLabel,
   );
   const pagePath = `${pageEntry.url.replace(/\/+$/, "")}/`;
+  const implementationEvidence = pageEntry.rendererContract?.showMachineAssets
+    ? `<section class="panel" style="margin-top: 18px;">
+      <h2>Implementation evidence</h2>
+      <p>${escapeHtml(pageEntry.releaseIdentity?.rule || pageEntry.authorityNote)}</p>
+      <dl class="meta">
+        <dt>Package</dt>
+        <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
+        <dt>Coverage</dt>
+        <dd><code>${escapeHtml(String(pageEntry.semanticSelfSufficiency?.entryCount || 0))} decisions · ${escapeHtml(String(pageEntry.semanticSelfSufficiency?.coverageCounts?.complete || 0))} complete · ${escapeHtml(String(pageEntry.semanticSelfSufficiency?.coverageCounts?.partial || 0))} partial · ${escapeHtml(String(pageEntry.semanticSelfSufficiency?.coverageCounts?.gap || 0))} gap</code></dd>
+        <dt>Warrant profile</dt>
+        <dd><code>${escapeHtml(pageEntry.warrantEvidence?.profile || "")}</code> · <code>${escapeHtml(pageEntry.warrantEvidence?.decisionStatus || "")}</code> · <code>${escapeHtml(String(pageEntry.warrantEvidence?.fixedVectorCount || 0))} fixed vectors</code></dd>
+      </dl>
+      <ul>${(pageEntry.machineAssets || []).map((asset) => `<li><a href="${escapeAttr(asset.url)}">${escapeHtml(asset.role)}</a> · <code>${escapeHtml(asset.mediaType)}</code> · <code>${escapeHtml(asset.digest)}</code></li>`).join("")}</ul>
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(pageEntry.warrantEvidence?.claimBoundary || pageEntry.authorityNote)}</p>
+    </section>`
+    : "";
   return page({
     title: `${pageEntry.title} | kfd.libkungfu.dev`,
     description: pageEntry.authorityNote,
@@ -7076,6 +7116,8 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
         ${rendered.html}
       </article>
     </section>
+
+    ${implementationEvidence}
 
     <section class="panel" style="margin-top: 18px;">
       <h2>Page metadata</h2>
@@ -7915,6 +7957,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.schemaPath}`,
     })),
+    ...kfdIndependentVerificationAssets.map((entry) => ({
+      path: `/${entry.outputPath}`,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.sourcePath}`,
+    })),
     {
       path: "/schemas/kfd-terminology.schema.json",
       host: surfaceCanonicalHost("kfd"),
@@ -8098,6 +8145,7 @@ const kfdAgentManifest = {
     overview: surfaceCanonicalHref("kfd"),
     decisions: surfaceEndpointHref("kfd", "decisions/"),
     agentHub: surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
+    independentVerification: surfaceEndpointHref("kfd", "verify/"),
   },
   agentEntries: {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
@@ -8112,6 +8160,10 @@ const kfdAgentManifest = {
     activationContracts: surfaceEndpointHref("kfd", "activation-contracts.json"),
     activationSchemas: Object.fromEntries(
       kfdActivationSchemas.map((entry) => [entry.contract, surfaceEndpointHref("kfd", entry.schemaPath)]),
+    ),
+    independentVerification: surfaceEndpointHref("kfd", "verify/"),
+    independentVerificationAssets: Object.fromEntries(
+      kfdIndependentVerificationAssets.map((entry) => [entry.role, surfaceEndpointHref("kfd", entry.outputPath)]),
     ),
   },
   readerContract: {
@@ -8145,6 +8197,7 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
     surfaceEndpointHref("kfd", "activation-contracts.json"),
     ...kfdActivationSchemas.map((entry) => surfaceEndpointHref("kfd", entry.schemaPath)),
+    ...kfdIndependentVerificationAssets.map((entry) => surfaceEndpointHref("kfd", entry.outputPath)),
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
@@ -8179,6 +8232,18 @@ const kfdAgentManifest = {
     relationship: entry.relationship,
     normative: entry.normative,
     rendering: entry.rendering,
+    status: entry.status,
+    authorityNote: entry.authorityNote,
+    releaseIdentity: entry.releaseIdentity,
+    commands: entry.commands,
+    semanticSelfSufficiency: entry.semanticSelfSufficiency,
+    warrantEvidence: entry.warrantEvidence,
+    firstWaveEvidence: entry.firstWaveEvidence,
+    machineAssets: entry.machineAssets?.map((asset) => ({
+      ...asset,
+      url: surfaceEndpointHref("kfd", String(asset.url || "").replace(/^\/+/, "")),
+    })),
+    rendererContract: entry.rendererContract,
   })),
   formalModel: {
     path: kfdFormalModelPath,
@@ -8277,6 +8342,10 @@ for (const entry of kfdActivationSchemas) {
   writeFile(`kfd/${entry.schemaPath}`, `${JSON.stringify(entry.body, null, 2)}\n`);
   writeFile(entry.schemaPath, `${JSON.stringify(entry.body, null, 2)}\n`);
 }
+for (const entry of kfdIndependentVerificationAssets) {
+  writeBinaryFile(`kfd/${entry.outputPath}`, entry.content);
+  writeBinaryFile(entry.outputPath, entry.content);
+}
 writeFile("kfd/cases/registry.json", `${JSON.stringify(kfdCaseRegistry, null, 2)}\n`);
 writeFile("cases/registry.json", `${JSON.stringify(kfdCaseRegistry, null, 2)}\n`);
 writeFile("kfd/standards.json", `${JSON.stringify(kfdStandards, null, 2)}\n`);
@@ -8310,6 +8379,11 @@ KFD-11 through KFD-13 activation interfaces:
 ${kfdActivationSchemas.map((entry) => `- ${entry.contract}: ${surfaceEndpointHref("kfd", entry.schemaPath)}`).join("\n")}
 - Non-claims: ${kfdActivationContracts.nonClaims.join(" ")}
 
+Independent implementation and verification:
+- Guide: ${surfaceEndpointHref("kfd", "verify/")}
+${kfdIndependentVerificationAssets.map((entry) => `- ${entry.role}: ${surfaceEndpointHref("kfd", entry.outputPath)} (${entry.digest})`).join("\n")}
+- Claim boundary: ${kfdIndependentVerificationPage?.warrantEvidence?.claimBoundary || kfdIndependentVerificationPage?.authorityNote || "See the package-owned verification guide."}
+
 Agent-first entries:
 - ${surfaceEndpointHref("kfd", "manifest.json")}
 - ${surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, ""))}
@@ -8321,6 +8395,7 @@ Agent-first entries:
 - ${surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json")}
 - ${surfaceEndpointHref("kfd", "activation-contracts.json")}
 ${kfdActivationSchemas.map((entry) => `- ${surfaceEndpointHref("kfd", entry.schemaPath)}`).join("\n")}
+${kfdIndependentVerificationAssets.map((entry) => `- ${surfaceEndpointHref("kfd", entry.outputPath)}`).join("\n")}
 - ${surfaceEndpointHref("kfd", "llms.txt")}
 
 Read order:

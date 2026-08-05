@@ -244,6 +244,10 @@ const kfdCandidateFormalPageByCandidateId = new Map(
   kfdCandidateFormalPages.map((pageEntry) => [pageEntry.candidateId, pageEntry]),
 );
 const kfdStandalonePages = kfdSite.standalonePages || [];
+const kfdIndependentVerificationPage = kfdStandalonePages.find(
+  (entry) => entry.id === "independent-verification",
+);
+const kfdIndependentVerificationAssets = kfdIndependentVerificationPage?.machineAssets || [];
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -258,6 +262,10 @@ const requiredFiles = [
     `dist/kfd/${entry.schemaPath}`,
     `dist/${entry.schemaPath}`,
   ]),
+  ...kfdIndependentVerificationAssets.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+/, "");
+    return [`dist/kfd/${output}`, `dist/${output}`];
+  }),
   ...kfdCandidatePages.flatMap((entry) => [
     `dist/kfd/drafts/${entry.id}/index.html`,
     `dist/drafts/${entry.id}/index.html`,
@@ -929,6 +937,26 @@ if (
   || JSON.stringify(kfdSite.loadBearingPage) !== JSON.stringify(kfdLoadBearingPage)
 ) {
   throw new Error("KFD site bundle must expose the governed load-bearing dogfood standalone page");
+}
+if (
+  !kfdIndependentVerificationPage
+  || JSON.stringify(kfdSite.independentVerificationPage) !== JSON.stringify(kfdIndependentVerificationPage)
+  || kfdIndependentVerificationPage.sourcePath !== "docs/independent-verifier.md"
+  || kfdIndependentVerificationPage.url !== "/verify"
+  || kfdIndependentVerificationPage.normative !== false
+  || kfdIndependentVerificationPage.status !== "experimental"
+  || kfdIndependentVerificationPage.semanticSelfSufficiency?.contract !== "kfd.semantic-self-sufficiency-matrix/v1"
+  || kfdIndependentVerificationPage.semanticSelfSufficiency?.entryCount !== 13
+  || kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.gap !== 1
+  || kfdIndependentVerificationPage.warrantEvidence?.decisionStatus !== "draft"
+  || kfdIndependentVerificationPage.warrantEvidence?.fixedVectorCount !== 14
+  || kfdIndependentVerificationPage.warrantEvidence?.report?.qualifying !== false
+  || kfdIndependentVerificationPage.warrantEvidence?.report?.selfCertified !== false
+  || kfdIndependentVerificationAssets.length !== 4
+  || kfdIndependentVerificationPage.rendererContract?.showMachineAssets !== true
+  || kfdIndependentVerificationPage.rendererContract?.showClaimBoundaries !== true
+) {
+  throw new Error("KFD site bundle must expose the bounded independent implementation and verification contract");
 }
 for (const pageEntry of kfdStandalonePages) {
   if (
@@ -1810,6 +1838,7 @@ if (
   kfdAgentManifest.agentEntries?.llms !== expectedSurfaceEndpoint("kfd", "llms.txt") ||
   kfdAgentManifest.agentEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/")
   || kfdAgentManifest.agentEntries?.activationContracts !== expectedSurfaceEndpoint("kfd", "activation-contracts.json")
+  || kfdAgentManifest.agentEntries?.independentVerification !== expectedSurfaceEndpoint("kfd", "verify/")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
 }
@@ -1868,6 +1897,40 @@ for (const pageEntry of kfdStandalonePages) {
     || !kfdAgentManifest.readOrder.includes(renderedEntry.url)
   ) {
     throw new Error(`KFD agent manifest is missing standalone page facts for ${pageEntry.id}`);
+  }
+}
+const renderedIndependentVerification = kfdAgentManifest.standalonePages.find(
+  (entry) => entry.id === "independent-verification",
+);
+if (
+  JSON.stringify(renderedIndependentVerification?.releaseIdentity) !== JSON.stringify(kfdIndependentVerificationPage.releaseIdentity)
+  || JSON.stringify(renderedIndependentVerification?.commands) !== JSON.stringify(kfdIndependentVerificationPage.commands)
+  || JSON.stringify(renderedIndependentVerification?.semanticSelfSufficiency) !== JSON.stringify(kfdIndependentVerificationPage.semanticSelfSufficiency)
+  || JSON.stringify(renderedIndependentVerification?.warrantEvidence) !== JSON.stringify(kfdIndependentVerificationPage.warrantEvidence)
+  || JSON.stringify(renderedIndependentVerification?.firstWaveEvidence) !== JSON.stringify(kfdIndependentVerificationPage.firstWaveEvidence)
+  || JSON.stringify(renderedIndependentVerification?.rendererContract) !== JSON.stringify(kfdIndependentVerificationPage.rendererContract)
+  || renderedIndependentVerification?.machineAssets?.length !== kfdIndependentVerificationAssets.length
+) {
+  throw new Error("KFD agent manifest must preserve package-owned independent verification facts and boundaries");
+}
+for (const asset of kfdIndependentVerificationAssets) {
+  const output = asset.url.replace(/^\/+/, "");
+  const source = fs.readFileSync(`node_modules/@kungfu-tech/kfd/${asset.sourcePath}`);
+  const canonical = fs.readFileSync(`dist/kfd/${output}`);
+  const alias = fs.readFileSync(`dist/${output}`);
+  const digest = `sha256:${crypto.createHash("sha256").update(source).digest("hex")}`;
+  const renderedAsset = renderedIndependentVerification.machineAssets.find(
+    (entry) => entry.sourcePath === asset.sourcePath,
+  );
+  if (
+    digest !== asset.digest
+    || !canonical.equals(source)
+    || !alias.equals(source)
+    || renderedAsset?.url !== expectedSurfaceEndpoint("kfd", output)
+    || kfdAgentManifest.agentEntries?.independentVerificationAssets?.[asset.role] !== expectedSurfaceEndpoint("kfd", output)
+    || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output))
+  ) {
+    throw new Error(`KFD independent-verification machine asset drifted: ${asset.sourcePath}`);
   }
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
@@ -2471,6 +2534,21 @@ for (const pageEntry of kfdStandalonePages) {
   ) {
     throw new Error(`KFD standalone page is missing bundle-owned content, navigation, metadata, or read order: ${pageEntry.id}`);
   }
+}
+const kfdIndependentVerificationHtml = fs.readFileSync("dist/kfd/verify/index.html", "utf8");
+for (const asset of kfdIndependentVerificationAssets) {
+  const output = asset.url.replace(/^\/+/, "");
+  if (!kfdIndependentVerificationHtml.includes(`href="/${escapeHtml(output)}"`)) {
+    throw new Error(`KFD independent-verification page must link its stable machine asset: ${asset.sourcePath}`);
+  }
+}
+if (
+  !kfdIndependentVerificationHtml.includes("Implement and verify KFD independently")
+  || !kfdIndependentVerificationHtml.includes("package-only verifier")
+  || !kfdIndependentVerificationHtml.includes("qualifying: false")
+  || !kfdIndependentVerificationHtml.includes("selfCertified: false")
+) {
+  throw new Error("KFD independent-verification page must preserve the package-owned method and non-certifying boundary");
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
