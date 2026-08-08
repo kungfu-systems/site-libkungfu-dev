@@ -2776,6 +2776,14 @@ if (
 ) {
   throw new Error("KFD recursive live case must link back to the Profile and Candidate lineage");
 }
+if (
+  !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/">Self-Conformance</a>')
+  || !kfdRecursiveCaseHtml.includes(`<a class="doc-nav-child" href="/cases/live/recursive-normative-self-conformance/" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`)
+  || kfdRecursiveCaseHtml.includes('<a href="/cases/" aria-current="page">Historical cases</a>')
+  || !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a>')
+) {
+  throw new Error("KFD recursive live case must belong to Self-Conformance navigation without marking Historical cases current");
+}
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
 if (fs.readFileSync("dist/formal/index.html", "utf8") !== kfdFormalModelCanonicalHtml) {

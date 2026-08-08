@@ -4136,7 +4136,9 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
-      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>`).join("\n")}
+      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>${currentPage === "recursive-self-conformance-case" && pageEntry.id === "self-conformance" && kfdRecursiveSelfConformanceCase
+        ? `<a class="doc-nav-child" href="${escapeAttr(`${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`
+        : ""}`).join("\n")}
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
@@ -7569,7 +7571,7 @@ if (kfdRecursiveSelfConformanceCase) {
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a href="${escapeAttr(kfdCasesPath)}" aria-label="Back to KFD cases">Back to KFD cases</a><span class="page-kicker-state">live case / ${escapeHtml(kfdRecursiveSelfConformanceCase.status)}</span></p>
+      <p class="eyebrow page-kicker"><a href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a><span class="page-kicker-state">live case / ${escapeHtml(kfdRecursiveSelfConformanceCase.status)}</span></p>
       <h1>${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</h1>
       <p class="lead">${escapeHtml(kfdRecursiveSelfConformanceCase.claimBoundary)}</p>
       <div class="card-actions">
@@ -7595,7 +7597,7 @@ if (kfdRecursiveSelfConformanceCase) {
 
     <section class="doc-layout long-toc">
       <aside class="doc-sidebar">
-        ${kfdDecisionNav(undefined, "cases")}
+        ${kfdDecisionNav(undefined, "recursive-self-conformance-case")}
         ${renderedLiveCase.tocHtml}
       </aside>
       <article class="panel doc-content">${renderedLiveCase.html}</article>
