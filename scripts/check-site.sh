@@ -2407,19 +2407,33 @@ if (JSON.stringify(kfdAgentManifest.independentImplementation) !== JSON.stringif
 const kfdIndependentPosition = kfdHomeHtml.indexOf('id="independent-implementation"');
 const kfdSelfConformancePosition = kfdHomeHtml.indexOf('id="self-conformance"');
 const kfdAuthorityPositionOnHome = kfdHomeHtml.indexOf('id="kfd-authority"');
+const kfdFoundationPosition = kfdHomeHtml.indexOf('id="foundation-triad"');
 const kfdInstalledProjectionPosition = kfdHomeHtml.indexOf('id="agent-hub-qualification"');
+const kfdActivationPosition = kfdHomeHtml.indexOf('id="activation-contracts"');
+const kfdFirstCommandPosition = kfdHomeHtml.indexOf('<pre class="kfd-command">');
+const kfdHomeH1s = [...kfdHomeHtml.matchAll(/<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/g)];
 if (
-  kfdIndependentPosition < 0
+  kfdAuthorityPositionOnHome < 0
+  || kfdFoundationPosition <= kfdAuthorityPositionOnHome
+  || kfdIndependentPosition <= kfdFoundationPosition
   || kfdSelfConformancePosition <= kfdIndependentPosition
-  || kfdAuthorityPositionOnHome <= kfdSelfConformancePosition
-  || kfdAuthorityPositionOnHome <= kfdIndependentPosition
-  || kfdInstalledProjectionPosition <= kfdIndependentPosition
+  || kfdInstalledProjectionPosition <= kfdSelfConformancePosition
+  || kfdActivationPosition <= kfdInstalledProjectionPosition
+  || kfdFirstCommandPosition <= kfdIndependentPosition
+  || kfdHomeH1s.length !== 1
+  || kfdHomeH1s[0][1] !== escapeHtml(kfdSite.homepage.title)
   || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.promise))
   || !kfdHomeHtml.includes('aria-label="Supported adapter languages"')
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
 ) {
-  throw new Error("KFD homepage must render the independent path before authority detail and installed Kungfu projection");
+  throw new Error("KFD homepage hierarchy must be identity, foundation, independent implementation, Self-Conformance, installed Kungfu, then activation interfaces");
+}
+if (
+  !kfdHomeHtml.includes('<a class="reader-action" href="#foundation-triad">Understand KFD</a>')
+  || !kfdHomeHtml.includes('<a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>')
+) {
+  throw new Error("KFD homepage hero must expose the accepted Understand and independent-implementation actions");
 }
 if (
   !kfdHomeHtml.includes(escapeHtml(kfdSite.homepage.selfConformance.label))
@@ -2434,7 +2448,10 @@ if (
   throw new Error("KFD homepage and llms entry must expose the package-owned governed self-change path prominently");
 }
 for (const language of kfdIndependentImplementation.supportedLanguages) {
-  if (!kfdHomeHtml.includes(`data-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)) {
+  if (
+    !kfdHomeHtml.includes(`data-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)
+    || !kfdHomeHtml.includes(`data-kfd-proof-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)
+  ) {
     throw new Error(`KFD homepage is missing independent adapter language: ${language.id}`);
   }
 }
@@ -2445,6 +2462,12 @@ for (const step of kfdIndependentImplementation.steps) {
     || !kfdLlms.includes(`- ${step.label}: ${step.command}`)
   ) {
     throw new Error(`KFD homepage or llms entry drifted from independent step: ${step.id}`);
+  }
+  if (
+    (step.id === "test" || step.id === "verify")
+    && !kfdHomeHtml.includes(`data-kfd-proof-step="${escapeHtml(step.id)}">${escapeHtml(step.label)}</li>`)
+  ) {
+    throw new Error(`KFD homepage proof strip is missing package-owned step: ${step.id}`);
   }
 }
 if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 3) {
@@ -2482,41 +2505,37 @@ for (const [label, html, maximum] of [
   }
 }
 const kfdReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "kfd");
-const kfdQuestionPosition = kfdHomeHtml.indexOf(escapeHtml(kfdReaderPath.question));
-const kfdAuthorityPosition = kfdHomeHtml.indexOf(escapeHtml(kfdSite.homepage.title), kfdQuestionPosition + 1);
+const kfdAuthorityPosition = kfdHomeHtml.indexOf(`<h1>${escapeHtml(kfdSite.homepage.title)}</h1>`);
+const kfdQuestionPosition = kfdHomeHtml.indexOf('data-kfd-future-picture="question"', kfdAuthorityPosition + 1);
 if (
-  kfdQuestionPosition < 0
-  || kfdAuthorityPosition <= kfdQuestionPosition
+  kfdAuthorityPosition < 0
+  || kfdQuestionPosition <= kfdAuthorityPosition
   || !kfdHomeHtml.includes('data-reader-surface="kfd"')
   || !kfdLlms.includes(kfdReaderPath.question)
   || !kfdLlms.includes(kfdReaderPath.promise)
 ) {
-  throw new Error("KFD must present the site-owned reader question before bundle-owned authority in human and agent entries");
+  throw new Error("KFD must present its package-owned identity before the secondary continuity question while retaining the agent reader path");
 }
 const kfdFuturePicture = kfdSite.homepage.futurePicture || {};
 const kfdFutureQuestion = kfdFuturePicture.question
   || kfdFuturePicture.pastToFuture
   || kfdSite.homepage.lead;
+const kfdEngineeringAnswer = kfdFuturePicture.engineeringAnswer
+  || kfdFuturePicture.kungfuPath;
+const kfdDefinition = kfdEngineeringAnswer?.match(/^.*?\.(?:\s|$)/u)?.[0]?.trim();
+const kfdFoundingBoundary = kfdFuturePicture.claimBoundary?.match(/Kungfu is[^.]*\./u)?.[0];
 if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
   throw new Error("KFD production artifact must not embed robots noindex metadata");
 }
 if (
   !kfdHomeHtml.includes('data-kfd-future-picture="question"')
   || !kfdHomeHtml.includes(escapeHtml(kfdFutureQuestion.replace(/\*\*/g, "").slice(0, 24)))
+  || !kfdDefinition
+  || !kfdHomeHtml.includes(`<p class="kfd-homepage-definition" data-kfd-homepage-definition>${escapeHtml(kfdDefinition)}</p>`)
+  || !kfdFoundingBoundary
+  || !kfdHomeHtml.includes(`<p class="kfd-adoption-boundary" data-kfd-founding-boundary>${escapeHtml(kfdFoundingBoundary)}</p>`)
 ) {
-  throw new Error("KFD homepage must render the bundle-owned core question");
-}
-for (const [field, compatibilityField, marker] of [
-  ["engineeringAnswer", "kungfuPath", "engineering-answer"],
-  ["claimBoundary", undefined, "claim-boundary"],
-]) {
-  const value = kfdFuturePicture[field] || (compatibilityField ? kfdFuturePicture[compatibilityField] : undefined);
-  if (value && (
-    !kfdHomeHtml.includes(`data-kfd-future-picture="${marker}"`)
-    || !kfdHomeHtml.includes(escapeHtml(value))
-  )) {
-    throw new Error(`KFD homepage must render homepage.futurePicture.${field}`);
-  }
+  throw new Error("KFD homepage must render the exact package-owned definition, continuity question, and founding-implementation boundary");
 }
 if (kfdHomeHtml.includes('data-kfd-section="future-picture"')) {
   throw new Error("KFD homepage must not duplicate the future-picture section below the hero");
@@ -2579,10 +2598,11 @@ if (
   throw new Error("KFD overview must route complete standards and metadata to /decisions/");
 }
 if (
-  !kfdHomeHtml.includes('class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;"')
-  || !kfdHomeHtml.includes('class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;"')
+  !kfdHomeHtml.includes('class="hero kfd-homepage-hero"')
+  || !kfdHomeHtml.includes('class="kfd-continuity-question"')
+  || !kfdHomeHtml.includes('class="kfd-proof-strip"')
 ) {
-  throw new Error("KFD future picture must retain its scoped hero typography");
+  throw new Error("KFD first hero must retain the accepted identity, secondary-question, and proof-strip composition");
 }
 if (
   kfdDetailHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")

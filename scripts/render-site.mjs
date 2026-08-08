@@ -2431,6 +2431,97 @@ ${current === "papers" ? "" : `
       line-height: 1.02;
     }
 
+    .kfd-homepage-hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 32px;
+    }
+
+    .kfd-homepage-hero h1 {
+      max-width: 960px;
+      margin: 0;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+    }
+
+    .kfd-homepage-definition {
+      max-width: 900px;
+      margin: 0;
+      color: var(--fg);
+      font-size: clamp(20px, 2.3vw, 28px);
+      line-height: 1.34;
+    }
+
+    .kfd-continuity-question {
+      display: grid;
+      max-width: 900px;
+      gap: 8px;
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 16px;
+    }
+
+    .kfd-continuity-question h2 {
+      margin: 0;
+      font-size: clamp(21px, 2.5vw, 30px);
+      line-height: 1.25;
+    }
+
+    .kfd-adoption-boundary {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .kfd-proof-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 12px 14px;
+    }
+
+    .kfd-proof-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .kfd-proof-group strong {
+      margin-right: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .kfd-proof-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .kfd-proof-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg);
+      padding: 4px 9px;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
     .kfd-independent {
       display: grid;
       gap: 18px;
@@ -4710,6 +4801,53 @@ function kfdFuturePictureHero() {
       ? `<p class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;" data-kfd-future-picture="claim-boundary">${inlineMarkdown(claimBoundary)}</p>`
       : "",
   ].filter(Boolean).join("\n");
+}
+
+function kfdHomepageHero() {
+  const futurePicture = kfdSite.homepage.futurePicture || {};
+  const question = futurePicture.question
+    || futurePicture.pastToFuture
+    || kfdSite.homepage.lead;
+  const engineeringAnswer = futurePicture.engineeringAnswer
+    || futurePicture.kungfuPath;
+  const claimBoundary = futurePicture.claimBoundary;
+  const definition = engineeringAnswer?.match(/^.*?\.(?:\s|$)/u)?.[0]?.trim();
+  const foundingBoundary = claimBoundary?.match(/Kungfu is[^.]*\./u)?.[0];
+  const proofSteps = kfdSite.homepage.independentImplementation.steps
+    .filter((entry) => entry.id === "test" || entry.id === "verify");
+
+  if (!definition || !foundingBoundary || proofSteps.length !== 2) {
+    throw new Error("KFD package must expose the concise definition, founding boundary, and proof steps");
+  }
+
+  return `<section class="hero kfd-homepage-hero" id="kfd-authority" data-reader-surface="kfd">
+    <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
+    <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
+    <p class="kfd-homepage-definition" data-kfd-homepage-definition>${escapeHtml(definition)}</p>
+    <div class="kfd-continuity-question">
+      <p class="eyebrow">${escapeHtml(futurePicture.heading || "Core question")}</p>
+      <h2 data-kfd-future-picture="question">${inlineMarkdown(question)}</h2>
+    </div>
+    <p class="kfd-adoption-boundary" data-kfd-founding-boundary>${escapeHtml(foundingBoundary)}</p>
+    <div class="reader-actions" aria-label="KFD homepage reading paths">
+      <a class="reader-action" href="#foundation-triad">Understand KFD</a>
+      <a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>
+    </div>
+    <div class="kfd-proof-strip" aria-label="Independent implementation proof strip">
+      <div class="kfd-proof-group">
+        <strong>Supported adapters</strong>
+        <ul class="kfd-proof-list" aria-label="Supported adapter languages in the proof strip">
+          ${kfdSite.homepage.independentImplementation.supportedLanguages.map((entry) => `<li data-kfd-proof-language="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
+        </ul>
+      </div>
+      <div class="kfd-proof-group">
+        <strong>Proof path</strong>
+        <ol class="kfd-proof-list" aria-label="Test and offline verification proof steps">
+          ${proofSteps.map((entry) => `<li data-kfd-proof-step="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
+        </ol>
+      </div>
+    </div>
+  </section>`;
 }
 
 function kfdHomepageSectionPanels(ids, className = "") {
@@ -7120,33 +7258,7 @@ writeFile(
     description: kfdPackage.description,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
-    ${kfdIndependentImplementationPanel()}
-    ${kfdSelfConformancePanel()}
-    <section class="hero" id="kfd-authority">
-      <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
-      ${kfdFuturePictureHero()}
-    </section>
-
-    <section class="panel" id="agent-hub-qualification">
-      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
-      <h2>Verify Agent Hub in the installed Kungfu product</h2>
-      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
-      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p>
-      <div class="card-actions">
-        <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}">Understand and run the qualification</a>
-      </div>
-    </section>
-
-    <section class="panel" id="activation-contracts">
-      <p class="eyebrow">${escapeHtml(kfdSite.activationContracts.contract.status)} machine interfaces</p>
-      <h2>KFD-11–13 activation interfaces</h2>
-      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
-      <div class="card-actions">
-        <a class="card-action" href="/activation-contracts.json">Inspect manifest</a>
-        <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#activation-contracts">Read schemas</a>
-      </div>
-    </section>
+    body: `${kfdHomepageHero()}
 
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
@@ -7165,6 +7277,29 @@ writeFile(
       <div class="card-actions">
         <a class="card-action" ${surfaceRouteLinkAttrs("kfd", "decisions/")}>Explore decisions and standards</a>
         <a class="card-action secondary" ${surfaceRouteLinkAttrs("kfd", "registry.json")}>Inspect the registry</a>
+      </div>
+    </section>
+
+    ${kfdIndependentImplementationPanel()}
+    ${kfdSelfConformancePanel()}
+
+    <section class="panel" id="agent-hub-qualification">
+      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
+      <h2>Verify Agent Hub in the installed Kungfu product</h2>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}">Understand and run the qualification</a>
+      </div>
+    </section>
+
+    <section class="panel" id="activation-contracts">
+      <p class="eyebrow">${escapeHtml(kfdSite.activationContracts.contract.status)} machine interfaces</p>
+      <h2>KFD-11–13 activation interfaces</h2>
+      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="/activation-contracts.json">Inspect manifest</a>
+        <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#activation-contracts">Read schemas</a>
       </div>
     </section>`,
   }),
