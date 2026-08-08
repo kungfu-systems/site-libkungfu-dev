@@ -2173,6 +2173,7 @@ ${current === "core" ? `
       color: var(--muted);
       margin-left: auto;
       text-align: right;
+      overflow-wrap: anywhere;
     }
 
     h1 {
@@ -2181,6 +2182,7 @@ ${current === "core" ? `
       font-size: clamp(40px, 6vw, 72px);
       line-height: 0.98;
       letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
 
     h2 {
@@ -2188,6 +2190,7 @@ ${current === "core" ? `
       font-size: 24px;
       line-height: 1.2;
       letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
 
     h3 {
@@ -2195,6 +2198,7 @@ ${current === "core" ? `
       font-size: 18px;
       line-height: 1.25;
       letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
 
     p {
@@ -2425,6 +2429,97 @@ ${current === "papers" ? "" : `
     .kfd-reader-orientation h1 {
       font-size: clamp(34px, 4.4vw, 56px);
       line-height: 1.02;
+    }
+
+    .kfd-homepage-hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 32px;
+    }
+
+    .kfd-homepage-hero h1 {
+      max-width: 960px;
+      margin: 0;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+    }
+
+    .kfd-homepage-definition {
+      max-width: 900px;
+      margin: 0;
+      color: var(--fg);
+      font-size: clamp(20px, 2.3vw, 28px);
+      line-height: 1.34;
+    }
+
+    .kfd-continuity-question {
+      display: grid;
+      max-width: 900px;
+      gap: 8px;
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 16px;
+    }
+
+    .kfd-continuity-question h2 {
+      margin: 0;
+      font-size: clamp(21px, 2.5vw, 30px);
+      line-height: 1.25;
+    }
+
+    .kfd-adoption-boundary {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .kfd-proof-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 12px 14px;
+    }
+
+    .kfd-proof-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .kfd-proof-group strong {
+      margin-right: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .kfd-proof-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .kfd-proof-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg);
+      padding: 4px 9px;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 750;
     }
 
     .kfd-independent {
@@ -4132,7 +4227,9 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
       <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
-      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>`).join("\n")}
+      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>${currentPage === "recursive-self-conformance-case" && pageEntry.id === "self-conformance" && kfdRecursiveSelfConformanceCase
+        ? `<a class="doc-nav-child" href="${escapeAttr(`${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`
+        : ""}`).join("\n")}
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
@@ -4409,8 +4506,16 @@ const kfdStandalonePages = (kfdSite.standalonePages || [])
 const kfdIndependentVerificationPage = kfdStandalonePages.find(
   (entry) => entry.id === "independent-verification",
 );
+const kfdSelfConformancePage = kfdStandalonePages.find(
+  (entry) => entry.id === "self-conformance",
+);
+const kfdRecursiveSelfConformanceCase = (kfdSite.liveCases?.cases || []).find(
+  (entry) => entry.id === "recursive-normative-self-conformance",
+);
 const kfdPackageRoot = packageRoot("@kungfu-tech/kfd");
-const kfdIndependentVerificationAssets = (kfdIndependentVerificationPage?.machineAssets || []).map((entry) => {
+const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((pageEntry) =>
+  (pageEntry.machineAssets || []).map((entry) => ({ ...entry, pageId: pageEntry.id })),
+).map((entry) => {
   const sourcePath = path.posix.normalize(entry.sourcePath || "");
   const outputPath = path.posix.normalize(String(entry.url || "").replace(/^\/+/, ""));
   if (
@@ -4421,14 +4526,23 @@ const kfdIndependentVerificationAssets = (kfdIndependentVerificationPage?.machin
     || outputPath.startsWith("../")
     || `/${outputPath}` !== entry.url
   ) {
-    throw new Error(`Invalid KFD independent-verification machine asset: ${entry.sourcePath || entry.url}`);
+    throw new Error(`Invalid KFD standalone machine asset: ${entry.sourcePath || entry.url}`);
   }
   const content = fs.readFileSync(path.join(kfdPackageRoot, sourcePath));
   if (sha256Buffer(content) !== entry.digest) {
-    throw new Error(`KFD independent-verification machine asset digest drifted: ${sourcePath}`);
+    throw new Error(`KFD standalone machine asset digest drifted: ${sourcePath}`);
   }
   return { ...entry, outputPath, content };
 });
+const kfdIndependentVerificationAssets = kfdStandaloneMachineAssets.filter(
+  (entry) => entry.pageId === kfdIndependentVerificationPage?.id,
+);
+const kfdSelfConformanceAssets = kfdStandaloneMachineAssets.filter(
+  (entry) => entry.pageId === kfdSelfConformancePage?.id,
+);
+const kfdRecursiveSelfConformanceCasePath = kfdRecursiveSelfConformanceCase
+  ? `${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`
+  : undefined;
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -4460,7 +4574,18 @@ const kfdPageRouteBySourcePath = new Map([
     pageEntry.sourcePath,
     `${pageEntry.url.replace(/\/+$/, "")}/`,
   ]),
-  ...kfdIndependentVerificationAssets.map((entry) => [entry.sourcePath, `/${entry.outputPath}`]),
+  ...kfdStandaloneMachineAssets.map((entry) => [entry.sourcePath, `/${entry.outputPath}`]),
+  ...(kfdRecursiveSelfConformanceCase
+    ? [
+        kfdRecursiveSelfConformanceCase.humanEntry,
+        kfdRecursiveSelfConformanceCase.genesis,
+        kfdRecursiveSelfConformanceCase.methodTrace,
+        kfdRecursiveSelfConformanceCase.propagationHypothesis,
+        kfdRecursiveSelfConformanceCase.reviewIndex,
+        kfdRecursiveSelfConformanceCase.ontologySplit,
+        kfdRecursiveSelfConformanceCase.distinguishabilityArgument,
+      ].map((entry) => [entry.path, kfdRecursiveSelfConformanceCasePath])
+    : []),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
   ...kfdRegistry.entries.map((entry) => [entry.path, `/${entry.number}/`]),
@@ -4678,6 +4803,53 @@ function kfdFuturePictureHero() {
   ].filter(Boolean).join("\n");
 }
 
+function kfdHomepageHero() {
+  const futurePicture = kfdSite.homepage.futurePicture || {};
+  const question = futurePicture.question
+    || futurePicture.pastToFuture
+    || kfdSite.homepage.lead;
+  const engineeringAnswer = futurePicture.engineeringAnswer
+    || futurePicture.kungfuPath;
+  const claimBoundary = futurePicture.claimBoundary;
+  const definition = engineeringAnswer?.match(/^.*?\.(?:\s|$)/u)?.[0]?.trim();
+  const foundingBoundary = claimBoundary?.match(/Kungfu is[^.]*\./u)?.[0];
+  const proofSteps = kfdSite.homepage.independentImplementation.steps
+    .filter((entry) => entry.id === "test" || entry.id === "verify");
+
+  if (!definition || !foundingBoundary || proofSteps.length !== 2) {
+    throw new Error("KFD package must expose the concise definition, founding boundary, and proof steps");
+  }
+
+  return `<section class="hero kfd-homepage-hero" id="kfd-authority" data-reader-surface="kfd">
+    <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Kung Fu Decisions</span></p>
+    <h1>${escapeHtml(kfdSite.homepage.title)}</h1>
+    <p class="kfd-homepage-definition" data-kfd-homepage-definition>${escapeHtml(definition)}</p>
+    <div class="kfd-continuity-question">
+      <p class="eyebrow">${escapeHtml(futurePicture.heading || "Core question")}</p>
+      <h2 data-kfd-future-picture="question">${inlineMarkdown(question)}</h2>
+    </div>
+    <p class="kfd-adoption-boundary" data-kfd-founding-boundary>${escapeHtml(foundingBoundary)}</p>
+    <div class="reader-actions" aria-label="KFD homepage reading paths">
+      <a class="reader-action" href="#foundation-triad">Understand KFD</a>
+      <a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>
+    </div>
+    <div class="kfd-proof-strip" aria-label="Independent implementation proof strip">
+      <div class="kfd-proof-group">
+        <strong>Supported adapters</strong>
+        <ul class="kfd-proof-list" aria-label="Supported adapter languages in the proof strip">
+          ${kfdSite.homepage.independentImplementation.supportedLanguages.map((entry) => `<li data-kfd-proof-language="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
+        </ul>
+      </div>
+      <div class="kfd-proof-group">
+        <strong>Proof path</strong>
+        <ol class="kfd-proof-list" aria-label="Test and offline verification proof steps">
+          ${proofSteps.map((entry) => `<li data-kfd-proof-step="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
+        </ol>
+      </div>
+    </div>
+  </section>`;
+}
+
 function kfdHomepageSectionPanels(ids, className = "") {
   return ids
     .map((id) => kfdHomepageSection(id))
@@ -4817,6 +4989,28 @@ function kfdIndependentImplementationPanel() {
       <p><strong>Offline boundary.</strong> ${escapeHtml(contract.offlineBoundary)}</p>
       <p><strong>Claim boundary.</strong> ${inlineMarkdown(contract.claimBoundary)}</p>
     </div>
+  </section>`;
+}
+
+function kfdSelfConformancePanel() {
+  const contract = kfdSite.homepage.selfConformance;
+  const recursiveCase = kfdSelfConformancePage?.recursiveCase;
+  if (!contract || !recursiveCase) {
+    throw new Error("KFD site bundle must expose homepage.selfConformance and its recursive case");
+  }
+  return `<section class="panel" id="self-conformance" data-kfd-self-conformance>
+    <p class="eyebrow">${escapeHtml(contract.status)} · governed self-change</p>
+    <h2>${escapeHtml(contract.label)}</h2>
+    <dl class="meta">
+      <dt>Profile</dt><dd><code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code></dd>
+      <dt>Candidate</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code> · non-normative · no allocated number</dd>
+      <dt>Case</dt><dd><code>${escapeHtml(recursiveCase.liveCase.status)}</code> · <code>${escapeHtml(recursiveCase.liveCase.outcome)}</code></dd>
+    </dl>
+    <div class="card-actions">
+      <a class="card-action" href="${escapeAttr(`${contract.url.replace(/\/+$/, "")}/`)}">Open evidence</a>
+      <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
+    </div>
+    <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(contract.claimBoundary)}</p>
   </section>`;
 }
 
@@ -7064,32 +7258,7 @@ writeFile(
     description: kfdPackage.description,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `${renderReaderOrientation("kfd", "Kung Fu Decisions")}
-    ${kfdIndependentImplementationPanel()}
-    <section class="hero" id="kfd-authority">
-      <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
-      ${kfdFuturePictureHero()}
-    </section>
-
-    <section class="panel" id="agent-hub-qualification">
-      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
-      <h2>Verify Agent Hub in the installed Kungfu product</h2>
-      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
-      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p>
-      <div class="card-actions">
-        <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}">Understand and run the qualification</a>
-      </div>
-    </section>
-
-    <section class="panel" id="activation-contracts">
-      <p class="eyebrow">${escapeHtml(kfdSite.activationContracts.contract.status)} machine interfaces</p>
-      <h2>KFD-11–13 activation interfaces</h2>
-      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
-      <div class="card-actions">
-        <a class="card-action" href="/activation-contracts.json">Inspect manifest</a>
-        <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#activation-contracts">Read schemas</a>
-      </div>
-    </section>
+    body: `${kfdHomepageHero()}
 
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
@@ -7108,6 +7277,29 @@ writeFile(
       <div class="card-actions">
         <a class="card-action" ${surfaceRouteLinkAttrs("kfd", "decisions/")}>Explore decisions and standards</a>
         <a class="card-action secondary" ${surfaceRouteLinkAttrs("kfd", "registry.json")}>Inspect the registry</a>
+      </div>
+    </section>
+
+    ${kfdIndependentImplementationPanel()}
+    ${kfdSelfConformancePanel()}
+
+    <section class="panel" id="agent-hub-qualification">
+      <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
+      <h2>Verify Agent Hub in the installed Kungfu product</h2>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}</code></p>
+      <p><code>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}">Understand and run the qualification</a>
+      </div>
+    </section>
+
+    <section class="panel" id="activation-contracts">
+      <p class="eyebrow">${escapeHtml(kfdSite.activationContracts.contract.status)} machine interfaces</p>
+      <h2>KFD-11–13 activation interfaces</h2>
+      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="/activation-contracts.json">Inspect manifest</a>
+        <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#activation-contracts">Read schemas</a>
       </div>
     </section>`,
   }),
@@ -7247,6 +7439,87 @@ const kfdFoundationPageHtml = page({
 writeFile("kfd/foundation/index.html", kfdFoundationPageHtml);
 writeFile("foundation/index.html", kfdFoundationPageHtml);
 
+function renderKfdVerificationLanes(currentLaneId) {
+  return `<section class="panel" data-kfd-verification-lanes>
+    <p class="eyebrow">Two verification lanes</p>
+    <h2>Choose the evidence path you need</h2>
+    <div class="grid" style="margin-top: 18px;">
+      ${(kfdSite.verificationLanes || []).map((lane) => `<article class="panel" data-verification-lane="${escapeAttr(lane.id)}">
+        <h3><a href="${escapeAttr(`${lane.url.replace(/\/+$/, "")}/`)}"${lane.id === currentLaneId ? ' aria-current="page"' : ""}>${escapeHtml(lane.title)}</a></h3>
+        <p><code>${escapeHtml(lane.relationship)}</code></p>
+        <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(lane.claimBoundary)}</p>
+      </article>`).join("\n")}
+    </div>
+  </section>`;
+}
+
+function renderKfdSelfConformanceEvidence(pageEntry) {
+  if (pageEntry.id !== "self-conformance") {
+    return "";
+  }
+  const recursiveCase = pageEntry.recursiveCase;
+  const terminal = recursiveCase.terminal;
+  return `<div class="stack" style="margin-top: 18px;" data-kfd-self-conformance-evidence>
+    <section class="panel">
+      <p class="eyebrow">${escapeHtml(pageEntry.profile.status)} profile · ${escapeHtml(pageEntry.profile.id)}@${escapeHtml(pageEntry.profile.version)}</p>
+      <h2>Governed self-change, with authority kept separate</h2>
+      <ul>${pageEntry.governedObjects.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+      <div class="grid" style="margin-top: 18px;">
+        ${pageEntry.lifecycle.paths.map((entry) => `<article class="panel">
+          <h3>${escapeHtml(entry.id)}</h3>
+          <p><strong>Transitions:</strong> ${escapeHtml(entry.transitions.join(", "))}</p>
+          <p><strong>Authority roles:</strong> ${escapeHtml(entry.authorityRoles.join(", "))}</p>
+          <p><strong>Decisions:</strong> ${escapeHtml(entry.decisions.join(", "))}</p>
+        </article>`).join("\n")}
+      </div>
+      <p class="reader-claim-boundary"><strong>Lifecycle boundary:</strong> ${escapeHtml(pageEntry.lifecycle.claimBoundary)}</p>
+    </section>
+
+    <section class="panel">
+      <p class="eyebrow">Native + WASM · byte parity · offline · independent</p>
+      <h2>Run and verify the fixed transition contract</h2>
+      ${pageEntry.commands.map((entry) => `<div style="margin-top: 14px;">
+        <h3>${escapeHtml(entry.label)}</h3>
+        <pre class="kfd-command"><code>${escapeHtml(entry.command)}</code></pre>
+      </div>`).join("\n")}
+      <dl class="meta">
+        <dt>Verifier necessary</dt><dd><code>${escapeHtml(String(pageEntry.releaseSeparation.verifierNecessary))}</code></dd>
+        <dt>Verifier sufficient</dt><dd><code>${escapeHtml(String(pageEntry.releaseSeparation.verifierSufficient))}</code></dd>
+        <dt>Human approval required</dt><dd><code>${escapeHtml(String(pageEntry.releaseSeparation.humanApprovalRequired))}</code></dd>
+        <dt>Release authority separate</dt><dd><code>${escapeHtml(String(pageEntry.releaseSeparation.releaseAuthoritySeparate))}</code></dd>
+      </dl>
+      <p class="reader-claim-boundary"><strong>Verifier boundary:</strong> ${escapeHtml(pageEntry.verifierBoundary.claimBoundary)}</p>
+    </section>
+
+    <section class="panel" id="recursive-case-status">
+      <p class="eyebrow">Closed recursive case · ${escapeHtml(recursiveCase.liveCase.outcome)}</p>
+      <h2>No new KFD was allocated</h2>
+      <p>The Candidate is <code>${escapeHtml(recursiveCase.candidate.status)}</code> into the existing KFD-1, KFD-2, KFD-5, KFD-11 and Profile closure. It remains <code>normative: ${escapeHtml(String(recursiveCase.candidate.normative))}</code>, with no number, active status, self-certification, merge authority, or release authority.</p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(`${recursiveCase.candidate.url.replace(/\/+$/, "")}/`)}">Inspect Candidate lineage</a>
+        <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Inspect the closed live case</a>
+      </div>
+      <dl class="meta">
+        <dt>Terminal outcome</dt><dd><code>${escapeHtml(terminal.outcome)}</code></dd>
+        <dt>Request root</dt><dd><code>${escapeHtml(terminal.requestRoot)}</code></dd>
+        <dt>Fixed package root</dt><dd><code>${escapeHtml(terminal.fixedPackageRoot)}</code></dd>
+        <dt>Terminal bundle root</dt><dd><code>${escapeHtml(terminal.terminalBundleRoot)}</code></dd>
+        <dt>Terminal report root</dt><dd><code>${escapeHtml(terminal.terminalReportRoot)}</code></dd>
+        <dt>Number allocated</dt><dd><code>${escapeHtml(String(terminal.numberAllocated))}</code></dd>
+        <dt>Status changed</dt><dd><code>${escapeHtml(String(terminal.statusChanged))}</code></dd>
+        <dt>Release authorized</dt><dd><code>${escapeHtml(String(terminal.releaseAuthorized))}</code></dd>
+      </dl>
+      <p class="reader-claim-boundary"><strong>Case boundary:</strong> ${escapeHtml(recursiveCase.liveCase.claimBoundary)}</p>
+    </section>
+
+    <section class="panel">
+      <h2>Exact machine assets</h2>
+      <ul>${pageEntry.machineAssets.map((asset) => `<li><a href="${escapeAttr(asset.url)}">${escapeHtml(asset.role)}</a> · <code>${escapeHtml(asset.mediaType)}</code> · <code>${escapeHtml(asset.digest)}</code></li>`).join("")}</ul>
+      <p>Package: <code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code> · integrity: <code>${escapeHtml(kfdLock.integrity)}</code></p>
+    </section>
+  </div>`;
+}
+
 function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
   const rendered = renderDecisionMarkdown(
     rewritePackageMarkdownLinks(pageEntry.markdown, "kungfu-systems/kfd", {
@@ -7284,6 +7557,10 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
       <p class="lead">${escapeHtml(pageEntry.authorityNote)}</p>
     </section>
 
+    ${pageEntry.id === "independent-verification" || pageEntry.id === "self-conformance"
+      ? renderKfdVerificationLanes(pageEntry.id === "self-conformance" ? "governed-self-change" : "independent-implementation")
+      : ""}
+
     <section class="doc-layout">
       <aside class="doc-sidebar">
         ${kfdDecisionNav(undefined, currentPage)}
@@ -7295,6 +7572,7 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
     </section>
 
     ${implementationEvidence}
+    ${renderKfdSelfConformanceEvidence(pageEntry)}
 
     <section class="panel" style="margin-top: 18px;">
       <h2>Page metadata</h2>
@@ -7315,7 +7593,7 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
 }
 
 for (const pageEntry of kfdStandalonePages) {
-  if (pageEntry.rendering?.kind !== "markdown-document") {
+  if (!["markdown-document", "self-conformance-guide"].includes(pageEntry.rendering?.kind)) {
     throw new Error(`Unsupported KFD standalone page renderer: ${pageEntry.id || pageEntry.url}`);
   }
   const relativeRoute = pageEntry.url.replace(/^\/+|\/+$/g, "");
@@ -7403,6 +7681,68 @@ const kfdCasesPageHtml = page({
 writeFile("kfd/cases/index.html", kfdCasesPageHtml);
 writeFile("cases/index.html", kfdCasesPageHtml);
 
+if (kfdRecursiveSelfConformanceCase) {
+  const liveCaseDocuments = [
+    kfdRecursiveSelfConformanceCase.humanEntry,
+    kfdRecursiveSelfConformanceCase.genesis,
+    kfdRecursiveSelfConformanceCase.methodTrace,
+    kfdRecursiveSelfConformanceCase.ontologySplit,
+    kfdRecursiveSelfConformanceCase.distinguishabilityArgument,
+    kfdRecursiveSelfConformanceCase.propagationHypothesis,
+    kfdRecursiveSelfConformanceCase.reviewIndex,
+  ];
+  const renderedLiveCase = renderDecisionMarkdown(
+    liveCaseDocuments.map((entry) => rewritePackageMarkdownLinks(entry.markdown, "kungfu-systems/kfd", {
+      filePattern: /\.md$|\.json$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: entry.path,
+    })).join("\n\n---\n\n"),
+    "Recursive case sections",
+  );
+  const recursiveCase = kfdSelfConformancePage?.recursiveCase;
+  const liveCaseHtml = page({
+    title: `${kfdRecursiveSelfConformanceCase.title} | KFD live cases`,
+    description: kfdRecursiveSelfConformanceCase.claimBoundary,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero">
+      <p class="eyebrow page-kicker"><a href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a><span class="page-kicker-state">live case / ${escapeHtml(kfdRecursiveSelfConformanceCase.status)}</span></p>
+      <h1>${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</h1>
+      <p class="lead">${escapeHtml(kfdRecursiveSelfConformanceCase.claimBoundary)}</p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">How KFD changes itself</a>
+        <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.candidate.url.replace(/\/+$/, "")}/`)}">Candidate lineage</a>
+      </div>
+    </section>
+
+    <section class="panel" data-recursive-case-terminal>
+      <p class="eyebrow">Terminal evidence · ${escapeHtml(recursiveCase.liveCase.outcome)}</p>
+      <h2>Closed without a new Primitive or KFD number</h2>
+      <dl class="meta">
+        <dt>Candidate status</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code></dd>
+        <dt>Live case status</dt><dd><code>${escapeHtml(recursiveCase.liveCase.status)}</code></dd>
+        <dt>Normative</dt><dd><code>${escapeHtml(String(recursiveCase.candidate.normative))}</code></dd>
+        <dt>Terminal outcome</dt><dd><code>${escapeHtml(recursiveCase.terminal.outcome)}</code></dd>
+        <dt>Request root</dt><dd><code>${escapeHtml(recursiveCase.terminal.requestRoot)}</code></dd>
+        <dt>Terminal report root</dt><dd><code>${escapeHtml(recursiveCase.terminal.terminalReportRoot)}</code></dd>
+        <dt>Number allocated</dt><dd><code>${escapeHtml(String(recursiveCase.terminal.numberAllocated))}</code></dd>
+        <dt>Release authorized</dt><dd><code>${escapeHtml(String(recursiveCase.terminal.releaseAuthorized))}</code></dd>
+      </dl>
+    </section>
+
+    <section class="doc-layout long-toc">
+      <aside class="doc-sidebar">
+        ${kfdDecisionNav(undefined, "recursive-self-conformance-case")}
+        ${renderedLiveCase.tocHtml}
+      </aside>
+      <article class="panel doc-content">${renderedLiveCase.html}</article>
+    </section>`,
+  });
+  const liveCaseOutput = kfdRecursiveSelfConformanceCase.url.replace(/^\/+|\/+$/g, "");
+  writeFile(`kfd/${liveCaseOutput}/index.html`, liveCaseHtml);
+  writeFile(`${liveCaseOutput}/index.html`, liveCaseHtml);
+}
+
 const renderedKfdCandidateIndex = renderDecisionMarkdown(
   rewritePackageMarkdownLinks(kfdSite.kfdCandidates.indexMarkdown, "kungfu-systems/kfd", {
     filePattern: /\.md$|registry\.json$/,
@@ -7421,6 +7761,18 @@ const kfdCandidateIndexHtml = page({
       <h1>KFD Candidates</h1>
       <p class="lead">${escapeHtml(kfdSite.kfdCandidates.authorityNote)}</p>
     </section>
+
+    ${kfdSelfConformancePage ? `<section class="panel" data-recursive-candidate-summary>
+      <p class="eyebrow">Self-conformance result</p>
+      <h2>Recursive normative self-conformance: no new KFD</h2>
+      <p>The package records the Candidate as <code>${escapeHtml(kfdSelfConformancePage.recursiveCase.candidate.status)}</code> into the existing closure and the live case as <code>${escapeHtml(kfdSelfConformancePage.recursiveCase.liveCase.status)}</code> with outcome <code>${escapeHtml(kfdSelfConformancePage.recursiveCase.liveCase.outcome)}</code>. It remains non-normative and has no allocated number.</p>
+      <div class="card-actions">
+        <a class="card-action" href="${escapeAttr(`${kfdSelfConformancePage.recursiveCase.candidate.url.replace(/\/+$/, "")}/`)}">Candidate lineage</a>
+        <a class="card-action secondary" href="${escapeAttr(`${kfdSelfConformancePage.recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
+        <a class="card-action secondary" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">Self-Conformance Profile</a>
+      </div>
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSelfConformancePage.recursiveCase.candidate.claimBoundary)}</p>
+    </section>` : ""}
 
     <section class="doc-layout">
       <aside class="doc-sidebar">
@@ -7474,6 +7826,9 @@ for (const candidatePage of kfdCandidatePages) {
     "Candidate sections",
     { tocLinks: candidateTocLinks },
   );
+  const selfConformanceCandidate = candidatePage.id === kfdSelfConformancePage?.recursiveCase?.id
+    ? kfdSelfConformancePage.recursiveCase
+    : undefined;
   const candidateHtml = page({
     title: `${candidatePage.title} | KFD Candidates`,
     description: candidatePage.claimBoundary,
@@ -7484,6 +7839,16 @@ for (const candidatePage of kfdCandidatePages) {
         <h1>${escapeHtml(candidatePage.title)}</h1>
         <p class="lead">${escapeHtml(candidatePage.claimBoundary)}</p>
       </section>
+
+      ${selfConformanceCandidate ? `<section class="panel" data-recursive-candidate-status>
+        <p class="eyebrow">Terminal self-conformance status</p>
+        <h2>Merged into the existing closure; no number allocated</h2>
+        <p><code>${escapeHtml(selfConformanceCandidate.candidate.status)}</code> here records the authority-separated <code>${escapeHtml(selfConformanceCandidate.liveCase.outcome)}</code> result. It does not mean Git merge, activation, certification, publication, or release.</p>
+        <div class="card-actions">
+          <a class="card-action" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">How KFD changes itself</a>
+          <a class="card-action secondary" href="${escapeAttr(`${selfConformanceCandidate.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
+        </div>
+      </section>` : ""}
 
       <section class="doc-layout">
         <aside class="doc-sidebar">
@@ -7501,7 +7866,7 @@ for (const candidatePage of kfdCandidatePages) {
           <dt>Status</dt>
           <dd><code>${escapeHtml(candidatePage.status)}</code></dd>
           <dt>Slot hint</dt>
-          <dd><code>${escapeHtml(String(candidatePage.slotHint))}</code></dd>
+          <dd><code>${escapeHtml(candidatePage.slotHint == null ? "none" : String(candidatePage.slotHint))}</code></dd>
           <dt>Relationship</dt>
           <dd><code>${escapeHtml(kfdSite.candidatePages.relationship)}</code></dd>
           <dt>Normative</dt>
@@ -8134,7 +8499,7 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.schemaPath}`,
     })),
-    ...kfdIndependentVerificationAssets.map((entry) => ({
+    ...kfdStandaloneMachineAssets.map((entry) => ({
       path: `/${entry.outputPath}`,
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${entry.sourcePath}`,
@@ -8149,6 +8514,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
     },
+    ...(kfdRecursiveSelfConformanceCase ? [{
+      path: kfdRecursiveSelfConformanceCasePath,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
+    }] : []),
     {
       path: "/cases/registry.json",
       host: surfaceCanonicalHost("kfd"),
@@ -8323,6 +8693,8 @@ const kfdAgentManifest = {
     decisions: surfaceEndpointHref("kfd", "decisions/"),
     agentHub: surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
     independentVerification: surfaceEndpointHref("kfd", "verify/"),
+    selfConformance: surfaceEndpointHref("kfd", "verify/self-conformance/"),
+    recursiveSelfConformanceCase: surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/"),
   },
   agentEntries: {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
@@ -8342,6 +8714,11 @@ const kfdAgentManifest = {
     independentVerificationAssets: Object.fromEntries(
       kfdIndependentVerificationAssets.map((entry) => [entry.role, surfaceEndpointHref("kfd", entry.outputPath)]),
     ),
+    selfConformance: surfaceEndpointHref("kfd", "verify/self-conformance/"),
+    selfConformanceAssets: Object.fromEntries(
+      kfdSelfConformanceAssets.map((entry) => [entry.role, surfaceEndpointHref("kfd", entry.outputPath)]),
+    ),
+    recursiveSelfConformanceCase: surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/"),
   },
   readerContract: {
     contract: site.readerContract.contract,
@@ -8363,6 +8740,17 @@ const kfdAgentManifest = {
     standardsContract: kfdStandards.contract,
   },
   independentImplementation: kfdSite.homepage.independentImplementation,
+  verificationLanes: kfdSite.verificationLanes,
+  selfConformance: kfdSelfConformancePage ? {
+    ...kfdSelfConformancePage,
+    path: `${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`,
+    url: surfaceEndpointHref("kfd", "verify/self-conformance/"),
+    source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSelfConformancePage.sourcePath}`,
+    machineAssets: kfdSelfConformancePage.machineAssets.map((entry) => ({
+      ...entry,
+      url: surfaceEndpointHref("kfd", String(entry.url || "").replace(/^\/+/, "")),
+    })),
+  } : undefined,
   readOrder: [
     surfaceCanonicalHref("kfd"),
     surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, "")),
@@ -8375,8 +8763,11 @@ const kfdAgentManifest = {
     surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json"),
     surfaceEndpointHref("kfd", "activation-contracts.json"),
     ...kfdActivationSchemas.map((entry) => surfaceEndpointHref("kfd", entry.schemaPath)),
-    ...kfdIndependentVerificationAssets.map((entry) => surfaceEndpointHref("kfd", entry.outputPath)),
+    ...kfdStandaloneMachineAssets.map((entry) => surfaceEndpointHref("kfd", entry.outputPath)),
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
+    ...(kfdRecursiveSelfConformanceCasePath
+      ? [surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, ""))]
+      : []),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdCandidateFormalPages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
@@ -8463,6 +8854,12 @@ const kfdAgentManifest = {
     registryContract: kfdCaseRegistry.contract,
     relationship: kfdSite.casesPage.relationship,
     normative: kfdSite.casesPage.normative,
+    live: kfdRecursiveSelfConformanceCase ? [{
+      ...kfdRecursiveSelfConformanceCase,
+      path: kfdRecursiveSelfConformanceCasePath,
+      url: surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, "")),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
+    }] : [],
   },
   candidates: {
     path: kfdCandidateIndexPath,
@@ -8520,7 +8917,7 @@ for (const entry of kfdActivationSchemas) {
   writeFile(`kfd/${entry.schemaPath}`, `${JSON.stringify(entry.body, null, 2)}\n`);
   writeFile(entry.schemaPath, `${JSON.stringify(entry.body, null, 2)}\n`);
 }
-for (const entry of kfdIndependentVerificationAssets) {
+for (const entry of kfdStandaloneMachineAssets) {
   writeBinaryFile(`kfd/${entry.outputPath}`, entry.content);
   writeBinaryFile(entry.outputPath, entry.content);
 }
@@ -8569,6 +8966,22 @@ ${kfdSite.homepage.independentImplementation.steps.map((entry) => `- ${entry.lab
 ${kfdIndependentVerificationAssets.map((entry) => `- ${entry.role}: ${surfaceEndpointHref("kfd", entry.outputPath)} (${entry.digest})`).join("\n")}
 - Claim boundary: ${kfdIndependentVerificationPage?.warrantEvidence?.claimBoundary || kfdIndependentVerificationPage?.authorityNote || "See the package-owned verification guide."}
 
+Governed KFD self-change:
+- Human guide: ${surfaceEndpointHref("kfd", "verify/self-conformance/")}
+- Verification lanes: ${(kfdSite.verificationLanes || []).map((entry) => `${entry.id}=${surfaceEndpointHref("kfd", `${entry.url.replace(/^\/+|\/+$/g, "")}/`)}`).join(", ")}
+- Profile: ${kfdSelfConformancePage.profile.id}@${kfdSelfConformancePage.profile.version} [${kfdSelfConformancePage.profile.status}; normative=${kfdSelfConformancePage.normative}]
+- Candidate: ${kfdSelfConformancePage.recursiveCase.candidate.status}; normative=${kfdSelfConformancePage.recursiveCase.candidate.normative}; number allocated=${kfdSelfConformancePage.recursiveCase.terminal.numberAllocated}
+- Live case: ${surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/")} [${kfdSelfConformancePage.recursiveCase.liveCase.status}; ${kfdSelfConformancePage.recursiveCase.liveCase.outcome}]
+- Terminal outcome: ${kfdSelfConformancePage.recursiveCase.terminal.outcome}
+- Request root: ${kfdSelfConformancePage.recursiveCase.terminal.requestRoot}
+- Fixed package root: ${kfdSelfConformancePage.recursiveCase.terminal.fixedPackageRoot}
+- Terminal bundle root: ${kfdSelfConformancePage.recursiveCase.terminal.terminalBundleRoot}
+- Terminal report root: ${kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot}
+${kfdSelfConformancePage.commands.map((entry) => `- ${entry.label}: ${entry.command}`).join("\n")}
+${kfdSelfConformanceAssets.map((entry) => `- ${entry.role}: ${surfaceEndpointHref("kfd", entry.outputPath)} (${entry.digest})`).join("\n")}
+- Release boundary: ${kfdSelfConformancePage.releaseSeparation.note}
+- Claim boundary: ${kfdSelfConformancePage.authorityNote} ${kfdSelfConformancePage.verifierBoundary.claimBoundary}
+
 Agent-first entries:
 - ${surfaceEndpointHref("kfd", "manifest.json")}
 - ${surfaceEndpointHref("kfd", kfdAgentHubPath.replace(/^\/+/, ""))}
@@ -8580,7 +8993,9 @@ Agent-first entries:
 - ${surfaceEndpointHref("kfd", "schemas/kfd-terminology.schema.json")}
 - ${surfaceEndpointHref("kfd", "activation-contracts.json")}
 ${kfdActivationSchemas.map((entry) => `- ${surfaceEndpointHref("kfd", entry.schemaPath)}`).join("\n")}
-${kfdIndependentVerificationAssets.map((entry) => `- ${surfaceEndpointHref("kfd", entry.outputPath)}`).join("\n")}
+${kfdStandaloneMachineAssets.map((entry) => `- ${surfaceEndpointHref("kfd", entry.outputPath)}`).join("\n")}
+- ${surfaceEndpointHref("kfd", "verify/self-conformance/")}
+- ${surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/")}
 - ${surfaceEndpointHref("kfd", "llms.txt")}
 
 Read order:
@@ -8613,6 +9028,16 @@ Installed Kungfu Agent Hub qualification:
 - Verify: ${kfdSite.agentHubPage.firstPartyProductProjection.verify}
 - Ownership: ${kfdSite.agentHubPage.firstPartyProductProjection.ownership}
 - Claim boundary: ${kfdSite.agentHubPage.claimBoundary}
+
+KFD governed self-change:
+- Human guide: ${surfaceEndpointHref("kfd", "verify/self-conformance/")}
+- Closed live case: ${surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/")}
+- Package: ${kfdPackage.name}@${kfdPackage.version}
+- Integrity: ${kfdLock.integrity}
+- Candidate status: ${kfdSelfConformancePage.recursiveCase.candidate.status}; normative=${kfdSelfConformancePage.recursiveCase.candidate.normative}; number allocated=${kfdSelfConformancePage.recursiveCase.terminal.numberAllocated}
+- Case status: ${kfdSelfConformancePage.recursiveCase.liveCase.status}; outcome=${kfdSelfConformancePage.recursiveCase.liveCase.outcome}
+- Terminal report root: ${kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot}
+- Claim boundary: ${kfdSelfConformancePage.authorityNote} ${kfdSelfConformancePage.releaseSeparation.note}
 
 Guided synthesis:
 ${site.readerContract.guidedSynthesis.heading}

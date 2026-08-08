@@ -135,7 +135,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.55` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.56` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -148,6 +148,11 @@ Bundle-declared formal candidate children are rendered under
 authority and both human and agent surfaces expose the declared relationship.
 Bundle-declared pre-number candidates are rendered under `/drafts/` with their
 non-normative status, claim boundary, and machine registry preserved.
+The package-owned Self-Conformance lane is rendered under
+`/verify/self-conformance/`, with the reciprocal closed recursive case under
+`/cases/live/recursive-normative-self-conformance/`. Exact Profile and terminal
+evidence assets are copied byte-for-byte; the Site preserves the package's
+no-new-KFD and non-authority boundaries.
 The package-owned KFD-11 through KFD-13 draft activation discovery manifest and
 its adopter-witness, qualification-report, and activation-record schemas are
 published as stable machine entries. Their draft, non-normative status and

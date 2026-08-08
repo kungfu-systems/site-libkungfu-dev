@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@kungfu-tech/buildchain": "3.0.6-alpha.0",
-    "@kungfu-tech/kfd": "1.0.0-alpha.55",
+    "@kungfu-tech/kfd": "1.0.0-alpha.56",
     "@kungfu-tech/paper-episodes-to-primitives": "0.1.0-alpha.2",
     "@kungfu-tech/paper-kfd-foundation-real-world-agent-work": "0.1.0-alpha.8",
     "@kungfu-tech/paper-kfd-machine-life-roadmap": "0.1.0-alpha.11",

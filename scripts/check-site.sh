@@ -248,6 +248,12 @@ const kfdIndependentVerificationPage = kfdStandalonePages.find(
   (entry) => entry.id === "independent-verification",
 );
 const kfdIndependentVerificationAssets = kfdIndependentVerificationPage?.machineAssets || [];
+const kfdSelfConformancePage = kfdStandalonePages.find((entry) => entry.id === "self-conformance");
+const kfdSelfConformanceAssets = kfdSelfConformancePage?.machineAssets || [];
+const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((entry) => entry.machineAssets || []);
+const kfdRecursiveSelfConformanceCase = kfdSite.liveCases?.cases?.find(
+  (entry) => entry.id === "recursive-normative-self-conformance",
+);
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -262,7 +268,7 @@ const requiredFiles = [
     `dist/kfd/${entry.schemaPath}`,
     `dist/${entry.schemaPath}`,
   ]),
-  ...kfdIndependentVerificationAssets.flatMap((entry) => {
+  ...kfdStandaloneMachineAssets.flatMap((entry) => {
     const output = entry.url.replace(/^\/+/, "");
     return [`dist/kfd/${output}`, `dist/${output}`];
   }),
@@ -284,6 +290,8 @@ const requiredFiles = [
       `dist/${output}/index.html`,
     ];
   }),
+  "dist/kfd/cases/live/recursive-normative-self-conformance/index.html",
+  "dist/cases/live/recursive-normative-self-conformance/index.html",
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
@@ -958,6 +966,33 @@ if (
 ) {
   throw new Error("KFD site bundle must expose the bounded independent implementation and verification contract");
 }
+if (
+  !kfdSelfConformancePage
+  || kfdSelfConformancePage.url !== "/verify/self-conformance"
+  || kfdSelfConformancePage.sourcePath !== "profiles/self-conformance/README.md"
+  || kfdSelfConformancePage.relationship !== "package-owned-governed-self-change-projection"
+  || kfdSelfConformancePage.normative !== false
+  || kfdSelfConformancePage.rendering?.kind !== "self-conformance-guide"
+  || kfdSelfConformancePage.profile?.id !== "kfd-self-conformance"
+  || kfdSelfConformancePage.profile?.version !== "1.0.0-alpha.1"
+  || kfdSelfConformancePage.releaseSeparation?.verifierNecessary !== true
+  || kfdSelfConformancePage.releaseSeparation?.verifierSufficient !== false
+  || kfdSelfConformancePage.releaseSeparation?.releaseAuthoritySeparate !== true
+  || kfdSelfConformancePage.recursiveCase?.candidate?.status !== "merged"
+  || kfdSelfConformancePage.recursiveCase?.candidate?.normative !== false
+  || kfdSelfConformancePage.recursiveCase?.liveCase?.status !== "closed"
+  || kfdSelfConformancePage.recursiveCase?.liveCase?.outcome !== "no-new-primitive"
+  || kfdSelfConformancePage.recursiveCase?.terminal?.outcome !== "non-promotion"
+  || kfdSelfConformancePage.recursiveCase?.terminal?.numberAllocated !== false
+  || kfdSelfConformancePage.recursiveCase?.terminal?.statusChanged !== false
+  || kfdSelfConformancePage.recursiveCase?.terminal?.releaseAuthorized !== false
+  || kfdSelfConformanceAssets.length !== 7
+  || kfdSite.verificationLanes?.map((entry) => entry.id).join(",") !== "independent-implementation,governed-self-change"
+  || !kfdRecursiveSelfConformanceCase
+  || kfdRecursiveSelfConformanceCase.status !== "closed"
+) {
+  throw new Error("KFD site bundle must expose the bounded governed self-change contract and closed recursive case");
+}
 for (const pageEntry of kfdStandalonePages) {
   if (
     !pageEntry.id
@@ -966,7 +1001,7 @@ for (const pageEntry of kfdStandalonePages) {
     || !pageEntry.url?.startsWith("/")
     || !pageEntry.relationship
     || typeof pageEntry.normative !== "boolean"
-    || pageEntry.rendering?.kind !== "markdown-document"
+    || !["markdown-document", "self-conformance-guide"].includes(pageEntry.rendering?.kind)
     || !pageEntry.markdown
   ) {
     throw new Error(`KFD standalone page contract mismatch: ${pageEntry.id || pageEntry.url || "unknown"}`);
@@ -1759,6 +1794,22 @@ for (const pageEntry of kfdStandalonePages) {
     throw new Error(`dist manifest does not record KFD standalone page: ${pageEntry.id}`);
   }
 }
+for (const asset of kfdStandaloneMachineAssets) {
+  if (!manifest.pages.some(
+    (page) => page.host === expectedSurfaceHost("kfd")
+      && page.path === asset.url
+      && page.source.endsWith(`/${asset.sourcePath}`),
+  )) {
+    throw new Error(`dist manifest does not record KFD standalone machine asset: ${asset.sourcePath}`);
+  }
+}
+if (!manifest.pages.some(
+  (page) => page.host === expectedSurfaceHost("kfd")
+    && page.path === "/cases/live/recursive-normative-self-conformance/"
+    && page.source.endsWith(`/${kfdRecursiveSelfConformanceCase.humanEntry.path}`),
+)) {
+  throw new Error("dist manifest does not record the recursive self-conformance live case");
+}
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
@@ -1839,6 +1890,10 @@ if (
   kfdAgentManifest.agentEntries?.agentHub !== expectedSurfaceEndpoint("kfd", "agent-hub/")
   || kfdAgentManifest.agentEntries?.activationContracts !== expectedSurfaceEndpoint("kfd", "activation-contracts.json")
   || kfdAgentManifest.agentEntries?.independentVerification !== expectedSurfaceEndpoint("kfd", "verify/")
+  || kfdAgentManifest.humanEntries?.selfConformance !== expectedSurfaceEndpoint("kfd", "verify/self-conformance/")
+  || kfdAgentManifest.agentEntries?.selfConformance !== expectedSurfaceEndpoint("kfd", "verify/self-conformance/")
+  || kfdAgentManifest.humanEntries?.recursiveSelfConformanceCase !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
+  || kfdAgentManifest.agentEntries?.recursiveSelfConformanceCase !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
 }
@@ -1931,6 +1986,37 @@ for (const asset of kfdIndependentVerificationAssets) {
     || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output))
   ) {
     throw new Error(`KFD independent-verification machine asset drifted: ${asset.sourcePath}`);
+  }
+}
+if (
+  JSON.stringify(kfdAgentManifest.verificationLanes) !== JSON.stringify(kfdSite.verificationLanes)
+  || kfdAgentManifest.selfConformance?.path !== "/verify/self-conformance/"
+  || kfdAgentManifest.selfConformance?.url !== expectedSurfaceEndpoint("kfd", "verify/self-conformance/")
+  || kfdAgentManifest.selfConformance?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSelfConformancePage.sourcePath}`
+  || JSON.stringify(kfdAgentManifest.selfConformance?.profile) !== JSON.stringify(kfdSelfConformancePage.profile)
+  || JSON.stringify(kfdAgentManifest.selfConformance?.recursiveCase?.terminal) !== JSON.stringify(kfdSelfConformancePage.recursiveCase.terminal)
+  || kfdAgentManifest.cases?.live?.[0]?.id !== kfdRecursiveSelfConformanceCase.id
+  || kfdAgentManifest.cases?.live?.[0]?.status !== "closed"
+  || kfdAgentManifest.cases?.live?.[0]?.url !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "verify/self-conformance/"))
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/"))
+) {
+  throw new Error("KFD agent manifest must preserve the package-owned self-conformance and recursive-case facts");
+}
+for (const asset of kfdSelfConformanceAssets) {
+  const output = asset.url.replace(/^\/+/, "");
+  const source = fs.readFileSync(`node_modules/@kungfu-tech/kfd/${asset.sourcePath}`);
+  const canonical = fs.readFileSync(`dist/kfd/${output}`);
+  const alias = fs.readFileSync(`dist/${output}`);
+  const digest = `sha256:${crypto.createHash("sha256").update(source).digest("hex")}`;
+  if (
+    digest !== asset.digest
+    || !canonical.equals(source)
+    || !alias.equals(source)
+    || kfdAgentManifest.agentEntries?.selfConformanceAssets?.[asset.role] !== expectedSurfaceEndpoint("kfd", output)
+    || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output))
+  ) {
+    throw new Error(`KFD self-conformance machine asset drifted: ${asset.sourcePath}`);
   }
 }
 if (!Array.isArray(kfdAgentManifest.decisions) || kfdAgentManifest.decisions.length !== kfdRegistry.entries.length) {
@@ -2319,21 +2405,53 @@ if (JSON.stringify(kfdAgentManifest.independentImplementation) !== JSON.stringif
   throw new Error("KFD machine manifest must project homepage.independentImplementation exactly");
 }
 const kfdIndependentPosition = kfdHomeHtml.indexOf('id="independent-implementation"');
+const kfdSelfConformancePosition = kfdHomeHtml.indexOf('id="self-conformance"');
 const kfdAuthorityPositionOnHome = kfdHomeHtml.indexOf('id="kfd-authority"');
+const kfdFoundationPosition = kfdHomeHtml.indexOf('id="foundation-triad"');
 const kfdInstalledProjectionPosition = kfdHomeHtml.indexOf('id="agent-hub-qualification"');
+const kfdActivationPosition = kfdHomeHtml.indexOf('id="activation-contracts"');
+const kfdFirstCommandPosition = kfdHomeHtml.indexOf('<pre class="kfd-command">');
+const kfdHomeH1s = [...kfdHomeHtml.matchAll(/<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/g)];
 if (
-  kfdIndependentPosition < 0
-  || kfdAuthorityPositionOnHome <= kfdIndependentPosition
-  || kfdInstalledProjectionPosition <= kfdIndependentPosition
+  kfdAuthorityPositionOnHome < 0
+  || kfdFoundationPosition <= kfdAuthorityPositionOnHome
+  || kfdIndependentPosition <= kfdFoundationPosition
+  || kfdSelfConformancePosition <= kfdIndependentPosition
+  || kfdInstalledProjectionPosition <= kfdSelfConformancePosition
+  || kfdActivationPosition <= kfdInstalledProjectionPosition
+  || kfdFirstCommandPosition <= kfdIndependentPosition
+  || kfdHomeH1s.length !== 1
+  || kfdHomeH1s[0][1] !== escapeHtml(kfdSite.homepage.title)
   || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.promise))
   || !kfdHomeHtml.includes('aria-label="Supported adapter languages"')
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
 ) {
-  throw new Error("KFD homepage must render the independent path before authority detail and installed Kungfu projection");
+  throw new Error("KFD homepage hierarchy must be identity, foundation, independent implementation, Self-Conformance, installed Kungfu, then activation interfaces");
+}
+if (
+  !kfdHomeHtml.includes('<a class="reader-action" href="#foundation-triad">Understand KFD</a>')
+  || !kfdHomeHtml.includes('<a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>')
+) {
+  throw new Error("KFD homepage hero must expose the accepted Understand and independent-implementation actions");
+}
+if (
+  !kfdHomeHtml.includes(escapeHtml(kfdSite.homepage.selfConformance.label))
+  || !kfdHomeHtml.includes(escapeHtml(kfdSite.homepage.selfConformance.claimBoundary))
+  || !kfdHomeHtml.includes('href="/verify/self-conformance/"')
+  || !kfdHomeHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
+  || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code>`)
+  || !kfdHomeHtml.includes("no allocated number")
+  || !kfdLlms.includes("Governed KFD self-change:")
+  || !kfdLlms.includes(kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot)
+) {
+  throw new Error("KFD homepage and llms entry must expose the package-owned governed self-change path prominently");
 }
 for (const language of kfdIndependentImplementation.supportedLanguages) {
-  if (!kfdHomeHtml.includes(`data-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)) {
+  if (
+    !kfdHomeHtml.includes(`data-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)
+    || !kfdHomeHtml.includes(`data-kfd-proof-language="${escapeHtml(language.id)}">${escapeHtml(language.label)}</li>`)
+  ) {
     throw new Error(`KFD homepage is missing independent adapter language: ${language.id}`);
   }
 }
@@ -2344,6 +2462,12 @@ for (const step of kfdIndependentImplementation.steps) {
     || !kfdLlms.includes(`- ${step.label}: ${step.command}`)
   ) {
     throw new Error(`KFD homepage or llms entry drifted from independent step: ${step.id}`);
+  }
+  if (
+    (step.id === "test" || step.id === "verify")
+    && !kfdHomeHtml.includes(`data-kfd-proof-step="${escapeHtml(step.id)}">${escapeHtml(step.label)}</li>`)
+  ) {
+    throw new Error(`KFD homepage proof strip is missing package-owned step: ${step.id}`);
   }
 }
 if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 3) {
@@ -2381,41 +2505,37 @@ for (const [label, html, maximum] of [
   }
 }
 const kfdReaderPath = readerContract.surfacePaths.find((entry) => entry.id === "kfd");
-const kfdQuestionPosition = kfdHomeHtml.indexOf(escapeHtml(kfdReaderPath.question));
-const kfdAuthorityPosition = kfdHomeHtml.indexOf(escapeHtml(kfdSite.homepage.title), kfdQuestionPosition + 1);
+const kfdAuthorityPosition = kfdHomeHtml.indexOf(`<h1>${escapeHtml(kfdSite.homepage.title)}</h1>`);
+const kfdQuestionPosition = kfdHomeHtml.indexOf('data-kfd-future-picture="question"', kfdAuthorityPosition + 1);
 if (
-  kfdQuestionPosition < 0
-  || kfdAuthorityPosition <= kfdQuestionPosition
+  kfdAuthorityPosition < 0
+  || kfdQuestionPosition <= kfdAuthorityPosition
   || !kfdHomeHtml.includes('data-reader-surface="kfd"')
   || !kfdLlms.includes(kfdReaderPath.question)
   || !kfdLlms.includes(kfdReaderPath.promise)
 ) {
-  throw new Error("KFD must present the site-owned reader question before bundle-owned authority in human and agent entries");
+  throw new Error("KFD must present its package-owned identity before the secondary continuity question while retaining the agent reader path");
 }
 const kfdFuturePicture = kfdSite.homepage.futurePicture || {};
 const kfdFutureQuestion = kfdFuturePicture.question
   || kfdFuturePicture.pastToFuture
   || kfdSite.homepage.lead;
+const kfdEngineeringAnswer = kfdFuturePicture.engineeringAnswer
+  || kfdFuturePicture.kungfuPath;
+const kfdDefinition = kfdEngineeringAnswer?.match(/^.*?\.(?:\s|$)/u)?.[0]?.trim();
+const kfdFoundingBoundary = kfdFuturePicture.claimBoundary?.match(/Kungfu is[^.]*\./u)?.[0];
 if (kfdHomeHtml.includes('name="robots"') && kfdHomeHtml.includes("noindex")) {
   throw new Error("KFD production artifact must not embed robots noindex metadata");
 }
 if (
   !kfdHomeHtml.includes('data-kfd-future-picture="question"')
   || !kfdHomeHtml.includes(escapeHtml(kfdFutureQuestion.replace(/\*\*/g, "").slice(0, 24)))
+  || !kfdDefinition
+  || !kfdHomeHtml.includes(`<p class="kfd-homepage-definition" data-kfd-homepage-definition>${escapeHtml(kfdDefinition)}</p>`)
+  || !kfdFoundingBoundary
+  || !kfdHomeHtml.includes(`<p class="kfd-adoption-boundary" data-kfd-founding-boundary>${escapeHtml(kfdFoundingBoundary)}</p>`)
 ) {
-  throw new Error("KFD homepage must render the bundle-owned core question");
-}
-for (const [field, compatibilityField, marker] of [
-  ["engineeringAnswer", "kungfuPath", "engineering-answer"],
-  ["claimBoundary", undefined, "claim-boundary"],
-]) {
-  const value = kfdFuturePicture[field] || (compatibilityField ? kfdFuturePicture[compatibilityField] : undefined);
-  if (value && (
-    !kfdHomeHtml.includes(`data-kfd-future-picture="${marker}"`)
-    || !kfdHomeHtml.includes(escapeHtml(value))
-  )) {
-    throw new Error(`KFD homepage must render homepage.futurePicture.${field}`);
-  }
+  throw new Error("KFD homepage must render the exact package-owned definition, continuity question, and founding-implementation boundary");
 }
 if (kfdHomeHtml.includes('data-kfd-section="future-picture"')) {
   throw new Error("KFD homepage must not duplicate the future-picture section below the hero");
@@ -2478,10 +2598,11 @@ if (
   throw new Error("KFD overview must route complete standards and metadata to /decisions/");
 }
 if (
-  !kfdHomeHtml.includes('class="hero-answer" style="max-width: 820px; color: var(--fg); font-size: 18px; line-height: 1.5;"')
-  || !kfdHomeHtml.includes('class="hero-claim-boundary" style="max-width: 820px; font-size: 14px; line-height: 1.55;"')
+  !kfdHomeHtml.includes('class="hero kfd-homepage-hero"')
+  || !kfdHomeHtml.includes('class="kfd-continuity-question"')
+  || !kfdHomeHtml.includes('class="kfd-proof-strip"')
 ) {
-  throw new Error("KFD future picture must retain its scoped hero typography");
+  throw new Error("KFD first hero must retain the accepted identity, secondary-question, and proof-strip composition");
 }
 if (
   kfdDetailHtml.includes("<p>### Why KFD-4 is the first derived operator</p>")
@@ -2607,6 +2728,81 @@ if (
   || !kfdIndependentVerificationHtml.includes("selfCertified: false")
 ) {
   throw new Error("KFD independent-verification page must preserve the package-owned method and non-certifying boundary");
+}
+const kfdSelfConformanceHtml = fs.readFileSync("dist/kfd/verify/self-conformance/index.html", "utf8");
+if (fs.readFileSync("dist/verify/self-conformance/index.html", "utf8") !== kfdSelfConformanceHtml) {
+  throw new Error("KFD self-conformance route alias drifted");
+}
+for (const lane of kfdSite.verificationLanes) {
+  if (
+    !kfdIndependentVerificationHtml.includes(`data-verification-lane="${escapeHtml(lane.id)}"`)
+    || !kfdSelfConformanceHtml.includes(`data-verification-lane="${escapeHtml(lane.id)}"`)
+  ) {
+    throw new Error(`KFD verification pages must preserve lane ${lane.id}`);
+  }
+}
+for (const asset of kfdSelfConformanceAssets) {
+  if (!kfdSelfConformanceHtml.includes(`href="${escapeHtml(asset.url)}"`)) {
+    throw new Error(`KFD self-conformance page must link exact machine asset: ${asset.sourcePath}`);
+  }
+}
+for (const requiredText of [
+  "How KFD changes itself",
+  "Governed self-change, with authority kept separate",
+  kfdSelfConformancePage.profile.id,
+  kfdSelfConformancePage.profile.version,
+  kfdSelfConformancePage.commands[0].command,
+  kfdSelfConformancePage.commands[1].command,
+  kfdSelfConformancePage.recursiveCase.liveCase.outcome,
+  kfdSelfConformancePage.recursiveCase.terminal.requestRoot,
+  kfdSelfConformancePage.recursiveCase.terminal.fixedPackageRoot,
+  kfdSelfConformancePage.recursiveCase.terminal.terminalBundleRoot,
+  kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot,
+]) {
+  if (!kfdSelfConformanceHtml.includes(escapeHtml(requiredText))) {
+    throw new Error(`KFD self-conformance page missing fixed package fact: ${requiredText}`);
+  }
+}
+if (
+  !kfdSelfConformanceHtml.includes('href="/drafts/recursive-normative-self-conformance/"')
+  || !kfdSelfConformanceHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
+  || !kfdSelfConformanceHtml.includes("Verifier sufficient</dt><dd><code>false</code>")
+  || !kfdSelfConformanceHtml.includes("Number allocated</dt><dd><code>false</code>")
+  || !kfdSelfConformanceHtml.includes("Release authorized</dt><dd><code>false</code>")
+  || /verifier (?:approves|authorizes|certifies|allocates)/i.test(kfdSelfConformanceHtml)
+  || /site (?:approves|authorizes|certifies|allocates)/i.test(kfdSelfConformanceHtml)
+) {
+  throw new Error("KFD self-conformance page must retain reciprocal routes and reject verifier or Site authority overreach");
+}
+const kfdRecursiveCaseHtml = fs.readFileSync("dist/kfd/cases/live/recursive-normative-self-conformance/index.html", "utf8");
+if (fs.readFileSync("dist/cases/live/recursive-normative-self-conformance/index.html", "utf8") !== kfdRecursiveCaseHtml) {
+  throw new Error("KFD recursive self-conformance live-case alias drifted");
+}
+for (const requiredText of [
+  kfdRecursiveSelfConformanceCase.title,
+  kfdRecursiveSelfConformanceCase.claimBoundary,
+  "Closed without a new Primitive or KFD number",
+  kfdSelfConformancePage.recursiveCase.liveCase.outcome,
+  kfdSelfConformancePage.recursiveCase.terminal.requestRoot,
+  kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot,
+]) {
+  if (!kfdRecursiveCaseHtml.includes(escapeHtml(requiredText))) {
+    throw new Error(`KFD recursive live case missing package-owned fact: ${requiredText}`);
+  }
+}
+if (
+  !kfdRecursiveCaseHtml.includes('href="/verify/self-conformance/"')
+  || !kfdRecursiveCaseHtml.includes('href="/drafts/recursive-normative-self-conformance/"')
+) {
+  throw new Error("KFD recursive live case must link back to the Profile and Candidate lineage");
+}
+if (
+  !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/">Self-Conformance</a>')
+  || !kfdRecursiveCaseHtml.includes(`<a class="doc-nav-child" href="/cases/live/recursive-normative-self-conformance/" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`)
+  || kfdRecursiveCaseHtml.includes('<a href="/cases/" aria-current="page">Historical cases</a>')
+  || !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a>')
+) {
+  throw new Error("KFD recursive live case must belong to Self-Conformance navigation without marking Historical cases current");
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
@@ -2741,6 +2937,15 @@ if (
 ) {
   throw new Error("KFD candidate index is missing navigation or its machine registry link");
 }
+if (
+  !kfdCandidateIndexCanonicalHtml.includes('data-recursive-candidate-summary')
+  || !kfdCandidateIndexCanonicalHtml.includes('href="/drafts/recursive-normative-self-conformance/"')
+  || !kfdCandidateIndexCanonicalHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
+  || !kfdCandidateIndexCanonicalHtml.includes('href="/verify/self-conformance/"')
+  || !kfdCandidateIndexCanonicalHtml.includes("It remains non-normative and has no allocated number.")
+) {
+  throw new Error("KFD candidate index must expose the recursive no-new-KFD result and reciprocal evidence routes");
+}
 const candidateNavPosition = kfdCandidateIndexCanonicalHtml.indexOf(
   `<a href="${escapeHtml(kfdCandidateIndexPath)}" aria-current="page">Candidates</a>`,
 );
@@ -2771,6 +2976,18 @@ for (const candidate of kfdCandidatePages) {
   }
   if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(candidateCanonicalHtml)) {
     throw new Error(`KFD candidate page has unresolved package markdown links: ${candidate.id}`);
+  }
+  if (
+    candidate.id === "recursive-normative-self-conformance"
+    && (
+      !candidateCanonicalHtml.includes('data-recursive-candidate-status')
+      || !candidateCanonicalHtml.includes('href="/verify/self-conformance/"')
+      || !candidateCanonicalHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
+      || !candidateCanonicalHtml.includes("no number allocated")
+      || !candidateCanonicalHtml.includes("does not mean Git merge, activation, certification, publication, or release")
+    )
+  ) {
+    throw new Error("recursive self-conformance Candidate must retain terminal status and reciprocal evidence routes");
   }
   const formalCandidate = kfdCandidateFormalPageByCandidateId.get(candidate.id);
   if (
