@@ -2671,6 +2671,18 @@ ${current === "papers" ? "" : `
       color: var(--accent-strong);
     }
 
+    .reader-action.tertiary {
+      border-color: var(--line);
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .reader-action.tertiary:hover,
+    .reader-action.tertiary:focus-visible {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+    }
+
     .reader-chain {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3197,6 +3209,58 @@ ${current === "papers" ? "" : `
       text-transform: uppercase;
     }
 
+    .kfd-authority-signal {
+      display: grid;
+      gap: 5px;
+      border-left: 3px solid var(--accent);
+      padding: 10px 12px;
+      background: color-mix(in srgb, var(--soft) 82%, var(--accent) 18%);
+    }
+
+    .kfd-authority-signal.strip {
+      margin: 18px 0;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .kfd-content-hero {
+      position: relative;
+      padding-right: 340px;
+    }
+
+    .kfd-authority-signal.hero {
+      position: absolute;
+      top: 48px;
+      right: 0;
+      width: 286px;
+      border-left: 0;
+      border-right: 3px solid var(--accent);
+      padding: 10px 12px;
+      background: transparent;
+      text-align: right;
+    }
+
+    .kfd-authority-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .kfd-authority-link {
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+
+    .kfd-authority-projection {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .doc-toc a,
     .doc-global-nav a {
       color: var(--muted);
@@ -3423,6 +3487,19 @@ ${immutableArchive ? "" : `
       .page-kicker-state {
         width: 100%;
         margin-left: 0;
+        text-align: left;
+      }
+
+      .kfd-content-hero {
+        padding-right: 0;
+      }
+
+      .kfd-authority-signal.hero {
+        position: static;
+        width: auto;
+        border-right: 0;
+        border-left: 3px solid var(--accent);
+        margin-top: 2px;
         text-align: left;
       }
 `}
@@ -4197,6 +4274,16 @@ function decisionPanels(entries) {
 
 function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate, currentCandidateFormal) {
   const currentNumber = currentEntry ? String(currentEntry.number) : undefined;
+  const standaloneNavLink = (pageId) => {
+    const pageEntry = kfdStandalonePages.find((entry) => entry.id === pageId);
+    if (!pageEntry) return "";
+    const childLink = currentPage === "recursive-self-conformance-case"
+      && pageEntry.id === "self-conformance"
+      && kfdRecursiveSelfConformanceCase
+      ? `<a class="doc-nav-child" href="${escapeAttr(`${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`
+      : "";
+    return `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>${childLink}`;
+  };
   const candidateLinks = currentCandidate
     ? [
         `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}"${currentPage === "candidate" ? ' aria-current="page"' : ""}>${escapeHtml(currentCandidate.title)}</a>`,
@@ -4224,18 +4311,31 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
   return `<nav class="doc-global-nav" aria-label="Kung Fu Decisions">
     <h2>Kung Fu Decisions</h2>
     <div class="doc-nav-group">
+      <p class="doc-nav-heading">Orientation</p>
       <a ${surfaceLinkAttrs("kfd")}>Overview</a>
-      <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
       <a href="${escapeAttr(kfdFoundationPath)}"${currentPage === "foundation" ? ' aria-current="page"' : ""}>Foundation model</a>
-      ${kfdStandalonePages.map((pageEntry) => `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>${currentPage === "recursive-self-conformance-case" && pageEntry.id === "self-conformance" && kfdRecursiveSelfConformanceCase
-        ? `<a class="doc-nav-child" href="${escapeAttr(`${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`
-        : ""}`).join("\n")}
+    </div>
+    <div class="doc-nav-group">
+      <p class="doc-nav-heading">Numbered authority</p>
+      ${links}
+    </div>
+    <div class="doc-nav-group">
+      <p class="doc-nav-heading">Implement &amp; verify</p>
+      ${standaloneNavLink("independent-verification")}
+      <a href="${escapeAttr(kfdAgentHubPath)}"${currentPage === "agent-hub" ? ' aria-current="page"' : ""}>Agent Hub qualification</a>
+    </div>
+    <div class="doc-nav-group">
+      <p class="doc-nav-heading">Governance &amp; evolution</p>
+      ${standaloneNavLink("self-conformance")}
+      <a href="${escapeAttr(kfdCandidateIndexPath)}"${currentPage === "candidates" ? ' aria-current="page"' : ""}>Candidates</a>
+      ${candidateLinks}
+    </div>
+    <div class="doc-nav-group">
+      <p class="doc-nav-heading">Evidence &amp; reference</p>
+      ${standaloneNavLink("load-bearing-dogfood")}
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
-      ${links}
-      <a href="${escapeAttr(kfdCandidateIndexPath)}"${currentPage === "candidates" ? ' aria-current="page"' : ""}>Candidates</a>
-      ${candidateLinks}
     </div>
   </nav>`;
 }
@@ -4313,6 +4413,32 @@ const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || "main";
 const kfdSourceHref = (sourcePath = "") =>
   `${kfdSourceRepository}/blob/${encodeURIComponent(kfdSourceRef)}/${sourcePath}`;
+const kfdPublicFactSource = kfdSite.decisionPages?.metadata?.publicFactSource;
+
+if (
+  kfdPublicFactSource?.kind !== "git-repository"
+  || kfdPublicFactSource?.repository !== "kungfu-systems/kfd"
+  || kfdPublicFactSource?.url !== kfdSourceRepository
+) {
+  throw new Error("KFD package must declare the canonical kungfu-systems/kfd public fact source");
+}
+
+function kfdAuthoritySignal({ sourcePath = "", variant = "strip", projectionLabel = "Rendered projection" } = {}) {
+  const sourceHref = sourcePath ? kfdSourceHref(sourcePath) : kfdPublicFactSource.url;
+  const sourceLabel = sourcePath
+    ? `GitHub · ${sourcePath}`
+    : `GitHub · ${kfdPublicFactSource.repository}`;
+  const pinnedLabel = /^[0-9a-f]{40}$/u.test(kfdSourceRef)
+    ? kfdSourceRef.slice(0, 8)
+    : kfdSourceRef;
+  const pinnedHref = `${kfdPublicFactSource.url}/tree/${encodeURIComponent(kfdSourceRef)}`;
+
+  return `<div class="kfd-authority-signal ${escapeAttr(variant)}" data-kfd-authority-signal="canonical-fact-source">
+    <span class="kfd-authority-label">Canonical source</span>
+    <a class="kfd-authority-link" href="${escapeAttr(sourceHref)}">${escapeHtml(sourceLabel)} ↗</a>
+    <span class="kfd-authority-projection">${escapeHtml(projectionLabel)} · <a href="${escapeAttr(pinnedHref)}">pinned ${escapeHtml(pinnedLabel)}</a></span>
+  </div>`;
+}
 const expectedBuildchainVersion = "3.0.6-alpha.0";
 const expectedKfdVersion = kfdPropagationLock?.upstream?.package?.version || "1.0.0-alpha.41";
 const expectedCoreSiteVersion = "4.0.0-alpha.1";
@@ -4815,9 +4941,30 @@ function kfdHomepageHero() {
   const foundingBoundary = claimBoundary?.match(/Kungfu is[^.]*\./u)?.[0];
   const proofSteps = kfdSite.homepage.independentImplementation.steps
     .filter((entry) => entry.id === "test" || entry.id === "verify");
+  const publicFactSource = kfdPublicFactSource;
+  const authorityAction = kfdSite.homepage.authorityAction || {
+    id: "canonical-source",
+    label: "Canonical source on GitHub",
+    url: publicFactSource?.url,
+    relationship: "canonical-fact-source",
+    source: "decisionPages.metadata.publicFactSource",
+    external: true,
+  };
 
-  if (!definition || !foundingBoundary || proofSteps.length !== 2) {
-    throw new Error("KFD package must expose the concise definition, founding boundary, and proof steps");
+  if (
+    !definition
+    || !foundingBoundary
+    || proofSteps.length !== 2
+    || publicFactSource?.kind !== "git-repository"
+    || publicFactSource?.repository !== "kungfu-systems/kfd"
+    || authorityAction.id !== "canonical-source"
+    || authorityAction.label !== "Canonical source on GitHub"
+    || authorityAction.url !== publicFactSource.url
+    || authorityAction.relationship !== "canonical-fact-source"
+    || authorityAction.source !== "decisionPages.metadata.publicFactSource"
+    || authorityAction.external !== true
+  ) {
+    throw new Error("KFD package must expose the concise definition, founding boundary, proof steps, and canonical fact-source action");
   }
 
   return `<section class="hero kfd-homepage-hero" id="kfd-authority" data-reader-surface="kfd">
@@ -4832,6 +4979,7 @@ function kfdHomepageHero() {
     <div class="reader-actions" aria-label="KFD homepage reading paths">
       <a class="reader-action" href="#foundation-triad">Understand KFD</a>
       <a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>
+      <a class="reader-action tertiary" href="${escapeAttr(authorityAction.url)}" data-kfd-authority-action="${escapeAttr(authorityAction.relationship)}">${escapeHtml(authorityAction.label)} ↗</a>
     </div>
     <div class="kfd-proof-strip" aria-label="Independent implementation proof strip">
       <div class="kfd-proof-group">
@@ -7174,10 +7322,14 @@ writeFile(
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
     body: `<section class="hero">
-      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">decisions / complete authority</span></p>
+      <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">decisions / rendered index</span></p>
       <h1>KFD decisions and standards</h1>
-      <p class="lead">Inspect the complete foundation model, adoption boundary, numbered authority, candidates, quickstart, and decision metadata.</p>
+      <p class="lead">Inspect the rendered foundation model, adoption boundary, numbered decisions, candidates, quickstart, and exact repository authority.</p>
     </section>
+    ${kfdAuthoritySignal({
+      sourcePath: kfdSite.homepage.currentDecisions.source,
+      projectionLabel: "Rendered decision index",
+    })}
     <section class="hero">
       <h2 class="authority-title">${escapeHtml(kfdSite.homepage.title)}</h2>
       ${kfdFuturePictureHero()}
@@ -7324,48 +7476,51 @@ const kfdAgentHubPageHtml = page({
   description: kfdSite.agentHubPage.lead,
   current: "kfd",
   alternates: kfdSurfaceAlternates(),
-  body: `<section class="hero">
+  body: `<section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(kfdSite.agentHubPage.status)} / ${escapeHtml(kfdSite.agentHubPage.relationship)}</span></p>
       <h1>${escapeHtml(kfdSite.agentHubPage.title)}</h1>
       <p class="lead">${escapeHtml(kfdSite.agentHubPage.lead)}</p>
+      ${kfdAuthoritySignal({ sourcePath: kfdSite.agentHubPage.authorityPath, variant: "hero" })}
     </section>
 
-    <section class="panel" id="installed-kungfu-qualification">
-      <p class="eyebrow">First-party product projection</p>
-      <h2>Run the fixed suite through installed Kungfu</h2>
-      <pre><code class="language-sh">${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}
-${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></pre>
-      <p>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership)}</p>
-      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSite.agentHubPage.claimBoundary)}</p>
-    </section>
-
-    <section class="panel" id="activation-contracts" style="margin-top: 18px;">
-      <p class="eyebrow">${escapeHtml(kfdActivationContracts.status)} / ${escapeHtml(kfdSite.activationContracts.relationship)}</p>
-      <h2>KFD-11 through KFD-13 activation interfaces</h2>
-      <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
-      <div class="grid" style="margin-top: 18px;">
-        ${Object.values(kfdActivationContracts.interfaces)
-          .map((entry) => `<article class="panel">
-            <h3>${escapeHtml(entry.contract)}</h3>
-            <p><a href="/${escapeAttr(entry.schemaPath)}"><code>${escapeHtml(entry.schemaPath)}</code></a></p>
-          </article>`)
-          .join("\n")}
-      </div>
-      <p class="reader-claim-boundary"><strong>Normative:</strong> <code>${escapeHtml(String(kfdSite.activationContracts.normative))}</code></p>
-      <ul>${kfdActivationContracts.nonClaims.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
-      <div class="card-actions">
-        <a class="card-action" href="/activation-contracts.json">Inspect the discovery manifest</a>
-      </div>
-    </section>
-
-    <section class="doc-layout" style="margin-top: 18px;">
+    <section class="doc-layout">
       <aside class="doc-sidebar">
         ${kfdDecisionNav(undefined, "agent-hub")}
         ${renderedKfdAgentHub.tocHtml}
       </aside>
-      <article class="panel doc-content">
-        ${renderedKfdAgentHub.html}
-      </article>
+      <div class="stack kfd-agent-hub-content">
+        <section class="panel" id="installed-kungfu-qualification">
+          <p class="eyebrow">First-party product projection</p>
+          <h2>Run the fixed suite through installed Kungfu</h2>
+          <pre><code class="language-sh">${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.run)}
+${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></pre>
+          <p>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership)}</p>
+          <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSite.agentHubPage.claimBoundary)}</p>
+        </section>
+
+        <article class="panel doc-content">
+          ${renderedKfdAgentHub.html}
+        </article>
+
+        <section class="panel" id="activation-contracts">
+          <p class="eyebrow">${escapeHtml(kfdActivationContracts.status)} / ${escapeHtml(kfdSite.activationContracts.relationship)}</p>
+          <h2>KFD-11 through KFD-13 activation interfaces</h2>
+          <p>${escapeHtml(kfdSite.activationContracts.authorityNote)}</p>
+          <div class="grid" style="margin-top: 18px;">
+            ${Object.values(kfdActivationContracts.interfaces)
+              .map((entry) => `<article class="panel">
+                <h3>${escapeHtml(entry.contract)}</h3>
+                <p><a href="/${escapeAttr(entry.schemaPath)}"><code>${escapeHtml(entry.schemaPath)}</code></a></p>
+              </article>`)
+              .join("\n")}
+          </div>
+          <p class="reader-claim-boundary"><strong>Normative:</strong> <code>${escapeHtml(String(kfdSite.activationContracts.normative))}</code></p>
+          <ul>${kfdActivationContracts.nonClaims.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul>
+          <div class="card-actions">
+            <a class="card-action" href="/activation-contracts.json">Inspect the discovery manifest</a>
+          </div>
+        </section>
+      </div>
     </section>
 
     <section class="panel" style="margin-top: 18px;">
@@ -7381,8 +7536,8 @@ ${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p
         <dd><code>${escapeHtml(kfdSite.agentHubPage.profile)}</code></dd>
         <dt>Suite</dt>
         <dd><code>${escapeHtml(kfdSite.agentHubPage.suite.id)}@${escapeHtml(kfdSite.agentHubPage.suite.version)}</code></dd>
-        <dt>Source path</dt>
-        <dd><code>${escapeHtml(kfdSite.agentHubPage.authorityPath)}</code></dd>
+        <dt>Projection source</dt>
+        <dd><a href="${escapeAttr(kfdSourceHref(kfdSite.agentHubPage.authorityPath))}">GitHub · <code>${escapeHtml(kfdSite.agentHubPage.authorityPath)}</code> ↗</a></dd>
         <dt>Package</dt>
         <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
       </dl>
@@ -7404,10 +7559,11 @@ const kfdFoundationPageHtml = page({
   description: kfdSite.foundationPage.authorityNote,
   current: "kfd",
   alternates: kfdSurfaceAlternates(),
-  body: `<section class="hero">
+  body: `<section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">explanation / non-normative</span></p>
       <h1>${escapeHtml(kfdSite.foundationPage.title)}</h1>
       <p class="lead">${escapeHtml(kfdSite.foundationPage.authorityNote)}</p>
+      ${kfdAuthoritySignal({ sourcePath: kfdSite.foundationPage.sourcePath, variant: "hero" })}
     </section>
 
     <section class="doc-layout">
@@ -7429,8 +7585,8 @@ const kfdFoundationPageHtml = page({
         <dd><code>${escapeHtml(kfdSite.foundationPage.relationship)}</code></dd>
         <dt>Normative</dt>
         <dd><code>${escapeHtml(String(kfdSite.foundationPage.normative))}</code></dd>
-        <dt>Source path</dt>
-        <dd><code>${escapeHtml(kfdSite.foundationPage.sourcePath)}</code></dd>
+        <dt>Projection source</dt>
+        <dd><a href="${escapeAttr(kfdSourceHref(kfdSite.foundationPage.sourcePath))}">GitHub · <code>${escapeHtml(kfdSite.foundationPage.sourcePath)}</code> ↗</a></dd>
         <dt>Package</dt>
         <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
       </dl>
@@ -7551,10 +7707,11 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
     description: pageEntry.authorityNote,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
+    body: `<section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(kicker)}</span></p>
       <h1>${escapeHtml(pageEntry.title)}</h1>
       <p class="lead">${escapeHtml(pageEntry.authorityNote)}</p>
+      ${kfdAuthoritySignal({ sourcePath: pageEntry.sourcePath, variant: "hero" })}
     </section>
 
     ${pageEntry.id === "independent-verification" || pageEntry.id === "self-conformance"
@@ -7583,8 +7740,8 @@ function renderKfdReferencePage(pageEntry, { currentPage, tocLabel, kicker }) {
         <dd><code>${escapeHtml(pageEntry.relationship)}</code></dd>
         <dt>Normative</dt>
         <dd><code>${escapeHtml(String(pageEntry.normative))}</code></dd>
-        <dt>Source path</dt>
-        <dd><code>${escapeHtml(pageEntry.sourcePath)}</code></dd>
+        <dt>Projection source</dt>
+        <dd><a href="${escapeAttr(kfdSourceHref(pageEntry.sourcePath))}">GitHub · <code>${escapeHtml(pageEntry.sourcePath)}</code> ↗</a></dd>
         <dt>Package</dt>
         <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
       </dl>
@@ -7646,10 +7803,11 @@ const kfdCasesPageHtml = page({
       }
     }
   </style>
-    <section class="hero">
+    <section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">historical companion / non-normative</span></p>
       <h1>${escapeHtml(kfdSite.casesPage.title)}</h1>
       <p class="lead">${escapeHtml(kfdSite.casesPage.authorityNote)}</p>
+      ${kfdAuthoritySignal({ sourcePath: kfdSite.casesPage.sourcePath, variant: "hero" })}
     </section>
 
     <section class="doc-layout long-toc">
@@ -7671,8 +7829,8 @@ const kfdCasesPageHtml = page({
         <dd><code>${escapeHtml(kfdSite.casesPage.relationship)}</code></dd>
         <dt>Normative</dt>
         <dd><code>${escapeHtml(String(kfdSite.casesPage.normative))}</code></dd>
-        <dt>Source path</dt>
-        <dd><code>${escapeHtml(kfdSite.casesPage.sourcePath)}</code></dd>
+        <dt>Projection source</dt>
+        <dd><a href="${escapeAttr(kfdSourceHref(kfdSite.casesPage.sourcePath))}">GitHub · <code>${escapeHtml(kfdSite.casesPage.sourcePath)}</code> ↗</a></dd>
         <dt>Package</dt>
         <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
       </dl>
@@ -7705,7 +7863,7 @@ if (kfdRecursiveSelfConformanceCase) {
     description: kfdRecursiveSelfConformanceCase.claimBoundary,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
+    body: `<section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a><span class="page-kicker-state">live case / ${escapeHtml(kfdRecursiveSelfConformanceCase.status)}</span></p>
       <h1>${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</h1>
       <p class="lead">${escapeHtml(kfdRecursiveSelfConformanceCase.claimBoundary)}</p>
@@ -7713,6 +7871,7 @@ if (kfdRecursiveSelfConformanceCase) {
         <a class="card-action" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">How KFD changes itself</a>
         <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.candidate.url.replace(/\/+$/, "")}/`)}">Candidate lineage</a>
       </div>
+      ${kfdAuthoritySignal({ sourcePath: kfdRecursiveSelfConformanceCase.humanEntry.path, variant: "hero" })}
     </section>
 
     <section class="panel" data-recursive-case-terminal>
@@ -7756,10 +7915,11 @@ const kfdCandidateIndexHtml = page({
   description: kfdSite.kfdCandidates.authorityNote,
   current: "kfd",
   alternates: kfdSurfaceAlternates(),
-  body: `<section class="hero">
+  body: `<section class="hero kfd-content-hero">
       <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">candidate index / non-normative</span></p>
       <h1>KFD Candidates</h1>
       <p class="lead">${escapeHtml(kfdSite.kfdCandidates.authorityNote)}</p>
+      ${kfdAuthoritySignal({ sourcePath: kfdSite.kfdCandidates.indexSource, variant: "hero" })}
     </section>
 
     ${kfdSelfConformancePage ? `<section class="panel" data-recursive-candidate-summary>
@@ -7834,10 +7994,11 @@ for (const candidatePage of kfdCandidatePages) {
     description: candidatePage.claimBoundary,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
+    body: `<section class="hero kfd-content-hero">
         <p class="eyebrow page-kicker"><a href="${escapeAttr(kfdCandidateIndexPath)}" aria-label="Back to KFD Candidates">Back to KFD Candidates</a><span class="page-kicker-state">candidate / ${escapeHtml(candidatePage.status)}</span></p>
         <h1>${escapeHtml(candidatePage.title)}</h1>
         <p class="lead">${escapeHtml(candidatePage.claimBoundary)}</p>
+        ${kfdAuthoritySignal({ sourcePath: candidatePage.sourcePath, variant: "hero" })}
       </section>
 
       ${selfConformanceCandidate ? `<section class="panel" data-recursive-candidate-status>
@@ -7873,8 +8034,8 @@ for (const candidatePage of kfdCandidatePages) {
           <dd><code>${escapeHtml(String(kfdSite.candidatePages.normative))}</code></dd>
           <dt>Claim boundary</dt>
           <dd>${escapeHtml(candidatePage.claimBoundary)}</dd>
-          <dt>Source path</dt>
-          <dd><code>${escapeHtml(candidatePage.sourcePath)}</code></dd>
+          <dt>Candidate source</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(candidatePage.sourcePath))}">GitHub · <code>${escapeHtml(candidatePage.sourcePath)}</code> ↗</a></dd>
           <dt>Package</dt>
           <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
         </dl>
@@ -7903,10 +8064,11 @@ for (const candidateFormalPage of kfdCandidateFormalPages) {
     description: `Non-normative formal candidate for ${candidatePage.title}.`,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
+    body: `<section class="hero kfd-content-hero">
         <p class="eyebrow page-kicker"><a href="${escapeAttr(candidatePage.url)}" aria-label="Back to ${escapeAttr(candidatePage.title)}">${escapeHtml(`Back to ${candidatePage.title}`)}</a><span class="page-kicker-state">formal candidate / ${escapeHtml(candidateFormalPage.formalCandidateStatus)}</span></p>
         <h1>${escapeHtml(candidatePage.title)} formal candidate</h1>
         <p class="lead">A non-normative formal model owned by the candidate source.</p>
+        ${kfdAuthoritySignal({ sourcePath: candidateFormalPage.sourcePath, variant: "hero" })}
       </section>
 
       <section class="doc-layout">
@@ -7934,10 +8096,10 @@ for (const candidateFormalPage of kfdCandidateFormalPages) {
           <dd><code>${escapeHtml(candidateFormalPage.formalCandidateStatus)}</code></dd>
           <dt>Model version</dt>
           <dd><code>${escapeHtml(String(candidateFormalPage.formalCandidateVersion))}</code></dd>
-          <dt>Authority path</dt>
-          <dd><code>${escapeHtml(candidateFormalPage.authorityPath)}</code></dd>
-          <dt>Source path</dt>
-          <dd><code>${escapeHtml(candidateFormalPage.sourcePath)}</code></dd>
+          <dt>Candidate authority</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(candidateFormalPage.authorityPath))}">GitHub · <code>${escapeHtml(candidateFormalPage.authorityPath)}</code> ↗</a></dd>
+          <dt>Projection source</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(candidateFormalPage.sourcePath))}">GitHub · <code>${escapeHtml(candidateFormalPage.sourcePath)}</code> ↗</a></dd>
           <dt>Package</dt>
           <dd><code>${escapeHtml(kfdPackage.name)}@${escapeHtml(kfdPackage.version)}</code></dd>
         </dl>
@@ -7982,10 +8144,11 @@ for (const entry of kfdRegistry.entries) {
     description: entry.title,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero">
+    body: `<section class="hero kfd-content-hero">
         <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("kfd")} aria-label="Back to KFD home">Back to KFD home</a><span class="page-kicker-state">${escapeHtml(entry.kind)} / ${escapeHtml(entry.status)}</span></p>
         <h1>${escapeHtml(entry.id)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
+        ${kfdAuthoritySignal({ sourcePath: entry.path, variant: "hero" })}
       </section>
 
       <section class="panel">
@@ -7995,8 +8158,8 @@ for (const entry of kfdRegistry.entries) {
           <dd><code>${escapeHtml(entry.number)}</code></dd>
           <dt>Stable URL</dt>
           <dd><a href="/${escapeAttr(entry.number)}/"><code>${escapeHtml(entry.url)}</code></a></dd>
-          <dt>Source path</dt>
-          <dd><a href="${escapeAttr(kfdSourceHref(entry.path))}"><code>${escapeHtml(entry.path)}</code></a></dd>
+          <dt>Canonical source</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(entry.path))}">GitHub · <code>${escapeHtml(entry.path)}</code> ↗</a></dd>
         </dl>
       </section>
 
@@ -8028,10 +8191,11 @@ for (const entry of kfdRegistry.entries) {
       description: usagePage.title || `${entry.id} usage notes`,
       current: "kfd",
       alternates: kfdSurfaceAlternates(),
-      body: `<section class="hero">
+      body: `<section class="hero kfd-content-hero">
         <p class="eyebrow page-kicker"><a href="/${escapeAttr(entry.number)}/" aria-label="Back to ${escapeAttr(entry.id)}">${escapeHtml(`Back to ${entry.id}`)}</a><span class="page-kicker-state">usage / ${escapeHtml(entry.id)}</span></p>
         <h1>${escapeHtml(usagePage.title || `${entry.id} usage`)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
+        ${kfdAuthoritySignal({ sourcePath: usagePage.sourcePath || usagePage.path, variant: "hero" })}
       </section>
 
       <section class="panel">
@@ -8041,8 +8205,10 @@ for (const entry of kfdRegistry.entries) {
           <dd><a href="/${escapeAttr(entry.number)}/"><code>${escapeHtml(entry.id)}</code></a></dd>
           <dt>Stable URL</dt>
           <dd><code>${escapeHtml(usagePage.url || `https://kfd.libkungfu.dev/${entry.number}/usage`)}</code></dd>
-          <dt>Source path</dt>
-          <dd><code>${escapeHtml(usagePage.sourcePath || usagePage.path)}</code></dd>
+          <dt>Canonical decision</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(entry.path))}">GitHub · <code>${escapeHtml(entry.path)}</code> ↗</a></dd>
+          <dt>Projection source</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(usagePage.sourcePath || usagePage.path))}">GitHub · <code>${escapeHtml(usagePage.sourcePath || usagePage.path)}</code> ↗</a></dd>
           <dt>Relationship</dt>
           <dd><code>${escapeHtml(usagePage.relationship || "usage-child-of-decision")}</code></dd>
         </dl>
@@ -8077,10 +8243,11 @@ for (const entry of kfdRegistry.entries) {
       description: formalPage.title || `${entry.id} formal reference`,
       current: "kfd",
       alternates: kfdSurfaceAlternates(),
-      body: `<section class="hero">
+      body: `<section class="hero kfd-content-hero">
         <p class="eyebrow page-kicker"><a href="/${escapeAttr(entry.number)}/" aria-label="Back to ${escapeAttr(entry.id)}">${escapeHtml(`Back to ${entry.id}`)}</a><span class="page-kicker-state">formal reference / ${escapeHtml(entry.id)}</span></p>
         <h1>${escapeHtml(formalPage.title || `${entry.id} formal reference`)}</h1>
         <p class="lead">${escapeHtml(entry.title)}</p>
+        ${kfdAuthoritySignal({ sourcePath: formalPage.sourcePath || formalPage.path, variant: "hero" })}
       </section>
 
       <section class="panel">
@@ -8090,8 +8257,8 @@ for (const entry of kfdRegistry.entries) {
           <dd><a href="/${escapeAttr(entry.number)}/"><code>${escapeHtml(entry.id)}</code></a></dd>
           <dt>Stable URL</dt>
           <dd><code>${escapeHtml(formalPage.url || `https://kfd.libkungfu.dev/${entry.number}/formal`)}</code></dd>
-          <dt>Source path</dt>
-          <dd><code>${escapeHtml(formalPage.sourcePath || formalPage.path)}</code></dd>
+          <dt>Projection source</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(formalPage.sourcePath || formalPage.path))}">GitHub · <code>${escapeHtml(formalPage.sourcePath || formalPage.path)}</code> ↗</a></dd>
           <dt>Relationship</dt>
           <dd><code>${escapeHtml(formalPage.relationship || "formal-reference-child-of-decision")}</code></dd>
           <dt>Normative</dt>
@@ -8100,8 +8267,8 @@ for (const entry of kfdRegistry.entries) {
           <dd><code>${escapeHtml(formalPage.formalModelStatus || "unspecified")}</code></dd>
           <dt>Model version</dt>
           <dd><code>${escapeHtml(String(formalPage.formalModelVersion || "unspecified"))}</code></dd>
-          <dt>Authority path</dt>
-          <dd><code>${escapeHtml(formalPage.authorityPath || entry.path)}</code></dd>
+          <dt>Canonical decision</dt>
+          <dd><a href="${escapeAttr(kfdSourceHref(formalPage.authorityPath || entry.path))}">GitHub · <code>${escapeHtml(formalPage.authorityPath || entry.path)}</code> ↗</a></dd>
         </dl>
       </section>
 
