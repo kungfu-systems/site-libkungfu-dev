@@ -213,6 +213,10 @@ const kfdPropagationLock = fs.existsSync(kfdPropagationLockPath)
 const kfdSourceRef = kfdPropagationLock?.upstream?.sourceSha
   || kfdPropagationLock?.upstream?.tag
   || "main";
+const kfdSourceRepository = "https://github.com/kungfu-systems/kfd";
+const kfdPinnedSourceLabel = /^[0-9a-f]{40}$/u.test(kfdSourceRef)
+  ? kfdSourceRef.slice(0, 8)
+  : kfdSourceRef;
 const buildchainPackage = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/package.json", "utf8"));
 const buildchainSite = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/buildchain-site.json", "utf8"));
 const buildchainSurfaceManifest = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/buildchain/dist/site/site-manifest.json", "utf8"));
@@ -1609,6 +1613,15 @@ const buildchainHomeHtml = fs.readFileSync("dist/buildchain/index.html", "utf8")
 const buildchainDetailHtml = fs.readFileSync("dist/buildchain/mechanism/index.html", "utf8");
 const renderedBuildchainSurfaceManifest = JSON.parse(fs.readFileSync("dist/buildchain/manifest.json", "utf8"));
 const kfdDetailHtml = fs.readFileSync("dist/kfd/decisions/index.html", "utf8");
+if (
+  !kfdDetailHtml.includes('<span class="page-kicker-state">decisions / rendered index</span>')
+  || !kfdDetailHtml.includes('class="kfd-authority-signal strip" data-kfd-authority-signal="canonical-fact-source"')
+  || !kfdDetailHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/registry.json"`)
+  || !kfdDetailHtml.includes(`Rendered decision index · <a href="${kfdSourceRepository}/tree/${escapeHtml(encodeURIComponent(kfdSourceRef))}">pinned ${escapeHtml(kfdPinnedSourceLabel)}</a>`)
+  || kfdDetailHtml.includes("decisions / complete authority")
+) {
+  throw new Error("KFD decision index must identify itself as a rendered projection of the pinned GitHub authority");
+}
 if (JSON.stringify(renderedBuildchainSurfaceManifest) !== JSON.stringify(buildchainSurfaceManifest)) {
   throw new Error("Buildchain surface manifest must preserve the exact published package authority");
 }
@@ -2389,6 +2402,15 @@ for (const [label, html, state] of [
 const kfdHomeHtml = fs.readFileSync("dist/kfd/index.html", "utf8");
 const kfdLlms = fs.readFileSync("dist/kfd/llms.txt", "utf8");
 const kfdIndependentImplementation = kfdSite.homepage.independentImplementation;
+const kfdPublicFactSource = kfdSite.decisionPages?.metadata?.publicFactSource;
+const kfdHomepageAuthorityAction = kfdSite.homepage.authorityAction || {
+  id: "canonical-source",
+  label: "Canonical source on GitHub",
+  url: kfdPublicFactSource?.url,
+  relationship: "canonical-fact-source",
+  source: "decisionPages.metadata.publicFactSource",
+  external: true,
+};
 if (
   !kfdIndependentImplementation
   || kfdIndependentImplementation.promise !== "Implement KFD without Kungfu — scaffold an adapter in Python, Rust, Node.js, or C++, then verify it offline."
@@ -2432,8 +2454,11 @@ if (
 if (
   !kfdHomeHtml.includes('<a class="reader-action" href="#foundation-triad">Understand KFD</a>')
   || !kfdHomeHtml.includes('<a class="reader-action secondary" href="#independent-implementation">Implement without Kungfu</a>')
+  || !kfdHomeHtml.includes('<a class="reader-action tertiary" href="https://github.com/kungfu-systems/kfd" data-kfd-authority-action="canonical-fact-source">Canonical source on GitHub ↗</a>')
+  || kfdHomepageAuthorityAction.url !== kfdPublicFactSource?.url
+  || kfdHomepageAuthorityAction.relationship !== "canonical-fact-source"
 ) {
-  throw new Error("KFD homepage hero must expose the accepted Understand and independent-implementation actions");
+  throw new Error("KFD homepage hero must expose the accepted Understand, independent-implementation, and canonical fact-source actions");
 }
 if (
   !kfdHomeHtml.includes(escapeHtml(kfdSite.homepage.selfConformance.label))
@@ -2644,6 +2669,44 @@ if (
   || !kfdAgentHubCanonicalHtml.includes(escapeHtml(kfdSite.agentHubPage.suite.id))
 ) {
   throw new Error("KFD Agent Hub page is missing bundle-owned commands, explanation, boundaries, navigation, or metadata");
+}
+const kfdAgentHubNavStart = kfdAgentHubCanonicalHtml.indexOf('<nav class="doc-global-nav" aria-label="Kung Fu Decisions">');
+const kfdAgentHubNavEnd = kfdAgentHubCanonicalHtml.indexOf("</nav>", kfdAgentHubNavStart);
+const kfdAgentHubNavHtml = kfdAgentHubCanonicalHtml.slice(kfdAgentHubNavStart, kfdAgentHubNavEnd);
+const kfdNavGroupPositions = [
+  '<p class="doc-nav-heading">Orientation</p>',
+  '<p class="doc-nav-heading">Numbered authority</p>',
+  '<p class="doc-nav-heading">Implement &amp; verify</p>',
+  '<p class="doc-nav-heading">Governance &amp; evolution</p>',
+  '<p class="doc-nav-heading">Evidence &amp; reference</p>',
+].map((heading) => kfdAgentHubNavHtml.indexOf(heading));
+const kfdNavOverviewPosition = kfdAgentHubNavHtml.indexOf(">Overview</a>");
+const kfdNavFoundationPosition = kfdAgentHubNavHtml.indexOf(">Foundation model</a>");
+const kfdNavIndependentPosition = kfdAgentHubNavHtml.indexOf(">Verify KFD</a>");
+const kfdNavAgentHubPosition = kfdAgentHubNavHtml.indexOf(">Agent Hub qualification</a>");
+const kfdNavSelfConformancePosition = kfdAgentHubNavHtml.indexOf(">Self-Conformance</a>");
+const kfdNavCandidatesPosition = kfdAgentHubNavHtml.indexOf(">Candidates</a>");
+if (
+  kfdAgentHubNavStart < 0
+  || kfdNavGroupPositions.some((position) => position < 0)
+  || kfdNavGroupPositions.some((position, index) => index > 0 && position <= kfdNavGroupPositions[index - 1])
+  || !(kfdNavOverviewPosition < kfdNavFoundationPosition && kfdNavFoundationPosition < kfdNavGroupPositions[1])
+  || !(kfdNavIndependentPosition < kfdNavAgentHubPosition)
+  || !(kfdNavSelfConformancePosition < kfdNavCandidatesPosition)
+) {
+  throw new Error("KFD global navigation must preserve the orientation-to-authority-to-implementation-to-governance-to-reference reading path");
+}
+const kfdAgentHubLayoutPosition = kfdAgentHubCanonicalHtml.indexOf('<section class="doc-layout">');
+const kfdAgentHubContentStackPosition = kfdAgentHubCanonicalHtml.indexOf('<div class="stack kfd-agent-hub-content">');
+const kfdAgentHubInstalledPosition = kfdAgentHubCanonicalHtml.indexOf('id="installed-kungfu-qualification"');
+const kfdAgentHubActivationPosition = kfdAgentHubCanonicalHtml.indexOf('id="activation-contracts"');
+if (
+  kfdAgentHubLayoutPosition < 0
+  || kfdAgentHubContentStackPosition <= kfdAgentHubLayoutPosition
+  || kfdAgentHubInstalledPosition <= kfdAgentHubContentStackPosition
+  || kfdAgentHubActivationPosition <= kfdAgentHubInstalledPosition
+) {
+  throw new Error("KFD Agent Hub must keep its product projection and activation material inside the standard document layout");
 }
 if (
   !kfdAgentHubCanonicalHtml.includes('id="activation-contracts"')
@@ -2893,6 +2956,23 @@ const kfdCandidateIndexAliasHtml = fs.readFileSync("dist/drafts/index.html", "ut
 if (kfdCandidateIndexAliasHtml !== kfdCandidateIndexCanonicalHtml) {
   throw new Error("KFD candidate index alias drifted: dist/drafts/index.html");
 }
+for (const [label, html, sourcePath] of [
+  ["Agent Hub", kfdAgentHubCanonicalHtml, kfdSite.agentHubPage.authorityPath],
+  ["Foundation", kfdFoundationCanonicalHtml, kfdSite.foundationPage.sourcePath],
+  ["Formal model", kfdFormalModelCanonicalHtml, kfdSite.formalPage.sourcePath],
+  ["Terminology", kfdTerminologyCanonicalHtml, kfdSite.terminologyPage.sourcePath],
+  ["Historical cases", kfdCasesCanonicalHtml, kfdSite.casesPage.sourcePath],
+  ["Recursive live case", kfdRecursiveCaseHtml, kfdRecursiveSelfConformanceCase.humanEntry.path],
+  ["Candidate index", kfdCandidateIndexCanonicalHtml, kfdSite.kfdCandidates.indexSource],
+]) {
+  if (
+    !html.includes('class="hero kfd-content-hero"')
+    || !html.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"')
+    || !html.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(sourcePath)}">GitHub · ${escapeHtml(sourcePath)} ↗</a>`)
+  ) {
+    throw new Error(`${label} must expose its exact canonical KFD GitHub source in the content hero`);
+  }
+}
 if (
   !kfdDetailHtml.includes(`href="${escapeHtml(kfdCandidateIndexPath)}"`)
   || kfdDetailHtml.includes("https://github.com/kungfu-systems/kfd/blob/main/drafts/action-state-separation.md")
@@ -2965,6 +3045,9 @@ for (const candidate of kfdCandidatePages) {
   }
   if (
     !candidateCanonicalHtml.includes('aria-label="Candidate sections"')
+    || !candidateCanonicalHtml.includes('class="hero kfd-content-hero"')
+    || !candidateCanonicalHtml.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"')
+    || !candidateCanonicalHtml.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(candidate.sourcePath)}">GitHub · ${escapeHtml(candidate.sourcePath)} ↗</a>`)
     || !candidateCanonicalHtml.includes(`<span class="page-kicker-state">candidate / ${escapeHtml(candidate.status)}</span>`)
     || !candidateCanonicalHtml.includes(`<a class="doc-nav-child" href="${escapeHtml(candidate.url)}" aria-current="page">${escapeHtml(candidate.title)}</a>`)
     || !candidateCanonicalHtml.includes(escapeHtml(candidate.claimBoundary))
@@ -3009,6 +3092,9 @@ for (const formalCandidate of kfdCandidateFormalPages) {
   }
   if (
     !formalCanonicalHtml.includes('aria-label="Formal candidate sections"')
+    || !formalCanonicalHtml.includes('class="hero kfd-content-hero"')
+    || !formalCanonicalHtml.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"')
+    || !formalCanonicalHtml.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(formalCandidate.sourcePath)}">GitHub · ${escapeHtml(formalCandidate.sourcePath)} ↗</a>`)
     || !formalCanonicalHtml.includes(
       `<span class="page-kicker-state">formal candidate / ${escapeHtml(formalCandidate.formalCandidateStatus)}</span>`,
     )
@@ -3115,16 +3201,25 @@ for (const entry of kfdRegistry.entries) {
   }
   if (
     !html.includes('class="doc-global-nav" aria-label="Kung Fu Decisions"') ||
-    !html.includes(`<a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">Overview</a>`)
+    !html.includes(`<a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">Overview</a>`) ||
+    !html.includes('class="hero kfd-content-hero"') ||
+    !html.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"') ||
+    !html.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}">GitHub · ${escapeHtml(entry.path)} ↗</a>`) ||
+    !html.includes(`<a href="${kfdSourceRepository}/tree/${escapeHtml(encodeURIComponent(kfdSourceRef))}">pinned ${escapeHtml(kfdPinnedSourceLabel)}</a>`)
   ) {
-    throw new Error(`${label} page is missing the KFD cross-decision navigation`);
+    throw new Error(`${label} page is missing the KFD cross-decision navigation or canonical authority signal`);
+  }
+  const globalNavStart = html.indexOf('<nav class="doc-global-nav" aria-label="Kung Fu Decisions">');
+  const globalNavEnd = html.indexOf("</nav>", globalNavStart);
+  if (html.slice(globalNavStart, globalNavEnd).includes("data-kfd-authority-signal")) {
+    throw new Error(`${label} page must keep canonical source metadata out of the left navigation`);
   }
   const currentDecisionLink = `<a href="/${escapeHtml(entry.number)}/" aria-current="page">${escapeHtml(entry.id)}</a>`;
   if (!html.includes(currentDecisionLink)) {
     throw new Error(`${label} page is missing the current KFD marker in cross-decision navigation`);
   }
   const stableUrlLink = `<a href="/${escapeHtml(entry.number)}/"><code>${escapeHtml(entry.url)}</code></a>`;
-  const sourcePathLink = `<a href="https://github.com/kungfu-systems/kfd/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}"><code>${escapeHtml(entry.path)}</code></a>`;
+  const sourcePathLink = `<a href="https://github.com/kungfu-systems/kfd/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}">GitHub · <code>${escapeHtml(entry.path)}</code> ↗</a>`;
   if (!html.includes(stableUrlLink) || !html.includes(sourcePathLink)) {
     throw new Error(`${label} decision metadata links are incomplete`);
   }
@@ -3164,6 +3259,13 @@ for (const entry of kfdRegistry.entries) {
     if (!usageHtml.includes('aria-label="Usage sections"') || !usageHtml.includes("<h2>Usage sections</h2>") || !usageHtml.includes("Usage metadata")) {
       throw new Error(`${label} usage page is missing usage navigation or metadata`);
     }
+    if (
+      !usageHtml.includes('class="hero kfd-content-hero"')
+      || !usageHtml.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"')
+      || !usageHtml.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(usagePage.sourcePath || usagePage.path)}">GitHub · ${escapeHtml(usagePage.sourcePath || usagePage.path)} ↗</a>`)
+    ) {
+      throw new Error(`${label} usage page must expose its exact canonical source in the content hero`);
+    }
     if (!usageHtml.includes(`<span class="page-kicker-state">usage / ${escapeHtml(entry.id)}</span>`)) {
       throw new Error(`${label} usage page is missing usage state`);
     }
@@ -3183,6 +3285,12 @@ for (const entry of kfdRegistry.entries) {
     if (!usageHtml.includes(escapeHtml(usagePage.sourcePath || usagePage.path))) {
       throw new Error(`${label} usage page does not expose its KFD package source path`);
     }
+    if (
+      !usageHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(entry.path)}"`)
+      || !usageHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(usagePage.sourcePath || usagePage.path)}"`)
+    ) {
+      throw new Error(`${label} usage page must link both the canonical decision and its projection source on GitHub`);
+    }
   }
   if (formalPage?.sourceExists) {
     const expectedFormalTocLink = `<a class="toc-related-link" href="/${escapeHtml(entry.number)}/formal/">${escapeHtml(formalPage.title || "Formal reference")}</a>`;
@@ -3196,6 +3304,13 @@ for (const entry of kfdRegistry.entries) {
       || !formalHtml.includes("Formal reference metadata")
     ) {
       throw new Error(`${label} formal reference page is missing formal navigation or metadata`);
+    }
+    if (
+      !formalHtml.includes('class="hero kfd-content-hero"')
+      || !formalHtml.includes('class="kfd-authority-signal hero" data-kfd-authority-signal="canonical-fact-source"')
+      || !formalHtml.includes(`<a class="kfd-authority-link" href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(formalPage.sourcePath || formalPage.path)}">GitHub · ${escapeHtml(formalPage.sourcePath || formalPage.path)} ↗</a>`)
+    ) {
+      throw new Error(`${label} formal reference page must expose its exact projection source in the content hero`);
     }
     if (!formalHtml.includes(`<span class="page-kicker-state">formal reference / ${escapeHtml(entry.id)}</span>`)) {
       throw new Error(`${label} formal reference page is missing formal state`);
@@ -3230,6 +3345,12 @@ for (const entry of kfdRegistry.entries) {
       if (!formalHtml.includes(escapeHtml(expectedValue))) {
         throw new Error(`${label} formal reference page is missing bundle metadata: ${expectedValue}`);
       }
+    }
+    if (
+      !formalHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(formalPage.authorityPath || entry.path)}"`)
+      || !formalHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/${escapeHtml(formalPage.sourcePath || formalPage.path)}"`)
+    ) {
+      throw new Error(`${label} formal page must link both the canonical decision and its projection source on GitHub`);
     }
     if (!formalHtml.includes(`<code>${escapeHtml(String(formalPage.normative))}</code>`)) {
       throw new Error(`${label} formal reference page is missing normative metadata`);
