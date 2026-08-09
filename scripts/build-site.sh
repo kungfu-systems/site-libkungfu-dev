@@ -43,6 +43,8 @@ test -f dist/kfd/terminology/index.html
 test -f dist/terminology/index.html
 test -f dist/kfd/terminology.json
 test -f dist/terminology.json
+test -f dist/kfd/cases/live/durable-result-identity-availability/index.html
+test -f dist/cases/live/durable-result-identity-availability/index.html
 test -f dist/kfd/schemas/kfd-terminology.schema.json
 test -f dist/schemas/kfd-terminology.schema.json
 for number in $(node -e 'const fs=require("fs"); const registry=JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/kfd/registry.json","utf8")); console.log(registry.entries.map((entry)=>entry.number).join("\n"));'); do

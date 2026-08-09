@@ -258,6 +258,9 @@ const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((entry) => entry.m
 const kfdRecursiveSelfConformanceCase = kfdSite.liveCases?.cases?.find(
   (entry) => entry.id === "recursive-normative-self-conformance",
 );
+const kfdDurableResultLiveCase = kfdSite.liveCases?.cases?.find(
+  (entry) => entry.id === "durable-result-identity-availability",
+);
 const requiredFiles = [
   ...requiredBaseFiles,
   "dist/kfd/drafts/index.html",
@@ -296,6 +299,8 @@ const requiredFiles = [
   }),
   "dist/kfd/cases/live/recursive-normative-self-conformance/index.html",
   "dist/cases/live/recursive-normative-self-conformance/index.html",
+  "dist/kfd/cases/live/durable-result-identity-availability/index.html",
+  "dist/cases/live/durable-result-identity-availability/index.html",
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
@@ -1823,6 +1828,13 @@ if (!manifest.pages.some(
 )) {
   throw new Error("dist manifest does not record the recursive self-conformance live case");
 }
+if (!manifest.pages.some(
+  (page) => page.host === expectedSurfaceHost("kfd")
+    && page.path === "/cases/live/durable-result-identity-availability/"
+    && page.source.endsWith(`/${kfdDurableResultLiveCase.humanEntry.path}`),
+)) {
+  throw new Error("dist manifest does not record the Durable Result live case");
+}
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
   if (!manifest.pages.some((page) => page.host === expectedSurfaceHost("kfd") && page.path === path)) {
@@ -2011,8 +2023,14 @@ if (
   || kfdAgentManifest.cases?.live?.[0]?.id !== kfdRecursiveSelfConformanceCase.id
   || kfdAgentManifest.cases?.live?.[0]?.status !== "closed"
   || kfdAgentManifest.cases?.live?.[0]?.url !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
+  || !kfdAgentManifest.cases?.live?.some((entry) => (
+    entry.id === kfdDurableResultLiveCase.id
+    && entry.status === "active"
+    && entry.url === expectedSurfaceEndpoint("kfd", "cases/live/durable-result-identity-availability/")
+  ))
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "verify/self-conformance/"))
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/"))
+  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/live/durable-result-identity-availability/"))
 ) {
   throw new Error("KFD agent manifest must preserve the package-owned self-conformance and recursive-case facts");
 }
@@ -2866,6 +2884,27 @@ if (
   || !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a>')
 ) {
   throw new Error("KFD recursive live case must belong to Self-Conformance navigation without marking Historical cases current");
+}
+const kfdDurableResultCaseHtml = fs.readFileSync("dist/kfd/cases/live/durable-result-identity-availability/index.html", "utf8");
+if (fs.readFileSync("dist/cases/live/durable-result-identity-availability/index.html", "utf8") !== kfdDurableResultCaseHtml) {
+  throw new Error("KFD Durable Result live-case alias drifted");
+}
+for (const requiredText of [
+  kfdDurableResultLiveCase.title,
+  kfdDurableResultLiveCase.claimBoundary,
+  "Product genesis is retained without promoting the Candidate",
+  "not authorized",
+]) {
+  if (!kfdDurableResultCaseHtml.includes(escapeHtml(requiredText))) {
+    throw new Error(`KFD Durable Result live case missing bounded fact: ${requiredText}`);
+  }
+}
+if (
+  !kfdDurableResultCaseHtml.includes('href="/drafts/durable-result-identity-availability/"')
+  || !kfdDurableResultCaseHtml.includes('<a class="doc-nav-child" style="margin-left: 28px;" href="/cases/live/durable-result-identity-availability/" aria-current="page">Live case</a>')
+  || kfdDurableResultCaseHtml.includes('<a href="/cases/" aria-current="page">Historical cases</a>')
+) {
+  throw new Error("KFD Durable Result live case must remain under its Candidate without marking Historical cases current");
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");

@@ -4272,7 +4272,7 @@ function decisionPanels(entries) {
     .join("\n");
 }
 
-function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate, currentCandidateFormal) {
+function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate, currentCandidateFormal, currentLiveCase) {
   const currentNumber = currentEntry ? String(currentEntry.number) : undefined;
   const standaloneNavLink = (pageId) => {
     const pageEntry = kfdStandalonePages.find((entry) => entry.id === pageId);
@@ -4289,6 +4289,9 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
         `<a class="doc-nav-child" href="${escapeAttr(currentCandidate.url)}"${currentPage === "candidate" ? ' aria-current="page"' : ""}>${escapeHtml(currentCandidate.title)}</a>`,
         currentPage === "candidate-formal" && currentCandidateFormal
           ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(currentCandidateFormal.url)}" aria-current="page">Formal candidate</a>`
+          : "",
+        currentPage === "candidate-live-case" && currentLiveCase
+          ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(`${currentLiveCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">Live case</a>`
           : "",
       ].join("")
     : "";
@@ -4638,6 +4641,9 @@ const kfdSelfConformancePage = kfdStandalonePages.find(
 const kfdRecursiveSelfConformanceCase = (kfdSite.liveCases?.cases || []).find(
   (entry) => entry.id === "recursive-normative-self-conformance",
 );
+const kfdDurableResultLiveCase = (kfdSite.liveCases?.cases || []).find(
+  (entry) => entry.id === "durable-result-identity-availability",
+);
 const kfdPackageRoot = packageRoot("@kungfu-tech/kfd");
 const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((pageEntry) =>
   (pageEntry.machineAssets || []).map((entry) => ({ ...entry, pageId: pageEntry.id })),
@@ -4668,6 +4674,9 @@ const kfdSelfConformanceAssets = kfdStandaloneMachineAssets.filter(
 );
 const kfdRecursiveSelfConformanceCasePath = kfdRecursiveSelfConformanceCase
   ? `${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`
+  : undefined;
+const kfdDurableResultLiveCasePath = kfdDurableResultLiveCase
+  ? `${kfdDurableResultLiveCase.url.replace(/\/+$/, "")}/`
   : undefined;
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
@@ -4711,6 +4720,17 @@ const kfdPageRouteBySourcePath = new Map([
         kfdRecursiveSelfConformanceCase.ontologySplit,
         kfdRecursiveSelfConformanceCase.distinguishabilityArgument,
       ].map((entry) => [entry.path, kfdRecursiveSelfConformanceCasePath])
+    : []),
+  ...(kfdDurableResultLiveCase
+    ? [
+        kfdDurableResultLiveCase.humanEntry,
+        kfdDurableResultLiveCase.genesis,
+        kfdDurableResultLiveCase.methodTrace,
+        kfdDurableResultLiveCase.propagationHypothesis,
+        kfdDurableResultLiveCase.reviewIndex,
+        kfdDurableResultLiveCase.ontologySplit,
+        kfdDurableResultLiveCase.distinguishabilityArgument,
+      ].map((entry) => [entry.path, kfdDurableResultLiveCasePath])
     : []),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
@@ -7902,6 +7922,67 @@ if (kfdRecursiveSelfConformanceCase) {
   writeFile(`${liveCaseOutput}/index.html`, liveCaseHtml);
 }
 
+if (kfdDurableResultLiveCase) {
+  const durableResultCandidate = kfdCandidatePageById.get(kfdDurableResultLiveCase.id);
+  const liveCaseDocuments = [
+    kfdDurableResultLiveCase.humanEntry,
+    kfdDurableResultLiveCase.genesis,
+    kfdDurableResultLiveCase.methodTrace,
+    kfdDurableResultLiveCase.ontologySplit,
+    kfdDurableResultLiveCase.distinguishabilityArgument,
+    kfdDurableResultLiveCase.propagationHypothesis,
+    kfdDurableResultLiveCase.reviewIndex,
+  ];
+  const renderedLiveCase = renderDecisionMarkdown(
+    liveCaseDocuments.map((entry) => rewritePackageMarkdownLinks(entry.markdown, "kungfu-systems/kfd", {
+      filePattern: /\.md$|\.json$/,
+      internalRoutes: kfdPageRouteBySourcePath,
+      sourcePath: entry.path,
+    })).join("\n\n---\n\n"),
+    "Durable Result live case sections",
+  );
+  const liveCaseHtml = page({
+    title: `${kfdDurableResultLiveCase.title} | KFD live cases`,
+    description: kfdDurableResultLiveCase.claimBoundary,
+    current: "kfd",
+    alternates: kfdSurfaceAlternates(),
+    body: `<section class="hero kfd-content-hero">
+      <p class="eyebrow page-kicker"><a href="${escapeAttr(durableResultCandidate?.url || kfdCandidateIndexPath)}" aria-label="Back to Durable Result Candidate">Back to Durable Result Candidate</a><span class="page-kicker-state">live case / ${escapeHtml(kfdDurableResultLiveCase.status)}</span></p>
+      <h1>${escapeHtml(kfdDurableResultLiveCase.title)}</h1>
+      <p class="lead">${escapeHtml(kfdDurableResultLiveCase.claimBoundary)}</p>
+      <div class="card-actions">
+        ${durableResultCandidate ? `<a class="card-action" href="${escapeAttr(durableResultCandidate.url)}">Candidate hypothesis</a>` : ""}
+        <a class="card-action secondary" href="${escapeAttr(kfdCasesPath)}">Case registry</a>
+      </div>
+      ${kfdAuthoritySignal({ sourcePath: kfdDurableResultLiveCase.humanEntry.path, variant: "hero" })}
+    </section>
+
+    <section class="panel" data-durable-result-case-status>
+      <p class="eyebrow">Founding evidence · qualification remains open</p>
+      <h2>Product genesis is retained without promoting the Candidate</h2>
+      <dl class="meta">
+        <dt>Live case status</dt><dd><code>${escapeHtml(kfdDurableResultLiveCase.status)}</code></dd>
+        <dt>Relationship</dt><dd><code>${escapeHtml(kfdDurableResultLiveCase.relationship)}</code></dd>
+        <dt>Normative</dt><dd><code>${escapeHtml(String(kfdSite.liveCases.normative))}</code></dd>
+        <dt>Number allocated</dt><dd><code>no</code></dd>
+        <dt>Production reuse</dt><dd><code>not authorized</code></dd>
+      </dl>
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdDurableResultLiveCase.claimBoundary)}</p>
+    </section>
+
+    <section class="doc-layout long-toc">
+      <aside class="doc-sidebar">
+        ${kfdDecisionNav(undefined, "candidate-live-case", durableResultCandidate, undefined, kfdDurableResultLiveCase)}
+        ${renderedLiveCase.tocHtml}
+      </aside>
+      <article class="panel doc-content">${renderedLiveCase.html}</article>
+    </section>`,
+  });
+  const liveCaseOutput = kfdDurableResultLiveCase.url.replace(/^\/+|\/+$/g, "");
+  writeFile(`kfd/${liveCaseOutput}/index.html`, liveCaseHtml);
+  writeFile(`${liveCaseOutput}/index.html`, liveCaseHtml);
+}
+
 const renderedKfdCandidateIndex = renderDecisionMarkdown(
   rewritePackageMarkdownLinks(kfdSite.kfdCandidates.indexMarkdown, "kungfu-systems/kfd", {
     filePattern: /\.md$|registry\.json$/,
@@ -8686,6 +8767,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
     }] : []),
+    ...(kfdDurableResultLiveCase ? [{
+      path: kfdDurableResultLiveCasePath,
+      host: surfaceCanonicalHost("kfd"),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdDurableResultLiveCase.humanEntry.path}`,
+    }] : []),
     {
       path: "/cases/registry.json",
       host: surfaceCanonicalHost("kfd"),
@@ -8935,6 +9021,9 @@ const kfdAgentManifest = {
     ...(kfdRecursiveSelfConformanceCasePath
       ? [surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, ""))]
       : []),
+    ...(kfdDurableResultLiveCasePath
+      ? [surfaceEndpointHref("kfd", kfdDurableResultLiveCasePath.replace(/^\/+/, ""))]
+      : []),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdCandidateFormalPages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
@@ -9021,12 +9110,20 @@ const kfdAgentManifest = {
     registryContract: kfdCaseRegistry.contract,
     relationship: kfdSite.casesPage.relationship,
     normative: kfdSite.casesPage.normative,
-    live: kfdRecursiveSelfConformanceCase ? [{
-      ...kfdRecursiveSelfConformanceCase,
-      path: kfdRecursiveSelfConformanceCasePath,
-      url: surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, "")),
-      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
-    }] : [],
+    live: [
+      ...(kfdRecursiveSelfConformanceCase ? [{
+        ...kfdRecursiveSelfConformanceCase,
+        path: kfdRecursiveSelfConformanceCasePath,
+        url: surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, "")),
+        source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
+      }] : []),
+      ...(kfdDurableResultLiveCase ? [{
+        ...kfdDurableResultLiveCase,
+        path: kfdDurableResultLiveCasePath,
+        url: surfaceEndpointHref("kfd", kfdDurableResultLiveCasePath.replace(/^\/+/, "")),
+        source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdDurableResultLiveCase.humanEntry.path}`,
+      }] : []),
+    ],
   },
   candidates: {
     path: kfdCandidateIndexPath,
