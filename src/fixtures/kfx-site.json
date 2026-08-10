@@ -1,0 +1,207 @@
+{
+  "schema": "libkungfu.kfx-site-synthesis/v1",
+  "status": "site-synthesis",
+  "maturity": "alpha-source-projection",
+  "headline": "Extend Kungfu without forking Core.",
+  "lead": "KFX packages and Profile Suites add experiences, integrations, services, actions, assessments, and domain semantics through one Core-owned registry and lifecycle authority.",
+  "proposition": "Build against a public extension contract, let Core admit exact content and capabilities, and project one semantic contribution across GUI, TUI, CLI, and Agent hosts.",
+  "sourceBoundary": "This page is a Site-owned reader synthesis of immutable Kungfu sources. Kungfu owns KFX schemas, commands, admission, capabilities, lifecycle, receipts, and qualification. The Site does not redefine or requalify them.",
+  "adoptionBoundary": "This first surface uses exact Git sources and introduces no unpublished npm dependency. A later upstream-generated KFX Site Bundle may replace this projection after its own protected release and adoption gates.",
+  "nonClaims": [
+    "This Site projection is not a KFX specification, Release Passport, Warrant, capability grant, installation receipt, or qualification result.",
+    "An authored or locally qualified package is not installed, activated, production-admitted, or safe for every workspace.",
+    "KFD evidence and Buildchain attestations are admission inputs; neither creates ambient runtime authority.",
+    "The exact upstream sources record their own qualification scope. This Site change does not rerun or widen that scope, promise stable APIs, or claim new platform support."
+  ],
+  "sources": [
+    {
+      "id": "kfx-contract",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "framework/kfx/kungfu-kfx.contract.json",
+      "sha256": "4c17dddae597d19eb9ead4d3767669e3f8343a3b41cc9deb42c8eb5ff08a514d",
+      "maturity": "alpha-source-contract",
+      "role": "Package, Suite, facet, registry, admission, capability, lifecycle, receipt, and host contract"
+    },
+    {
+      "id": "native-registry",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "framework/core/src/libkungfu/src/runtime/kfx/native_registry.cpp",
+      "sha256": "98881b2110239f54706b05da88d8a847442b82782a32805aaa6d65faa9b21808",
+      "maturity": "implemented-exact-source",
+      "role": "Core-owned package discovery, semantic graph, lifecycle, and receipt implementation"
+    },
+    {
+      "id": "authoring-kit",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "framework/core/src/python/kungfu/kfx_authoring_assets/contract.json",
+      "sha256": "567ffd02c294aacd15e9ea8eb0e1d566c5703e9ec1c1fb81fa32bba781f7d346",
+      "maturity": "installed-product-alpha",
+      "role": "Version-matched offline authoring lifecycle, SDK projection, and webhook starter"
+    },
+    {
+      "id": "lifecycle-adr",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "docs/adr/KF-ADR-019f86da-4f90-73f3-b027-c343b2bc8bcc.md",
+      "sha256": "f175aa649773c0bc24b0eabdba24d7e973e3e050523f7467ca87b042b7cd23cc",
+      "maturity": "accepted-implemented-upstream",
+      "role": "Immutable package content and Core-owned transactional lifecycle authority"
+    },
+    {
+      "id": "surface-parity-adr",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "docs/adr/KF-ADR-019f86da-4f90-72df-add3-948f3ae38c3a.md",
+      "sha256": "f0c68bf2c2e80af8465f5247fb8cab9b2e636c8872c9ab7023b3986a758cca1e",
+      "maturity": "accepted-implemented-upstream",
+      "role": "One semantic contribution projected through GUI, TUI, CLI, and Agent hosts"
+    },
+    {
+      "id": "trust-admission-adr",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "docs/adr/KF-ADR-019f86da-4f90-7d6c-926a-ddd27dbde8ab.md",
+      "sha256": "cca8bdeee7d6e50f4507ada6e4122cfca2b35099c7ba3a9780d9785c55cce912",
+      "maturity": "accepted-implemented-upstream",
+      "role": "KFD facts and exact Buildchain attestations as non-authorizing admission evidence"
+    },
+    {
+      "id": "profile-suite-adr",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+      "path": "docs/adr/KF-ADR-019f86da-4f90-7f46-b195-3af6228d17b1.md",
+      "sha256": "cb4225f9e967d814585bd4b58ccba858147e8df124842d032240e75314431847",
+      "maturity": "accepted-implemented-upstream",
+      "role": "Agent-first Profile Suites carrying domain semantics over domain-neutral Core"
+    }
+  ],
+  "readerPaths": [
+    {
+      "id": "build",
+      "label": "Build an extension",
+      "summary": "Start from the installed, version-matched authoring kit; inspect, scaffold, validate, build, qualify, and package inert bytes before requesting native admission.",
+      "href": "#capability-build",
+      "sourceRefs": ["authoring-kit"]
+    },
+    {
+      "id": "understand",
+      "label": "Understand the architecture",
+      "summary": "Trace provider-owned semantics through package facets, Core control-plane decisions, admitted contributions, and host-native presentation.",
+      "href": "#architecture",
+      "sourceRefs": ["kfx-contract", "surface-parity-adr"]
+    },
+    {
+      "id": "audit",
+      "label": "Audit trust and lifecycle",
+      "summary": "Inspect immutable source, maturity, non-claims, admission inputs, capability grants, Warrants, and receipts before relying on a package.",
+      "href": "#sources",
+      "sourceRefs": ["lifecycle-adr", "trust-admission-adr"]
+    }
+  ],
+  "architecture": {
+    "schema": "libkungfu.kfx-architecture/v1",
+    "headline": "One extension graph; one Core authority; four host projections.",
+    "summary": "Providers author immutable package or Suite facets. Core discovers and admits their exact graph, intersects capabilities with policy and authorization, owns lifecycle mutations, and emits receipts. GUI, TUI, CLI, and Agent hosts render admitted semantics without becoming authority.",
+    "nodes": [
+      {"id":"author-provider","label":"Author / provider","kind":"actor","maturity":"source-defined-alpha","claimClass":"site-synthesis","summary":"Owns extension source, package identity, declared facets, capabilities, and contribution semantics.","sourceRefs":["kfx-contract"]},
+      {"id":"package-suite","label":"KFX package / Profile Suite","kind":"package","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Immutable content closure that may carry one package or a Suite of required and optional members.","sourceRefs":["kfx-contract","profile-suite-adr"]},
+      {"id":"view-facet","label":"View","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Host-rendered experience facet with declared entrypoint and capabilities.","sourceRefs":["kfx-contract"]},
+      {"id":"adapter-facet","label":"Adapter","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Integration facet for declared targets and managed Python or Node entrypoints.","sourceRefs":["kfx-contract"]},
+      {"id":"service-facet","label":"Service","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Process-isolated service facet with explicit runtime, host contract, and capabilities.","sourceRefs":["kfx-contract","authoring-kit"]},
+      {"id":"action-facet","label":"Action","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Surface-neutral intent and operation semantics retained by a Profile Suite.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+      {"id":"assessment-facet","label":"Assessment","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Purpose-bound evidence and policy evaluation, not a lifecycle mutation or capability grant.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+      {"id":"profile-facet","label":"Profile","kind":"facet","maturity":"source-defined-alpha","claimClass":"upstream-fact","summary":"Domain semantic closure over members, facts, actions, views, policies, and qualification references.","sourceRefs":["kfx-contract","profile-suite-adr"]},
+      {"id":"core-registry","label":"Core registry + semantic graph","kind":"control-plane","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"Indexes providers, extension points, contributions, dependencies, versions, trust, and capability roots.","sourceRefs":["kfx-contract","native-registry"]},
+      {"id":"core-admission","label":"Admission assessment","kind":"control-plane","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"Evaluates exact package, dependency, KFD, Buildchain, policy, and purpose-bound inputs without mutating lifecycle.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+      {"id":"core-capability","label":"Capability + Warrant boundary","kind":"control-plane","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"Intersects declarations with Core and workspace policy, required approvals, exact authorization roots, and Work/Warrant evidence.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+      {"id":"core-lifecycle","label":"Transactional lifecycle","kind":"control-plane","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"One fenced Core writer owns plan, authorize, apply, rollback, and history over immutable package roots.","sourceRefs":["kfx-contract","native-registry","lifecycle-adr"]},
+      {"id":"core-receipt","label":"Receipt + retained facts","kind":"control-plane","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"Applied or refused outcomes retain exact authority, capability, lifecycle, and evidence dependencies.","sourceRefs":["kfx-contract","native-registry","lifecycle-adr"]},
+      {"id":"admitted-contribution","label":"Admitted semantic contribution","kind":"projection","maturity":"implemented-exact-source","claimClass":"reference-implementation","summary":"A Core-resolved contribution plan that preserves provider ownership and exact authority roots.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+      {"id":"gui-surface","label":"GUI","kind":"surface","maturity":"qualified-upstream-scope","claimClass":"reference-implementation","summary":"Host-native visual projection of the admitted semantic contribution.","sourceRefs":["surface-parity-adr"]},
+      {"id":"tui-surface","label":"TUI","kind":"surface","maturity":"qualified-upstream-scope","claimClass":"reference-implementation","summary":"Host-native terminal UI projection of the same admitted semantics.","sourceRefs":["surface-parity-adr"]},
+      {"id":"cli-surface","label":"CLI","kind":"surface","maturity":"qualified-upstream-scope","claimClass":"reference-implementation","summary":"Human command projection over the same Core-owned plan and receipt contract.","sourceRefs":["surface-parity-adr"]},
+      {"id":"agent-surface","label":"Agent","kind":"surface","maturity":"qualified-upstream-scope","claimClass":"reference-implementation","summary":"Machine-readable projection over the same contribution, action, authority, and receipt identity.","sourceRefs":["surface-parity-adr","profile-suite-adr"]},
+      {"id":"kfd-evidence","label":"KFD assessment evidence","kind":"trust-evidence","maturity":"purpose-bound-evidence","claimClass":"upstream-fact","summary":"Fresh, purpose-bound assessment facts may inform admission but do not authorize mutation or execution.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+      {"id":"buildchain-evidence","label":"Buildchain exact-artifact evidence","kind":"trust-evidence","maturity":"exact-artifact-evidence","claimClass":"upstream-fact","summary":"Verifier result and provenance roots bind the exact source, dependencies, build plan, toolchain, artifact, and qualification evidence.","sourceRefs":["kfx-contract","trust-admission-adr"]}
+    ],
+    "relationships": [
+      {"id":"authors","from":"author-provider","to":"package-suite","label":"authors","maturity":"source-defined-alpha","sourceRefs":["kfx-contract"]},
+      {"id":"declares-view","from":"package-suite","to":"view-facet","label":"declares","maturity":"source-defined-alpha","sourceRefs":["kfx-contract"]},
+      {"id":"declares-adapter","from":"package-suite","to":"adapter-facet","label":"declares","maturity":"source-defined-alpha","sourceRefs":["kfx-contract"]},
+      {"id":"declares-service","from":"package-suite","to":"service-facet","label":"declares","maturity":"source-defined-alpha","sourceRefs":["kfx-contract","authoring-kit"]},
+      {"id":"declares-action","from":"package-suite","to":"action-facet","label":"closes over","maturity":"source-defined-alpha","sourceRefs":["kfx-contract","profile-suite-adr"]},
+      {"id":"declares-assessment","from":"package-suite","to":"assessment-facet","label":"closes over","maturity":"source-defined-alpha","sourceRefs":["kfx-contract","profile-suite-adr"]},
+      {"id":"declares-profile","from":"package-suite","to":"profile-facet","label":"may define","maturity":"source-defined-alpha","sourceRefs":["kfx-contract","profile-suite-adr"]},
+      {"id":"registers","from":"package-suite","to":"core-registry","label":"is discovered and indexed by","maturity":"implemented-exact-source","sourceRefs":["native-registry"]},
+      {"id":"assesses-kfd","from":"kfd-evidence","to":"core-admission","label":"informs","maturity":"purpose-bound-evidence","sourceRefs":["trust-admission-adr"]},
+      {"id":"assesses-buildchain","from":"buildchain-evidence","to":"core-admission","label":"binds exact artifact for","maturity":"exact-artifact-evidence","sourceRefs":["trust-admission-adr"]},
+      {"id":"registry-to-admission","from":"core-registry","to":"core-admission","label":"supplies exact graph roots to","maturity":"implemented-exact-source","sourceRefs":["kfx-contract","native-registry"]},
+      {"id":"admission-to-capability","from":"core-admission","to":"core-capability","label":"constrains","maturity":"implemented-exact-source","sourceRefs":["kfx-contract","trust-admission-adr"]},
+      {"id":"capability-to-lifecycle","from":"core-capability","to":"core-lifecycle","label":"authorizes exact mutation for","maturity":"implemented-exact-source","sourceRefs":["kfx-contract","lifecycle-adr"]},
+      {"id":"lifecycle-to-receipt","from":"core-lifecycle","to":"core-receipt","label":"emits","maturity":"implemented-exact-source","sourceRefs":["kfx-contract","native-registry"]},
+      {"id":"lifecycle-to-contribution","from":"core-lifecycle","to":"admitted-contribution","label":"activates admitted plan as","maturity":"implemented-exact-source","sourceRefs":["kfx-contract","surface-parity-adr"]},
+      {"id":"projects-gui","from":"admitted-contribution","to":"gui-surface","label":"projects to","maturity":"qualified-upstream-scope","sourceRefs":["surface-parity-adr"]},
+      {"id":"projects-tui","from":"admitted-contribution","to":"tui-surface","label":"projects to","maturity":"qualified-upstream-scope","sourceRefs":["surface-parity-adr"]},
+      {"id":"projects-cli","from":"admitted-contribution","to":"cli-surface","label":"projects to","maturity":"qualified-upstream-scope","sourceRefs":["surface-parity-adr"]},
+      {"id":"projects-agent","from":"admitted-contribution","to":"agent-surface","label":"projects to","maturity":"qualified-upstream-scope","sourceRefs":["surface-parity-adr","profile-suite-adr"]}
+    ],
+    "sourceRefs": ["kfx-contract","native-registry","authoring-kit","lifecycle-adr","surface-parity-adr","trust-admission-adr","profile-suite-adr"],
+    "nonClaims": [
+      "Presentation hosts do not own registry, admission, capability, lifecycle, or receipt authority.",
+      "A contribution being discoverable, authored, qualified, installed, activated, or running are distinct states.",
+      "Provider identity, first-party placement, Product roles, KFD fitness, or Buildchain provenance does not create ambient authority."
+    ]
+  },
+  "capabilityMap": {
+    "schema": "libkungfu.kfx-capability-map/v1",
+    "headline": "Choose the extension job, then inspect its maturity and authority boundary.",
+    "categories": [
+      {"id":"build","label":"Build","summary":"Create and qualify inert extension source and artifacts.","items":[
+        {"id":"authoring-lifecycle","label":"Inspect, scaffold, validate, build, qualify, and package","status":"available-in-installed-product","maturity":"installed-product-alpha","summary":"Version-matched offline authoring commands and SDK projection; no lifecycle authority is granted.","sourceRefs":["authoring-kit"]},
+        {"id":"webhook-starter","label":"Start a service KFX","status":"reference-starter","maturity":"loopback-qualified-fixture","summary":"Dependency-free Node webhook starter with synthetic credentials and loopback-only qualification.","sourceRefs":["authoring-kit"]}
+      ]},
+      {"id":"connect","label":"Connect","summary":"Join external systems through bounded adapters and services.","items":[
+        {"id":"adapter","label":"Adapters","status":"contract-defined","maturity":"source-defined-alpha","summary":"Declare targets, runtime entrypoints, and least capabilities for an integrated adapter.","sourceRefs":["kfx-contract"]},
+        {"id":"service","label":"Services and webhooks","status":"contract-and-reference-defined","maturity":"installed-product-alpha","summary":"Run process-isolated services under explicit host, network, credential, and lifecycle contracts.","sourceRefs":["kfx-contract","authoring-kit"]}
+      ]},
+      {"id":"add","label":"Add","summary":"Contribute product experience and domain semantics without modifying Core.","items":[
+        {"id":"views","label":"Views and experiences","status":"contract-defined","maturity":"source-defined-alpha","summary":"Add host-rendered experiences while Core retains semantic and authority roots.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+        {"id":"actions","label":"Actions","status":"profile-suite-defined","maturity":"source-defined-alpha","summary":"Declare surface-neutral operations and authorization requirements once.","sourceRefs":["kfx-contract","profile-suite-adr"]},
+        {"id":"assessments","label":"Assessments","status":"purpose-bound","maturity":"implemented-exact-source","summary":"Evaluate claims and policy at an exact evidence cut without mutating lifecycle.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+        {"id":"profiles","label":"Profile Suites","status":"contract-defined","maturity":"source-defined-alpha","summary":"Package domain facts, actions, views, policies, qualification, and member closure above domain-neutral Core.","sourceRefs":["kfx-contract","profile-suite-adr"]}
+      ]},
+      {"id":"lifecycle","label":"Lifecycle","summary":"Move exact content through Core-owned state transitions.","items":[
+        {"id":"inspect-plan","label":"Inspect and plan","status":"read-only","maturity":"implemented-exact-source","summary":"Resolve package closure, registry graph, trust inputs, capability diff, and exact expected roots before mutation.","sourceRefs":["kfx-contract","native-registry","lifecycle-adr"]},
+        {"id":"authorize-apply","label":"Authorize and apply","status":"warrant-required","maturity":"implemented-exact-source","summary":"Recompute exact roots and require purpose-bound capability, approval, Work, and Warrant evidence before side effects.","sourceRefs":["kfx-contract","lifecycle-adr","trust-admission-adr"]},
+        {"id":"operate-recover","label":"Activate, observe, diagnose, upgrade, rollback, and remove","status":"core-authoritative","maturity":"implemented-exact-source","summary":"One fenced writer advances lifecycle and retains applied or refused history and recovery evidence.","sourceRefs":["kfx-contract","native-registry","lifecycle-adr"]}
+      ]},
+      {"id":"trust","label":"Trust","summary":"Bind reliance to exact evidence without collapsing evidence into authority.","items":[
+        {"id":"immutable-content","label":"Immutable package and dependency roots","status":"required-input","maturity":"implemented-exact-source","summary":"Content identity and dependency closure are verified before they can enter Core lifecycle.","sourceRefs":["kfx-contract","lifecycle-adr"]},
+        {"id":"kfd-assessment","label":"KFD purpose-bound assessment","status":"admission-input","maturity":"purpose-bound-evidence","summary":"Fresh assessment facts can reduce policy-defined friction but cannot mint capability or mutation authority.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+        {"id":"buildchain-attestation","label":"Buildchain exact-artifact attestation","status":"admission-input","maturity":"exact-artifact-evidence","summary":"Binds source, dependencies, build plan, toolchain, artifact, qualification, issuer, publisher, and verifier roots.","sourceRefs":["kfx-contract","trust-admission-adr"]},
+        {"id":"receipt","label":"Capability grant, Warrant, and receipt chain","status":"mutation-boundary","maturity":"implemented-exact-source","summary":"Exact authorization and outcome roots are retained across plan, apply, settlement, and recovery.","sourceRefs":["kfx-contract","native-registry","lifecycle-adr"]}
+      ]},
+      {"id":"surfaces","label":"Surfaces","summary":"Project one admitted semantic contribution through host-native interfaces.","items":[
+        {"id":"gui","label":"GUI","status":"host-projection","maturity":"qualified-upstream-scope","summary":"Sandboxed visual host projection; it does not own lifecycle authority.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+        {"id":"tui","label":"TUI","status":"host-projection","maturity":"qualified-upstream-scope","summary":"Terminal UI projection over the same Core descriptor and roots.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+        {"id":"cli","label":"CLI","status":"host-projection","maturity":"qualified-upstream-scope","summary":"Human command projection over the same plan and receipt identity.","sourceRefs":["kfx-contract","surface-parity-adr"]},
+        {"id":"agent","label":"Agent","status":"machine-projection","maturity":"qualified-upstream-scope","summary":"Machine-readable contribution, action, plan, Work/Warrant, and receipt projection.","sourceRefs":["kfx-contract","surface-parity-adr","profile-suite-adr"]}
+      ]}
+    ],
+    "sourceRefs": ["kfx-contract","native-registry","authoring-kit","lifecycle-adr","surface-parity-adr","trust-admission-adr","profile-suite-adr"],
+    "nonClaims": [
+      "Capability presence does not imply capability grant, activation, production admission, or universal safety.",
+      "Maturity labels describe the exact cited source scope; they are not a new Site qualification verdict."
+    ]
+  }
+}
