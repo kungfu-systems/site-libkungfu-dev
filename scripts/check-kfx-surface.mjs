@@ -41,6 +41,15 @@ const html = fs.readFileSync("dist/kfx/index.html", "utf8");
 const llms = fs.readFileSync("dist/kfx/llms.txt", "utf8");
 const renderer = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const packageJson = readJson("package.json");
+const surfaceChannel = (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim();
+const previewAlias = (process.env.SITE_PREVIEW_ALIAS || process.env.BUILDCHAIN_PREVIEW_ALIAS || "").trim();
+const expectedKfxBase = surfaceChannel === "preview" && previewAlias
+  ? `https://${previewAlias}.preview.libkungfu.dev/kfx/`
+  : surfaceChannel === "staging"
+    ? "https://staging.libkungfu.dev/kfx/"
+    : "https://libkungfu.dev/kfx/";
+const expectedKfxUrl = (pathPart = "") => new URL(pathPart, expectedKfxBase).toString();
+const expectedKfxHost = new URL(expectedKfxBase).host;
 
 assert(fixture.schema === "libkungfu.kfx-site-synthesis/v1", "KFX fixture schema drifted");
 assert(fixture.status === "site-synthesis", "KFX surface must remain explicit Site synthesis");
@@ -142,18 +151,18 @@ assert(stable(capabilityMap.categories) === stable(fixture.capabilityMap.categor
 assert(stable(capabilityMap.nonClaims) === stable(fixture.capabilityMap.nonClaims), "KFX machine capability non-claim parity drifted");
 assert(stable(capabilityMap.sources) === stable(fixture.sources), "KFX machine capability source parity drifted");
 
-assert(manifest.canonicalUrl === "https://libkungfu.dev/kfx/", "KFX manifest canonical URL drifted");
-assert(manifest.machineEntries.manifest === "https://libkungfu.dev/kfx/manifest.json", "KFX manifest machine URL drifted");
-assert(manifest.machineEntries.llms === "https://libkungfu.dev/kfx/llms.txt", "KFX llms URL drifted");
-assert(manifest.machineEntries.architecture === "https://libkungfu.dev/kfx/architecture.json", "KFX architecture URL drifted");
-assert(manifest.machineEntries.capabilityMap === "https://libkungfu.dev/kfx/capability-map.json", "KFX capability-map URL drifted");
+assert(manifest.canonicalUrl === expectedKfxBase, "KFX manifest canonical URL drifted");
+assert(manifest.machineEntries.manifest === expectedKfxUrl("manifest.json"), "KFX manifest machine URL drifted");
+assert(manifest.machineEntries.llms === expectedKfxUrl("llms.txt"), "KFX llms URL drifted");
+assert(manifest.machineEntries.architecture === expectedKfxUrl("architecture.json"), "KFX architecture URL drifted");
+assert(manifest.machineEntries.capabilityMap === expectedKfxUrl("capability-map.json"), "KFX capability-map URL drifted");
 assert(manifest.architecture.nodeCount === nodeIds.size, "KFX manifest architecture node count drifted");
 assert(manifest.architecture.relationshipCount === relationshipIds.size, "KFX manifest relationship count drifted");
 assert(manifest.capabilityMap.categories.join(",") === "build,connect,add,lifecycle,trust,surfaces", "KFX manifest capability categories drifted");
 assert(manifest.capabilityMap.itemCount === capabilityIds.size, "KFX manifest capability item count drifted");
 
 for (const route of ["/kfx/", "/kfx/manifest.json", "/kfx/llms.txt", "/kfx/architecture.json", "/kfx/capability-map.json"]) {
-  assert(siteManifest.pages.some((entry) => entry.path === route && entry.host === "libkungfu.dev"), `root Site manifest missing canonical KFX route: ${route}`);
+  assert(siteManifest.pages.some((entry) => entry.path === route && entry.host === expectedKfxHost), `root Site manifest missing channel KFX route: ${route}`);
 }
 assert(siteManifest.upstreamFixtures?.kfx?.sourceRef === [...exactRefs][0], "root Site manifest KFX sourceRef drifted");
 assert(siteManifest.machineEntries.some((entry) => entry.path === "/kfx/manifest.json"), "root Site manifest missing KFX machine entry");
