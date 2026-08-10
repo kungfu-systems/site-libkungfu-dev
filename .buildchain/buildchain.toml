@@ -41,6 +41,12 @@ production_url = "https://libkungfu.dev"
 staging_url = "https://staging.libkungfu.dev"
 preview_url_pattern = "https://{alias}.preview.libkungfu.dev"
 
+[surfaces.kfx]
+path = "/kfx/"
+production_url = "https://kfx.libkungfu.dev"
+staging_url = "https://kfx.staging.libkungfu.dev"
+preview_url_pattern = "https://kfx-{alias}.preview.libkungfu.dev"
+
 [surfaces.core]
 path = "/core/"
 production_url = "https://core.libkungfu.dev"

@@ -463,7 +463,7 @@
   "surfaces": [
     {
       "id": "kfx",
-      "host": "libkungfu.dev",
+      "host": "kfx.libkungfu.dev",
       "path": "/kfx/",
       "label": "KFX developer surface",
       "summary": "Site-owned reader synthesis of the extension architecture, capability map, Core control plane, host projections, and exact immutable Kungfu sources.",
