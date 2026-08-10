@@ -138,7 +138,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.58` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.59` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
