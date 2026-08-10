@@ -6756,7 +6756,7 @@ writeFile(
       <div class="hero-actions">
         <a class="hero-action" href="#capability-build">Build with KFX</a>
         <a class="hero-action secondary" href="#architecture">Explore the architecture</a>
-        <a class="hero-action secondary" href="/kfx/manifest.json">Inspect machine facts</a>
+        <a class="hero-action secondary" href="manifest.json">Inspect machine facts</a>
       </div>
     </section>
 
@@ -6777,7 +6777,7 @@ writeFile(
         <p class="eyebrow">Architecture · human and Agent parity</p>
         <h2 id="kfx-architecture-heading">${escapeHtml(kfxSite.architecture.headline)}</h2>
         <p>${escapeHtml(kfxSite.architecture.summary)}</p>
-        <p><a href="/kfx/architecture.json">Read the exact machine graph</a></p>
+        <p><a href="architecture.json">Read the exact machine graph</a></p>
       </div>
       <div class="kfx-architecture" role="group" aria-label="KFX architecture from provider and package facets through Core control plane to admitted host projections">
         ${renderKfxArchitectureStage("Author and package", ["actor", "package"])}
@@ -6801,7 +6801,7 @@ writeFile(
       <div class="section-heading">
         <p class="eyebrow">Capability map · human and Agent parity</p>
         <h2 id="kfx-capabilities-heading">${escapeHtml(kfxSite.capabilityMap.headline)}</h2>
-        <p><a href="/kfx/capability-map.json">Read the exact machine capability map</a></p>
+        <p><a href="capability-map.json">Read the exact machine capability map</a></p>
       </div>
       ${kfxSite.capabilityMap.categories.map(renderKfxCapabilityCategory).join("\n")}
     </section>

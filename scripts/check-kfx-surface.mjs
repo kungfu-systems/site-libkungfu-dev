@@ -173,6 +173,13 @@ assert(html.includes("@media (max-width: 640px)"), "KFX surface is missing its r
 assert(html.includes('<link rel="alternate" type="application/json" title="KFX architecture" href="/architecture.json">'), "KFX architecture alternate missing");
 assert(html.includes('<link rel="alternate" type="application/json" title="KFX capability map" href="/capability-map.json">'), "KFX capability-map alternate missing");
 
+for (const machineEntry of ["manifest.json", "architecture.json", "capability-map.json"]) {
+  assert(html.includes(`href="${machineEntry}"`), `KFX human machine link must be surface-relative: ${machineEntry}`);
+  assert(!html.includes(`href="/kfx/${machineEntry}"`), `KFX human machine link would double-prefix on the dedicated host: ${machineEntry}`);
+  assert(new URL(machineEntry, "https://staging.libkungfu.dev/kfx/").pathname === `/kfx/${machineEntry}`, `KFX hub route resolution drifted: ${machineEntry}`);
+  assert(new URL(machineEntry, expectedKfxBase).pathname === `/${machineEntry}`, `KFX dedicated-host route resolution drifted: ${machineEntry}`);
+}
+
 for (const path of ["dist/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html", "dist/kfx/index.html"]) {
   const page = fs.readFileSync(path, "utf8");
   for (const label of ["KFD", "Buildchain", "Core", "Extensions", "Papers"]) {
