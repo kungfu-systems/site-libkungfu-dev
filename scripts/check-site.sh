@@ -330,7 +330,7 @@ for (const file of requiredFiles) {
   }
 }
 const rootFavicon = fs.readFileSync("dist/assets/favicon.svg", "utf8");
-for (const surface of ["core", "buildchain", "kfd", "papers"]) {
+for (const surface of ["kfx", "core", "buildchain", "kfd", "papers"]) {
   if (fs.readFileSync(`dist/${surface}/assets/favicon.svg`, "utf8") !== rootFavicon) {
     throw new Error(`${surface} favicon must match the shared site asset`);
   }
@@ -379,7 +379,7 @@ function expectedSurfaceHref(id) {
   const hrefsByChannel = {
     production: {
       hub: "https://libkungfu.dev/",
-      kfx: "https://libkungfu.dev/kfx/",
+      kfx: "https://kfx.libkungfu.dev/",
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
@@ -387,7 +387,7 @@ function expectedSurfaceHref(id) {
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
-      kfx: "https://staging.libkungfu.dev/kfx/",
+      kfx: "https://kfx.staging.libkungfu.dev/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
@@ -397,7 +397,7 @@ function expectedSurfaceHref(id) {
   if (channel === "preview" && previewAlias) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
-      kfx: `https://${previewAlias}.preview.libkungfu.dev/kfx/`,
+      kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
@@ -2207,9 +2207,12 @@ if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("
   throw new Error("human header brand must expose the shared Kungfu signature, local role, canonical hub, and local fallback");
 }
 if (
-  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">KFX</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">Extensions</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
 ) {
-  throw new Error("human header navigation must use canonical surface hosts, local fallbacks, and the Kungfu main-site return link");
+  throw new Error("human header navigation must use the KFD, Buildchain, Core, Extensions, Papers order, canonical surface hosts, local fallbacks, and the Kungfu main-site return link");
+}
+if (!hubHtml.includes('nav > a:not(:first-child):not(.main-site-link)::before')) {
+  throw new Error("human header navigation must retain the kungfu.tech-style desktop separators");
 }
 for (const path of ["index.html", "kfx/index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
   const html = fs.readFileSync(`dist/${path}`, "utf8");
@@ -2443,7 +2446,7 @@ for (const [className, href, label] of [
 }
 for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   ["Hub", hubHtml, "/manifest.json", "/llms.txt", "/llms-full.txt"],
-  ["KFX", kfxHtml, "/kfx/manifest.json", "/kfx/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["KFX", kfxHtml, "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "/manifest.json", "/llms.txt", "/llms-full.txt"],
   ["Buildchain", buildchainHomeHtml, "/manifest.json", expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],

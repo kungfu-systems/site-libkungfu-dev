@@ -20,6 +20,7 @@ const acceptedWebSurfaceShells = [
 ];
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
+  kfx: "https://kfx.libkungfu.dev",
   core: "https://core.libkungfu.dev",
   buildchain: "https://buildchain.libkungfu.dev",
   kfd: "https://kfd.libkungfu.dev",

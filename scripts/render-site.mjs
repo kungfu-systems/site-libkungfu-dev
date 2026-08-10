@@ -430,7 +430,7 @@ function surfaceCanonicalHref(id) {
   const hrefsByChannel = {
     production: {
       hub: "https://libkungfu.dev/",
-      kfx: "https://libkungfu.dev/kfx/",
+      kfx: "https://kfx.libkungfu.dev/",
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
@@ -438,7 +438,7 @@ function surfaceCanonicalHref(id) {
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
-      kfx: "https://staging.libkungfu.dev/kfx/",
+      kfx: "https://kfx.staging.libkungfu.dev/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
@@ -448,7 +448,7 @@ function surfaceCanonicalHref(id) {
   if (channel === "preview" && previewAlias) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
-      kfx: `https://${previewAlias}.preview.libkungfu.dev/kfx/`,
+      kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
@@ -475,7 +475,7 @@ function pageMachineEntryHref(current, pathPart) {
     return "/manifest.json";
   }
   if (current === "kfx") {
-    return pathPart === "llms-full.txt" ? surfaceEndpointHref("hub", pathPart) : `/kfx/${pathPart}`;
+    return pathPart === "llms-full.txt" ? surfaceEndpointHref("hub", pathPart) : `/${pathPart}`;
   }
   const owningSurface = pathPart === "llms-full.txt" || ["core", "buildchain"].includes(current)
     ? "hub"
@@ -1527,10 +1527,10 @@ ${registry.archivePolicy.rule}
 
 function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, immutableArchive = false }) {
   const nav = [
-    ["kfx", "KFX"],
-    ["core", "Core"],
-    ["buildchain", "Buildchain"],
     ["kfd", "KFD"],
+    ["buildchain", "Buildchain"],
+    ["core", "Core"],
+    ["kfx", "Extensions"],
     ["papers", "Papers"],
   ];
 
@@ -1587,6 +1587,7 @@ function page({ title, description, current, body, alternates = "", preserveRela
       }
     }
 `;
+  const navSeparatorExclusion = immutableArchive ? "" : ":not(.main-site-link)";
 
   return `<!doctype html>
 <html lang="en">
@@ -1741,6 +1742,24 @@ ${current === "core" ? `
     nav a[aria-current="page"] {
       color: var(--fg);
       font-weight: 700;
+    }
+
+    @media (min-width: 821px) {
+      nav > a:not(:first-child)${navSeparatorExclusion} {
+        position: relative;
+      }
+
+      nav > a:not(:first-child)${navSeparatorExclusion}::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -9px;
+        width: 1px;
+        height: 16px;
+        background: var(--line);
+        pointer-events: none;
+        transform: translateY(-50%);
+      }
     }
 ${mainSiteStyles}
     main {
@@ -6727,7 +6746,7 @@ writeFile(
     title: `KFX | ${site.title}`,
     description: kfxSite.lead,
     current: "kfx",
-    alternates: `  <link rel="alternate" type="application/json" title="KFX architecture" href="/kfx/architecture.json">\n  <link rel="alternate" type="application/json" title="KFX capability map" href="/kfx/capability-map.json">`,
+    alternates: `  <link rel="alternate" type="application/json" title="KFX architecture" href="/architecture.json">\n  <link rel="alternate" type="application/json" title="KFX capability map" href="/capability-map.json">`,
     body: `${kfxStyles}
     <section class="hero">
       <p class="eyebrow">KFX developer surface · ${escapeHtml(kfxSite.maturity)}</p>
@@ -8888,7 +8907,7 @@ const manifest = {
       ["/kfx/llms.txt", "src/fixtures/kfx-site.json"],
       ["/kfx/architecture.json", "src/fixtures/kfx-site.json#architecture"],
       ["/kfx/capability-map.json", "src/fixtures/kfx-site.json#capabilityMap"],
-    ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("hub"), source })),
+    ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("kfx"), source })),
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),

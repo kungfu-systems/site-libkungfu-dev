@@ -13,7 +13,7 @@ if [ -d public ]; then
   cp -R public/. dist/
 fi
 
-for surface in core buildchain kfd papers; do
+for surface in kfx core buildchain kfd papers; do
   mkdir -p "dist/${surface}/assets"
   cp public/assets/favicon.svg "dist/${surface}/assets/favicon.svg"
 done
@@ -26,6 +26,11 @@ cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evide
 test -f dist/index.html
 test -f dist/404.html
 test -f dist/architecture/index.html
+test -f dist/kfx/index.html
+test -f dist/kfx/manifest.json
+test -f dist/kfx/llms.txt
+test -f dist/kfx/architecture.json
+test -f dist/kfx/capability-map.json
 test -f dist/core/index.html
 test -f dist/core/runtime/index.html
 test -f dist/core/manifest.json

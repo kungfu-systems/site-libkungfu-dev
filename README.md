@@ -84,6 +84,9 @@ and keeps its human homepage projection aligned with that machine contract.
 
 - `https://libkungfu.dev` is the short builder entry to the open developer and
   agent substrate hub; `/architecture/` owns the full architecture.
+- `https://kfx.libkungfu.dev` presents Kungfu Extensions to new readers while
+  preserving KFX as the technical identity of its source-bound developer
+  surface, manifest, architecture, and capability map.
 - `https://core.libkungfu.dev` presents the complete Kungfu product map:
   promise, `.kungfu` format, primitives, runtime, ABI, SDKs, KFX/Profile,
   CLI/TUI/GUI/App layers, qualification, ADR navigation, and domain horizons.

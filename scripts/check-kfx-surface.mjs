@@ -44,10 +44,10 @@ const packageJson = readJson("package.json");
 const surfaceChannel = (process.env.SITE_SURFACE_CHANNEL || process.env.BUILDCHAIN_SURFACE_CHANNEL || "production").trim();
 const previewAlias = (process.env.SITE_PREVIEW_ALIAS || process.env.BUILDCHAIN_PREVIEW_ALIAS || "").trim();
 const expectedKfxBase = surfaceChannel === "preview" && previewAlias
-  ? `https://${previewAlias}.preview.libkungfu.dev/kfx/`
+  ? `https://kfx-${previewAlias}.preview.libkungfu.dev/`
   : surfaceChannel === "staging"
-    ? "https://staging.libkungfu.dev/kfx/"
-    : "https://libkungfu.dev/kfx/";
+    ? "https://kfx.staging.libkungfu.dev/"
+    : "https://kfx.libkungfu.dev/";
 const expectedKfxUrl = (pathPart = "") => new URL(pathPart, expectedKfxBase).toString();
 const expectedKfxHost = new URL(expectedKfxBase).host;
 
@@ -170,16 +170,19 @@ assert(siteManifest.machineEntries.some((entry) => entry.path === "/kfx/manifest
 assert(html.includes('role="group" aria-label="KFX architecture'), "KFX architecture needs an accessible group label");
 assert(html.includes('aria-labelledby="kfx-capabilities-heading"'), "KFX capability map needs an accessible heading relationship");
 assert(html.includes("@media (max-width: 640px)"), "KFX surface is missing its responsive layout contract");
-assert(html.includes('<link rel="alternate" type="application/json" title="KFX architecture" href="/kfx/architecture.json">'), "KFX architecture alternate missing");
-assert(html.includes('<link rel="alternate" type="application/json" title="KFX capability map" href="/kfx/capability-map.json">'), "KFX capability-map alternate missing");
+assert(html.includes('<link rel="alternate" type="application/json" title="KFX architecture" href="/architecture.json">'), "KFX architecture alternate missing");
+assert(html.includes('<link rel="alternate" type="application/json" title="KFX capability map" href="/capability-map.json">'), "KFX capability-map alternate missing");
 
 for (const path of ["dist/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html", "dist/kfx/index.html"]) {
   const page = fs.readFileSync(path, "utf8");
-  for (const label of ["KFX", "Core", "Buildchain", "KFD", "Papers"]) {
+  for (const label of ["KFD", "Buildchain", "Core", "Extensions", "Papers"]) {
     assert(page.includes(`>${label}</a>`), `${path} global navigation missing ${label}`);
   }
+  const positions = ["KFD", "Buildchain", "Core", "Extensions", "Papers"].map((label) => page.indexOf(`>${label}</a>`));
+  assert(positions.every((position, index) => index === 0 || position > positions[index - 1]), `${path} global navigation order drifted`);
   assert(page.includes('data-local-href="/kfx/"'), `${path} global navigation missing local KFX route`);
 }
+assert(html.includes('nav > a:not(:first-child):not(.main-site-link)::before'), "KFX navigation is missing the kungfu.tech-style desktop separators");
 
 assert(renderer.includes('const kfxSite = readFixtureJson("kfx-site.json")'), "KFX renderer must consume the governed fixture");
 assert(!renderer.includes(fixture.architecture.summary), "KFX architecture summary must not be duplicated into renderer prose");
