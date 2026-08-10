@@ -255,8 +255,12 @@ const kfdIndependentVerificationAssets = kfdIndependentVerificationPage?.machine
 const kfdSelfConformancePage = kfdStandalonePages.find((entry) => entry.id === "self-conformance");
 const kfdSelfConformanceAssets = kfdSelfConformancePage?.machineAssets || [];
 const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((entry) => entry.machineAssets || []);
-const kfdRecursiveSelfConformanceCase = kfdSite.liveCases?.cases?.find(
+const kfdLiveCases = kfdSite.liveCases?.cases || [];
+const kfdRecursiveSelfConformanceCase = kfdLiveCases.find(
   (entry) => entry.id === "recursive-normative-self-conformance",
+);
+const kfdDurableResultLiveCase = kfdLiveCases.find(
+  (entry) => entry.id === "durable-result-identity-availability",
 );
 const requiredFiles = [
   ...requiredBaseFiles,
@@ -294,8 +298,13 @@ const requiredFiles = [
       `dist/${output}/index.html`,
     ];
   }),
-  "dist/kfd/cases/live/recursive-normative-self-conformance/index.html",
-  "dist/cases/live/recursive-normative-self-conformance/index.html",
+  ...kfdLiveCases.flatMap((entry) => {
+    const output = entry.url.replace(/^\/+|\/+$/g, "");
+    return [
+      `dist/kfd/${output}/index.html`,
+      `dist/${output}/index.html`,
+    ];
+  }),
   ...kfdRegistry.entries.flatMap((entry) => [
     `dist/kfd/${entry.number}/index.html`,
     `dist/${entry.number}/index.html`,
@@ -1816,12 +1825,15 @@ for (const asset of kfdStandaloneMachineAssets) {
     throw new Error(`dist manifest does not record KFD standalone machine asset: ${asset.sourcePath}`);
   }
 }
-if (!manifest.pages.some(
-  (page) => page.host === expectedSurfaceHost("kfd")
-    && page.path === "/cases/live/recursive-normative-self-conformance/"
-    && page.source.endsWith(`/${kfdRecursiveSelfConformanceCase.humanEntry.path}`),
-)) {
-  throw new Error("dist manifest does not record the recursive self-conformance live case");
+for (const liveCase of kfdLiveCases) {
+  const liveCasePath = `${liveCase.url.replace(/\/+$/, "")}/`;
+  if (!manifest.pages.some(
+    (page) => page.host === expectedSurfaceHost("kfd")
+      && page.path === liveCasePath
+      && page.source.endsWith(`/${liveCase.humanEntry.path}`),
+  )) {
+    throw new Error(`dist manifest does not record KFD live case: ${liveCase.id}`);
+  }
 }
 for (const entry of kfdRegistry.entries) {
   const path = `/${entry.number}/`;
@@ -1909,6 +1921,16 @@ if (
   || kfdAgentManifest.agentEntries?.recursiveSelfConformanceCase !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
 ) {
   throw new Error("KFD agent manifest must expose channel-aware KFD entries");
+}
+for (const liveCase of kfdLiveCases) {
+  const output = `${liveCase.url.replace(/^\/+|\/+$/g, "")}/`;
+  const endpoint = expectedSurfaceEndpoint("kfd", output);
+  if (
+    kfdAgentManifest.humanEntries?.liveCases?.[liveCase.id] !== endpoint
+    || kfdAgentManifest.agentEntries?.liveCases?.[liveCase.id] !== endpoint
+  ) {
+    throw new Error(`KFD agent manifest is missing the channel-aware live-case entry: ${liveCase.id}`);
+  }
 }
 if (
   kfdAgentManifest.agentHub?.path !== kfdAgentHubPath
@@ -2008,13 +2030,39 @@ if (
   || kfdAgentManifest.selfConformance?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSelfConformancePage.sourcePath}`
   || JSON.stringify(kfdAgentManifest.selfConformance?.profile) !== JSON.stringify(kfdSelfConformancePage.profile)
   || JSON.stringify(kfdAgentManifest.selfConformance?.recursiveCase?.terminal) !== JSON.stringify(kfdSelfConformancePage.recursiveCase.terminal)
-  || kfdAgentManifest.cases?.live?.[0]?.id !== kfdRecursiveSelfConformanceCase.id
-  || kfdAgentManifest.cases?.live?.[0]?.status !== "closed"
-  || kfdAgentManifest.cases?.live?.[0]?.url !== expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/")
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "verify/self-conformance/"))
-  || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "cases/live/recursive-normative-self-conformance/"))
 ) {
-  throw new Error("KFD agent manifest must preserve the package-owned self-conformance and recursive-case facts");
+  throw new Error("KFD agent manifest must preserve the package-owned self-conformance facts");
+}
+if (kfdAgentManifest.cases?.live?.length !== kfdLiveCases.length) {
+  throw new Error("KFD agent manifest live-case count must match the package registry");
+}
+for (const liveCase of kfdLiveCases) {
+  const output = `${liveCase.url.replace(/^\/+|\/+$/g, "")}/`;
+  const endpoint = expectedSurfaceEndpoint("kfd", output);
+  const renderedCase = kfdAgentManifest.cases.live.find((entry) => entry.id === liveCase.id);
+  const expectedCandidates = kfdCandidateRegistry.candidates.filter((candidate) => (
+    candidate.sourceCases || []
+  ).some((sourceCase) => sourceCase.id === liveCase.id));
+  if (
+    renderedCase?.path !== `${liveCase.url.replace(/\/+$/, "")}/`
+    || renderedCase?.url !== endpoint
+    || renderedCase?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${liveCase.humanEntry.path}`
+    || renderedCase?.status !== liveCase.status
+    || renderedCase?.relationship !== liveCase.relationship
+    || renderedCase?.candidates?.length !== expectedCandidates.length
+    || !kfdAgentManifest.readOrder.includes(endpoint)
+  ) {
+    throw new Error(`KFD agent manifest is missing package-owned live-case facts: ${liveCase.id}`);
+  }
+  for (const candidate of expectedCandidates) {
+    if (!renderedCase.candidates.some((entry) => (
+      entry.id === candidate.id
+      && entry.url === expectedSurfaceEndpoint("kfd", `drafts/${candidate.id}/`)
+    ))) {
+      throw new Error(`KFD live-case manifest is missing Candidate relationship: ${liveCase.id} -> ${candidate.id}`);
+    }
+  }
 }
 for (const asset of kfdSelfConformanceAssets) {
   const output = asset.url.replace(/^\/+/, "");
@@ -2837,35 +2885,116 @@ if (
 ) {
   throw new Error("KFD self-conformance page must retain reciprocal routes and reject verifier or Site authority overreach");
 }
-const kfdRecursiveCaseHtml = fs.readFileSync("dist/kfd/cases/live/recursive-normative-self-conformance/index.html", "utf8");
-if (fs.readFileSync("dist/cases/live/recursive-normative-self-conformance/index.html", "utf8") !== kfdRecursiveCaseHtml) {
-  throw new Error("KFD recursive self-conformance live-case alias drifted");
+const kfdLiveCaseDocumentKeys = [
+  "humanEntry",
+  "genesis",
+  "methodTrace",
+  "ontologySplit",
+  "distinguishabilityArgument",
+  "propagationHypothesis",
+  "reviewIndex",
+  "developmentLineage",
+];
+for (const liveCase of kfdLiveCases) {
+  const output = liveCase.url.replace(/^\/+|\/+$/g, "");
+  const liveCasePath = `/${output}/`;
+  const canonicalPath = `dist/kfd/${output}/index.html`;
+  const aliasPath = `dist/${output}/index.html`;
+  const liveCaseHtml = fs.readFileSync(canonicalPath, "utf8");
+  if (fs.readFileSync(aliasPath, "utf8") !== liveCaseHtml) {
+    throw new Error(`KFD live-case alias drifted: ${liveCase.id}`);
+  }
+  for (const requiredText of [
+    liveCase.title,
+    liveCase.claimBoundary,
+    liveCase.status,
+    liveCase.standard,
+    liveCase.relationship,
+  ]) {
+    if (!liveCaseHtml.includes(escapeHtml(requiredText))) {
+      throw new Error(`KFD live case is missing package-owned fact ${liveCase.id}: ${requiredText}`);
+    }
+  }
+  if (
+    !liveCaseHtml.includes("data-live-case-hero")
+    || !liveCaseHtml.includes("data-live-case-contract")
+    || !liveCaseHtml.includes("data-live-case-narrative")
+    || !liveCaseHtml.includes(`<a class="doc-nav-child" href="${escapeHtml(liveCasePath)}" aria-current="page">${escapeHtml(liveCase.title)}</a>`)
+    || liveCaseHtml.includes('<a href="/cases/" aria-current="page">Historical cases</a>')
+    || /href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(liveCaseHtml)
+  ) {
+    throw new Error(`KFD live case is missing the shared rendering and navigation contract: ${liveCase.id}`);
+  }
+
+  const expectedCandidates = kfdCandidateRegistry.candidates.filter((candidate) => (
+    candidate.sourceCases || []
+  ).some((sourceCase) => sourceCase.id === liveCase.id));
+  if (!liveCaseHtml.includes(`<dt>Candidate count</dt><dd><code>${expectedCandidates.length}</code></dd>`)) {
+    throw new Error(`KFD live case Candidate count drifted: ${liveCase.id}`);
+  }
+  for (const candidate of expectedCandidates) {
+    if (!liveCaseHtml.includes(`href="/drafts/${escapeHtml(candidate.id)}/"`)) {
+      throw new Error(`KFD live case is missing Candidate relationship: ${liveCase.id} -> ${candidate.id}`);
+    }
+  }
+  if (
+    (expectedCandidates.length === 0 && !liveCaseHtml.includes('data-candidate-relationship="none"'))
+    || (expectedCandidates.length === 1 && !liveCaseHtml.includes('data-candidate-relationship="single"'))
+    || (expectedCandidates.length > 1 && !liveCaseHtml.includes('data-candidate-relationship="many"'))
+    || (expectedCandidates.length !== 1 && liveCaseHtml.includes("<strong>Candidate ownership:</strong>"))
+  ) {
+    throw new Error(`KFD live case must express zero, singular, and plural Candidate relationships without false ownership: ${liveCase.id}`);
+  }
+
+  const narrativeHtml = liveCaseHtml.slice(liveCaseHtml.indexOf("data-live-case-narrative"));
+  let previousNarrativePosition = -1;
+  for (const key of kfdLiveCaseDocumentKeys) {
+    const document = liveCase[key];
+    if (!document?.markdown) continue;
+    const heading = document.markdown.split("\n").find((line) => /^#+\s+/u.test(line));
+    if (!heading) continue;
+    const headingText = heading.replace(/^#+\s+/u, "").trim();
+    const position = narrativeHtml.indexOf(escapeHtml(headingText));
+    if (position < 0 || position <= previousNarrativePosition) {
+      throw new Error(`KFD live case package narrative order drifted at ${liveCase.id}:${key}`);
+    }
+    previousNarrativePosition = position;
+  }
+
+  const hrefPattern = /\shref="([^"]+)"/gu;
+  for (const match of liveCaseHtml.matchAll(hrefPattern)) {
+    const href = match[1].replaceAll("&amp;", "&");
+    const resolved = new URL(href, `https://kfd.example${liveCasePath}`);
+    if (resolved.origin !== "https://kfd.example") continue;
+    const relativePath = resolved.pathname.replace(/^\/+/, "");
+    const target = resolved.pathname.endsWith("/")
+      ? path.join("dist/kfd", relativePath, "index.html")
+      : path.join("dist/kfd", relativePath);
+    if (!fs.existsSync(target)) {
+      throw new Error(`KFD live case internal href does not resolve: ${liveCase.id} ${href} -> ${target}`);
+    }
+  }
 }
+
+const kfdRecursiveCaseHtml = fs.readFileSync("dist/kfd/cases/live/recursive-normative-self-conformance/index.html", "utf8");
 for (const requiredText of [
-  kfdRecursiveSelfConformanceCase.title,
-  kfdRecursiveSelfConformanceCase.claimBoundary,
   "Closed without a new Primitive or KFD number",
   kfdSelfConformancePage.recursiveCase.liveCase.outcome,
   kfdSelfConformancePage.recursiveCase.terminal.requestRoot,
   kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot,
 ]) {
   if (!kfdRecursiveCaseHtml.includes(escapeHtml(requiredText))) {
-    throw new Error(`KFD recursive live case missing package-owned fact: ${requiredText}`);
+    throw new Error(`KFD recursive live case missing terminal evidence: ${requiredText}`);
   }
 }
-if (
-  !kfdRecursiveCaseHtml.includes('href="/verify/self-conformance/"')
-  || !kfdRecursiveCaseHtml.includes('href="/drafts/recursive-normative-self-conformance/"')
-) {
-  throw new Error("KFD recursive live case must link back to the Profile and Candidate lineage");
+if (!kfdRecursiveCaseHtml.includes('href="/verify/self-conformance/"')) {
+  throw new Error("KFD recursive live case must retain its extra Self-Conformance Profile evidence link");
 }
-if (
-  !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/">Self-Conformance</a>')
-  || !kfdRecursiveCaseHtml.includes(`<a class="doc-nav-child" href="/cases/live/recursive-normative-self-conformance/" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`)
-  || kfdRecursiveCaseHtml.includes('<a href="/cases/" aria-current="page">Historical cases</a>')
-  || !kfdRecursiveCaseHtml.includes('<a href="/verify/self-conformance/" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a>')
-) {
-  throw new Error("KFD recursive live case must belong to Self-Conformance navigation without marking Historical cases current");
+const kfdDurableResultCaseHtml = fs.readFileSync("dist/kfd/cases/live/durable-result-identity-availability/index.html", "utf8");
+for (const requiredText of ["Product genesis is retained without promoting the Candidate", "not authorized"]) {
+  if (!kfdDurableResultCaseHtml.includes(escapeHtml(requiredText))) {
+    throw new Error(`KFD Durable Result live case missing bounded extra evidence: ${requiredText}`);
+  }
 }
 const kfdFormalModelPath = `${kfdSite.formalPage.url.replace(/\/+$/, "")}/`;
 const kfdFormalModelCanonicalHtml = fs.readFileSync("dist/kfd/formal/index.html", "utf8");
@@ -3059,6 +3188,17 @@ for (const candidate of kfdCandidatePages) {
   }
   if (/href="(?:\.\.?\/|[^":/#]+\.md(?:#|"))/.test(candidateCanonicalHtml)) {
     throw new Error(`KFD candidate page has unresolved package markdown links: ${candidate.id}`);
+  }
+  const registryCandidate = kfdCandidateRegistry.candidates.find((entry) => entry.id === candidate.id);
+  for (const sourceCase of registryCandidate?.sourceCases || []) {
+    const liveCase = kfdLiveCases.find((entry) => entry.id === sourceCase.id);
+    if (!liveCase) {
+      throw new Error(`KFD Candidate source case is not registered as live: ${candidate.id} -> ${sourceCase.id}`);
+    }
+    const liveCasePath = `${liveCase.url.replace(/\/+$/, "")}/`;
+    if (!candidateCanonicalHtml.includes(`href="${escapeHtml(liveCasePath)}"`)) {
+      throw new Error(`KFD Candidate source-case link did not resolve to the generated live route: ${candidate.id} -> ${sourceCase.id}`);
+    }
   }
   if (
     candidate.id === "recursive-normative-self-conformance"
