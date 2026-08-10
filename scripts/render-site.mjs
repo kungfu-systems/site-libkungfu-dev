@@ -295,7 +295,7 @@ function renderDecisionMarkdown(source, tocLabel = "Decision sections", options 
 
 function rewritePackageMarkdownLinks(source, repositoryPath, options = {}) {
   const filePattern = options.filePattern || /.+/;
-  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s)]+)(#[^)]+)?\)/g, (_match, target, hash = "") => {
+  return String(source).replace(/\]\((?!https?:\/\/|\/|#)([^)\s#]+)(#[^)]+)?\)/g, (_match, target, hash = "") => {
     const cleanTarget = target.replace(/^\.\//, "");
     const sourceDirectory = options.sourcePath ? path.posix.dirname(options.sourcePath) : "";
     const resolvedTarget = sourceDirectory
@@ -4277,12 +4277,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
   const standaloneNavLink = (pageId) => {
     const pageEntry = kfdStandalonePages.find((entry) => entry.id === pageId);
     if (!pageEntry) return "";
-    const childLink = currentPage === "recursive-self-conformance-case"
-      && pageEntry.id === "self-conformance"
-      && kfdRecursiveSelfConformanceCase
-      ? `<a class="doc-nav-child" href="${escapeAttr(`${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</a>`
-      : "";
-    return `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>${childLink}`;
+    return `<a href="${escapeAttr(`${pageEntry.url.replace(/\/+$/, "")}/`)}"${currentPage === `standalone:${pageEntry.id}` ? ' aria-current="page"' : ""}>${escapeHtml(pageEntry.rendering?.navigationLabel || pageEntry.title)}</a>`;
   };
   const candidateLinks = currentCandidate
     ? [
@@ -4290,11 +4285,11 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
         currentPage === "candidate-formal" && currentCandidateFormal
           ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(currentCandidateFormal.url)}" aria-current="page">Formal candidate</a>`
           : "",
-        currentPage === "candidate-live-case" && currentLiveCase
-          ? `<a class="doc-nav-child" style="margin-left: 28px;" href="${escapeAttr(`${currentLiveCase.url.replace(/\/+$/, "")}/`)}" aria-current="page">Live case</a>`
-          : "",
       ].join("")
     : "";
+  const liveCaseLinks = kfdLiveCases
+    .map((entry) => `<a class="doc-nav-child" href="${escapeAttr(kfdLiveCasePath(entry))}"${currentPage === "live-case" && currentLiveCase?.id === entry.id ? ' aria-current="page"' : ""}>${escapeHtml(entry.title)}</a>`)
+    .join("");
   const links = kfdRegistry.entries
     .map((entry) => {
       const isCurrentDecision = String(entry.number) === currentNumber && currentPage === "decision";
@@ -4339,6 +4334,8 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
       <a href="${escapeAttr(kfdFormalModelPath)}"${currentPage === "formal-model" ? ' aria-current="page"' : ""}>Formal model</a>
       <a href="${escapeAttr(kfdTerminologyPath)}"${currentPage === "terminology" ? ' aria-current="page"' : ""}>Terminology</a>
       <a href="${escapeAttr(kfdCasesPath)}"${currentPage === "cases" ? ' aria-current="page"' : ""}>Historical cases</a>
+      <p class="doc-nav-heading">Live cases</p>
+      ${liveCaseLinks}
     </div>
   </nav>`;
 }
@@ -4638,12 +4635,33 @@ const kfdIndependentVerificationPage = kfdStandalonePages.find(
 const kfdSelfConformancePage = kfdStandalonePages.find(
   (entry) => entry.id === "self-conformance",
 );
-const kfdRecursiveSelfConformanceCase = (kfdSite.liveCases?.cases || []).find(
-  (entry) => entry.id === "recursive-normative-self-conformance",
-);
-const kfdDurableResultLiveCase = (kfdSite.liveCases?.cases || []).find(
-  (entry) => entry.id === "durable-result-identity-availability",
-);
+const kfdLiveCases = kfdSite.liveCases?.cases || [];
+const kfdLiveCasePath = (entry) => `${entry.url.replace(/\/+$/, "")}/`;
+const kfdLiveCaseDocumentKeys = [
+  "humanEntry",
+  "genesis",
+  "methodTrace",
+  "ontologySplit",
+  "distinguishabilityArgument",
+  "propagationHypothesis",
+  "reviewIndex",
+  "developmentLineage",
+];
+const kfdLiveCaseDocuments = (entry) => kfdLiveCaseDocumentKeys
+  .map((key) => entry[key])
+  .filter((document) => document?.path && typeof document.markdown === "string");
+const kfdCandidateEntriesByLiveCaseId = new Map(kfdLiveCases.map((entry) => [
+  entry.id,
+  kfdCandidateRegistry.candidates.filter((candidate) => (
+    candidate.sourceCases || []
+  ).some((sourceCase) => sourceCase.id === entry.id)),
+]));
+const kfdCandidatePagesByLiveCaseId = new Map(kfdLiveCases.map((entry) => [
+  entry.id,
+  (kfdCandidateEntriesByLiveCaseId.get(entry.id) || [])
+    .map((candidate) => kfdCandidatePageById.get(candidate.id))
+    .filter(Boolean),
+]));
 const kfdPackageRoot = packageRoot("@kungfu-tech/kfd");
 const kfdStandaloneMachineAssets = kfdStandalonePages.flatMap((pageEntry) =>
   (pageEntry.machineAssets || []).map((entry) => ({ ...entry, pageId: pageEntry.id })),
@@ -4672,12 +4690,6 @@ const kfdIndependentVerificationAssets = kfdStandaloneMachineAssets.filter(
 const kfdSelfConformanceAssets = kfdStandaloneMachineAssets.filter(
   (entry) => entry.pageId === kfdSelfConformancePage?.id,
 );
-const kfdRecursiveSelfConformanceCasePath = kfdRecursiveSelfConformanceCase
-  ? `${kfdRecursiveSelfConformanceCase.url.replace(/\/+$/, "")}/`
-  : undefined;
-const kfdDurableResultLiveCasePath = kfdDurableResultLiveCase
-  ? `${kfdDurableResultLiveCase.url.replace(/\/+$/, "")}/`
-  : undefined;
 const kfdCandidateIndexPath = `${kfdSite.candidatePages?.indexUrl?.replace(/\/+$/, "") || "/drafts"}/`;
 const kfdDecisionMetadataCodeLinks = {
   "kungfu-systems/kfd": kfdSourceRepository,
@@ -4710,28 +4722,8 @@ const kfdPageRouteBySourcePath = new Map([
     `${pageEntry.url.replace(/\/+$/, "")}/`,
   ]),
   ...kfdStandaloneMachineAssets.map((entry) => [entry.sourcePath, `/${entry.outputPath}`]),
-  ...(kfdRecursiveSelfConformanceCase
-    ? [
-        kfdRecursiveSelfConformanceCase.humanEntry,
-        kfdRecursiveSelfConformanceCase.genesis,
-        kfdRecursiveSelfConformanceCase.methodTrace,
-        kfdRecursiveSelfConformanceCase.propagationHypothesis,
-        kfdRecursiveSelfConformanceCase.reviewIndex,
-        kfdRecursiveSelfConformanceCase.ontologySplit,
-        kfdRecursiveSelfConformanceCase.distinguishabilityArgument,
-      ].map((entry) => [entry.path, kfdRecursiveSelfConformanceCasePath])
-    : []),
-  ...(kfdDurableResultLiveCase
-    ? [
-        kfdDurableResultLiveCase.humanEntry,
-        kfdDurableResultLiveCase.genesis,
-        kfdDurableResultLiveCase.methodTrace,
-        kfdDurableResultLiveCase.propagationHypothesis,
-        kfdDurableResultLiveCase.reviewIndex,
-        kfdDurableResultLiveCase.ontologySplit,
-        kfdDurableResultLiveCase.distinguishabilityArgument,
-      ].map((entry) => [entry.path, kfdDurableResultLiveCasePath])
-    : []),
+  ...kfdLiveCases.flatMap((liveCase) => kfdLiveCaseDocuments(liveCase)
+    .map((entry) => [entry.path, kfdLiveCasePath(liveCase)])),
   ["terminology.json", "/terminology.json"],
   ["schemas/kfd-terminology.schema.json", "/schemas/kfd-terminology.schema.json"],
   ...kfdRegistry.entries.map((entry) => [entry.path, `/${entry.number}/`]),
@@ -7859,126 +7851,86 @@ const kfdCasesPageHtml = page({
 writeFile("kfd/cases/index.html", kfdCasesPageHtml);
 writeFile("cases/index.html", kfdCasesPageHtml);
 
-if (kfdRecursiveSelfConformanceCase) {
-  const liveCaseDocuments = [
-    kfdRecursiveSelfConformanceCase.humanEntry,
-    kfdRecursiveSelfConformanceCase.genesis,
-    kfdRecursiveSelfConformanceCase.methodTrace,
-    kfdRecursiveSelfConformanceCase.ontologySplit,
-    kfdRecursiveSelfConformanceCase.distinguishabilityArgument,
-    kfdRecursiveSelfConformanceCase.propagationHypothesis,
-    kfdRecursiveSelfConformanceCase.reviewIndex,
-  ];
+for (const liveCase of kfdLiveCases) {
+  const candidatePages = kfdCandidatePagesByLiveCaseId.get(liveCase.id) || [];
+  const singleCandidate = candidatePages.length === 1 ? candidatePages[0] : undefined;
+  const liveCaseDocuments = kfdLiveCaseDocuments(liveCase);
   const renderedLiveCase = renderDecisionMarkdown(
     liveCaseDocuments.map((entry) => rewritePackageMarkdownLinks(entry.markdown, "kungfu-systems/kfd", {
       filePattern: /\.md$|\.json$/,
       internalRoutes: kfdPageRouteBySourcePath,
       sourcePath: entry.path,
     })).join("\n\n---\n\n"),
-    "Recursive case sections",
+    `${liveCase.title} sections`,
   );
-  const recursiveCase = kfdSelfConformancePage?.recursiveCase;
-  const liveCaseHtml = page({
-    title: `${kfdRecursiveSelfConformanceCase.title} | KFD live cases`,
-    description: kfdRecursiveSelfConformanceCase.claimBoundary,
-    current: "kfd",
-    alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero kfd-content-hero">
-      <p class="eyebrow page-kicker"><a href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}" aria-label="Back to KFD Self-Conformance">Back to Self-Conformance</a><span class="page-kicker-state">live case / ${escapeHtml(kfdRecursiveSelfConformanceCase.status)}</span></p>
-      <h1>${escapeHtml(kfdRecursiveSelfConformanceCase.title)}</h1>
-      <p class="lead">${escapeHtml(kfdRecursiveSelfConformanceCase.claimBoundary)}</p>
-      <div class="card-actions">
-        <a class="card-action" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">How KFD changes itself</a>
-        <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.candidate.url.replace(/\/+$/, "")}/`)}">Candidate lineage</a>
-      </div>
-      ${kfdAuthoritySignal({ sourcePath: kfdRecursiveSelfConformanceCase.humanEntry.path, variant: "hero" })}
-    </section>
-
-    <section class="panel" data-recursive-case-terminal>
+  const relationshipHtml = candidatePages.length === 0
+    ? `<p data-candidate-relationship="none"><strong>Candidate relationships:</strong> No Candidate page is registered for this live case.</p>`
+    : candidatePages.length === 1
+      ? `<p data-candidate-relationship="single"><strong>Candidate ownership:</strong> <a href="${escapeAttr(singleCandidate.url)}">${escapeHtml(singleCandidate.title)}</a> is the single Candidate whose package registry source cases include this live case.</p>`
+      : `<div data-candidate-relationship="many"><p><strong>Candidate relationships:</strong> ${escapeHtml(String(candidatePages.length))} Candidates cite this live case; no singular Candidate owner is implied.</p><ul>${candidatePages.map((candidate) => `<li><a href="${escapeAttr(candidate.url)}">${escapeHtml(candidate.title)}</a></li>`).join("")}</ul></div>`;
+  const recursiveCase = liveCase.id === "recursive-normative-self-conformance"
+    ? kfdSelfConformancePage?.recursiveCase
+    : undefined;
+  const extraEvidenceHtml = recursiveCase
+    ? `<section class="panel" data-live-case-extra="recursive-terminal">
       <p class="eyebrow">Terminal evidence · ${escapeHtml(recursiveCase.liveCase.outcome)}</p>
       <h2>Closed without a new Primitive or KFD number</h2>
       <dl class="meta">
         <dt>Candidate status</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code></dd>
-        <dt>Live case status</dt><dd><code>${escapeHtml(recursiveCase.liveCase.status)}</code></dd>
-        <dt>Normative</dt><dd><code>${escapeHtml(String(recursiveCase.candidate.normative))}</code></dd>
         <dt>Terminal outcome</dt><dd><code>${escapeHtml(recursiveCase.terminal.outcome)}</code></dd>
         <dt>Request root</dt><dd><code>${escapeHtml(recursiveCase.terminal.requestRoot)}</code></dd>
         <dt>Terminal report root</dt><dd><code>${escapeHtml(recursiveCase.terminal.terminalReportRoot)}</code></dd>
         <dt>Number allocated</dt><dd><code>${escapeHtml(String(recursiveCase.terminal.numberAllocated))}</code></dd>
         <dt>Release authorized</dt><dd><code>${escapeHtml(String(recursiveCase.terminal.releaseAuthorized))}</code></dd>
       </dl>
-    </section>
-
-    <section class="doc-layout long-toc">
-      <aside class="doc-sidebar">
-        ${kfdDecisionNav(undefined, "recursive-self-conformance-case")}
-        ${renderedLiveCase.tocHtml}
-      </aside>
-      <article class="panel doc-content">${renderedLiveCase.html}</article>
-    </section>`,
-  });
-  const liveCaseOutput = kfdRecursiveSelfConformanceCase.url.replace(/^\/+|\/+$/g, "");
-  writeFile(`kfd/${liveCaseOutput}/index.html`, liveCaseHtml);
-  writeFile(`${liveCaseOutput}/index.html`, liveCaseHtml);
-}
-
-if (kfdDurableResultLiveCase) {
-  const durableResultCandidate = kfdCandidatePageById.get(kfdDurableResultLiveCase.id);
-  const liveCaseDocuments = [
-    kfdDurableResultLiveCase.humanEntry,
-    kfdDurableResultLiveCase.genesis,
-    kfdDurableResultLiveCase.methodTrace,
-    kfdDurableResultLiveCase.ontologySplit,
-    kfdDurableResultLiveCase.distinguishabilityArgument,
-    kfdDurableResultLiveCase.propagationHypothesis,
-    kfdDurableResultLiveCase.reviewIndex,
-  ];
-  const renderedLiveCase = renderDecisionMarkdown(
-    liveCaseDocuments.map((entry) => rewritePackageMarkdownLinks(entry.markdown, "kungfu-systems/kfd", {
-      filePattern: /\.md$|\.json$/,
-      internalRoutes: kfdPageRouteBySourcePath,
-      sourcePath: entry.path,
-    })).join("\n\n---\n\n"),
-    "Durable Result live case sections",
-  );
+      <div class="card-actions"><a class="card-action secondary" href="${escapeAttr(`${kfdSelfConformancePage.url.replace(/\/+$/, "")}/`)}">Self-Conformance Profile</a></div>
+    </section>`
+    : liveCase.id === "durable-result-identity-availability"
+      ? `<section class="panel" data-live-case-extra="durable-result-boundary">
+        <p class="eyebrow">Founding evidence · qualification remains open</p>
+        <h2>Product genesis is retained without promoting the Candidate</h2>
+        <p>Number allocation and production reuse remain <strong>not authorized</strong>.</p>
+      </section>`
+      : "";
+  const backHref = singleCandidate?.url || kfdCandidateIndexPath;
+  const backLabel = singleCandidate ? `Back to ${singleCandidate.title}` : "Back to Candidate registry";
   const liveCaseHtml = page({
-    title: `${kfdDurableResultLiveCase.title} | KFD live cases`,
-    description: kfdDurableResultLiveCase.claimBoundary,
+    title: `${liveCase.title} | KFD live cases`,
+    description: liveCase.claimBoundary,
     current: "kfd",
     alternates: kfdSurfaceAlternates(),
-    body: `<section class="hero kfd-content-hero">
-      <p class="eyebrow page-kicker"><a href="${escapeAttr(durableResultCandidate?.url || kfdCandidateIndexPath)}" aria-label="Back to Durable Result Candidate">Back to Durable Result Candidate</a><span class="page-kicker-state">live case / ${escapeHtml(kfdDurableResultLiveCase.status)}</span></p>
-      <h1>${escapeHtml(kfdDurableResultLiveCase.title)}</h1>
-      <p class="lead">${escapeHtml(kfdDurableResultLiveCase.claimBoundary)}</p>
-      <div class="card-actions">
-        ${durableResultCandidate ? `<a class="card-action" href="${escapeAttr(durableResultCandidate.url)}">Candidate hypothesis</a>` : ""}
-        <a class="card-action secondary" href="${escapeAttr(kfdCasesPath)}">Case registry</a>
-      </div>
-      ${kfdAuthoritySignal({ sourcePath: kfdDurableResultLiveCase.humanEntry.path, variant: "hero" })}
+    body: `<section class="hero kfd-content-hero" data-live-case-hero>
+      <p class="eyebrow page-kicker"><a href="${escapeAttr(backHref)}" aria-label="${escapeAttr(backLabel)}">${escapeHtml(backLabel)}</a><span class="page-kicker-state">live case / ${escapeHtml(liveCase.status)}</span></p>
+      <h1>${escapeHtml(liveCase.title)}</h1>
+      <p class="lead">${escapeHtml(liveCase.claimBoundary)}</p>
+      ${kfdAuthoritySignal({ sourcePath: liveCase.humanEntry.path, variant: "hero" })}
     </section>
 
-    <section class="panel" data-durable-result-case-status>
-      <p class="eyebrow">Founding evidence · qualification remains open</p>
-      <h2>Product genesis is retained without promoting the Candidate</h2>
+    <section class="panel" data-live-case-contract>
+      <p class="eyebrow">Package-registered live case</p>
+      <h2>Status and Candidate relationships</h2>
       <dl class="meta">
-        <dt>Live case status</dt><dd><code>${escapeHtml(kfdDurableResultLiveCase.status)}</code></dd>
-        <dt>Relationship</dt><dd><code>${escapeHtml(kfdDurableResultLiveCase.relationship)}</code></dd>
+        <dt>Live case status</dt><dd><code>${escapeHtml(liveCase.status)}</code></dd>
+        <dt>Standard</dt><dd><code>${escapeHtml(liveCase.standard)}</code></dd>
+        <dt>Relationship</dt><dd><code>${escapeHtml(liveCase.relationship)}</code></dd>
         <dt>Normative</dt><dd><code>${escapeHtml(String(kfdSite.liveCases.normative))}</code></dd>
-        <dt>Number allocated</dt><dd><code>no</code></dd>
-        <dt>Production reuse</dt><dd><code>not authorized</code></dd>
+        <dt>Candidate count</dt><dd><code>${escapeHtml(String(candidatePages.length))}</code></dd>
       </dl>
-      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdDurableResultLiveCase.claimBoundary)}</p>
+      ${relationshipHtml}
+      <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(liveCase.claimBoundary)}</p>
     </section>
 
-    <section class="doc-layout long-toc">
+    ${extraEvidenceHtml}
+
+    <section class="doc-layout long-toc" data-live-case-narrative>
       <aside class="doc-sidebar">
-        ${kfdDecisionNav(undefined, "candidate-live-case", durableResultCandidate, undefined, kfdDurableResultLiveCase)}
+        ${kfdDecisionNav(undefined, "live-case", undefined, undefined, liveCase)}
         ${renderedLiveCase.tocHtml}
       </aside>
       <article class="panel doc-content">${renderedLiveCase.html}</article>
     </section>`,
   });
-  const liveCaseOutput = kfdDurableResultLiveCase.url.replace(/^\/+|\/+$/g, "");
+  const liveCaseOutput = liveCase.url.replace(/^\/+|\/+$/g, "");
   writeFile(`kfd/${liveCaseOutput}/index.html`, liveCaseHtml);
   writeFile(`${liveCaseOutput}/index.html`, liveCaseHtml);
 }
@@ -8762,16 +8714,11 @@ const manifest = {
       host: surfaceCanonicalHost("kfd"),
       source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSite.casesPage.sourcePath}`,
     },
-    ...(kfdRecursiveSelfConformanceCase ? [{
-      path: kfdRecursiveSelfConformanceCasePath,
+    ...kfdLiveCases.map((liveCase) => ({
+      path: kfdLiveCasePath(liveCase),
       host: surfaceCanonicalHost("kfd"),
-      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
-    }] : []),
-    ...(kfdDurableResultLiveCase ? [{
-      path: kfdDurableResultLiveCasePath,
-      host: surfaceCanonicalHost("kfd"),
-      source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdDurableResultLiveCase.humanEntry.path}`,
-    }] : []),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${liveCase.humanEntry.path}`,
+    })),
     {
       path: "/cases/registry.json",
       host: surfaceCanonicalHost("kfd"),
@@ -8948,6 +8895,10 @@ const kfdAgentManifest = {
     independentVerification: surfaceEndpointHref("kfd", "verify/"),
     selfConformance: surfaceEndpointHref("kfd", "verify/self-conformance/"),
     recursiveSelfConformanceCase: surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/"),
+    liveCases: Object.fromEntries(kfdLiveCases.map((liveCase) => [
+      liveCase.id,
+      surfaceEndpointHref("kfd", kfdLiveCasePath(liveCase).replace(/^\/+/, "")),
+    ])),
   },
   agentEntries: {
     llms: surfaceEndpointHref("kfd", "llms.txt"),
@@ -8972,6 +8923,10 @@ const kfdAgentManifest = {
       kfdSelfConformanceAssets.map((entry) => [entry.role, surfaceEndpointHref("kfd", entry.outputPath)]),
     ),
     recursiveSelfConformanceCase: surfaceEndpointHref("kfd", "cases/live/recursive-normative-self-conformance/"),
+    liveCases: Object.fromEntries(kfdLiveCases.map((liveCase) => [
+      liveCase.id,
+      surfaceEndpointHref("kfd", kfdLiveCasePath(liveCase).replace(/^\/+/, "")),
+    ])),
   },
   readerContract: {
     contract: site.readerContract.contract,
@@ -9018,12 +8973,10 @@ const kfdAgentManifest = {
     ...kfdActivationSchemas.map((entry) => surfaceEndpointHref("kfd", entry.schemaPath)),
     ...kfdStandaloneMachineAssets.map((entry) => surfaceEndpointHref("kfd", entry.outputPath)),
     surfaceEndpointHref("kfd", kfdCasesPath.replace(/^\/+/, "")),
-    ...(kfdRecursiveSelfConformanceCasePath
-      ? [surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, ""))]
-      : []),
-    ...(kfdDurableResultLiveCasePath
-      ? [surfaceEndpointHref("kfd", kfdDurableResultLiveCasePath.replace(/^\/+/, ""))]
-      : []),
+    ...kfdLiveCases.map((liveCase) => surfaceEndpointHref(
+      "kfd",
+      kfdLiveCasePath(liveCase).replace(/^\/+/, ""),
+    )),
     surfaceEndpointHref("kfd", kfdCandidateIndexPath.replace(/^\/+/, "")),
     ...kfdCandidatePages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
     ...kfdCandidateFormalPages.map((entry) => surfaceEndpointHref("kfd", entry.url.replace(/^\/+/, ""))),
@@ -9110,20 +9063,18 @@ const kfdAgentManifest = {
     registryContract: kfdCaseRegistry.contract,
     relationship: kfdSite.casesPage.relationship,
     normative: kfdSite.casesPage.normative,
-    live: [
-      ...(kfdRecursiveSelfConformanceCase ? [{
-        ...kfdRecursiveSelfConformanceCase,
-        path: kfdRecursiveSelfConformanceCasePath,
-        url: surfaceEndpointHref("kfd", kfdRecursiveSelfConformanceCasePath.replace(/^\/+/, "")),
-        source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdRecursiveSelfConformanceCase.humanEntry.path}`,
-      }] : []),
-      ...(kfdDurableResultLiveCase ? [{
-        ...kfdDurableResultLiveCase,
-        path: kfdDurableResultLiveCasePath,
-        url: surfaceEndpointHref("kfd", kfdDurableResultLiveCasePath.replace(/^\/+/, "")),
-        source: `@kungfu-tech/kfd@${kfdPackage.version}/${kfdDurableResultLiveCase.humanEntry.path}`,
-      }] : []),
-    ],
+    live: kfdLiveCases.map((liveCase) => ({
+      ...liveCase,
+      path: kfdLiveCasePath(liveCase),
+      url: surfaceEndpointHref("kfd", kfdLiveCasePath(liveCase).replace(/^\/+/, "")),
+      source: `@kungfu-tech/kfd@${kfdPackage.version}/${liveCase.humanEntry.path}`,
+      candidates: (kfdCandidatePagesByLiveCaseId.get(liveCase.id) || []).map((candidate) => ({
+        id: candidate.id,
+        title: candidate.title,
+        path: candidate.url,
+        url: surfaceEndpointHref("kfd", candidate.url.replace(/^\/+/, "")),
+      })),
+    })),
   },
   candidates: {
     path: kfdCandidateIndexPath,
