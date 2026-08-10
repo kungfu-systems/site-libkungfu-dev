@@ -101,6 +101,15 @@
     ],
     "sources": [
       {
+        "id": "kfx-contract",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "c40f7a1a4149140558c655fa940d923bcc3c4154",
+        "path": "framework/kfx/kungfu-kfx.contract.json",
+        "sha256": "4c17dddae597d19eb9ead4d3767669e3f8343a3b41cc9deb42c8eb5ff08a514d"
+      },
+      {
         "id": "kungfu-action-runtime",
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
@@ -402,6 +411,18 @@
         "evidenceHref": "/runtime.json"
       },
       {
+        "id": "kfx",
+        "audience": "Kungfu extension authors and providers",
+        "question": "How can I extend Kungfu without forking Core?",
+        "promise": "Author package or Profile Suite semantics once, let Core own admission and lifecycle, and project admitted contributions through GUI, TUI, CLI, and Agent hosts.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["kfx-contract"],
+        "authorityLabel": "Explore the KFX architecture",
+        "authorityHref": "#architecture",
+        "evidenceLabel": "Inspect the machine manifest",
+        "evidenceHref": "/kfx/manifest.json"
+      },
+      {
         "id": "core",
         "audience": "Kungfu adopters and runtime builders",
         "question": "Which Kungfu layer solves the continuity problem I have now?",
@@ -441,6 +462,14 @@
   },
   "surfaces": [
     {
+      "id": "kfx",
+      "host": "libkungfu.dev",
+      "path": "/kfx/",
+      "label": "KFX developer surface",
+      "summary": "Site-owned reader synthesis of the extension architecture, capability map, Core control plane, host projections, and exact immutable Kungfu sources.",
+      "source": "pinned kungfu-systems/kungfu Git sources -> site-libkungfu-dev"
+    },
+    {
       "id": "core",
       "host": "core.libkungfu.dev",
       "path": "/core/",
@@ -466,6 +495,21 @@
     }
   ],
   "stableMachineEntries": [
+    {
+      "label": "KFX developer manifest",
+      "path": "/kfx/manifest.json",
+      "purpose": "Site synthesis metadata, immutable sourceRefs, maturity, reader paths, non-claims, and machine entrypoints."
+    },
+    {
+      "label": "KFX architecture",
+      "path": "/kfx/architecture.json",
+      "purpose": "Exact nodes and relationships rendered by the human KFX architecture diagram."
+    },
+    {
+      "label": "KFX capability map",
+      "path": "/kfx/capability-map.json",
+      "purpose": "Build, Connect, Add, Lifecycle, Trust, and Surfaces capabilities with bound status, maturity, and sourceRefs."
+    },
     {
       "label": "Public dogfood evidence",
       "path": "/dogfood-evidence.json",

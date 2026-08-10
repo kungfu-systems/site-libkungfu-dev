@@ -412,6 +412,7 @@ function buildchainCanonicalPath(route) {
 function surfaceSitePath(id) {
   const paths = {
     hub: "/",
+    kfx: "/kfx/",
     core: "/core/",
     buildchain: "/buildchain/",
     kfd: "/kfd/",
@@ -429,6 +430,7 @@ function surfaceCanonicalHref(id) {
   const hrefsByChannel = {
     production: {
       hub: "https://libkungfu.dev/",
+      kfx: "https://libkungfu.dev/kfx/",
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
@@ -436,6 +438,7 @@ function surfaceCanonicalHref(id) {
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
+      kfx: "https://staging.libkungfu.dev/kfx/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
@@ -445,6 +448,7 @@ function surfaceCanonicalHref(id) {
   if (channel === "preview" && previewAlias) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
+      kfx: `https://${previewAlias}.preview.libkungfu.dev/kfx/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
@@ -469,6 +473,9 @@ function surfaceEndpointHref(id, pathPart = "") {
 function pageMachineEntryHref(current, pathPart) {
   if (current === "buildchain" && pathPart === "manifest.json") {
     return "/manifest.json";
+  }
+  if (current === "kfx") {
+    return pathPart === "llms-full.txt" ? surfaceEndpointHref("hub", pathPart) : `/kfx/${pathPart}`;
   }
   const owningSurface = pathPart === "llms-full.txt" || ["core", "buildchain"].includes(current)
     ? "hub"
@@ -1026,7 +1033,7 @@ function renderFrozenImmutablePublicationPage(version) {
   }
   let body = fs.readFileSync(path.join(repoRoot, snapshot.path), "utf8");
   if (snapshot.contract === "libkungfu-dev-immutable-publication-page-legacy-v0") {
-    for (const surface of ["papers", "buildchain", "core", "kfd", "hub"]) {
+    for (const surface of ["papers", "buildchain", "core", "kfd", "kfx", "hub"]) {
       const productionHref = {
         hub: "https://libkungfu.dev/",
         core: "https://core.libkungfu.dev/",
@@ -1520,6 +1527,7 @@ ${registry.archivePolicy.rule}
 
 function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, immutableArchive = false }) {
   const nav = [
+    ["kfx", "KFX"],
     ["core", "Core"],
     ["buildchain", "Buildchain"],
     ["kfd", "KFD"],
@@ -4341,6 +4349,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 }
 
 const site = readFixtureJson("site-manifest.json");
+const kfxSite = readFixtureJson("kfx-site.json");
 const coreSiteApi = require("@kungfu-tech/site");
 const coreBundleVerification = coreSiteApi.verifyBundle();
 const coreBundle = readPackageJson("@kungfu-tech/site/site-bundle.json");
@@ -6516,6 +6525,300 @@ writeFile(
   }),
 );
 
+const kfxSourceById = new Map(kfxSite.sources.map((source) => [source.id, source]));
+
+function kfxSourceHref(source) {
+  return `${source.repository}/blob/${source.ref}/${source.path}`;
+}
+
+function kfxSourceLinks(sourceRefs) {
+  return `<span class="kfx-source-links"><span>Sources</span>${sourceRefs.map((sourceId) => {
+    const source = kfxSourceById.get(sourceId);
+    if (!source) throw new Error(`KFX surface references unknown source: ${sourceId}`);
+    return `<a href="${escapeAttr(kfxSourceHref(source))}">${escapeHtml(source.id)}</a>`;
+  }).join("")}</span>`;
+}
+
+function renderKfxNode(node) {
+  return `<article class="kfx-node" data-kfx-node="${escapeAttr(node.id)}" data-kind="${escapeAttr(node.kind)}" data-maturity="${escapeAttr(node.maturity)}" data-claim-class="${escapeAttr(node.claimClass)}" data-source-refs="${escapeAttr(node.sourceRefs.join(","))}">
+    <span class="tag">${escapeHtml(node.maturity)}</span>
+    <h3>${escapeHtml(node.label)}</h3>
+    <p>${escapeHtml(node.summary)}</p>
+    ${kfxSourceLinks(node.sourceRefs)}
+  </article>`;
+}
+
+function renderKfxArchitectureStage(label, nodeKinds) {
+  const nodes = kfxSite.architecture.nodes.filter((node) => nodeKinds.includes(node.kind));
+  return `<section class="kfx-stage" aria-label="${escapeAttr(label)}">
+    <p class="eyebrow">${escapeHtml(label)}</p>
+    <div class="kfx-node-grid">${nodes.map(renderKfxNode).join("\n")}</div>
+  </section>`;
+}
+
+function renderKfxCapabilityCategory(category) {
+  return `<section class="kfx-capability-category" id="capability-${escapeAttr(category.id)}" data-kfx-category="${escapeAttr(category.id)}">
+    <div class="section-heading">
+      <p class="eyebrow">${escapeHtml(category.id)}</p>
+      <h3>${escapeHtml(category.label)}</h3>
+      <p>${escapeHtml(category.summary)}</p>
+    </div>
+    <div class="kfx-capability-items">${category.items.map((item) => `<article class="kfx-capability" data-kfx-capability="${escapeAttr(item.id)}" data-category="${escapeAttr(category.id)}" data-status="${escapeAttr(item.status)}" data-maturity="${escapeAttr(item.maturity)}" data-source-refs="${escapeAttr(item.sourceRefs.join(","))}">
+      <span class="tag">${escapeHtml(item.maturity)}</span>
+      <h4>${escapeHtml(item.label)}</h4>
+      <p>${escapeHtml(item.summary)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(item.status)}</p>
+      ${kfxSourceLinks(item.sourceRefs)}
+    </article>`).join("\n")}</div>
+  </section>`;
+}
+
+const kfxStyles = `<style>
+  .kfx-reader-paths,
+  .kfx-node-grid,
+  .kfx-capability-items,
+  .kfx-source-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: 14px;
+  }
+
+  .kfx-reader-path,
+  .kfx-node,
+  .kfx-capability,
+  .kfx-source-card,
+  .kfx-stage {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--soft);
+    padding: 18px;
+  }
+
+  .kfx-reader-path,
+  .kfx-node,
+  .kfx-capability,
+  .kfx-source-card {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .kfx-reader-path h3,
+  .kfx-node h3,
+  .kfx-capability h4,
+  .kfx-source-card h3 { margin: 0; }
+
+  .kfx-architecture {
+    display: grid;
+    gap: 16px;
+  }
+
+  .kfx-stage {
+    position: relative;
+    border-top: 4px solid var(--protocol);
+  }
+
+  .kfx-stage + .kfx-stage::before {
+    content: "↓";
+    position: absolute;
+    top: -27px;
+    left: 50%;
+    color: var(--protocol);
+    font-weight: 800;
+  }
+
+  .kfx-node[data-kind="control-plane"] { border-top: 3px solid var(--evidence); }
+  .kfx-node[data-kind="trust-evidence"] { border-top: 3px solid var(--warn); }
+  .kfx-node[data-kind="surface"] { border-top: 3px solid var(--accent); }
+
+  .kfx-relationships {
+    columns: 2 320px;
+    column-gap: 28px;
+    margin: 16px 0 0;
+    padding-left: 22px;
+  }
+
+  .kfx-relationships li {
+    break-inside: avoid;
+    margin-bottom: 10px;
+  }
+
+  .kfx-source-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .kfx-source-links > span { font-weight: 700; }
+
+  .kfx-capability-category {
+    scroll-margin-top: 100px;
+    margin-top: 26px;
+  }
+
+  .kfx-source-card code {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 640px) {
+    .kfx-reader-paths,
+    .kfx-node-grid,
+    .kfx-capability-items,
+    .kfx-source-grid { grid-template-columns: 1fr; }
+    .kfx-relationships { columns: 1; }
+  }
+</style>`;
+
+const kfxArchitectureProjection = {
+  ...kfxSite.architecture,
+  canonicalUrl: surfaceEndpointHref("kfx", "architecture.json"),
+  humanEntry: surfaceCanonicalHref("kfx"),
+  sources: kfxSite.sources.filter((source) => kfxSite.architecture.sourceRefs.includes(source.id)),
+  sourceBoundary: kfxSite.sourceBoundary,
+};
+const kfxCapabilityProjection = {
+  ...kfxSite.capabilityMap,
+  canonicalUrl: surfaceEndpointHref("kfx", "capability-map.json"),
+  humanEntry: surfaceCanonicalHref("kfx"),
+  sources: kfxSite.sources.filter((source) => kfxSite.capabilityMap.sourceRefs.includes(source.id)),
+  sourceBoundary: kfxSite.sourceBoundary,
+};
+const kfxManifest = {
+  schema: "libkungfu.kfx-site-manifest/v1",
+  status: kfxSite.status,
+  maturity: kfxSite.maturity,
+  headline: kfxSite.headline,
+  proposition: kfxSite.proposition,
+  canonicalUrl: surfaceCanonicalHref("kfx"),
+  humanEntry: surfaceCanonicalHref("kfx"),
+  machineEntries: {
+    manifest: surfaceEndpointHref("kfx", "manifest.json"),
+    llms: surfaceEndpointHref("kfx", "llms.txt"),
+    architecture: surfaceEndpointHref("kfx", "architecture.json"),
+    capabilityMap: surfaceEndpointHref("kfx", "capability-map.json"),
+  },
+  readerPaths: kfxSite.readerPaths,
+  sources: kfxSite.sources,
+  sourceBoundary: kfxSite.sourceBoundary,
+  adoptionBoundary: kfxSite.adoptionBoundary,
+  nonClaims: kfxSite.nonClaims,
+  architecture: {
+    schema: kfxSite.architecture.schema,
+    nodeCount: kfxSite.architecture.nodes.length,
+    relationshipCount: kfxSite.architecture.relationships.length,
+    sourceRefs: kfxSite.architecture.sourceRefs,
+    nonClaims: kfxSite.architecture.nonClaims,
+  },
+  capabilityMap: {
+    schema: kfxSite.capabilityMap.schema,
+    categories: kfxSite.capabilityMap.categories.map((category) => category.id),
+    itemCount: kfxSite.capabilityMap.categories.reduce((count, category) => count + category.items.length, 0),
+    sourceRefs: kfxSite.capabilityMap.sourceRefs,
+    nonClaims: kfxSite.capabilityMap.nonClaims,
+  },
+};
+
+writeFile(
+  "kfx/index.html",
+  page({
+    title: `KFX | ${site.title}`,
+    description: kfxSite.lead,
+    current: "kfx",
+    alternates: `  <link rel="alternate" type="application/json" title="KFX architecture" href="/kfx/architecture.json">\n  <link rel="alternate" type="application/json" title="KFX capability map" href="/kfx/capability-map.json">`,
+    body: `${kfxStyles}
+    <section class="hero">
+      <p class="eyebrow">KFX developer surface · ${escapeHtml(kfxSite.maturity)}</p>
+      <h1>${escapeHtml(kfxSite.headline)}</h1>
+      <p class="lead">${escapeHtml(kfxSite.lead)}</p>
+      <p>${escapeHtml(kfxSite.proposition)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="#capability-build">Build with KFX</a>
+        <a class="hero-action secondary" href="#architecture">Explore the architecture</a>
+        <a class="hero-action secondary" href="/kfx/manifest.json">Inspect machine facts</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="kfx-reader-paths-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Choose a reading path</p>
+        <h2 id="kfx-reader-paths-heading">Start from the job you need to do.</h2>
+      </div>
+      <div class="kfx-reader-paths">${kfxSite.readerPaths.map((entry) => `<article class="kfx-reader-path" data-kfx-reader-path="${escapeAttr(entry.id)}">
+        <h3><a href="${escapeAttr(entry.href)}">${escapeHtml(entry.label)}</a></h3>
+        <p>${escapeHtml(entry.summary)}</p>
+        ${kfxSourceLinks(entry.sourceRefs)}
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section id="architecture" aria-labelledby="kfx-architecture-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Architecture · human and Agent parity</p>
+        <h2 id="kfx-architecture-heading">${escapeHtml(kfxSite.architecture.headline)}</h2>
+        <p>${escapeHtml(kfxSite.architecture.summary)}</p>
+        <p><a href="/kfx/architecture.json">Read the exact machine graph</a></p>
+      </div>
+      <div class="kfx-architecture" role="group" aria-label="KFX architecture from provider and package facets through Core control plane to admitted host projections">
+        ${renderKfxArchitectureStage("Author and package", ["actor", "package"])}
+        ${renderKfxArchitectureStage("Package and Suite facets", ["facet"])}
+        ${renderKfxArchitectureStage("KFD and Buildchain trust evidence", ["trust-evidence"])}
+        ${renderKfxArchitectureStage("Core registry, admission, capability, lifecycle, and receipts", ["control-plane"])}
+        ${renderKfxArchitectureStage("Admitted contribution", ["projection"])}
+        ${renderKfxArchitectureStage("GUI, TUI, CLI, and Agent surfaces", ["surface"])}
+      </div>
+      <section class="panel" aria-labelledby="kfx-relationships-heading" style="margin-top: 18px;">
+        <h3 id="kfx-relationships-heading">Exact graph relationships</h3>
+        <ol class="kfx-relationships">${kfxSite.architecture.relationships.map((relationship) => {
+          const from = kfxSite.architecture.nodes.find((node) => node.id === relationship.from);
+          const to = kfxSite.architecture.nodes.find((node) => node.id === relationship.to);
+          return `<li data-kfx-relationship="${escapeAttr(relationship.id)}" data-from="${escapeAttr(relationship.from)}" data-to="${escapeAttr(relationship.to)}" data-maturity="${escapeAttr(relationship.maturity)}" data-source-refs="${escapeAttr(relationship.sourceRefs.join(","))}"><strong>${escapeHtml(from.label)}</strong> ${escapeHtml(relationship.label)} <strong>${escapeHtml(to.label)}</strong> <span class="tag">${escapeHtml(relationship.maturity)}</span></li>`;
+        }).join("\n")}</ol>
+      </section>
+    </section>
+
+    <section id="capabilities" aria-labelledby="kfx-capabilities-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Capability map · human and Agent parity</p>
+        <h2 id="kfx-capabilities-heading">${escapeHtml(kfxSite.capabilityMap.headline)}</h2>
+        <p><a href="/kfx/capability-map.json">Read the exact machine capability map</a></p>
+      </div>
+      ${kfxSite.capabilityMap.categories.map(renderKfxCapabilityCategory).join("\n")}
+    </section>
+
+    <section id="sources" aria-labelledby="kfx-sources-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Immutable authority</p>
+        <h2 id="kfx-sources-heading">Every technical claim resolves to exact Kungfu bytes.</h2>
+      </div>
+      <div class="kfx-source-grid">${kfxSite.sources.map((source) => `<article class="kfx-source-card" data-kfx-source="${escapeAttr(source.id)}">
+        <span class="tag">${escapeHtml(source.maturity)}</span>
+        <h3><a href="${escapeAttr(kfxSourceHref(source))}">${escapeHtml(source.id)}</a></h3>
+        <p>${escapeHtml(source.role)}</p>
+        <code>${escapeHtml(source.ref)}</code>
+        <code>sha256:${escapeHtml(source.sha256)}</code>
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section class="panel warning" aria-labelledby="kfx-boundaries-heading" style="margin-top: 18px;">
+      <p class="eyebrow">Maturity and non-claims</p>
+      <h2 id="kfx-boundaries-heading">Source-defined alpha; no authority is manufactured here.</h2>
+      <p><strong>Source boundary:</strong> ${escapeHtml(kfxSite.sourceBoundary)}</p>
+      <p><strong>Adoption boundary:</strong> ${escapeHtml(kfxSite.adoptionBoundary)}</p>
+      <ul>${[...kfxSite.nonClaims, ...kfxSite.architecture.nonClaims, ...kfxSite.capabilityMap.nonClaims].map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+    </section>`,
+  }),
+);
+
+writeFile("kfx/architecture.json", `${JSON.stringify(kfxArchitectureProjection, null, 2)}\n`);
+writeFile("kfx/capability-map.json", `${JSON.stringify(kfxCapabilityProjection, null, 2)}\n`);
+writeFile("kfx/manifest.json", `${JSON.stringify(kfxManifest, null, 2)}\n`);
+writeFile(
+  "kfx/llms.txt",
+  `# KFX developer surface\n\n${kfxSite.headline}\n\n${kfxSite.lead}\n\nStatus: ${kfxSite.status}\nMaturity: ${kfxSite.maturity}\nCanonical human entry: ${surfaceCanonicalHref("kfx")}\n\nMachine entries:\n- ${surfaceEndpointHref("kfx", "manifest.json")}\n- ${surfaceEndpointHref("kfx", "architecture.json")}\n- ${surfaceEndpointHref("kfx", "capability-map.json")}\n- ${surfaceEndpointHref("kfx", "llms.txt")}\n\nReader paths:\n${kfxSite.readerPaths.map((entry) => `- ${entry.label}: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture nodes:\n${kfxSite.architecture.nodes.map((node) => `- ${node.id} / ${node.label} [${node.kind}; ${node.maturity}; ${node.claimClass}]: ${node.summary} Sources: ${node.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture relationships:\n${kfxSite.architecture.relationships.map((relationship) => `- ${relationship.id}: ${relationship.from} ${relationship.label} ${relationship.to} [${relationship.maturity}] Sources: ${relationship.sourceRefs.join(", ")}`).join("\n")}\n\nCapability map:\n${kfxSite.capabilityMap.categories.map((category) => `## ${category.label}\n${category.summary}\n${category.items.map((item) => `- ${item.id} / ${item.label} [${item.status}; ${item.maturity}]: ${item.summary} Sources: ${item.sourceRefs.join(", ")}`).join("\n")}`).join("\n\n")}\n\nImmutable sources:\n${kfxSite.sources.map((source) => `- ${source.id} [${source.maturity}]: ${kfxSourceHref(source)} sha256:${source.sha256}`).join("\n")}\n\nSource boundary:\n${kfxSite.sourceBoundary}\n\nAdoption boundary:\n${kfxSite.adoptionBoundary}\n\nNon-claims:\n${[...kfxSite.nonClaims, ...kfxSite.architecture.nonClaims, ...kfxSite.capabilityMap.nonClaims].map((claim) => `- ${claim}`).join("\n")}\n`,
+);
+
 function coreSurfaceAuthorities(surface) {
   return surface.sourceIds.map((sourceId) => {
     const source = coreSourceById.get(sourceId);
@@ -8579,6 +8882,13 @@ const manifest = {
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     { path: "/architecture/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    ...[
+      ["/kfx/", "src/fixtures/kfx-site.json"],
+      ["/kfx/manifest.json", "src/fixtures/kfx-site.json"],
+      ["/kfx/llms.txt", "src/fixtures/kfx-site.json"],
+      ["/kfx/architecture.json", "src/fixtures/kfx-site.json#architecture"],
+      ["/kfx/capability-map.json", "src/fixtures/kfx-site.json#capabilityMap"],
+    ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("hub"), source })),
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),
@@ -8761,6 +9071,17 @@ const manifest = {
   ],
   machineEntries: site.stableMachineEntries,
   upstreamFixtures: {
+    kfx: {
+      contract: kfxSite.schema,
+      status: kfxSite.status,
+      maturity: kfxSite.maturity,
+      sourceRef: kfxSite.sources[0].ref,
+      sourceCount: kfxSite.sources.length,
+      manifest: surfaceEndpointHref("kfx", "manifest.json"),
+      architecture: surfaceEndpointHref("kfx", "architecture.json"),
+      capabilityMap: surfaceEndpointHref("kfx", "capability-map.json"),
+      adoptionBoundary: kfxSite.adoptionBoundary,
+    },
     runtime: {
       contract: runtimeSurface.contract,
       status: runtimeSurface.status,
@@ -9285,6 +9606,7 @@ Primary pages:
 - ${surfaceCanonicalHref("hub")}
 - ${surfaceEndpointHref("hub", "architecture/")} (complete continuity architecture)
 - ${surfaceEndpointHref("hub", "dogfood/")}
+- ${surfaceCanonicalHref("kfx")} (KFX developer architecture and capability map)
 - ${surfaceCanonicalHref("core")}
 - ${surfaceEndpointHref("core", "runtime/")} (complete runtime mechanism)
 - ${surfaceCanonicalHref("buildchain")}
@@ -9301,6 +9623,10 @@ Machine entries:
 - ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
+- ${surfaceEndpointHref("kfx", "manifest.json")}
+- ${surfaceEndpointHref("kfx", "architecture.json")}
+- ${surfaceEndpointHref("kfx", "capability-map.json")}
+- ${surfaceEndpointHref("kfx", "llms.txt")}
 - ${surfaceEndpointHref("core", "manifest.json")}
 - ${surfaceEndpointHref("core", "site-bundle.json")}
 - ${surfaceEndpointHref("core", "agent-index.json")}
