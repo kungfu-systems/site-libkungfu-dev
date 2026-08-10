@@ -1008,7 +1008,9 @@ if (
   || kfdIndependentVerificationPage.status !== "experimental"
   || kfdIndependentVerificationPage.semanticSelfSufficiency?.contract !== "kfd.semantic-self-sufficiency-matrix/v1"
   || kfdIndependentVerificationPage.semanticSelfSufficiency?.entryCount !== 13
-  || kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.gap !== 1
+  || kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.complete !== 5
+  || kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.partial !== 8
+  || (kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.gap || 0) !== 0
   || kfdIndependentVerificationPage.warrantEvidence?.decisionStatus !== "draft"
   || kfdIndependentVerificationPage.warrantEvidence?.fixedVectorCount !== 14
   || kfdIndependentVerificationPage.warrantEvidence?.report?.qualifying !== false
@@ -1039,7 +1041,17 @@ if (
   || kfdSelfConformancePage.recursiveCase?.terminal?.numberAllocated !== false
   || kfdSelfConformancePage.recursiveCase?.terminal?.statusChanged !== false
   || kfdSelfConformancePage.recursiveCase?.terminal?.releaseAuthorized !== false
-  || kfdSelfConformanceAssets.length !== 7
+  || kfdSelfConformanceAssets.length !== 9
+  || !kfdSelfConformanceAssets.some((entry) => entry.role === "historical-lineage")
+  || !kfdSelfConformanceAssets.some((entry) => entry.role === "historical-manifest")
+  || kfdSelfConformancePage.historicalLineage?.reportId !== "kfd-history-alpha28-to-live-alpha55"
+  || kfdSelfConformancePage.historicalLineage?.retrospective !== true
+  || kfdSelfConformancePage.historicalLineage?.profileAvailableAtEvent !== false
+  || kfdSelfConformancePage.historicalLineage?.bootstrapBoundary?.gitTag !== "v1.0.0-alpha.28"
+  || kfdSelfConformancePage.historicalLineage?.bootstrapBoundary?.absent?.join(",") !== "KFD-7"
+  || kfdSelfConformancePage.historicalLineage?.kfd7Walkthrough?.length !== 6
+  || kfdSelfConformancePage.historicalLineage?.convergence?.liveAnchorId !== "kfd-alpha-55-pre-profile"
+  || kfdSelfConformancePage.historicalLineage?.convergence?.historicalDoesNotReplaceLive !== true
   || kfdSite.verificationLanes?.map((entry) => entry.id).join(",") !== "independent-implementation,governed-self-change"
   || !kfdRecursiveSelfConformanceCase
   || kfdRecursiveSelfConformanceCase.status !== "closed"
@@ -2070,6 +2082,7 @@ if (
   || kfdAgentManifest.selfConformance?.source !== `@kungfu-tech/kfd@${kfdPackage.version}/${kfdSelfConformancePage.sourcePath}`
   || JSON.stringify(kfdAgentManifest.selfConformance?.profile) !== JSON.stringify(kfdSelfConformancePage.profile)
   || JSON.stringify(kfdAgentManifest.selfConformance?.recursiveCase?.terminal) !== JSON.stringify(kfdSelfConformancePage.recursiveCase.terminal)
+  || JSON.stringify(kfdAgentManifest.selfConformance?.historicalLineage) !== JSON.stringify(kfdSelfConformancePage.historicalLineage)
   || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", "verify/self-conformance/"))
 ) {
   throw new Error("KFD agent manifest must preserve the package-owned self-conformance facts");
@@ -2918,14 +2931,33 @@ for (const requiredText of [
   kfdSelfConformancePage.recursiveCase.terminal.fixedPackageRoot,
   kfdSelfConformancePage.recursiveCase.terminal.terminalBundleRoot,
   kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot,
+  kfdSelfConformancePage.historicalLineage.reportId,
+  kfdSelfConformancePage.historicalLineage.bootstrapBoundary.gitCommit,
+  kfdSelfConformancePage.historicalLineage.bootstrapBoundary.gitTag,
+  kfdSelfConformancePage.historicalLineage.bootstrapBoundary.packageRoot,
+  kfdSelfConformancePage.historicalLineage.convergence.liveAnchorId,
+  kfdSelfConformancePage.historicalLineage.convergence.liveAnchorRoot,
+  kfdSelfConformancePage.historicalLineage.nextAction,
+  kfdSelfConformancePage.historicalLineage.limits,
 ]) {
   if (!kfdSelfConformanceHtml.includes(escapeHtml(requiredText))) {
     throw new Error(`KFD self-conformance page missing fixed package fact: ${requiredText}`);
   }
 }
+for (const step of kfdSelfConformancePage.historicalLineage.kfd7Walkthrough) {
+  for (const requiredText of [step.transition, step.before, step.after, ...step.sourceIds]) {
+    if (!kfdSelfConformanceHtml.includes(escapeHtml(requiredText))) {
+      throw new Error(`KFD historical walkthrough missing package-owned fact: ${requiredText}`);
+    }
+  }
+}
 if (
   !kfdSelfConformanceHtml.includes('href="/drafts/recursive-normative-self-conformance/"')
   || !kfdSelfConformanceHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
+  || !kfdSelfConformanceHtml.includes('data-kfd-historical-lineage="kfd-history-alpha28-to-live-alpha55"')
+  || !kfdSelfConformanceHtml.includes("Retrospective</dt><dd><code>true</code>")
+  || !kfdSelfConformanceHtml.includes("Profile available at event</dt><dd><code>false</code>")
+  || !kfdSelfConformanceHtml.includes("Historical does not replace live</dt><dd><code>true</code>")
   || !kfdSelfConformanceHtml.includes("Verifier sufficient</dt><dd><code>false</code>")
   || !kfdSelfConformanceHtml.includes("Number allocated</dt><dd><code>false</code>")
   || !kfdSelfConformanceHtml.includes("Release authorized</dt><dd><code>false</code>")

@@ -8423,6 +8423,13 @@ function renderKfdSelfConformanceEvidence(pageEntry) {
   }
   const recursiveCase = pageEntry.recursiveCase;
   const terminal = recursiveCase.terminal;
+  const historicalLineage = pageEntry.historicalLineage;
+  const historicalNarrative = historicalLineage
+    ? renderDecisionMarkdown(historicalLineage.markdown, "Historical lineage")
+    : undefined;
+  const historicalGuide = historicalLineage
+    ? renderDecisionMarkdown(historicalLineage.implementerGuideMarkdown, "Historical clean-room guide")
+    : undefined;
   return `<div class="stack" style="margin-top: 18px;" data-kfd-self-conformance-evidence>
     <section class="panel">
       <p class="eyebrow">${escapeHtml(pageEntry.profile.status)} profile · ${escapeHtml(pageEntry.profile.id)}@${escapeHtml(pageEntry.profile.version)}</p>
@@ -8475,6 +8482,69 @@ function renderKfdSelfConformanceEvidence(pageEntry) {
       </dl>
       <p class="reader-claim-boundary"><strong>Case boundary:</strong> ${escapeHtml(recursiveCase.liveCase.claimBoundary)}</p>
     </section>
+
+    ${historicalLineage ? `<section class="panel" data-kfd-historical-lineage="${escapeAttr(historicalLineage.reportId)}">
+      <p class="eyebrow">Retrospective lineage · package-owned evidence</p>
+      <h2>From the alpha.28 Foundation Cut to the live alpha.55 anchor</h2>
+      <dl class="meta">
+        <dt>Report</dt><dd><code>${escapeHtml(historicalLineage.reportId)}</code></dd>
+        <dt>Retrospective</dt><dd><code>${escapeHtml(String(historicalLineage.retrospective))}</code></dd>
+        <dt>Profile available at event</dt><dd><code>${escapeHtml(String(historicalLineage.profileAvailableAtEvent))}</code></dd>
+        <dt>Foundation commit</dt><dd><code>${escapeHtml(historicalLineage.bootstrapBoundary.gitCommit)}</code></dd>
+        <dt>Foundation tag</dt><dd><code>${escapeHtml(historicalLineage.bootstrapBoundary.gitTag)}</code></dd>
+        <dt>Foundation package</dt><dd><code>${escapeHtml(historicalLineage.bootstrapBoundary.packageName)}@${escapeHtml(historicalLineage.bootstrapBoundary.packageVersion)}</code></dd>
+        <dt>Foundation package root</dt><dd><code>${escapeHtml(historicalLineage.bootstrapBoundary.packageRoot)}</code></dd>
+      </dl>
+      <p><strong>At the cut:</strong> active <code>${escapeHtml(historicalLineage.bootstrapBoundary.active.join(", "))}</code>; draft <code>${escapeHtml(historicalLineage.bootstrapBoundary.draft.join(", "))}</code>; absent <code>${escapeHtml(historicalLineage.bootstrapBoundary.absent.join(", "))}</code>.</p>
+      <p class="reader-claim-boundary"><strong>Bootstrap boundary:</strong> ${escapeHtml(historicalLineage.bootstrapBoundary.note)}</p>
+    </section>
+
+    <section class="panel" data-kfd-historical-walkthrough>
+      <p class="eyebrow">KFD-7 · retained terminal states</p>
+      <h2>Six-step historical walkthrough</h2>
+      <div class="grid" style="margin-top: 18px;">
+        ${historicalLineage.kfd7Walkthrough.map((entry) => `<article class="panel" data-kfd-history-step="${escapeAttr(String(entry.sequence))}">
+          <h3>${escapeHtml(String(entry.sequence))}. ${escapeHtml(entry.transition)}</h3>
+          <p><code>${escapeHtml(entry.before)}</code> → <code>${escapeHtml(entry.after)}</code></p>
+          <p><strong>Sources:</strong> ${entry.sourceIds.map((sourceId) => `<code>${escapeHtml(sourceId)}</code>`).join(", ")}</p>
+        </article>`).join("\n")}
+      </div>
+    </section>
+
+    <section class="panel" data-kfd-historical-coverage>
+      <p class="eyebrow">Coverage · numbering · convergence</p>
+      <h2>Preserve non-promotion and numbering boundaries</h2>
+      <div class="grid" style="margin-top: 18px;">
+        ${historicalLineage.coverage.map((entry) => `<article class="panel">
+          <h3>${escapeHtml(entry.subjectId)}</h3>
+          <p>Terminal state: <code>${escapeHtml(entry.terminalState)}</code></p>
+          <p>Normative promotion claimed: <code>${escapeHtml(String(entry.normativePromotionClaimed))}</code></p>
+        </article>`).join("\n")}
+      </div>
+      <h3 style="margin-top: 18px;">Numbering mappings</h3>
+      <ul>${historicalLineage.numberingMappings.map((entry) => `<li><code>${escapeHtml(entry.from ?? "unallocated")}</code> → <code>${escapeHtml(entry.to)}</code> · ${escapeHtml(entry.relation)}</li>`).join("")}</ul>
+      <h3 style="margin-top: 18px;">Transition recipes</h3>
+      <ul>${historicalLineage.transitionRecipes.map((entry) => `<li><code>${escapeHtml(entry.transition)}</code>: <code>${escapeHtml(entry.before)}</code> → <code>${escapeHtml(entry.after)}</code></li>`).join("")}</ul>
+      <dl class="meta">
+        <dt>Historical terminal source</dt><dd><code>${escapeHtml(historicalLineage.convergence.historicalTerminalSourceId)}</code></dd>
+        <dt>Live anchor source</dt><dd><code>${escapeHtml(historicalLineage.convergence.liveAnchorSourceId)}</code></dd>
+        <dt>Live anchor</dt><dd><code>${escapeHtml(historicalLineage.convergence.liveAnchorId)}</code></dd>
+        <dt>Live anchor root</dt><dd><code>${escapeHtml(historicalLineage.convergence.liveAnchorRoot)}</code></dd>
+        <dt>Live package root</dt><dd><code>${escapeHtml(historicalLineage.convergence.livePackageRoot)}</code></dd>
+        <dt>Compatibility</dt><dd><code>${escapeHtml(historicalLineage.convergence.compatibility)}</code></dd>
+        <dt>Historical does not replace live</dt><dd><code>${escapeHtml(String(historicalLineage.convergence.historicalDoesNotReplaceLive))}</code></dd>
+      </dl>
+      <p><strong>Next action:</strong> ${escapeHtml(historicalLineage.nextAction)}</p>
+      <p class="reader-claim-boundary"><strong>Historical limits:</strong> ${escapeHtml(historicalLineage.limits)}</p>
+    </section>
+
+    <section class="panel doc-content" data-kfd-historical-narrative>
+      ${historicalNarrative.html}
+    </section>
+
+    <section class="panel doc-content" data-kfd-historical-implementer-guide>
+      ${historicalGuide.html}
+    </section>` : ""}
 
     <section class="panel">
       <h2>Exact machine assets</h2>
