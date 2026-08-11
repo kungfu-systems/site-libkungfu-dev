@@ -6,16 +6,19 @@ Channel model:
 
 - Preview:
   - `https://{alias}.preview.libkungfu.dev`
+  - `https://{alias}.preview.libkungfu.dev/skills/`
   - `https://core-{alias}.preview.libkungfu.dev`
   - `https://buildchain-{alias}.preview.libkungfu.dev`
   - `https://kfd-{alias}.preview.libkungfu.dev`
 - Staging:
   - `https://staging.libkungfu.dev`
+  - `https://staging.libkungfu.dev/skills/`
   - `https://core.staging.libkungfu.dev`
   - `https://buildchain.staging.libkungfu.dev`
   - `https://kfd.staging.libkungfu.dev`
 - Production:
   - `https://libkungfu.dev`
+  - `https://libkungfu.dev/skills/`
   - `https://core.libkungfu.dev`
   - `https://buildchain.libkungfu.dev`
   - `https://kfd.libkungfu.dev`
@@ -57,6 +60,10 @@ resource lifecycle decisions belong in the infra repository.
 - The workflow uses the Buildchain v3 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
+- Skills is intentionally a stable depth route on the hub surface rather than a
+  new host mapping. Pull-request preview evidence must therefore report the
+  exact hub preview URL with `/skills/`; consumers must not invent a Skills
+  subdomain.
 - Production apply is enabled because the production channel status is active in
   the infrastructure contract. Buildchain still gates production on trusted
   manual approval or a merged release pull request with the `buildchain-release`

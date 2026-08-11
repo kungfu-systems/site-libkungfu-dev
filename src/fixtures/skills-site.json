@@ -1,0 +1,299 @@
+{
+  "schema": "libkungfu.skills-site-synthesis/v1",
+  "status": "site-synthesis",
+  "maturity": "protected-source-alpha-preview",
+  "headline": "Teach Agents repeatable work without turning instructions into authority.",
+  "lead": "Kungfu Skills are a source-defined Agent context layer above KFX: compact enough to advertise, explicit enough to inspect, and bounded so instructions cannot grant runtime capability.",
+  "proposition": "Use a Skill when a delegated workflow should become repeatable, inspectable, and recoverable. Keep execution authority in the governed runtime beneath it.",
+  "sourceBoundary": "This page is a Site-owned synthesis of exact files on Kungfu's protected development line. Kungfu owns the Skill contract, implementation status, commands, trust boundary, and qualification claims. The Site owns only reader guidance, composition, and routing.",
+  "previewBoundary": "This additive Site preview does not publish or activate a Kungfu Skill runtime, package, catalog, registry, Agent Brief, or production surface.",
+  "futureBoundary": "Future-picture nodes describe a useful direction for accountable authoring, provenance, and distribution. They are not present-tense product or release claims.",
+  "nonClaims": [
+    "Protected source does not prove that a Skill catalog, install flow, selection path, invocation path, or qualification result is shipped in a released Kungfu product.",
+    "This preview does not install, enable, select, load, invoke, qualify, certify, publish, or distribute any Skill.",
+    "A SKILL.md file is instruction content, not a capability grant, Warrant, trust decision, KFX admission, or permission elevation.",
+    "The Site does not claim marketplace discovery, remote publishing, automatic permission elevation, unresolved KFX acquisition, or third-party runtime execution through Skill composition.",
+    "Future-picture material is design guidance only and is not evidence for the active Kungfu Skill implementation family."
+  ],
+  "sources": [
+    {
+      "id": "skills-contract",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "path": "framework/skill/kungfu-skill.contract.json",
+      "sha256": "fb6fbc59557ac8448226f5ed8b97fd71fcf202742e896bb06e2831abeedc2a52",
+      "maturity": "protected-source-contract",
+      "role": "Versioned source, catalog, context, dependency, audit, and manager schema contract"
+    },
+    {
+      "id": "skills-architecture",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "path": "docs/architecture/skills.md",
+      "sha256": "f5611bd79f54611beb35f9e6f077a101ed5219fb223ce10e2b4f7c2103804ccd",
+      "maturity": "protected-source-architecture",
+      "role": "Skill source, compact catalog, context envelope, KFX boundary, and first-slice architecture"
+    },
+    {
+      "id": "skills-adr",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "path": "docs/adr/KF-ADR-019f86da-4f90-74c2-9cbb-24f1c34303bf.md",
+      "sha256": "0509789b372a45c0e4687f24771e44c543ceed3403ab1e3f1cf0ea356e6ce759",
+      "maturity": "accepted-partial-decision",
+      "role": "Accepted architecture decision with an explicit partial implementation boundary"
+    },
+    {
+      "id": "skills-known-limits",
+      "owner": "kungfu-systems/kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "path": "docs/qualification/known-limits.md",
+      "sha256": "b8a913ad020d089842b6d8550025665e307bfd92eb5f5bbb1049d18d7a7b0c47",
+      "maturity": "protected-source-known-limits",
+      "role": "Explicit boundaries on marketplace, elevation, dependency acquisition, and runtime execution claims"
+    }
+  ],
+  "readerPaths": [
+    {
+      "id": "decide",
+      "label": "Decide whether the work deserves a Skill",
+      "summary": "Look for repeatable delegated work with stable inputs, a bounded outcome, and evidence worth retaining.",
+      "href": "#agent-guidance",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "understand",
+      "label": "Understand the current source contract",
+      "summary": "Separate Skill source, compact catalog, context envelope, Agent consumption, and the KFX trust gate.",
+      "href": "#current-facts",
+      "sourceRefs": ["skills-contract", "skills-architecture"]
+    },
+    {
+      "id": "audit",
+      "label": "Audit what this preview does not prove",
+      "summary": "Read the partial implementation status, known limits, future-picture labels, and explicit non-claims before relying on the surface.",
+      "href": "#boundaries",
+      "sourceRefs": ["skills-adr", "skills-known-limits"]
+    }
+  ],
+  "currentFacts": [
+    {
+      "id": "skill-source",
+      "label": "A Skill begins as source",
+      "claimClass": "upstream-fact",
+      "maturity": "protected-source-alpha",
+      "summary": "The protected architecture defines a directory containing SKILL.md as the minimum valid instruction-only Skill source.",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "compact-context",
+      "label": "Catalog first; full instructions on demand",
+      "claimClass": "upstream-fact",
+      "maturity": "protected-source-alpha",
+      "summary": "The source contract separates a compact Agent-visible catalog from the full instructions and context envelope.",
+      "sourceRefs": ["skills-contract", "skills-architecture"]
+    },
+    {
+      "id": "kfx-boundary",
+      "label": "Instructions do not grant runtime authority",
+      "claimClass": "upstream-fact",
+      "maturity": "accepted-architecture",
+      "summary": "Skills may describe or reference KFX dependencies, while KFX remains separately admitted, governed, and incapable of gaining authority through Skill composition.",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "partial-status",
+      "label": "The implementation claim is partial",
+      "claimClass": "upstream-fact",
+      "maturity": "accepted-partial",
+      "summary": "The accepted ADR records a first slice and explicitly retains follow-up work; the known-limits page excludes marketplace, automatic elevation, unresolved dependency acquisition, and third-party runtime execution.",
+      "sourceRefs": ["skills-adr", "skills-known-limits"]
+    }
+  ],
+  "agentGuidance": [
+    {
+      "id": "suggest-repeatable",
+      "decision": "suggest",
+      "label": "Suggest a Skill for repeatable delegated work",
+      "claimClass": "site-synthesis",
+      "summary": "Suggest one when the same intent, inputs, checks, and recovery notes recur across sessions or agents.",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "create-bounded",
+      "decision": "create",
+      "label": "Create one when the outcome can be bounded",
+      "claimClass": "site-synthesis",
+      "summary": "Create one when instructions can name a clear trigger, a scoped result, verification, evidence, and a safe handoff without embedding hidden authority.",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "avoid-one-off",
+      "decision": "avoid",
+      "label": "Keep one-off work in the conversation",
+      "claimClass": "site-synthesis",
+      "summary": "Do not create a Skill merely to preserve a transient prompt, a single workaround, or prose that has no reusable verification boundary.",
+      "sourceRefs": ["skills-architecture"]
+    },
+    {
+      "id": "avoid-authority",
+      "decision": "avoid",
+      "label": "Do not hide permissions inside instructions",
+      "claimClass": "non-claim",
+      "summary": "A Skill may request or explain an action; it must not imply that its text grants capabilities, installs runtime artifacts, or bypasses KFX admission.",
+      "sourceRefs": ["skills-adr", "skills-known-limits"]
+    }
+  ],
+  "architecture": {
+    "schema": "libkungfu.skills-architecture/v1",
+    "headline": "A current source loop, with future accountability kept visibly outside it.",
+    "summary": "Protected source defines the instruction and context path. Site synthesis explains when that path is useful. Future provenance and distribution remain labelled design, not current capability.",
+    "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"],
+    "nodes": [
+      {
+        "id": "delegated-work",
+        "label": "Repeatable delegated work",
+        "kind": "reader-intent",
+        "horizon": "site-synthesis",
+        "claimClass": "site-synthesis",
+        "maturity": "reader-guidance",
+        "summary": "A bounded recurring job whose intent, checks, evidence, and recovery deserve a reusable form.",
+        "sourceRefs": ["skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "skill-source",
+        "label": "SKILL.md source",
+        "kind": "current-source",
+        "horizon": "current-source",
+        "claimClass": "upstream-fact",
+        "maturity": "protected-source-alpha",
+        "summary": "The minimum instruction-only source, optionally enhanced with structured metadata.",
+        "sourceRefs": ["skills-contract", "skills-architecture"]
+      },
+      {
+        "id": "skill-catalog",
+        "label": "Compact catalog",
+        "kind": "current-source",
+        "horizon": "current-source",
+        "claimClass": "upstream-fact",
+        "maturity": "protected-source-alpha",
+        "summary": "A small index intended to help an Agent discover relevant instructions without loading every source in full.",
+        "sourceRefs": ["skills-contract", "skills-architecture"]
+      },
+      {
+        "id": "context-envelope",
+        "label": "Context envelope",
+        "kind": "current-source",
+        "horizon": "current-source",
+        "claimClass": "upstream-fact",
+        "maturity": "protected-source-alpha",
+        "summary": "The source-defined catalog, on-demand read declaration, and audit identifiers for a managed Agent context.",
+        "sourceRefs": ["skills-contract", "skills-architecture"]
+      },
+      {
+        "id": "agent-consumer",
+        "label": "Agent consumer",
+        "kind": "current-source",
+        "horizon": "current-source",
+        "claimClass": "upstream-fact",
+        "maturity": "source-contract-only",
+        "summary": "Consumes advertised metadata and may request full instructions; this page does not claim a released runtime path.",
+        "sourceRefs": ["skills-architecture", "skills-known-limits"]
+      },
+      {
+        "id": "kfx-trust-gate",
+        "label": "KFX trust and capability gate",
+        "kind": "authority-boundary",
+        "horizon": "current-source",
+        "claimClass": "upstream-fact",
+        "maturity": "accepted-architecture",
+        "summary": "Retains runtime admission and capability authority below the Skill instruction layer.",
+        "sourceRefs": ["skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "accountability-history",
+        "label": "Durable provenance and work history",
+        "kind": "future-picture",
+        "horizon": "future-picture",
+        "claimClass": "future-picture",
+        "maturity": "future-picture-only",
+        "summary": "A future view could connect Skill influence to retained work evidence without making the Skill itself authority.",
+        "sourceRefs": ["skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "governed-distribution",
+        "label": "Governed discovery and distribution",
+        "kind": "future-picture",
+        "horizon": "future-picture",
+        "claimClass": "future-picture",
+        "maturity": "future-picture-only",
+        "summary": "Discovery, remote publishing, and dependency acquisition remain future product work with separate trust and release gates.",
+        "sourceRefs": ["skills-known-limits"]
+      }
+    ],
+    "relationships": [
+      {"id": "recognize", "from": "delegated-work", "to": "skill-source", "label": "may justify authoring", "horizon": "site-synthesis", "claimClass": "site-synthesis", "sourceRefs": ["skills-architecture", "skills-adr"]},
+      {"id": "derive", "from": "skill-source", "to": "skill-catalog", "label": "derives", "horizon": "current-source", "claimClass": "upstream-fact", "sourceRefs": ["skills-contract", "skills-architecture"]},
+      {"id": "wrap", "from": "skill-catalog", "to": "context-envelope", "label": "is wrapped by", "horizon": "current-source", "claimClass": "upstream-fact", "sourceRefs": ["skills-contract", "skills-architecture"]},
+      {"id": "advertise", "from": "context-envelope", "to": "agent-consumer", "label": "advertises bounded context to", "horizon": "current-source", "claimClass": "upstream-fact", "sourceRefs": ["skills-architecture"]},
+      {"id": "constrain", "from": "kfx-trust-gate", "to": "agent-consumer", "label": "keeps runtime authority outside", "horizon": "current-source", "claimClass": "upstream-fact", "sourceRefs": ["skills-architecture", "skills-adr"]},
+      {"id": "retain", "from": "agent-consumer", "to": "accountability-history", "label": "could retain influence in", "horizon": "future-picture", "claimClass": "future-picture", "sourceRefs": ["skills-architecture", "skills-adr"]},
+      {"id": "distribute", "from": "skill-source", "to": "governed-distribution", "label": "could enter", "horizon": "future-picture", "claimClass": "future-picture", "sourceRefs": ["skills-known-limits"]}
+    ]
+  },
+  "capabilityMap": {
+    "schema": "libkungfu.skills-capability-map/v1",
+    "headline": "Reader capabilities, protected-source facts, and future ideas stay distinguishable.",
+    "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"],
+    "categories": [
+      {
+        "id": "understand",
+        "label": "Understand",
+        "summary": "Inspect the current source model without upgrading it into a release claim.",
+        "items": [
+          {"id": "separate-objects", "label": "Separate source, catalog, context, Agent, and KFX", "status": "defined-in-protected-source", "maturity": "protected-source-alpha", "claimClass": "upstream-fact", "summary": "Read each object as a different responsibility and keep KFX as the runtime trust boundary.", "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]}
+        ]
+      },
+      {
+        "id": "suggest",
+        "label": "Suggest",
+        "summary": "Use Site guidance to recognize work that benefits from a reusable form.",
+        "items": [
+          {"id": "recognize-repetition", "label": "Recognize repeated bounded work", "status": "site-guidance", "maturity": "site-synthesis", "claimClass": "site-synthesis", "summary": "Suggest a Skill when triggers, outcomes, verification, and recovery recur across Agent sessions.", "sourceRefs": ["skills-architecture", "skills-adr"]},
+          {"id": "reject-one-off", "label": "Reject one-off prompt capture", "status": "site-guidance", "maturity": "site-synthesis", "claimClass": "site-synthesis", "summary": "Keep transient prompts and unverified workarounds out of a durable Skill surface.", "sourceRefs": ["skills-architecture"]}
+        ]
+      },
+      {
+        "id": "author",
+        "label": "Author",
+        "summary": "Start from the smallest source shape and state its boundaries.",
+        "items": [
+          {"id": "minimal-source", "label": "Begin with SKILL.md", "status": "defined-in-protected-source", "maturity": "protected-source-alpha", "claimClass": "upstream-fact", "summary": "The protected architecture defines SKILL.md-only instruction source as the minimal form.", "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]},
+          {"id": "bound-outcome", "label": "Name outcome, checks, and recovery", "status": "site-guidance", "maturity": "site-synthesis", "claimClass": "site-synthesis", "summary": "Author for accountable reuse, not for hidden automation or permission transfer.", "sourceRefs": ["skills-architecture", "skills-adr"]}
+        ]
+      },
+      {
+        "id": "govern",
+        "label": "Govern",
+        "summary": "Keep instruction influence inspectable and authority elsewhere.",
+        "items": [
+          {"id": "no-permission-laundering", "label": "Preserve the KFX trust gate", "status": "accepted-architecture", "maturity": "accepted-partial", "claimClass": "upstream-fact", "summary": "Skill composition cannot elevate a KFX package or make a refused runtime facet executable.", "sourceRefs": ["skills-adr", "skills-known-limits"]},
+          {"id": "source-digests", "label": "Inspect exact sources and digests", "status": "available-on-this-preview", "maturity": "site-evidence", "claimClass": "site-synthesis", "summary": "This preview exposes the exact protected commit, file paths, and SHA-256 digests used for synthesis.", "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"]}
+        ]
+      },
+      {
+        "id": "future",
+        "label": "Future picture",
+        "summary": "Keep useful product directions visible without calling them current capability.",
+        "items": [
+          {"id": "durable-influence", "label": "Retain Skill influence with work evidence", "status": "future-picture-only", "maturity": "future-picture", "claimClass": "future-picture", "summary": "A future product could connect selection and instruction loading to durable provenance and recovery evidence.", "sourceRefs": ["skills-architecture", "skills-adr"]},
+          {"id": "governed-discovery", "label": "Add governed discovery and distribution", "status": "future-picture-only", "maturity": "future-picture", "claimClass": "future-picture", "summary": "Marketplace, remote publishing, and unresolved dependency acquisition require separate product and release work.", "sourceRefs": ["skills-known-limits"]}
+        ]
+      }
+    ]
+  }
+}
