@@ -28,10 +28,11 @@ ai_provenance:
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
-- Use `https://libkungfu.dev/skills/` for the source-pinned Skills preview:
-  Agent suggestion guidance, current-source versus future-picture architecture,
-  capability map, exact digests, and explicit non-claims. Its machine peers are
-  `/skills/manifest.json`, `/skills/llms.txt`, `/skills/architecture.json`, and
+- Use `https://libkungfu.dev/skills/` for the user-facing Skills value,
+  comparison, release example, and no-code path. Continue to `/skills/spec/`
+  for exact technical evidence and `/skills/roadmap/` for current, next, and
+  future delivery horizons. Its machine peers remain `/skills/manifest.json`,
+  `/skills/llms.txt`, `/skills/architecture.json`, and
   `/skills/capability-map.json`.
 - Use `https://core.libkungfu.dev` for the complete Kungfu product and adoption
   map. Stable depth routes cover `.kungfu` format, primitives, runtime, ABI,

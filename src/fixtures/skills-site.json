@@ -2,9 +2,153 @@
   "schema": "libkungfu.skills-site-synthesis/v1",
   "status": "site-synthesis",
   "maturity": "protected-source-alpha-preview",
-  "headline": "Teach Agents repeatable work without turning instructions into authority.",
-  "lead": "Kungfu Skills are a source-defined Agent context layer above KFX: compact enough to advertise, explicit enough to inspect, and bounded so instructions cannot grant runtime capability.",
-  "proposition": "Use a Skill when a delegated workflow should become repeatable, inspectable, and recoverable. Keep execution authority in the governed runtime beneath it.",
+  "headline": "Make Agent skills reliable enough for real work.",
+  "lead": "Kungfu Skills keep the simplicity of reusable Agent instructions, then add exact identity, Work fit, declared dependencies, visible effects, proof, and recovery for complex jobs.",
+  "proposition": "The goal is not a smarter prompt. It is work that is easier to repeat, combine, inspect, and continue without mysterious changes or hidden authority.",
+  "heroAnswers": [
+    {
+      "id": "value",
+      "question": "What value does it add?",
+      "answer": "More reliable, composable, and traceable Agent work—especially when a task spans tools, permissions, evidence, and time.",
+      "mobileAnswer": "Reliable, composable, and traceable Agent work.",
+      "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "difference",
+      "question": "How is it different?",
+      "answer": "A normal Skill is a useful playbook. A Kungfu Skill is designed to connect that playbook to exact Work, dependencies, effects, proof, and recovery while authority stays elsewhere.",
+      "mobileAnswer": "It binds the playbook to exact Work, effects, proof, and authority boundaries.",
+      "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "no-code",
+      "question": "Do I need to code?",
+      "answer": "No. Using one should feel like asking your Agent to do the job. The simplest Skill can start as one SKILL.md file, and an Agent can help author it.",
+      "mobileAnswer": "No—ask your Agent in natural language.",
+      "sourceRefs": ["skills-architecture", "skills-adr"]
+    }
+  ],
+  "benefits": [
+    {
+      "id": "repeatable",
+      "label": "Repeat with confidence",
+      "summary": "Pin the exact instructions and packaged content used for the work, so a later update cannot silently change what happened before.",
+      "sourceRefs": ["skills-contract", "skills-adr"]
+    },
+    {
+      "id": "composable",
+      "label": "Combine without hidden power",
+      "summary": "Declare the integrations and effects a Skill needs while keeping permission and execution decisions in their own governed systems.",
+      "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "traceable",
+      "label": "Explain the work later",
+      "summary": "Carry proof requirements, recovery steps, provenance, and predecessor links so people and Agents can reconstruct which Skill influenced a result.",
+      "sourceRefs": ["skills-contract", "skills-adr"]
+    }
+  ],
+  "comparison": {
+    "headline": "A familiar idea, with an engineering-grade work contract around it.",
+    "ordinaryLabel": "A typical Agent Skill",
+    "kungfuLabel": "A Kungfu Skill",
+    "rows": [
+      {
+        "id": "instructions",
+        "dimension": "What it starts with",
+        "ordinary": "Instructions, often with supporting scripts.",
+        "kungfu": "The same approachable instruction layer, rooted as one complete, inspectable package.",
+        "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "identity",
+        "dimension": "Which version ran",
+        "ordinary": "Often the file as it exists now.",
+        "kungfu": "A stable key, immutable revision, complete content root, and predecessor chain.",
+        "sourceRefs": ["skills-contract", "skills-adr"]
+      },
+      {
+        "id": "authority",
+        "dimension": "What it may do",
+        "ordinary": "Tools and permissions may be implied by prose.",
+        "kungfu": "Dependencies and effects are declared; separate systems still decide capability and execution.",
+        "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "completion",
+        "dimension": "What counts as done",
+        "ordinary": "The Agent may infer success from steps or output.",
+        "kungfu": "Proof is explicit, and Work—not the Skill—owns acceptance and completion.",
+        "sourceRefs": ["skills-contract", "skills-adr"]
+      },
+      {
+        "id": "later",
+        "dimension": "What you can explain later",
+        "ordinary": "That a named Skill was probably used.",
+        "kungfu": "The exact content, provenance, effects, evidence needs, and recovery meaning tied to that Work.",
+        "sourceRefs": ["skills-contract", "skills-adr"]
+      }
+    ]
+  },
+  "releaseExample": {
+    "request": "Release this project.",
+    "headline": "The request stays simple. The safety underneath becomes explicit.",
+    "intro": "The user can still ask in one sentence. A Kungfu Skill is designed to make the hidden coordination inspectable without making the user operate it by hand.",
+    "steps": [
+      {"id": "fit", "label": "Fit the exact Skill to the Work", "summary": "Bind one immutable Skill revision and complete content root to the release job.", "sourceRefs": ["skills-contract", "skills-adr"]},
+      {"id": "compose", "label": "Resolve what the work depends on", "summary": "Name the required build and repository integrations without letting Skill prose grant them authority.", "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]},
+      {"id": "effects", "label": "Make side effects visible", "summary": "Declare process, filesystem, and external writes before the operational path uses them.", "sourceRefs": ["skills-contract", "skills-adr"]},
+      {"id": "proof", "label": "Keep the evidence that matters", "summary": "Require test, build, release, and user-acceptance evidence instead of equating output with completion.", "sourceRefs": ["skills-contract", "skills-adr"]}
+    ],
+    "boundary": "The Skill explains and orchestrates how. Work owns selection and completion; KFX owns executable capability; evidence systems preserve what actually happened."
+  },
+  "usage": {
+    "headline": "Use it in natural language. Review decisions, not implementation plumbing.",
+    "steps": [
+      {"id": "ask", "label": "Ask for the outcome", "summary": "Tell your Agent what you want done, as you already do today."},
+      {"id": "match", "label": "Let the Agent propose a Skill", "summary": "The intended flow matches an exact Skill to the Work and shows important dependencies or effects."},
+      {"id": "decide", "label": "Review meaningful choices", "summary": "You approve authority, destructive effects, or acceptance decisions when they matter—not routine code."},
+      {"id": "receive", "label": "Receive a result with proof", "summary": "The outcome keeps evidence and recovery context so another person or Agent can continue later."}
+    ],
+    "noCode": "You do not need to know how to code to use a Kungfu Skill. Creating the simplest one can begin with a single SKILL.md file, and an Agent can draft that from your description. More advanced integrations may require developer work behind the Skill, but using them should not."
+  },
+  "roadmap": {
+    "headline": "Keep contract, adoption, and future product ideas visibly separate.",
+    "lanes": [
+      {
+        "id": "defined-now",
+        "label": "Defined in protected source now",
+        "horizon": "current-source",
+        "items": [
+          "A working first context loop: SKILL.md parsing, compact catalogs, on-demand reads, managed context, dependency binding, audit, and a manager view.",
+          "A content-rooted, Work-scoped definition contract with immutable revisions, exact dependencies, declared effects, proof, recovery, and explicit non-authority."
+        ],
+        "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"]
+      },
+      {
+        "id": "staged-adoption",
+        "label": "Next: adopt the contract end to end",
+        "horizon": "staged-adoption",
+        "items": [
+          "One registry and lifecycle across CLI, GUI, and Agent surfaces.",
+          "Explicit Work selection, invocation receipts, historical replay, and safe upgrade or retirement.",
+          "Exact KFX and Profile dependency resolution through their own trust and lifecycle authorities."
+        ],
+        "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+      },
+      {
+        "id": "future-product",
+        "label": "Later: composition that feels automatic",
+        "horizon": "future-picture",
+        "items": [
+          "Recommend and compose the right Skills and governed integrations from the Work itself.",
+          "Governed discovery and distribution without permission laundering.",
+          "Compare exact Skill revisions against retained outcomes and evidence without treating correlation as truth."
+        ],
+        "sourceRefs": ["skills-architecture", "skills-adr", "skills-known-limits"]
+      }
+    ]
+  },
   "sourceBoundary": "This page is a Site-owned synthesis of exact files on Kungfu's protected development line. Kungfu owns the Skill contract, implementation status, commands, trust boundary, and qualification claims. The Site owns only reader guidance, composition, and routing.",
   "previewBoundary": "This additive Site preview does not publish or activate a Kungfu Skill runtime, package, catalog, registry, Agent Brief, or production surface.",
   "futureBoundary": "Future-picture nodes describe a useful direction for accountable authoring, provenance, and distribution. They are not present-tense product or release claims.",
@@ -20,37 +164,37 @@
       "id": "skills-contract",
       "owner": "kungfu-systems/kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
       "path": "framework/skill/kungfu-skill.contract.json",
-      "sha256": "fb6fbc59557ac8448226f5ed8b97fd71fcf202742e896bb06e2831abeedc2a52",
+      "sha256": "9687a533493aa1e6ca2407f633f4ec6039eb0b857afb1db324fefb3c64f3ed01",
       "maturity": "protected-source-contract",
-      "role": "Versioned source, catalog, context, dependency, audit, and manager schema contract"
+      "role": "Content-rooted definition, authority boundary, lifecycle vocabulary, and compatibility contract"
     },
     {
       "id": "skills-architecture",
       "owner": "kungfu-systems/kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
       "path": "docs/architecture/skills.md",
-      "sha256": "f5611bd79f54611beb35f9e6f077a101ed5219fb223ce10e2b4f7c2103804ccd",
+      "sha256": "4bae5194be6374830fec387be61010e4a8e132330739d13dcf7940a040651663",
       "maturity": "protected-source-architecture",
-      "role": "Skill source, compact catalog, context envelope, KFX boundary, and first-slice architecture"
+      "role": "Skill source, compact context loop, Work boundary, KFX separation, audit, and staged adoption architecture"
     },
     {
       "id": "skills-adr",
       "owner": "kungfu-systems/kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
-      "path": "docs/adr/KF-ADR-019f86da-4f90-74c2-9cbb-24f1c34303bf.md",
-      "sha256": "0509789b372a45c0e4687f24771e44c543ceed3403ab1e3f1cf0ea356e6ce759",
+      "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
+      "path": "docs/adr/KF-ADR-019fee22-e71d-7da9-8a44-9403c21a5d62.md",
+      "sha256": "b439ed0b749c6e1b6f4527356454f0d5aa2024f46a8fe2d5369171ca30a159ce",
       "maturity": "accepted-partial-decision",
-      "role": "Accepted architecture decision with an explicit partial implementation boundary"
+      "role": "Accepted content-rooted, Work-scoped orchestration decision with staged runtime adoption"
     },
     {
       "id": "skills-known-limits",
       "owner": "kungfu-systems/kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+      "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
       "path": "docs/qualification/known-limits.md",
       "sha256": "b8a913ad020d089842b6d8550025665e307bfd92eb5f5bbb1049d18d7a7b0c47",
       "maturity": "protected-source-known-limits",
@@ -62,73 +206,81 @@
       "id": "decide",
       "label": "Decide whether the work deserves a Skill",
       "summary": "Look for repeatable delegated work with stable inputs, a bounded outcome, and evidence worth retaining.",
-      "href": "#agent-guidance",
+      "href": "spec/#agent-guidance",
       "sourceRefs": ["skills-architecture", "skills-adr"]
     },
     {
       "id": "understand",
       "label": "Understand the current source contract",
       "summary": "Separate Skill source, compact catalog, context envelope, Agent consumption, and the KFX trust gate.",
-      "href": "#current-facts",
+      "href": "spec/#current-facts",
       "sourceRefs": ["skills-contract", "skills-architecture"]
     },
     {
       "id": "audit",
       "label": "Audit what this preview does not prove",
       "summary": "Read the partial implementation status, known limits, future-picture labels, and explicit non-claims before relying on the surface.",
-      "href": "#boundaries",
+      "href": "spec/#boundaries",
       "sourceRefs": ["skills-adr", "skills-known-limits"]
     }
   ],
   "currentFacts": [
     {
-      "id": "skill-source",
-      "label": "A Skill begins as source",
+      "id": "exact-identity",
+      "label": "Every definition has an exact identity",
       "claimClass": "upstream-fact",
-      "maturity": "protected-source-alpha",
-      "summary": "The protected architecture defines a directory containing SKILL.md as the minimum valid instruction-only Skill source.",
-      "sourceRefs": ["skills-architecture", "skills-adr"]
+      "maturity": "accepted-contract",
+      "summary": "The accepted contract binds a stable key, immutable revision, complete content root, provenance, and predecessor coordinate so later changes cannot reinterpret old bytes.",
+      "sourceRefs": ["skills-contract", "skills-adr"]
     },
     {
-      "id": "compact-context",
-      "label": "Catalog first; full instructions on demand",
+      "id": "work-boundary",
+      "label": "Work owns selection and completion",
       "claimClass": "upstream-fact",
-      "maturity": "protected-source-alpha",
-      "summary": "The source contract separates a compact Agent-visible catalog from the full instructions and context envelope.",
-      "sourceRefs": ["skills-contract", "skills-architecture"]
+      "maturity": "accepted-contract",
+      "summary": "A definition declares its Work scope and binding policy, but catalog visibility, instruction loading, invocation, process exit, or Agent output cannot select or complete Work.",
+      "sourceRefs": ["skills-contract", "skills-adr"]
     },
     {
-      "id": "kfx-boundary",
-      "label": "Instructions do not grant runtime authority",
+      "id": "declared-effects",
+      "label": "Dependencies and effects must be declared",
       "claimClass": "upstream-fact",
-      "maturity": "accepted-architecture",
-      "summary": "Skills may describe or reference KFX dependencies, while KFX remains separately admitted, governed, and incapable of gaining authority through Skill composition.",
-      "sourceRefs": ["skills-architecture", "skills-adr"]
+      "maturity": "accepted-contract",
+      "summary": "Operational and domain definitions name exact KFX or Profile dependencies and bind every effect to a declared authority; prose cannot grant capability or copy another system's authority.",
+      "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr"]
+    },
+    {
+      "id": "proof-recovery",
+      "label": "Proof and recovery are part of the contract",
+      "claimClass": "upstream-fact",
+      "maturity": "accepted-contract",
+      "summary": "Every definition carries explicit proof requirements, completion ownership, recovery steps, runtime compatibility, and historical preservation rules.",
+      "sourceRefs": ["skills-contract", "skills-adr"]
     },
     {
       "id": "partial-status",
-      "label": "The implementation claim is partial",
+      "label": "The contract is accepted; adoption is staged",
       "claimClass": "upstream-fact",
       "maturity": "accepted-partial",
-      "summary": "The accepted ADR records a first slice and explicitly retains follow-up work; the known-limits page excludes marketplace, automatic elevation, unresolved dependency acquisition, and third-party runtime execution.",
-      "sourceRefs": ["skills-adr", "skills-known-limits"]
+      "summary": "The deterministic definition contract and rejection fixtures are retained on dev, while registry, lifecycle, Work selection, and end-to-end runtime adoption remain follow-up work. Existing context-loop slices remain readable during migration.",
+      "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"]
     }
   ],
   "agentGuidance": [
     {
       "id": "suggest-repeatable",
       "decision": "suggest",
-      "label": "Suggest a Skill for repeatable delegated work",
+      "label": "Suggest a Skill for repeated or complex delegated work",
       "claimClass": "site-synthesis",
-      "summary": "Suggest one when the same intent, inputs, checks, and recovery notes recur across sessions or agents.",
+      "summary": "Suggest one when the same intent, dependencies, effects, checks, and recovery needs recur—or when one long-running task must survive handoffs and change.",
       "sourceRefs": ["skills-architecture", "skills-adr"]
     },
     {
       "id": "create-bounded",
       "decision": "create",
-      "label": "Create one when the outcome can be bounded",
+      "label": "Start with instructions, not code",
       "claimClass": "site-synthesis",
-      "summary": "Create one when instructions can name a clear trigger, a scoped result, verification, evidence, and a safe handoff without embedding hidden authority.",
+      "summary": "The smallest Skill is one SKILL.md. Add structure, exact dependencies, effects, proof, and recovery only when the work needs them.",
       "sourceRefs": ["skills-architecture", "skills-adr"]
     },
     {

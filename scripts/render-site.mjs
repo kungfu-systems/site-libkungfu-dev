@@ -1532,7 +1532,7 @@ ${registry.archivePolicy.rule}
   };
 }
 
-function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, immutableArchive = false }) {
+function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, machineEntryPrefix = "", immutableArchive = false }) {
   const nav = [
     ["kfd", "KFD"],
     ["buildchain", "Buildchain"],
@@ -1597,6 +1597,14 @@ function page({ title, description, current, body, alternates = "", preserveRela
 `;
   const navSeparatorExclusion = immutableArchive ? "" : ":not(.main-site-link)";
 
+  const machineEntryHref = (pathPart) => {
+    if (preserveRelativeMachineEntries) return `/${pathPart}`;
+    if (machineEntryPrefix && current === "skills" && pathPart !== "llms-full.txt") {
+      return `${machineEntryPrefix}${pathPart}`;
+    }
+    return pageMachineEntryHref(current, pathPart);
+  };
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -1612,9 +1620,9 @@ function page({ title, description, current, body, alternates = "", preserveRela
   <meta name="twitter:title" content="${escapeAttr(title)}">
   <meta name="twitter:description" content="${escapeAttr(description)}">`}
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(preserveRelativeMachineEntries ? "/manifest.json" : pageMachineEntryHref(current, "manifest.json"))}">
-  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(preserveRelativeMachineEntries ? "/llms.txt" : pageMachineEntryHref(current, "llms.txt"))}">
-  <link rel="alternate" type="text/plain" title="Full agent index" href="${escapeAttr(preserveRelativeMachineEntries ? "/llms-full.txt" : pageMachineEntryHref(current, "llms-full.txt"))}">
+  <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(machineEntryHref("manifest.json"))}">
+  <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(machineEntryHref("llms.txt"))}">
+  <link rel="alternate" type="text/plain" title="Full agent index" href="${escapeAttr(machineEntryHref("llms-full.txt"))}">
 ${alternates}
   <style>
     :root {
@@ -6914,6 +6922,12 @@ const skillsStyles = `<style>
   }
 
   .skills-reader-paths,
+  .skills-answer-grid,
+  .skills-benefit-grid,
+  .skills-release-steps,
+  .skills-usage-steps,
+  .skills-depth-grid,
+  .skills-roadmap-grid,
   .skills-fact-grid,
   .skills-guidance-grid,
   .skills-node-grid,
@@ -6925,6 +6939,12 @@ const skillsStyles = `<style>
   }
 
   .skills-reader-path,
+  .skills-answer,
+  .skills-benefit,
+  .skills-release-step,
+  .skills-usage-step,
+  .skills-depth-card,
+  .skills-roadmap-lane,
   .skills-fact,
   .skills-guidance,
   .skills-node,
@@ -6938,6 +6958,12 @@ const skillsStyles = `<style>
   }
 
   .skills-reader-path,
+  .skills-answer,
+  .skills-benefit,
+  .skills-release-step,
+  .skills-usage-step,
+  .skills-depth-card,
+  .skills-roadmap-lane,
   .skills-fact,
   .skills-guidance,
   .skills-node,
@@ -6949,11 +6975,63 @@ const skillsStyles = `<style>
   }
 
   .skills-reader-path h3,
+  .skills-answer h3,
+  .skills-benefit h3,
+  .skills-release-step h3,
+  .skills-usage-step h3,
+  .skills-depth-card h3,
+  .skills-roadmap-lane h3,
   .skills-fact h3,
   .skills-guidance h3,
   .skills-node h3,
   .skills-capability h4,
   .skills-source-card h3 { margin: 0; }
+
+  .skills-answer-grid { margin-top: 24px; }
+  .skills-answer { border-top: 3px solid var(--accent); }
+  .skills-answer-compact { display: none; }
+  .skills-answer p,
+  .skills-benefit p,
+  .skills-release-step p,
+  .skills-usage-step p { margin: 0; }
+  .skills-benefit { border-top: 3px solid var(--evidence); }
+  .skills-no-code {
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 20px;
+    background: color-mix(in srgb, var(--accent) 9%, var(--soft));
+  }
+  .skills-no-code strong { color: var(--accent-strong); }
+
+  .skills-comparison-wrap { overflow-x: auto; }
+  .skills-comparison {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    background: var(--soft);
+  }
+  .skills-comparison th,
+  .skills-comparison td {
+    border: 1px solid var(--line);
+    padding: 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .skills-comparison th { color: var(--accent-strong); }
+  .skills-comparison td:first-child { width: 18%; font-weight: 750; }
+
+  .skills-release-request {
+    margin: 18px 0;
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    background: var(--soft);
+    font-size: clamp(1.2rem, 3vw, 1.7rem);
+    font-weight: 750;
+  }
+  .skills-release-boundary { margin-top: 18px; }
+  .skills-roadmap-lane[data-horizon="future-picture"] { border-top: 4px solid var(--protocol); }
+  .skills-roadmap-lane[data-horizon="staged-adoption"] { border-top: 4px solid var(--warn); }
+  .skills-roadmap-lane[data-horizon="current-source"] { border-top: 4px solid var(--evidence); }
 
   .skills-current { border-top: 4px solid var(--evidence); }
   .skills-future { border-top: 4px solid var(--protocol); }
@@ -6983,7 +7061,23 @@ const skillsStyles = `<style>
   .skills-capability-category { scroll-margin-top: 100px; margin-top: 26px; }
 
   @media (max-width: 640px) {
+    main { padding-top: 24px; }
+    .hero { gap: 14px; margin-bottom: 34px; }
+    .hero h1 { font-size: 34px; line-height: 1; }
+    .hero .lead { font-size: 18px; }
+    .skills-proposition { display: none; }
+    .skills-answer-grid { margin-top: 6px; gap: 8px; }
+    .skills-answer { padding: 12px 14px; gap: 4px; }
+    .skills-answer h3 { font-size: 16px; }
+    .skills-answer-detail { display: none; }
+    .skills-answer-compact { display: block; font-size: 14px; line-height: 1.35; }
     .skills-reader-paths,
+    .skills-answer-grid,
+    .skills-benefit-grid,
+    .skills-release-steps,
+    .skills-usage-steps,
+    .skills-depth-grid,
+    .skills-roadmap-grid,
     .skills-fact-grid,
     .skills-guidance-grid,
     .skills-node-grid,
@@ -7018,6 +7112,11 @@ const skillsManifest = {
   proposition: skillsSite.proposition,
   canonicalUrl: surfaceCanonicalHref("skills"),
   humanEntry: surfaceCanonicalHref("skills"),
+  humanRoutes: {
+    overview: surfaceCanonicalHref("skills"),
+    spec: surfaceEndpointHref("skills", "spec/"),
+    roadmap: surfaceEndpointHref("skills", "roadmap/"),
+  },
   machineEntries: {
     manifest: surfaceEndpointHref("skills", "manifest.json"),
     llms: surfaceEndpointHref("skills", "llms.txt"),
@@ -7025,6 +7124,12 @@ const skillsManifest = {
     capabilityMap: surfaceEndpointHref("skills", "capability-map.json"),
   },
   readerPaths: skillsSite.readerPaths,
+  heroAnswers: skillsSite.heroAnswers,
+  benefits: skillsSite.benefits,
+  comparison: skillsSite.comparison,
+  releaseExample: skillsSite.releaseExample,
+  usage: skillsSite.usage,
+  roadmap: skillsSite.roadmap,
   currentFacts: skillsSite.currentFacts,
   agentGuidance: skillsSite.agentGuidance,
   sources: skillsSite.sources,
@@ -7057,111 +7162,145 @@ writeFile(
     alternates: `  <link rel="alternate" type="application/json" title="Skills architecture" href="architecture.json">\n  <link rel="alternate" type="application/json" title="Skills capability map" href="capability-map.json">`,
     body: `${skillsStyles}
     <section class="hero">
-      <p class="eyebrow">Skills preview · ${escapeHtml(skillsSite.maturity)}</p>
+      <p class="eyebrow">Kungfu Skills · product preview</p>
       <h1>${escapeHtml(skillsSite.headline)}</h1>
       <p class="lead">${escapeHtml(skillsSite.lead)}</p>
-      <p>${escapeHtml(skillsSite.proposition)}</p>
+      <p class="skills-proposition">${escapeHtml(skillsSite.proposition)}</p>
+      <div class="skills-answer-grid">${skillsSite.heroAnswers.map((entry) => `<article class="skills-answer" data-skills-answer="${escapeAttr(entry.id)}">
+        <h3>${escapeHtml(entry.question)}</h3>
+        <p class="skills-answer-detail">${escapeHtml(entry.answer)}</p>
+        <p class="skills-answer-compact">${escapeHtml(entry.mobileAnswer)}</p>
+      </article>`).join("\n")}</div>
       <div class="hero-actions">
-        <a class="hero-action" href="#agent-guidance">Should an Agent suggest one?</a>
-        <a class="hero-action secondary" href="#architecture">Compare current and future</a>
-        <a class="hero-action secondary" href="manifest.json">Inspect machine facts</a>
+        <a class="hero-action" href="#release-example">See a real-world example</a>
+        <a class="hero-action secondary" href="#how-to-use">How to use one</a>
+        <a class="hero-action secondary" href="#availability">What is available now</a>
       </div>
     </section>
 
-    <section aria-labelledby="skills-reader-paths-heading">
+    <section aria-labelledby="skills-value-heading">
       <div class="section-heading">
-        <p class="eyebrow">Choose a reading path</p>
-        <h2 id="skills-reader-paths-heading">Start with the decision in front of you.</h2>
+        <p class="eyebrow">The value</p>
+        <h2 id="skills-value-heading">Not a smarter Skill. A more dependable way to use one.</h2>
       </div>
-      <div class="skills-reader-paths">${skillsSite.readerPaths.map((entry) => `<article class="skills-reader-path" data-skills-reader-path="${escapeAttr(entry.id)}">
-        <h3><a href="${escapeAttr(entry.href)}">${escapeHtml(entry.label)}</a></h3>
+      <div class="skills-benefit-grid">${skillsSite.benefits.map((entry) => `<article class="skills-benefit" data-skills-benefit="${escapeAttr(entry.id)}">
+        <h3>${escapeHtml(entry.label)}</h3>
         <p>${escapeHtml(entry.summary)}</p>
-        ${skillsSourceLinks(entry.sourceRefs)}
       </article>`).join("\n")}</div>
+    </section>
+
+    <section id="comparison" aria-labelledby="skills-comparison-heading">
+      <div class="section-heading">
+        <p class="eyebrow">The difference</p>
+        <h2 id="skills-comparison-heading">${escapeHtml(skillsSite.comparison.headline)}</h2>
+      </div>
+      <div class="skills-comparison-wrap">
+        <table class="skills-comparison">
+          <thead><tr><th>Question</th><th>${escapeHtml(skillsSite.comparison.ordinaryLabel)}</th><th>${escapeHtml(skillsSite.comparison.kungfuLabel)}</th></tr></thead>
+          <tbody>${skillsSite.comparison.rows.map((row) => `<tr data-skills-comparison="${escapeAttr(row.id)}"><td>${escapeHtml(row.dimension)}</td><td>${escapeHtml(row.ordinary)}</td><td>${escapeHtml(row.kungfu)}</td></tr>`).join("\n")}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="release-example" aria-labelledby="skills-release-example-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Example · release a project</p>
+        <h2 id="skills-release-example-heading">${escapeHtml(skillsSite.releaseExample.headline)}</h2>
+        <p>${escapeHtml(skillsSite.releaseExample.intro)}</p>
+      </div>
+      <blockquote class="skills-release-request">“${escapeHtml(skillsSite.releaseExample.request)}”</blockquote>
+      <div class="skills-release-steps">${skillsSite.releaseExample.steps.map((entry, index) => `<article class="skills-release-step" data-skills-release-step="${escapeAttr(entry.id)}">
+        <span class="tag">${index + 1}</span>
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.summary)}</p>
+      </article>`).join("\n")}</div>
+      <p class="panel warning skills-release-boundary"><strong>Authority boundary:</strong> ${escapeHtml(skillsSite.releaseExample.boundary)}</p>
+    </section>
+
+    <section id="how-to-use" aria-labelledby="skills-usage-heading">
+      <div class="section-heading">
+        <p class="eyebrow">How to use it</p>
+        <h2 id="skills-usage-heading">${escapeHtml(skillsSite.usage.headline)}</h2>
+      </div>
+      <div class="skills-usage-steps">${skillsSite.usage.steps.map((entry, index) => `<article class="skills-usage-step" data-skills-usage-step="${escapeAttr(entry.id)}">
+        <span class="tag">Step ${index + 1}</span>
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.summary)}</p>
+      </article>`).join("\n")}</div>
+      <p class="skills-no-code"><strong>No coding required to use one.</strong> ${escapeHtml(skillsSite.usage.noCode)}</p>
+    </section>
+
+    <section id="availability" aria-labelledby="skills-availability-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Availability · honest preview boundary</p>
+        <h2 id="skills-availability-heading">The contract is defined. End-to-end adoption is still being staged.</h2>
+        <p>The protected development line contains the first context loop and the new reliability contract. This preview does not claim that the complete registry, Work selection, automatic composition, or distribution experience is released today.</p>
+      </div>
+      <div class="skills-depth-grid">
+        <article class="skills-depth-card"><p class="eyebrow">Technical evidence</p><h3><a href="spec/">Read the contract and exact sources</a></h3><p>Identity, Work scope, effects, proof, authority boundaries, architecture, digests, and non-claims.</p></article>
+        <article class="skills-depth-card"><p class="eyebrow">Product direction</p><h3><a href="roadmap/">See what is current, next, and later</a></h3><p>Staged runtime adoption is separated from future automatic composition and governed distribution.</p></article>
+      </div>
+    </section>`,
+  }),
+);
+
+writeFile(
+  "skills/spec/index.html",
+  page({
+    title: `Skills technical spec | ${site.title}`,
+    description: "The source-pinned Kungfu Skill contract, authority boundary, architecture, evidence, and explicit non-claims.",
+    current: "skills",
+    machineEntryPrefix: "../",
+    alternates: `  <link rel="alternate" type="application/json" title="Skills architecture" href="../architecture.json">\n  <link rel="alternate" type="application/json" title="Skills capability map" href="../capability-map.json">`,
+    body: `${skillsStyles}
+    <section class="hero">
+      <p class="eyebrow">Kungfu Skills · technical evidence</p>
+      <h1>The contract, authority boundary, and exact source.</h1>
+      <p class="lead">This depth page retains the technical evidence moved out of the product overview.</p>
+      <div class="hero-actions"><a class="hero-action" href="../">Back to the value overview</a><a class="hero-action secondary" href="../roadmap/">Read the roadmap</a><a class="hero-action secondary" href="../manifest.json">Inspect machine facts</a></div>
     </section>
 
     <section id="current-facts" aria-labelledby="skills-current-facts-heading">
-      <div class="section-heading">
-        <p class="eyebrow">Verified current facts · protected source, not release</p>
-        <h2 id="skills-current-facts-heading">What the exact Kungfu source says today.</h2>
-      </div>
-      <div class="skills-fact-grid">${skillsSite.currentFacts.map((fact) => `<article class="skills-fact" data-skills-current-fact="${escapeAttr(fact.id)}" data-claim-class="${escapeAttr(fact.claimClass)}" data-maturity="${escapeAttr(fact.maturity)}">
-        <span class="tag">${escapeHtml(fact.claimClass)} · ${escapeHtml(fact.maturity)}</span>
-        <h3>${escapeHtml(fact.label)}</h3>
-        <p>${escapeHtml(fact.summary)}</p>
-        ${skillsSourceLinks(fact.sourceRefs)}
-      </article>`).join("\n")}</div>
+      <div class="section-heading"><p class="eyebrow">Verified current facts · protected source, not release</p><h2 id="skills-current-facts-heading">What the exact Kungfu source says today.</h2></div>
+      <div class="skills-fact-grid">${skillsSite.currentFacts.map((fact) => `<article class="skills-fact" data-skills-current-fact="${escapeAttr(fact.id)}" data-claim-class="${escapeAttr(fact.claimClass)}" data-maturity="${escapeAttr(fact.maturity)}"><span class="tag">${escapeHtml(fact.claimClass)} · ${escapeHtml(fact.maturity)}</span><h3>${escapeHtml(fact.label)}</h3><p>${escapeHtml(fact.summary)}</p>${skillsSourceLinks(fact.sourceRefs)}</article>`).join("\n")}</div>
     </section>
 
     <section id="agent-guidance" aria-labelledby="skills-agent-guidance-heading">
-      <div class="section-heading">
-        <p class="eyebrow">Site synthesis · suggestion and authoring guidance</p>
-        <h2 id="skills-agent-guidance-heading">When should an Agent suggest or create a Skill?</h2>
-      </div>
-      <div class="skills-guidance-grid">${skillsSite.agentGuidance.map((entry) => `<article class="skills-guidance" data-skills-guidance="${escapeAttr(entry.id)}" data-decision="${escapeAttr(entry.decision)}" data-claim-class="${escapeAttr(entry.claimClass)}">
-        <span class="tag">${escapeHtml(entry.decision)} · ${escapeHtml(entry.claimClass)}</span>
-        <h3>${escapeHtml(entry.label)}</h3>
-        <p>${escapeHtml(entry.summary)}</p>
-        ${skillsSourceLinks(entry.sourceRefs)}
-      </article>`).join("\n")}</div>
+      <div class="section-heading"><p class="eyebrow">Suggestion and authoring boundary</p><h2 id="skills-agent-guidance-heading">When should an Agent suggest or create a Skill?</h2></div>
+      <div class="skills-guidance-grid">${skillsSite.agentGuidance.map((entry) => `<article class="skills-guidance" data-skills-guidance="${escapeAttr(entry.id)}" data-decision="${escapeAttr(entry.decision)}" data-claim-class="${escapeAttr(entry.claimClass)}"><span class="tag">${escapeHtml(entry.decision)} · ${escapeHtml(entry.claimClass)}</span><h3>${escapeHtml(entry.label)}</h3><p>${escapeHtml(entry.summary)}</p>${skillsSourceLinks(entry.sourceRefs)}</article>`).join("\n")}</div>
     </section>
 
     <section id="architecture" aria-labelledby="skills-architecture-heading">
-      <div class="section-heading">
-        <p class="eyebrow">Architecture · current source versus future picture</p>
-        <h2 id="skills-architecture-heading">${escapeHtml(skillsSite.architecture.headline)}</h2>
-        <p>${escapeHtml(skillsSite.architecture.summary)}</p>
-        <p><a href="architecture.json">Read the exact machine graph</a></p>
-      </div>
+      <div class="section-heading"><p class="eyebrow">Architecture · current source versus future picture</p><h2 id="skills-architecture-heading">${escapeHtml(skillsSite.architecture.headline)}</h2><p>${escapeHtml(skillsSite.architecture.summary)}</p><p><a href="../architecture.json">Read the exact machine graph</a></p></div>
       <div role="group" aria-label="Skills architecture with current protected-source and future-picture lanes">
-        <section class="skills-stage skills-current" aria-labelledby="skills-current-lane-heading">
-          <p class="eyebrow">Current protected-source lane</p>
-          <h3 id="skills-current-lane-heading">Defined in exact source; not claimed as a released product.</h3>
-          <div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon !== "future-picture").map(renderSkillsNode).join("\n")}</div>
-        </section>
-        <section class="skills-stage skills-future" aria-labelledby="skills-future-lane-heading" style="margin-top: 18px;">
-          <p class="eyebrow">Future-picture lane · non-current</p>
-          <h3 id="skills-future-lane-heading">Useful direction, visibly outside present capability.</h3>
-          <div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon === "future-picture").map(renderSkillsNode).join("\n")}</div>
-        </section>
+        <section class="skills-stage skills-current" aria-labelledby="skills-current-lane-heading"><p class="eyebrow">Current protected-source lane</p><h3 id="skills-current-lane-heading">Defined in exact source; not claimed as a released product.</h3><div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon !== "future-picture").map(renderSkillsNode).join("\n")}</div></section>
+        <section class="skills-stage skills-future" aria-labelledby="skills-future-lane-heading" style="margin-top: 18px;"><p class="eyebrow">Future-picture lane · non-current</p><h3 id="skills-future-lane-heading">Useful direction, visibly outside present capability.</h3><div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon === "future-picture").map(renderSkillsNode).join("\n")}</div></section>
       </div>
-      <section class="panel" aria-labelledby="skills-relationships-heading" style="margin-top: 18px;">
-        <h3 id="skills-relationships-heading">Exact graph relationships</h3>
-        <ol class="skills-relationships">${skillsSite.architecture.relationships.map((relationship) => `<li data-skills-relationship="${escapeAttr(relationship.id)}" data-from="${escapeAttr(relationship.from)}" data-to="${escapeAttr(relationship.to)}" data-horizon="${escapeAttr(relationship.horizon)}" data-claim-class="${escapeAttr(relationship.claimClass)}" data-source-refs="${escapeAttr(relationship.sourceRefs.join(","))}"><strong>${escapeHtml(relationship.from)}</strong> ${escapeHtml(relationship.label)} <strong>${escapeHtml(relationship.to)}</strong> <span class="tag">${escapeHtml(relationship.horizon)}</span></li>`).join("\n")}</ol>
-      </section>
-    </section>
-
-    <section id="capabilities" aria-labelledby="skills-capabilities-heading">
-      <div class="section-heading">
-        <p class="eyebrow">Capability map · human and Agent parity</p>
-        <h2 id="skills-capabilities-heading">${escapeHtml(skillsSite.capabilityMap.headline)}</h2>
-        <p><a href="capability-map.json">Read the exact machine capability map</a></p>
-      </div>
-      ${skillsSite.capabilityMap.categories.map(renderSkillsCapabilityCategory).join("\n")}
+      <section class="panel" aria-labelledby="skills-relationships-heading" style="margin-top: 18px;"><h3 id="skills-relationships-heading">Exact graph relationships</h3><ol class="skills-relationships">${skillsSite.architecture.relationships.map((relationship) => `<li data-skills-relationship="${escapeAttr(relationship.id)}" data-from="${escapeAttr(relationship.from)}" data-to="${escapeAttr(relationship.to)}" data-horizon="${escapeAttr(relationship.horizon)}" data-claim-class="${escapeAttr(relationship.claimClass)}" data-source-refs="${escapeAttr(relationship.sourceRefs.join(","))}"><strong>${escapeHtml(relationship.from)}</strong> ${escapeHtml(relationship.label)} <strong>${escapeHtml(relationship.to)}</strong> <span class="tag">${escapeHtml(relationship.horizon)}</span></li>`).join("\n")}</ol></section>
     </section>
 
     <section id="sources" aria-labelledby="skills-sources-heading">
-      <div class="section-heading">
-        <p class="eyebrow">Immutable source coordinates</p>
-        <h2 id="skills-sources-heading">Every technical clause resolves to exact protected bytes.</h2>
-      </div>
-      <div class="skills-source-grid">${skillsSite.sources.map((source) => `<article class="skills-source-card" data-skills-source="${escapeAttr(source.id)}">
-        <span class="tag">${escapeHtml(source.maturity)}</span>
-        <h3><a href="${escapeAttr(skillsSourceHref(source))}">${escapeHtml(source.id)}</a></h3>
-        <p>${escapeHtml(source.role)}</p>
-        <code>${escapeHtml(source.ref)}</code>
-        <code>sha256:${escapeHtml(source.sha256)}</code>
-      </article>`).join("\n")}</div>
+      <div class="section-heading"><p class="eyebrow">Immutable source coordinates</p><h2 id="skills-sources-heading">Every technical clause resolves to exact protected bytes.</h2></div>
+      <div class="skills-source-grid">${skillsSite.sources.map((source) => `<article class="skills-source-card" data-skills-source="${escapeAttr(source.id)}"><span class="tag">${escapeHtml(source.maturity)}</span><h3><a href="${escapeAttr(skillsSourceHref(source))}">${escapeHtml(source.id)}</a></h3><p>${escapeHtml(source.role)}</p><code>${escapeHtml(source.ref)}</code><code>sha256:${escapeHtml(source.sha256)}</code></article>`).join("\n")}</div>
     </section>
 
-    <section class="panel warning" id="boundaries" aria-labelledby="skills-boundaries-heading" style="margin-top: 18px;">
-      <p class="eyebrow">Source, preview, future, and non-claim boundaries</p>
-      <h2 id="skills-boundaries-heading">A preview can clarify the product without pretending to ship it.</h2>
-      <p><strong>Source boundary:</strong> ${escapeHtml(skillsSite.sourceBoundary)}</p>
-      <p><strong>Preview boundary:</strong> ${escapeHtml(skillsSite.previewBoundary)}</p>
-      <p><strong>Future boundary:</strong> ${escapeHtml(skillsSite.futureBoundary)}</p>
-      <ul>${skillsSite.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
-    </section>`,
+    <section class="panel warning" id="boundaries" aria-labelledby="skills-boundaries-heading" style="margin-top: 18px;"><p class="eyebrow">Source, preview, future, and non-claim boundaries</p><h2 id="skills-boundaries-heading">Technical precision does not turn a preview into a release.</h2><p><strong>Source boundary:</strong> ${escapeHtml(skillsSite.sourceBoundary)}</p><p><strong>Preview boundary:</strong> ${escapeHtml(skillsSite.previewBoundary)}</p><p><strong>Future boundary:</strong> ${escapeHtml(skillsSite.futureBoundary)}</p><ul>${skillsSite.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul></section>`,
+  }),
+);
+
+writeFile(
+  "skills/roadmap/index.html",
+  page({
+    title: `Skills roadmap | ${site.title}`,
+    description: "What the Kungfu Skill source defines now, what adoption comes next, and which product ideas remain future work.",
+    current: "skills",
+    machineEntryPrefix: "../",
+    alternates: `  <link rel="alternate" type="application/json" title="Skills architecture" href="../architecture.json">\n  <link rel="alternate" type="application/json" title="Skills capability map" href="../capability-map.json">`,
+    body: `${skillsStyles}
+    <section class="hero"><p class="eyebrow">Kungfu Skills · roadmap</p><h1>What exists, what comes next, and what remains future.</h1><p class="lead">${escapeHtml(skillsSite.roadmap.headline)}</p><div class="hero-actions"><a class="hero-action" href="../">Back to the value overview</a><a class="hero-action secondary" href="../spec/">Read the technical spec</a></div></section>
+    <section aria-labelledby="skills-roadmap-heading"><div class="section-heading"><p class="eyebrow">Delivery horizons</p><h2 id="skills-roadmap-heading">No roadmap item is presented as a shipped capability.</h2></div><div class="skills-roadmap-grid">${skillsSite.roadmap.lanes.map((lane) => `<article class="skills-roadmap-lane" data-skills-roadmap="${escapeAttr(lane.id)}" data-horizon="${escapeAttr(lane.horizon)}"><span class="tag">${escapeHtml(lane.horizon)}</span><h3>${escapeHtml(lane.label)}</h3><ul>${lane.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${skillsSourceLinks(lane.sourceRefs)}</article>`).join("\n")}</div></section>
+    <section id="capabilities" aria-labelledby="skills-capabilities-heading"><div class="section-heading"><p class="eyebrow">Capability map · human and Agent parity</p><h2 id="skills-capabilities-heading">${escapeHtml(skillsSite.capabilityMap.headline)}</h2><p><a href="../capability-map.json">Read the exact machine capability map</a></p></div>${skillsSite.capabilityMap.categories.map(renderSkillsCapabilityCategory).join("\n")}</section>
+    <section class="panel warning" aria-labelledby="skills-roadmap-boundary-heading" style="margin-top: 18px;"><p class="eyebrow">Future boundary</p><h2 id="skills-roadmap-boundary-heading">Automatic composition is a direction, not a current release claim.</h2><p>${escapeHtml(skillsSite.futureBoundary)}</p><p>${escapeHtml(skillsSite.previewBoundary)}</p></section>`,
   }),
 );
 
@@ -9245,6 +9384,8 @@ const manifest = {
     ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("kfx"), source })),
     ...[
       ["/skills/", "src/fixtures/skills-site.json"],
+      ["/skills/spec/", "src/fixtures/skills-site.json#currentFacts"],
+      ["/skills/roadmap/", "src/fixtures/skills-site.json#roadmap"],
       ["/skills/manifest.json", "src/fixtures/skills-site.json"],
       ["/skills/llms.txt", "src/fixtures/skills-site.json"],
       ["/skills/architecture.json", "src/fixtures/skills-site.json#architecture"],

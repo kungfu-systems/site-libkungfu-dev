@@ -62,8 +62,8 @@ resource lifecycle decisions belong in the infra repository.
   fallback under the hub URL.
 - Skills is intentionally a stable depth route on the hub surface rather than a
   new host mapping. Pull-request preview evidence must therefore report the
-  exact hub preview URL with `/skills/`; consumers must not invent a Skills
-  subdomain.
+  exact hub preview URLs under `/skills/`, including `/skills/spec/` and
+  `/skills/roadmap/`; consumers must not invent a Skills subdomain.
 - Production apply is enabled because the production channel status is active in
   the infrastructure contract. Buildchain still gates production on trusted
   manual approval or a merged release pull request with the `buildchain-release`

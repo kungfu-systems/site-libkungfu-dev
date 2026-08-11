@@ -32,6 +32,8 @@ test -f dist/kfx/llms.txt
 test -f dist/kfx/architecture.json
 test -f dist/kfx/capability-map.json
 test -f dist/skills/index.html
+test -f dist/skills/spec/index.html
+test -f dist/skills/roadmap/index.html
 test -f dist/skills/manifest.json
 test -f dist/skills/llms.txt
 test -f dist/skills/architecture.json
