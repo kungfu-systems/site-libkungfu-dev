@@ -10,6 +10,7 @@ node scripts/check-paper-propagation.cjs
 node scripts/code-upstream-pickup.cjs check
 node scripts/site-upstream-agent.cjs check
 node scripts/check-kfx-surface.mjs
+node scripts/check-skills-surface.mjs
 
 pnpm exec buildchain badges readme --check
 
@@ -63,10 +64,12 @@ for (const projectionContract of [
 const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/kfx-site.json",
+  "src/fixtures/skills-site.json",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",
   "scripts/prepare-dogfood-render-input.mjs",
   "scripts/check-kfx-surface.mjs",
+  "scripts/check-skills-surface.mjs",
   "docs/versioning.md",
   "src/publication-packages.json",
   "scripts/publication-packages.cjs",
@@ -86,6 +89,11 @@ const requiredBaseFiles = [
   "dist/kfx/llms.txt",
   "dist/kfx/architecture.json",
   "dist/kfx/capability-map.json",
+  "dist/skills/index.html",
+  "dist/skills/manifest.json",
+  "dist/skills/llms.txt",
+  "dist/skills/architecture.json",
+  "dist/skills/capability-map.json",
   "dist/core/index.html",
   "dist/core/runtime/index.html",
   "dist/core/format/index.html",
@@ -171,6 +179,7 @@ if (!notFoundPage.includes('<meta name="robots" content="noindex">') || !notFoun
 
 const site = JSON.parse(fs.readFileSync("src/fixtures/site-manifest.json", "utf8"));
 const kfxSite = JSON.parse(fs.readFileSync("src/fixtures/kfx-site.json", "utf8"));
+const skillsSite = JSON.parse(fs.readFileSync("src/fixtures/skills-site.json", "utf8"));
 const coreBundle = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/site-bundle.json", "utf8"));
 const coreAgentIndex = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/agent-index.json", "utf8"));
 const coreAdrMap = JSON.parse(fs.readFileSync("node_modules/@kungfu-tech/site/dist/site/adr-map.json", "utf8"));
@@ -380,6 +389,7 @@ function expectedSurfaceHref(id) {
     production: {
       hub: "https://libkungfu.dev/",
       kfx: "https://kfx.libkungfu.dev/",
+      skills: "https://libkungfu.dev/skills/",
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
@@ -388,6 +398,7 @@ function expectedSurfaceHref(id) {
     staging: {
       hub: "https://staging.libkungfu.dev/",
       kfx: "https://kfx.staging.libkungfu.dev/",
+      skills: "https://staging.libkungfu.dev/skills/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
@@ -398,6 +409,7 @@ function expectedSurfaceHref(id) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
       kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
+      skills: `https://${previewAlias}.preview.libkungfu.dev/skills/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
@@ -516,15 +528,17 @@ if (
   || !versioningPolicy.includes("while preserving their non-normative status, authority, and non-claim boundaries")
   || !versioningPolicy.includes("| 2026-08-10 | open-minor | `kfx-developer-surface/v1` |")
   || !versioningPolicy.includes("consuming no unpublished npm package")
+  || !versioningPolicy.includes("| 2026-08-11 | open-minor | `skills-preview-surface/v1` |")
+  || !versioningPolicy.includes("without claiming a released Skill runtime")
 ) {
-  throw new Error("KFD-1 version review must register the additive reader, activation-discovery, and KFX impacts");
+  throw new Error("KFD-1 version review must register the additive reader, activation-discovery, KFX, and Skills impacts");
 }
 const readerContract = site.readerContract;
 if (
   readerContract?.contract !== "libkungfu-dev-reader-contract/v1"
   || readerContract.owner !== "site-libkungfu-dev"
   || readerContract.layers?.map((entry) => entry.id).join(",") !== "first-screen,guided-synthesis,upstream-authority,machine-evidence"
-  || readerContract.surfacePaths?.map((entry) => entry.id).join(",") !== "hub,kfx,core,kfd,buildchain"
+  || readerContract.surfacePaths?.map((entry) => entry.id).join(",") !== "hub,kfx,skills,core,kfd,buildchain"
   || !readerContract.surfaceSynthesis?.buildchain
 ) {
   throw new Error("site reader contract is missing its stable owner, four layers, primary surface paths, or Buildchain synthesis");
@@ -565,6 +579,11 @@ const architectureAuthority = [
     repository: "https://github.com/kungfu-systems/kungfu",
     commit: kfxSite.sources[0].ref,
     documents: kfxSite.sources.map((source) => ({ path: source.path, sha256: source.sha256 })),
+  },
+  {
+    repository: "https://github.com/kungfu-systems/kungfu",
+    commit: skillsSite.sources[0].ref,
+    documents: skillsSite.sources.map((source) => ({ path: source.path, sha256: source.sha256 })),
   },
 ];
 for (const source of readerContract.sources) {
@@ -2182,6 +2201,7 @@ if (kfdRenderedStandards.contract !== kfdStandards.contract) {
 const hubHtml = fs.readFileSync("dist/index.html", "utf8");
 const hubDetailHtml = fs.readFileSync("dist/architecture/index.html", "utf8");
 const kfxHtml = fs.readFileSync("dist/kfx/index.html", "utf8");
+const skillsHtml = fs.readFileSync("dist/skills/index.html", "utf8");
 const hubLlms = fs.readFileSync("dist/llms.txt", "utf8");
 const immutableFoundationPaperHtml = fs.readFileSync(
   "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
@@ -2207,14 +2227,14 @@ if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("
   throw new Error("human header brand must expose the shared Kungfu signature, local role, canonical hub, and local fallback");
 }
 if (
-  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">Extensions</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">Extensions</a><a href="${escapeHtml(expectedSurfaceHref("skills"))}" data-local-href="/skills/">Skills</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
 ) {
-  throw new Error("human header navigation must use the KFD, Buildchain, Core, Extensions, Papers order, canonical surface hosts, local fallbacks, and the Kungfu main-site return link");
+  throw new Error("human header navigation must use the KFD, Buildchain, Core, Extensions, Skills, Papers order, canonical surface URLs, local fallbacks, and the Kungfu main-site return link");
 }
 if (!hubHtml.includes('nav > a:not(:first-child):not(.main-site-link)::before')) {
   throw new Error("human header navigation must retain the kungfu.tech-style desktop separators");
 }
-for (const path of ["index.html", "kfx/index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
+for (const path of ["index.html", "kfx/index.html", "skills/index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
   const html = fs.readFileSync(`dist/${path}`, "utf8");
   if (!html.includes(`<a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a>`)) {
     throw new Error(`${path} header must expose the Kungfu main-site return link`);
@@ -2348,7 +2368,7 @@ for (const source of readerContract.sources) {
   } else if (source.package === "@kungfu-tech/site") {
     href = expectedSurfaceEndpoint("core", "site-bundle.json");
   }
-  if (!href || ![hubDetailHtml, kfxHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+  if (!href || ![hubDetailHtml, kfxHtml, skillsHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
     html.includes(`href="${escapeHtml(href)}"`)
     || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
   ))) {
@@ -2447,6 +2467,7 @@ for (const [className, href, label] of [
 for (const [label, html, manifestHref, llmsHref, fullIndexHref] of [
   ["Hub", hubHtml, "/manifest.json", "/llms.txt", "/llms-full.txt"],
   ["KFX", kfxHtml, "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
+  ["Skills", skillsHtml, "manifest.json", "llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["Core", fs.readFileSync("dist/core/index.html", "utf8"), "/manifest.json", "/llms.txt", "/llms-full.txt"],
   ["Buildchain", buildchainHomeHtml, "/manifest.json", expectedSurfaceEndpoint("hub", "llms.txt"), expectedSurfaceEndpoint("hub", "llms-full.txt")],
   ["KFD", fs.readFileSync("dist/kfd/index.html", "utf8"), "/manifest.json", "/llms.txt", expectedSurfaceEndpoint("hub", "llms-full.txt")],
@@ -2594,7 +2615,7 @@ for (const [label, html, maximum] of [
   ["Core", coreHtml, 350],
   ["Buildchain", buildchainHomeHtml, 550],
   ["KFD", kfdHomeHtml, 650],
-  ["Papers", papersIndex, 350],
+  ["Papers", papersIndex, 351],
 ]) {
   const count = visibleWordCount(html);
   if (count > maximum) {

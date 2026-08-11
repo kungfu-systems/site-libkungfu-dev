@@ -413,6 +413,7 @@ function surfaceSitePath(id) {
   const paths = {
     hub: "/",
     kfx: "/kfx/",
+    skills: "/skills/",
     core: "/core/",
     buildchain: "/buildchain/",
     kfd: "/kfd/",
@@ -431,6 +432,7 @@ function surfaceCanonicalHref(id) {
     production: {
       hub: "https://libkungfu.dev/",
       kfx: "https://kfx.libkungfu.dev/",
+      skills: "https://libkungfu.dev/skills/",
       core: "https://core.libkungfu.dev/",
       buildchain: "https://buildchain.libkungfu.dev/",
       kfd: "https://kfd.libkungfu.dev/",
@@ -439,6 +441,7 @@ function surfaceCanonicalHref(id) {
     staging: {
       hub: "https://staging.libkungfu.dev/",
       kfx: "https://kfx.staging.libkungfu.dev/",
+      skills: "https://staging.libkungfu.dev/skills/",
       core: "https://core.staging.libkungfu.dev/",
       buildchain: "https://buildchain.staging.libkungfu.dev/",
       kfd: "https://kfd.staging.libkungfu.dev/",
@@ -449,6 +452,7 @@ function surfaceCanonicalHref(id) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
       kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
+      skills: `https://${previewAlias}.preview.libkungfu.dev/skills/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
       buildchain: `https://buildchain-${previewAlias}.preview.libkungfu.dev/`,
       kfd: `https://kfd-${previewAlias}.preview.libkungfu.dev/`,
@@ -476,6 +480,9 @@ function pageMachineEntryHref(current, pathPart) {
   }
   if (current === "kfx") {
     return pathPart === "llms-full.txt" ? surfaceEndpointHref("hub", pathPart) : `/${pathPart}`;
+  }
+  if (current === "skills") {
+    return pathPart === "llms-full.txt" ? surfaceEndpointHref("hub", pathPart) : pathPart;
   }
   const owningSurface = pathPart === "llms-full.txt" || ["core", "buildchain"].includes(current)
     ? "hub"
@@ -1531,6 +1538,7 @@ function page({ title, description, current, body, alternates = "", preserveRela
     ["buildchain", "Buildchain"],
     ["core", "Core"],
     ["kfx", "Extensions"],
+    ["skills", "Skills"],
     ["papers", "Papers"],
   ];
 
@@ -4369,6 +4377,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 
 const site = readFixtureJson("site-manifest.json");
 const kfxSite = readFixtureJson("kfx-site.json");
+const skillsSite = readFixtureJson("skills-site.json");
 const coreSiteApi = require("@kungfu-tech/site");
 const coreBundleVerification = coreSiteApi.verifyBundle();
 const coreBundle = readPackageJson("@kungfu-tech/site/site-bundle.json");
@@ -6838,6 +6847,332 @@ writeFile(
   `# KFX developer surface\n\n${kfxSite.headline}\n\n${kfxSite.lead}\n\nStatus: ${kfxSite.status}\nMaturity: ${kfxSite.maturity}\nCanonical human entry: ${surfaceCanonicalHref("kfx")}\n\nMachine entries:\n- ${surfaceEndpointHref("kfx", "manifest.json")}\n- ${surfaceEndpointHref("kfx", "architecture.json")}\n- ${surfaceEndpointHref("kfx", "capability-map.json")}\n- ${surfaceEndpointHref("kfx", "llms.txt")}\n\nReader paths:\n${kfxSite.readerPaths.map((entry) => `- ${entry.label}: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture nodes:\n${kfxSite.architecture.nodes.map((node) => `- ${node.id} / ${node.label} [${node.kind}; ${node.maturity}; ${node.claimClass}]: ${node.summary} Sources: ${node.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture relationships:\n${kfxSite.architecture.relationships.map((relationship) => `- ${relationship.id}: ${relationship.from} ${relationship.label} ${relationship.to} [${relationship.maturity}] Sources: ${relationship.sourceRefs.join(", ")}`).join("\n")}\n\nCapability map:\n${kfxSite.capabilityMap.categories.map((category) => `## ${category.label}\n${category.summary}\n${category.items.map((item) => `- ${item.id} / ${item.label} [${item.status}; ${item.maturity}]: ${item.summary} Sources: ${item.sourceRefs.join(", ")}`).join("\n")}`).join("\n\n")}\n\nImmutable sources:\n${kfxSite.sources.map((source) => `- ${source.id} [${source.maturity}]: ${kfxSourceHref(source)} sha256:${source.sha256}`).join("\n")}\n\nSource boundary:\n${kfxSite.sourceBoundary}\n\nAdoption boundary:\n${kfxSite.adoptionBoundary}\n\nNon-claims:\n${[...kfxSite.nonClaims, ...kfxSite.architecture.nonClaims, ...kfxSite.capabilityMap.nonClaims].map((claim) => `- ${claim}`).join("\n")}\n`,
 );
 
+const skillsSourceById = new Map(skillsSite.sources.map((source) => [source.id, source]));
+
+function skillsSourceHref(source) {
+  return `${source.repository}/blob/${source.ref}/${source.path}`;
+}
+
+function skillsSourceLinks(sourceRefs) {
+  return `<span class="skills-source-links"><span>Sources</span>${sourceRefs.map((sourceId) => {
+    const source = skillsSourceById.get(sourceId);
+    if (!source) throw new Error(`Skills surface references unknown source: ${sourceId}`);
+    return `<a href="${escapeAttr(skillsSourceHref(source))}">${escapeHtml(source.id)}</a>`;
+  }).join("")}</span>`;
+}
+
+function renderSkillsNode(node) {
+  return `<article class="skills-node" data-skills-node="${escapeAttr(node.id)}" data-kind="${escapeAttr(node.kind)}" data-horizon="${escapeAttr(node.horizon)}" data-claim-class="${escapeAttr(node.claimClass)}" data-maturity="${escapeAttr(node.maturity)}" data-source-refs="${escapeAttr(node.sourceRefs.join(","))}">
+    <span class="tag">${escapeHtml(node.maturity)}</span>
+    <h3>${escapeHtml(node.label)}</h3>
+    <p>${escapeHtml(node.summary)}</p>
+    ${skillsSourceLinks(node.sourceRefs)}
+  </article>`;
+}
+
+function renderSkillsCapabilityCategory(category) {
+  return `<section class="skills-capability-category" id="capability-${escapeAttr(category.id)}" data-skills-category="${escapeAttr(category.id)}">
+    <div class="section-heading">
+      <p class="eyebrow">${escapeHtml(category.id)}</p>
+      <h3>${escapeHtml(category.label)}</h3>
+      <p>${escapeHtml(category.summary)}</p>
+    </div>
+    <div class="skills-capability-items">${category.items.map((item) => `<article class="skills-capability" data-skills-capability="${escapeAttr(item.id)}" data-category="${escapeAttr(category.id)}" data-status="${escapeAttr(item.status)}" data-maturity="${escapeAttr(item.maturity)}" data-claim-class="${escapeAttr(item.claimClass)}" data-source-refs="${escapeAttr(item.sourceRefs.join(","))}">
+      <span class="tag">${escapeHtml(item.claimClass)} · ${escapeHtml(item.maturity)}</span>
+      <h4>${escapeHtml(item.label)}</h4>
+      <p>${escapeHtml(item.summary)}</p>
+      <p><strong>Status:</strong> ${escapeHtml(item.status)}</p>
+      ${skillsSourceLinks(item.sourceRefs)}
+    </article>`).join("\n")}</div>
+  </section>`;
+}
+
+const skillsStyles = `<style>
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    color: var(--soft);
+    background: var(--accent-strong);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .hero-action.secondary {
+    color: var(--accent-strong);
+    background: transparent;
+  }
+
+  .skills-reader-paths,
+  .skills-fact-grid,
+  .skills-guidance-grid,
+  .skills-node-grid,
+  .skills-capability-items,
+  .skills-source-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: 14px;
+  }
+
+  .skills-reader-path,
+  .skills-fact,
+  .skills-guidance,
+  .skills-node,
+  .skills-capability,
+  .skills-source-card,
+  .skills-stage {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--soft);
+    padding: 18px;
+  }
+
+  .skills-reader-path,
+  .skills-fact,
+  .skills-guidance,
+  .skills-node,
+  .skills-capability,
+  .skills-source-card {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .skills-reader-path h3,
+  .skills-fact h3,
+  .skills-guidance h3,
+  .skills-node h3,
+  .skills-capability h4,
+  .skills-source-card h3 { margin: 0; }
+
+  .skills-current { border-top: 4px solid var(--evidence); }
+  .skills-future { border-top: 4px solid var(--protocol); }
+  .skills-guidance[data-decision="avoid"] { border-top: 3px solid var(--warn); }
+  .skills-node[data-horizon="future-picture"] { border-top: 3px solid var(--protocol); }
+  .skills-node[data-kind="authority-boundary"] { border-top: 3px solid var(--warn); }
+
+  .skills-relationships {
+    columns: 2 320px;
+    column-gap: 28px;
+    padding-left: 22px;
+  }
+
+  .skills-relationships li { break-inside: avoid; margin-bottom: 10px; }
+
+  .skills-source-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .skills-source-links > span { font-weight: 700; }
+  .skills-source-card code { overflow-wrap: anywhere; }
+  .skills-capability-category { scroll-margin-top: 100px; margin-top: 26px; }
+
+  @media (max-width: 640px) {
+    .skills-reader-paths,
+    .skills-fact-grid,
+    .skills-guidance-grid,
+    .skills-node-grid,
+    .skills-capability-items,
+    .skills-source-grid { grid-template-columns: 1fr; }
+    .skills-relationships { columns: 1; }
+    .skills-stage { padding: 14px; }
+  }
+</style>`;
+
+const skillsArchitectureProjection = {
+  ...skillsSite.architecture,
+  canonicalUrl: surfaceEndpointHref("skills", "architecture.json"),
+  humanEntry: surfaceCanonicalHref("skills"),
+  sources: skillsSite.sources.filter((source) => skillsSite.architecture.sourceRefs.includes(source.id)),
+  sourceBoundary: skillsSite.sourceBoundary,
+  futureBoundary: skillsSite.futureBoundary,
+};
+const skillsCapabilityProjection = {
+  ...skillsSite.capabilityMap,
+  canonicalUrl: surfaceEndpointHref("skills", "capability-map.json"),
+  humanEntry: surfaceCanonicalHref("skills"),
+  sources: skillsSite.sources.filter((source) => skillsSite.capabilityMap.sourceRefs.includes(source.id)),
+  sourceBoundary: skillsSite.sourceBoundary,
+  previewBoundary: skillsSite.previewBoundary,
+};
+const skillsManifest = {
+  schema: "libkungfu.skills-site-manifest/v1",
+  status: skillsSite.status,
+  maturity: skillsSite.maturity,
+  headline: skillsSite.headline,
+  proposition: skillsSite.proposition,
+  canonicalUrl: surfaceCanonicalHref("skills"),
+  humanEntry: surfaceCanonicalHref("skills"),
+  machineEntries: {
+    manifest: surfaceEndpointHref("skills", "manifest.json"),
+    llms: surfaceEndpointHref("skills", "llms.txt"),
+    architecture: surfaceEndpointHref("skills", "architecture.json"),
+    capabilityMap: surfaceEndpointHref("skills", "capability-map.json"),
+  },
+  readerPaths: skillsSite.readerPaths,
+  currentFacts: skillsSite.currentFacts,
+  agentGuidance: skillsSite.agentGuidance,
+  sources: skillsSite.sources,
+  sourceBoundary: skillsSite.sourceBoundary,
+  previewBoundary: skillsSite.previewBoundary,
+  futureBoundary: skillsSite.futureBoundary,
+  nonClaims: skillsSite.nonClaims,
+  architecture: {
+    schema: skillsSite.architecture.schema,
+    nodeCount: skillsSite.architecture.nodes.length,
+    relationshipCount: skillsSite.architecture.relationships.length,
+    currentNodeCount: skillsSite.architecture.nodes.filter((node) => node.horizon !== "future-picture").length,
+    futureNodeCount: skillsSite.architecture.nodes.filter((node) => node.horizon === "future-picture").length,
+    sourceRefs: skillsSite.architecture.sourceRefs,
+  },
+  capabilityMap: {
+    schema: skillsSite.capabilityMap.schema,
+    categories: skillsSite.capabilityMap.categories.map((category) => category.id),
+    itemCount: skillsSite.capabilityMap.categories.reduce((count, category) => count + category.items.length, 0),
+    sourceRefs: skillsSite.capabilityMap.sourceRefs,
+  },
+};
+
+writeFile(
+  "skills/index.html",
+  page({
+    title: `Skills | ${site.title}`,
+    description: skillsSite.lead,
+    current: "skills",
+    alternates: `  <link rel="alternate" type="application/json" title="Skills architecture" href="architecture.json">\n  <link rel="alternate" type="application/json" title="Skills capability map" href="capability-map.json">`,
+    body: `${skillsStyles}
+    <section class="hero">
+      <p class="eyebrow">Skills preview · ${escapeHtml(skillsSite.maturity)}</p>
+      <h1>${escapeHtml(skillsSite.headline)}</h1>
+      <p class="lead">${escapeHtml(skillsSite.lead)}</p>
+      <p>${escapeHtml(skillsSite.proposition)}</p>
+      <div class="hero-actions">
+        <a class="hero-action" href="#agent-guidance">Should an Agent suggest one?</a>
+        <a class="hero-action secondary" href="#architecture">Compare current and future</a>
+        <a class="hero-action secondary" href="manifest.json">Inspect machine facts</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="skills-reader-paths-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Choose a reading path</p>
+        <h2 id="skills-reader-paths-heading">Start with the decision in front of you.</h2>
+      </div>
+      <div class="skills-reader-paths">${skillsSite.readerPaths.map((entry) => `<article class="skills-reader-path" data-skills-reader-path="${escapeAttr(entry.id)}">
+        <h3><a href="${escapeAttr(entry.href)}">${escapeHtml(entry.label)}</a></h3>
+        <p>${escapeHtml(entry.summary)}</p>
+        ${skillsSourceLinks(entry.sourceRefs)}
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section id="current-facts" aria-labelledby="skills-current-facts-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Verified current facts · protected source, not release</p>
+        <h2 id="skills-current-facts-heading">What the exact Kungfu source says today.</h2>
+      </div>
+      <div class="skills-fact-grid">${skillsSite.currentFacts.map((fact) => `<article class="skills-fact" data-skills-current-fact="${escapeAttr(fact.id)}" data-claim-class="${escapeAttr(fact.claimClass)}" data-maturity="${escapeAttr(fact.maturity)}">
+        <span class="tag">${escapeHtml(fact.claimClass)} · ${escapeHtml(fact.maturity)}</span>
+        <h3>${escapeHtml(fact.label)}</h3>
+        <p>${escapeHtml(fact.summary)}</p>
+        ${skillsSourceLinks(fact.sourceRefs)}
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section id="agent-guidance" aria-labelledby="skills-agent-guidance-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Site synthesis · suggestion and authoring guidance</p>
+        <h2 id="skills-agent-guidance-heading">When should an Agent suggest or create a Skill?</h2>
+      </div>
+      <div class="skills-guidance-grid">${skillsSite.agentGuidance.map((entry) => `<article class="skills-guidance" data-skills-guidance="${escapeAttr(entry.id)}" data-decision="${escapeAttr(entry.decision)}" data-claim-class="${escapeAttr(entry.claimClass)}">
+        <span class="tag">${escapeHtml(entry.decision)} · ${escapeHtml(entry.claimClass)}</span>
+        <h3>${escapeHtml(entry.label)}</h3>
+        <p>${escapeHtml(entry.summary)}</p>
+        ${skillsSourceLinks(entry.sourceRefs)}
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section id="architecture" aria-labelledby="skills-architecture-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Architecture · current source versus future picture</p>
+        <h2 id="skills-architecture-heading">${escapeHtml(skillsSite.architecture.headline)}</h2>
+        <p>${escapeHtml(skillsSite.architecture.summary)}</p>
+        <p><a href="architecture.json">Read the exact machine graph</a></p>
+      </div>
+      <div role="group" aria-label="Skills architecture with current protected-source and future-picture lanes">
+        <section class="skills-stage skills-current" aria-labelledby="skills-current-lane-heading">
+          <p class="eyebrow">Current protected-source lane</p>
+          <h3 id="skills-current-lane-heading">Defined in exact source; not claimed as a released product.</h3>
+          <div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon !== "future-picture").map(renderSkillsNode).join("\n")}</div>
+        </section>
+        <section class="skills-stage skills-future" aria-labelledby="skills-future-lane-heading" style="margin-top: 18px;">
+          <p class="eyebrow">Future-picture lane · non-current</p>
+          <h3 id="skills-future-lane-heading">Useful direction, visibly outside present capability.</h3>
+          <div class="skills-node-grid">${skillsSite.architecture.nodes.filter((node) => node.horizon === "future-picture").map(renderSkillsNode).join("\n")}</div>
+        </section>
+      </div>
+      <section class="panel" aria-labelledby="skills-relationships-heading" style="margin-top: 18px;">
+        <h3 id="skills-relationships-heading">Exact graph relationships</h3>
+        <ol class="skills-relationships">${skillsSite.architecture.relationships.map((relationship) => `<li data-skills-relationship="${escapeAttr(relationship.id)}" data-from="${escapeAttr(relationship.from)}" data-to="${escapeAttr(relationship.to)}" data-horizon="${escapeAttr(relationship.horizon)}" data-claim-class="${escapeAttr(relationship.claimClass)}" data-source-refs="${escapeAttr(relationship.sourceRefs.join(","))}"><strong>${escapeHtml(relationship.from)}</strong> ${escapeHtml(relationship.label)} <strong>${escapeHtml(relationship.to)}</strong> <span class="tag">${escapeHtml(relationship.horizon)}</span></li>`).join("\n")}</ol>
+      </section>
+    </section>
+
+    <section id="capabilities" aria-labelledby="skills-capabilities-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Capability map · human and Agent parity</p>
+        <h2 id="skills-capabilities-heading">${escapeHtml(skillsSite.capabilityMap.headline)}</h2>
+        <p><a href="capability-map.json">Read the exact machine capability map</a></p>
+      </div>
+      ${skillsSite.capabilityMap.categories.map(renderSkillsCapabilityCategory).join("\n")}
+    </section>
+
+    <section id="sources" aria-labelledby="skills-sources-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Immutable source coordinates</p>
+        <h2 id="skills-sources-heading">Every technical clause resolves to exact protected bytes.</h2>
+      </div>
+      <div class="skills-source-grid">${skillsSite.sources.map((source) => `<article class="skills-source-card" data-skills-source="${escapeAttr(source.id)}">
+        <span class="tag">${escapeHtml(source.maturity)}</span>
+        <h3><a href="${escapeAttr(skillsSourceHref(source))}">${escapeHtml(source.id)}</a></h3>
+        <p>${escapeHtml(source.role)}</p>
+        <code>${escapeHtml(source.ref)}</code>
+        <code>sha256:${escapeHtml(source.sha256)}</code>
+      </article>`).join("\n")}</div>
+    </section>
+
+    <section class="panel warning" id="boundaries" aria-labelledby="skills-boundaries-heading" style="margin-top: 18px;">
+      <p class="eyebrow">Source, preview, future, and non-claim boundaries</p>
+      <h2 id="skills-boundaries-heading">A preview can clarify the product without pretending to ship it.</h2>
+      <p><strong>Source boundary:</strong> ${escapeHtml(skillsSite.sourceBoundary)}</p>
+      <p><strong>Preview boundary:</strong> ${escapeHtml(skillsSite.previewBoundary)}</p>
+      <p><strong>Future boundary:</strong> ${escapeHtml(skillsSite.futureBoundary)}</p>
+      <ul>${skillsSite.nonClaims.map((claim) => `<li>${escapeHtml(claim)}</li>`).join("")}</ul>
+    </section>`,
+  }),
+);
+
+writeFile("skills/architecture.json", `${JSON.stringify(skillsArchitectureProjection, null, 2)}\n`);
+writeFile("skills/capability-map.json", `${JSON.stringify(skillsCapabilityProjection, null, 2)}\n`);
+writeFile("skills/manifest.json", `${JSON.stringify(skillsManifest, null, 2)}\n`);
+writeFile(
+  "skills/llms.txt",
+  `# Skills preview surface\n\n${skillsSite.headline}\n\n${skillsSite.lead}\n\nStatus: ${skillsSite.status}\nMaturity: ${skillsSite.maturity}\nCanonical human entry: ${surfaceCanonicalHref("skills")}\n\nMachine entries:\n- ${surfaceEndpointHref("skills", "manifest.json")}\n- ${surfaceEndpointHref("skills", "architecture.json")}\n- ${surfaceEndpointHref("skills", "capability-map.json")}\n- ${surfaceEndpointHref("skills", "llms.txt")}\n\nReader paths:\n${skillsSite.readerPaths.map((entry) => `- ${entry.id} / ${entry.label}: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}\n\nVerified current protected-source facts:\n${skillsSite.currentFacts.map((fact) => `- ${fact.id} / ${fact.label} [${fact.claimClass}; ${fact.maturity}]: ${fact.summary} Sources: ${fact.sourceRefs.join(", ")}`).join("\n")}\n\nAgent suggestion and authoring guidance:\n${skillsSite.agentGuidance.map((entry) => `- ${entry.id} / ${entry.label} [${entry.decision}; ${entry.claimClass}]: ${entry.summary} Sources: ${entry.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture nodes:\n${skillsSite.architecture.nodes.map((node) => `- ${node.id} / ${node.label} [${node.horizon}; ${node.claimClass}; ${node.maturity}]: ${node.summary} Sources: ${node.sourceRefs.join(", ")}`).join("\n")}\n\nArchitecture relationships:\n${skillsSite.architecture.relationships.map((relationship) => `- ${relationship.id}: ${relationship.from} ${relationship.label} ${relationship.to} [${relationship.horizon}; ${relationship.claimClass}] Sources: ${relationship.sourceRefs.join(", ")}`).join("\n")}\n\nCapability map:\n${skillsSite.capabilityMap.categories.map((category) => `## ${category.label}\n${category.summary}\n${category.items.map((item) => `- ${item.id} / ${item.label} [${item.status}; ${item.maturity}; ${item.claimClass}]: ${item.summary} Sources: ${item.sourceRefs.join(", ")}`).join("\n")}`).join("\n\n")}\n\nImmutable sources:\n${skillsSite.sources.map((source) => `- ${source.id} [${source.maturity}]: ${skillsSourceHref(source)} sha256:${source.sha256}`).join("\n")}\n\nSource boundary:\n${skillsSite.sourceBoundary}\n\nPreview boundary:\n${skillsSite.previewBoundary}\n\nFuture boundary:\n${skillsSite.futureBoundary}\n\nNon-claims:\n${skillsSite.nonClaims.map((claim) => `- ${claim}`).join("\n")}\n`,
+);
+
 function coreSurfaceAuthorities(surface) {
   return surface.sourceIds.map((sourceId) => {
     const source = coreSourceById.get(sourceId);
@@ -8908,6 +9243,13 @@ const manifest = {
       ["/kfx/architecture.json", "src/fixtures/kfx-site.json#architecture"],
       ["/kfx/capability-map.json", "src/fixtures/kfx-site.json#capabilityMap"],
     ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("kfx"), source })),
+    ...[
+      ["/skills/", "src/fixtures/skills-site.json"],
+      ["/skills/manifest.json", "src/fixtures/skills-site.json"],
+      ["/skills/llms.txt", "src/fixtures/skills-site.json"],
+      ["/skills/architecture.json", "src/fixtures/skills-site.json#architecture"],
+      ["/skills/capability-map.json", "src/fixtures/skills-site.json#capabilityMap"],
+    ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("skills"), source })),
     {
       path: "/dogfood/",
       host: surfaceCanonicalHost("hub"),
@@ -9100,6 +9442,18 @@ const manifest = {
       architecture: surfaceEndpointHref("kfx", "architecture.json"),
       capabilityMap: surfaceEndpointHref("kfx", "capability-map.json"),
       adoptionBoundary: kfxSite.adoptionBoundary,
+    },
+    skills: {
+      contract: skillsSite.schema,
+      status: skillsSite.status,
+      maturity: skillsSite.maturity,
+      sourceRef: skillsSite.sources[0].ref,
+      sourceCount: skillsSite.sources.length,
+      manifest: surfaceEndpointHref("skills", "manifest.json"),
+      architecture: surfaceEndpointHref("skills", "architecture.json"),
+      capabilityMap: surfaceEndpointHref("skills", "capability-map.json"),
+      previewBoundary: skillsSite.previewBoundary,
+      futureBoundary: skillsSite.futureBoundary,
     },
     runtime: {
       contract: runtimeSurface.contract,
@@ -9626,6 +9980,7 @@ Primary pages:
 - ${surfaceEndpointHref("hub", "architecture/")} (complete continuity architecture)
 - ${surfaceEndpointHref("hub", "dogfood/")}
 - ${surfaceCanonicalHref("kfx")} (KFX developer architecture and capability map)
+- ${surfaceCanonicalHref("skills")} (Skills source facts, Agent guidance, future picture, and non-claims)
 - ${surfaceCanonicalHref("core")}
 - ${surfaceEndpointHref("core", "runtime/")} (complete runtime mechanism)
 - ${surfaceCanonicalHref("buildchain")}
@@ -9646,6 +10001,10 @@ Machine entries:
 - ${surfaceEndpointHref("kfx", "architecture.json")}
 - ${surfaceEndpointHref("kfx", "capability-map.json")}
 - ${surfaceEndpointHref("kfx", "llms.txt")}
+- ${surfaceEndpointHref("skills", "manifest.json")}
+- ${surfaceEndpointHref("skills", "architecture.json")}
+- ${surfaceEndpointHref("skills", "capability-map.json")}
+- ${surfaceEndpointHref("skills", "llms.txt")}
 - ${surfaceEndpointHref("core", "manifest.json")}
 - ${surfaceEndpointHref("core", "site-bundle.json")}
 - ${surfaceEndpointHref("core", "agent-index.json")}

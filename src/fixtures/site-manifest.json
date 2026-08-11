@@ -110,6 +110,42 @@
         "sha256": "4c17dddae597d19eb9ead4d3767669e3f8343a3b41cc9deb42c8eb5ff08a514d"
       },
       {
+        "id": "skills-contract",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "path": "framework/skill/kungfu-skill.contract.json",
+        "sha256": "fb6fbc59557ac8448226f5ed8b97fd71fcf202742e896bb06e2831abeedc2a52"
+      },
+      {
+        "id": "skills-architecture",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "path": "docs/architecture/skills.md",
+        "sha256": "f5611bd79f54611beb35f9e6f077a101ed5219fb223ce10e2b4f7c2103804ccd"
+      },
+      {
+        "id": "skills-adr",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "path": "docs/adr/KF-ADR-019f86da-4f90-74c2-9cbb-24f1c34303bf.md",
+        "sha256": "0509789b372a45c0e4687f24771e44c543ceed3403ab1e3f1cf0ea356e6ce759"
+      },
+      {
+        "id": "skills-known-limits",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "path": "docs/qualification/known-limits.md",
+        "sha256": "b8a913ad020d089842b6d8550025665e307bfd92eb5f5bbb1049d18d7a7b0c47"
+      },
+      {
         "id": "kungfu-action-runtime",
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
@@ -423,6 +459,18 @@
         "evidenceHref": "/kfx/manifest.json"
       },
       {
+        "id": "skills",
+        "audience": "Agent workflow authors and product builders",
+        "question": "When should repeatable delegated work become a Skill?",
+        "promise": "Recognize a bounded reusable workflow, inspect its exact source model, and keep instructions separate from runtime authority.",
+        "claimClass": "site-synthesis",
+        "sourceRefs": ["skills-contract", "skills-architecture", "skills-adr", "skills-known-limits"],
+        "authorityLabel": "Explore current and future architecture",
+        "authorityHref": "/skills/#architecture",
+        "evidenceLabel": "Inspect the Skills manifest",
+        "evidenceHref": "/skills/manifest.json"
+      },
+      {
         "id": "core",
         "audience": "Kungfu adopters and runtime builders",
         "question": "Which Kungfu layer solves the continuity problem I have now?",
@@ -470,6 +518,14 @@
       "source": "pinned kungfu-systems/kungfu Git sources -> site-libkungfu-dev"
     },
     {
+      "id": "skills",
+      "host": "libkungfu.dev",
+      "path": "/skills/",
+      "label": "Skills preview surface",
+      "summary": "Source-pinned Skills reader synthesis with Agent suggestion guidance, current-versus-future architecture, capability map, and explicit non-claims.",
+      "source": "pinned kungfu-systems/kungfu Git sources -> site-libkungfu-dev"
+    },
+    {
       "id": "core",
       "host": "core.libkungfu.dev",
       "path": "/core/",
@@ -509,6 +565,26 @@
       "label": "KFX capability map",
       "path": "/kfx/capability-map.json",
       "purpose": "Build, Connect, Add, Lifecycle, Trust, and Surfaces capabilities with bound status, maturity, and sourceRefs."
+    },
+    {
+      "label": "Skills preview manifest",
+      "path": "/skills/manifest.json",
+      "purpose": "Site synthesis metadata, exact protected sources, Agent guidance, maturity boundaries, non-claims, and machine entrypoints."
+    },
+    {
+      "label": "Skills Agent index",
+      "path": "/skills/llms.txt",
+      "purpose": "Text parity projection of current facts, suggestion guidance, architecture, capability map, sources, and non-claims."
+    },
+    {
+      "label": "Skills architecture",
+      "path": "/skills/architecture.json",
+      "purpose": "Exact current-source and future-picture nodes and relationships rendered by the human Skills architecture."
+    },
+    {
+      "label": "Skills capability map",
+      "path": "/skills/capability-map.json",
+      "purpose": "Understand, Suggest, Author, Govern, and Future Picture items with explicit status, maturity, claim class, and sourceRefs."
     },
     {
       "label": "Public dogfood evidence",

@@ -28,6 +28,11 @@ ai_provenance:
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
+- Use `https://libkungfu.dev/skills/` for the source-pinned Skills preview:
+  Agent suggestion guidance, current-source versus future-picture architecture,
+  capability map, exact digests, and explicit non-claims. Its machine peers are
+  `/skills/manifest.json`, `/skills/llms.txt`, `/skills/architecture.json`, and
+  `/skills/capability-map.json`.
 - Use `https://core.libkungfu.dev` for the complete Kungfu product and adoption
   map. Stable depth routes cover `.kungfu` format, primitives, runtime, ABI,
   SDKs, extensions, products, qualification, ADR navigation, and domain
@@ -90,6 +95,10 @@ must understand, while the depth page preserves the complete cited authority.
   observed qualification, package availability, and known limits. The site
   renders this projection but does not become the runtime or conformance
   authority.
+- `src/fixtures/skills-site.json` is the single Site-owned Skills reader source.
+  It pins exact protected Kungfu documents, keeps partial implementation and
+  known-limit boundaries visible, and drives the human page plus all four Agent
+  endpoints without claiming a released Skill runtime.
 - `src/fixtures/buildchain-badge-endpoint-registry.json` and
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain

@@ -180,12 +180,12 @@ for (const machineEntry of ["manifest.json", "architecture.json", "capability-ma
   assert(new URL(machineEntry, expectedKfxBase).pathname === `/${machineEntry}`, `KFX dedicated-host route resolution drifted: ${machineEntry}`);
 }
 
-for (const path of ["dist/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html", "dist/kfx/index.html"]) {
+for (const path of ["dist/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html", "dist/kfx/index.html", "dist/skills/index.html"]) {
   const page = fs.readFileSync(path, "utf8");
-  for (const label of ["KFD", "Buildchain", "Core", "Extensions", "Papers"]) {
+  for (const label of ["KFD", "Buildchain", "Core", "Extensions", "Skills", "Papers"]) {
     assert(page.includes(`>${label}</a>`), `${path} global navigation missing ${label}`);
   }
-  const positions = ["KFD", "Buildchain", "Core", "Extensions", "Papers"].map((label) => page.indexOf(`>${label}</a>`));
+  const positions = ["KFD", "Buildchain", "Core", "Extensions", "Skills", "Papers"].map((label) => page.indexOf(`>${label}</a>`));
   assert(positions.every((position, index) => index === 0 || position > positions[index - 1]), `${path} global navigation order drifted`);
   assert(page.includes('data-local-href="/kfx/"'), `${path} global navigation missing local KFX route`);
 }
