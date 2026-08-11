@@ -90,6 +90,8 @@ const requiredBaseFiles = [
   "dist/kfx/architecture.json",
   "dist/kfx/capability-map.json",
   "dist/skills/index.html",
+  "dist/skills/spec/index.html",
+  "dist/skills/roadmap/index.html",
   "dist/skills/manifest.json",
   "dist/skills/llms.txt",
   "dist/skills/architecture.json",
@@ -2202,6 +2204,8 @@ const hubHtml = fs.readFileSync("dist/index.html", "utf8");
 const hubDetailHtml = fs.readFileSync("dist/architecture/index.html", "utf8");
 const kfxHtml = fs.readFileSync("dist/kfx/index.html", "utf8");
 const skillsHtml = fs.readFileSync("dist/skills/index.html", "utf8");
+const skillsSpecHtml = fs.readFileSync("dist/skills/spec/index.html", "utf8");
+const skillsRoadmapHtml = fs.readFileSync("dist/skills/roadmap/index.html", "utf8");
 const hubLlms = fs.readFileSync("dist/llms.txt", "utf8");
 const immutableFoundationPaperHtml = fs.readFileSync(
   "dist/papers/archive/kfd-foundation-real-world-agent-work/v0.1.0-alpha.8/index.html",
@@ -2368,7 +2372,7 @@ for (const source of readerContract.sources) {
   } else if (source.package === "@kungfu-tech/site") {
     href = expectedSurfaceEndpoint("core", "site-bundle.json");
   }
-  if (!href || ![hubDetailHtml, kfxHtml, skillsHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+  if (!href || ![hubDetailHtml, kfxHtml, skillsHtml, skillsSpecHtml, skillsRoadmapHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
     html.includes(`href="${escapeHtml(href)}"`)
     || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
   ))) {

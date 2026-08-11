@@ -87,9 +87,10 @@ and keeps its human homepage projection aligned with that machine contract.
 - `https://kfx.libkungfu.dev` presents Kungfu Extensions to new readers while
   preserving KFX as the technical identity of its source-bound developer
   surface, manifest, architecture, and capability map.
-- `https://libkungfu.dev/skills/` presents a source-pinned Skills preview with
-  Agent suggestion guidance, visibly separate current-source and future-picture
-  architecture, exact digests, machine parity, and explicit non-claims. It is a
+- `https://libkungfu.dev/skills/` presents the user value of Kungfu Skills,
+  compares them with familiar Agent Skills, explains no-code use, and shows a
+  complex release example. Technical evidence moves to `/skills/spec/`; current,
+  next, and future delivery horizons move to `/skills/roadmap/`. It remains a
   Site synthesis, not a released Skill runtime or catalog.
 - `https://core.libkungfu.dev` presents the complete Kungfu product map:
   promise, `.kungfu` format, primitives, runtime, ABI, SDKs, KFX/Profile,

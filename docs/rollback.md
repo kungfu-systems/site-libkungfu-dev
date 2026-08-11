@@ -5,7 +5,7 @@ cleanup evidence:
 
 - close the pull request to trigger preview cleanup for the PR alias;
 - the Skills preview is part of that hub alias at `/skills/`, so the same pull
-  request closure removes its page and machine endpoints with the preview;
+  request closure removes its overview, spec, roadmap, and machine endpoints;
 - revert the repository change and merge to `main` to republish staging;
 - if edge routing breaks before a repository revert can deploy, roll back the
   `site-libkungfu-dev-web-surface` CloudFormation stack to the previous template.

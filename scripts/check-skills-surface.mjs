@@ -23,6 +23,8 @@ function uniqueIds(entries, label) {
 const requiredFiles = [
   "src/fixtures/skills-site.json",
   "dist/skills/index.html",
+  "dist/skills/spec/index.html",
+  "dist/skills/roadmap/index.html",
   "dist/skills/manifest.json",
   "dist/skills/llms.txt",
   "dist/skills/architecture.json",
@@ -38,6 +40,9 @@ const architecture = readJson("dist/skills/architecture.json");
 const capabilityMap = readJson("dist/skills/capability-map.json");
 const siteManifest = readJson("dist/manifest.json");
 const html = fs.readFileSync("dist/skills/index.html", "utf8");
+const specHtml = fs.readFileSync("dist/skills/spec/index.html", "utf8");
+const roadmapHtml = fs.readFileSync("dist/skills/roadmap/index.html", "utf8");
+const humanHtml = `${html}\n${specHtml}\n${roadmapHtml}`;
 const llms = fs.readFileSync("dist/skills/llms.txt", "utf8");
 const renderer = fs.readFileSync("scripts/render-site.mjs", "utf8");
 const packageJson = readJson("package.json");
@@ -54,12 +59,25 @@ const expectedSkillsHost = new URL(expectedSkillsBase).host;
 assert(fixture.schema === "libkungfu.skills-site-synthesis/v1", "Skills fixture schema drifted");
 assert(fixture.status === "site-synthesis", "Skills surface must remain explicit Site synthesis");
 assert(fixture.maturity === "protected-source-alpha-preview", "Skills maturity boundary drifted");
-assert(fixture.headline.includes("without turning instructions into authority"), "Skills first-screen proposition drifted");
+assert(fixture.headline.includes("reliable enough for real work"), "Skills first-screen proposition drifted");
 assert(fixture.previewBoundary.includes("does not publish or activate"), "Skills preview boundary must deny runtime publication");
 assert(fixture.futureBoundary.includes("not present-tense product or release claims"), "Skills future boundary is not explicit");
 assert(fixture.nonClaims.some((claim) => claim.includes("does not install, enable, select, load, invoke, qualify, certify, publish, or distribute")), "Skills non-claims must exclude runtime and release actions");
 assert(fixture.nonClaims.some((claim) => claim.includes("marketplace discovery")), "Skills non-claims must retain protected-source known limits");
 assert(!Object.keys(packageJson.dependencies || {}).some((name) => /skill/i.test(name)), "Skills Site synthesis must not add a Skill npm dependency");
+
+const heroAnswerIds = uniqueIds(fixture.heroAnswers, "Skills hero answer");
+assert(heroAnswerIds.size === 3, "Skills first screen must answer value, difference, and no-code use");
+assert([...heroAnswerIds].join(",") === "value,difference,no-code", "Skills first-screen question order drifted");
+for (const entry of fixture.heroAnswers) {
+  assert(entry.question && entry.answer && entry.mobileAnswer, `Skills hero answer is incomplete: ${entry.id}`);
+}
+const benefitIds = uniqueIds(fixture.benefits, "Skills benefit");
+assert(benefitIds.size === 3, "Skills value summary must stay compact");
+assert(fixture.comparison.rows.length >= 4, "Skills comparison must cover the load-bearing differences");
+assert(fixture.releaseExample.steps.length === 4, "Skills release example must keep its four reader steps");
+assert(fixture.usage.steps.length === 4 && fixture.usage.noCode.includes("do not need to know how to code"), "Skills no-code path drifted");
+assert(fixture.roadmap.lanes.map((lane) => lane.horizon).join(",") === "current-source,staged-adoption,future-picture", "Skills roadmap horizons drifted");
 
 const sourceIds = uniqueIds(fixture.sources, "Skills source");
 const exactRefs = new Set();
@@ -72,7 +90,7 @@ for (const source of fixture.sources) {
   assert(source.maturity && source.role, `Skills source maturity or role missing: ${source.id}`);
   exactRefs.add(source.ref);
   const href = `${source.repository}/blob/${source.ref}/${source.path}`;
-  assert(html.includes(href), `Skills human source link missing: ${source.id}`);
+  assert(humanHtml.includes(href), `Skills human source link missing: ${source.id}`);
   assert(llms.includes(`${href} sha256:${source.sha256}`), `Skills Agent source link or digest missing: ${source.id}`);
 }
 assert(exactRefs.size === 1, "Skills synthesis sources must resolve against one exact Kungfu commit");
@@ -87,13 +105,24 @@ const validateSourceRefs = (entry, label) => {
 };
 
 for (const path of fixture.readerPaths) validateSourceRefs(path, `reader path ${path.id}`);
+for (const entry of fixture.heroAnswers) validateSourceRefs(entry, `hero answer ${entry.id}`);
+for (const entry of fixture.benefits) validateSourceRefs(entry, `benefit ${entry.id}`);
+for (const row of fixture.comparison.rows) validateSourceRefs(row, `comparison row ${row.id}`);
+for (const step of fixture.releaseExample.steps) validateSourceRefs(step, `release example step ${step.id}`);
+for (const lane of fixture.roadmap.lanes) validateSourceRefs(lane, `roadmap lane ${lane.id}`);
+assert(stable(manifest.heroAnswers) === stable(fixture.heroAnswers), "Skills manifest hero-answer parity drifted");
+assert(stable(manifest.benefits) === stable(fixture.benefits), "Skills manifest benefit parity drifted");
+assert(stable(manifest.comparison) === stable(fixture.comparison), "Skills manifest comparison parity drifted");
+assert(stable(manifest.releaseExample) === stable(fixture.releaseExample), "Skills manifest release-example parity drifted");
+assert(stable(manifest.usage) === stable(fixture.usage), "Skills manifest usage parity drifted");
+assert(stable(manifest.roadmap) === stable(fixture.roadmap), "Skills manifest roadmap parity drifted");
 
 const currentFactIds = uniqueIds(fixture.currentFacts, "Skills current fact");
 for (const fact of fixture.currentFacts) {
   assert(fact.claimClass === "upstream-fact", `Skills current fact must remain upstream-owned: ${fact.id}`);
   assert(fact.maturity && fact.summary, `Skills current fact is incomplete: ${fact.id}`);
   validateSourceRefs(fact, `current fact ${fact.id}`);
-  assert(html.includes(`data-skills-current-fact="${fact.id}"`), `Skills human current fact missing: ${fact.id}`);
+  assert(humanHtml.includes(`data-skills-current-fact="${fact.id}"`), `Skills human current fact missing: ${fact.id}`);
   assert(llms.includes(`- ${fact.id} / ${fact.label} [`), `Skills Agent current fact missing: ${fact.id}`);
 }
 assert(stable(manifest.currentFacts) === stable(fixture.currentFacts), "Skills manifest current-fact parity drifted");
@@ -104,7 +133,7 @@ for (const guidance of fixture.agentGuidance) {
   assert(["suggest", "create", "avoid"].includes(guidance.decision), `Skills guidance decision is unsupported: ${guidance.id}`);
   assert(["site-synthesis", "non-claim"].includes(guidance.claimClass), `Skills guidance claim class drifted: ${guidance.id}`);
   validateSourceRefs(guidance, `Agent guidance ${guidance.id}`);
-  assert(html.includes(`data-skills-guidance="${guidance.id}"`), `Skills human Agent guidance missing: ${guidance.id}`);
+  assert(humanHtml.includes(`data-skills-guidance="${guidance.id}"`), `Skills human Agent guidance missing: ${guidance.id}`);
   assert(llms.includes(`- ${guidance.id} / ${guidance.label} [`), `Skills Agent guidance missing: ${guidance.id}`);
 }
 assert(stable(manifest.agentGuidance) === stable(fixture.agentGuidance), "Skills manifest Agent-guidance parity drifted");
@@ -115,7 +144,7 @@ const relationshipIds = uniqueIds(fixture.architecture.relationships, "Skills ar
 for (const node of fixture.architecture.nodes) {
   assert(node.kind && node.horizon && node.claimClass && node.maturity && node.summary, `Skills architecture node is incomplete: ${node.id}`);
   validateSourceRefs(node, `architecture node ${node.id}`);
-  assert(html.includes(`data-skills-node="${node.id}"`), `Skills human architecture missing node: ${node.id}`);
+  assert(humanHtml.includes(`data-skills-node="${node.id}"`), `Skills human architecture missing node: ${node.id}`);
   assert(llms.includes(`- ${node.id} / ${node.label} [`), `Skills Agent architecture missing node: ${node.id}`);
   if (node.horizon === "future-picture") {
     assert(node.claimClass === "future-picture" && node.maturity === "future-picture-only", `Skills future node is not visibly bounded: ${node.id}`);
@@ -127,7 +156,7 @@ for (const relationship of fixture.architecture.relationships) {
   assert(nodeIds.has(relationship.from) && nodeIds.has(relationship.to), `Skills relationship endpoint missing: ${relationship.id}`);
   assert(relationship.label && relationship.horizon && relationship.claimClass, `Skills relationship is incomplete: ${relationship.id}`);
   validateSourceRefs(relationship, `architecture relationship ${relationship.id}`);
-  assert(html.includes(`data-skills-relationship="${relationship.id}"`), `Skills human architecture missing relationship: ${relationship.id}`);
+  assert(humanHtml.includes(`data-skills-relationship="${relationship.id}"`), `Skills human architecture missing relationship: ${relationship.id}`);
   assert(llms.includes(`- ${relationship.id}: ${relationship.from} ${relationship.label} ${relationship.to}`), `Skills Agent architecture missing relationship: ${relationship.id}`);
 }
 assert(stable(architecture.nodes) === stable(fixture.architecture.nodes), "Skills machine architecture node parity drifted");
@@ -148,7 +177,7 @@ for (const category of categories) {
     capabilityIds.add(item.id);
     assert(item.label && item.status && item.maturity && item.claimClass && item.summary, `Skills capability item is incomplete: ${item.id}`);
     validateSourceRefs(item, `capability ${item.id}`);
-    assert(html.includes(`data-skills-capability="${item.id}"`), `Skills human capability map missing item: ${item.id}`);
+    assert(humanHtml.includes(`data-skills-capability="${item.id}"`), `Skills human capability map missing item: ${item.id}`);
     assert(llms.includes(`- ${item.id} / ${item.label} [`), `Skills Agent capability map missing item: ${item.id}`);
   }
 }
@@ -163,7 +192,7 @@ assert(manifest.machineEntries.llms === expectedSkillsUrl("llms.txt"), "Skills l
 assert(manifest.machineEntries.architecture === expectedSkillsUrl("architecture.json"), "Skills architecture URL drifted");
 assert(manifest.machineEntries.capabilityMap === expectedSkillsUrl("capability-map.json"), "Skills capability-map URL drifted");
 
-for (const route of ["/skills/", "/skills/manifest.json", "/skills/llms.txt", "/skills/architecture.json", "/skills/capability-map.json"]) {
+for (const route of ["/skills/", "/skills/spec/", "/skills/roadmap/", "/skills/manifest.json", "/skills/llms.txt", "/skills/architecture.json", "/skills/capability-map.json"]) {
   assert(siteManifest.pages.some((entry) => entry.path === route && entry.host === expectedSkillsHost), `root Site manifest missing Skills route: ${route}`);
 }
 assert(siteManifest.upstreamFixtures?.skills?.sourceRef === [...exactRefs][0], "root Site manifest Skills sourceRef drifted");
@@ -173,23 +202,28 @@ for (const route of ["/skills/manifest.json", "/skills/llms.txt", "/skills/archi
 
 assert(html.includes('<meta name="viewport" content="width=device-width, initial-scale=1">'), "Skills first screen is missing its viewport contract");
 assert(html.includes("@media (max-width: 640px)"), "Skills surface is missing its responsive layout contract");
-assert(html.includes('role="group" aria-label="Skills architecture with current protected-source and future-picture lanes"'), "Skills architecture needs an accessible group label");
-assert(html.includes('aria-labelledby="skills-agent-guidance-heading"'), "Skills guidance needs an accessible heading relationship");
-assert(html.includes('aria-labelledby="skills-capabilities-heading"'), "Skills capability map needs an accessible heading relationship");
+assert(specHtml.includes('role="group" aria-label="Skills architecture with current protected-source and future-picture lanes"'), "Skills architecture needs an accessible group label");
+assert(specHtml.includes('aria-labelledby="skills-agent-guidance-heading"'), "Skills guidance needs an accessible heading relationship");
+assert(roadmapHtml.includes('aria-labelledby="skills-capabilities-heading"'), "Skills capability map needs an accessible heading relationship");
 assert(html.includes('<link rel="alternate" type="application/json" title="Skills architecture" href="architecture.json">'), "Skills architecture alternate missing");
 assert(html.includes('<link rel="alternate" type="application/json" title="Skills capability map" href="capability-map.json">'), "Skills capability-map alternate missing");
+assert(specHtml.includes('href="../manifest.json"') && specHtml.includes('href="../architecture.json"') && specHtml.includes('href="../capability-map.json"'), "Skills nested spec machine links drifted");
+assert(roadmapHtml.includes('href="../manifest.json"') && roadmapHtml.includes('href="../capability-map.json"'), "Skills nested roadmap machine links drifted");
 
 const hero = html.slice(html.indexOf('<section class="hero">'), html.indexOf("</section>", html.indexOf('<section class="hero">')));
-for (const marker of [fixture.headline, fixture.lead, fixture.proposition, "Should an Agent suggest one?", "Compare current and future", "Inspect machine facts"]) {
+for (const marker of [fixture.headline, fixture.lead, fixture.proposition, "What value does it add?", "How is it different?", "Do I need to code?", "See a real-world example", "How to use one"]) {
   assert(hero.includes(marker), `Skills first screen missing marker: ${marker}`);
 }
 for (const machineEntry of ["manifest.json", "architecture.json", "capability-map.json"]) {
-  assert(html.includes(`href="${machineEntry}"`), `Skills human machine link must be route-relative: ${machineEntry}`);
-  assert(!html.includes(`href="/skills/${machineEntry}"`), `Skills human machine link must not hard-code its hub prefix: ${machineEntry}`);
+  assert(!humanHtml.includes(`href="/skills/${machineEntry}"`), `Skills human machine link must not hard-code its hub prefix: ${machineEntry}`);
   assert(new URL(machineEntry, expectedSkillsBase).pathname === `/skills/${machineEntry}`, `Skills route resolution drifted: ${machineEntry}`);
 }
 
-for (const path of ["dist/index.html", "dist/skills/index.html", "dist/kfx/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html"]) {
+const publicSkillsPayload = `${humanHtml}\n${llms}\n${JSON.stringify(manifest)}\n${JSON.stringify(architecture)}\n${JSON.stringify(capabilityMap)}`;
+assert(!/(^|[^a-z0-9])v2([^a-z0-9]|$)/i.test(publicSkillsPayload), "Skills public surface leaked an internal version label");
+assert(!html.includes("sha256:") && !html.includes("protected-source-alpha") && !html.includes("data-skills-node="), "Skills value overview leaked technical evidence into the primary page");
+
+for (const path of ["dist/index.html", "dist/skills/index.html", "dist/skills/spec/index.html", "dist/skills/roadmap/index.html", "dist/kfx/index.html", "dist/core/index.html", "dist/buildchain/index.html", "dist/kfd/index.html", "dist/papers/index.html"]) {
   const page = fs.readFileSync(path, "utf8");
   for (const label of ["KFD", "Buildchain", "Core", "Extensions", "Skills", "Papers"]) {
     assert(page.includes(`>${label}</a>`), `${path} global navigation missing ${label}`);

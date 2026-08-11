@@ -114,34 +114,34 @@
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
         "repository": "https://github.com/kungfu-systems/kungfu",
-        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
         "path": "framework/skill/kungfu-skill.contract.json",
-        "sha256": "fb6fbc59557ac8448226f5ed8b97fd71fcf202742e896bb06e2831abeedc2a52"
+        "sha256": "9687a533493aa1e6ca2407f633f4ec6039eb0b857afb1db324fefb3c64f3ed01"
       },
       {
         "id": "skills-architecture",
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
         "repository": "https://github.com/kungfu-systems/kungfu",
-        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
         "path": "docs/architecture/skills.md",
-        "sha256": "f5611bd79f54611beb35f9e6f077a101ed5219fb223ce10e2b4f7c2103804ccd"
+        "sha256": "4bae5194be6374830fec387be61010e4a8e132330739d13dcf7940a040651663"
       },
       {
         "id": "skills-adr",
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
         "repository": "https://github.com/kungfu-systems/kungfu",
-        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
-        "path": "docs/adr/KF-ADR-019f86da-4f90-74c2-9cbb-24f1c34303bf.md",
-        "sha256": "0509789b372a45c0e4687f24771e44c543ceed3403ab1e3f1cf0ea356e6ce759"
+        "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
+        "path": "docs/adr/KF-ADR-019fee22-e71d-7da9-8a44-9403c21a5d62.md",
+        "sha256": "b439ed0b749c6e1b6f4527356454f0d5aa2024f46a8fe2d5369171ca30a159ce"
       },
       {
         "id": "skills-known-limits",
         "owner": "kungfu-systems/kungfu",
         "kind": "git-document",
         "repository": "https://github.com/kungfu-systems/kungfu",
-        "ref": "8b22a3fc549a838d615d1d4ff38aaf48ba16f318",
+        "ref": "b4a10ea2a165f0d8eb1010b6d913069b1f17f39f",
         "path": "docs/qualification/known-limits.md",
         "sha256": "b8a913ad020d089842b6d8550025665e307bfd92eb5f5bbb1049d18d7a7b0c47"
       },
