@@ -909,7 +909,7 @@ for (const requiredRoute of [
   "/dogfood/agent-output-comparison-operating-data.json",
   "/dogfood/agent-output-comparison-operating-data.json.sha256",
 ]) {
-  if (!manifest.pages.some((entry) => entry.path === requiredRoute && entry.host === site.canonicalHost)) {
+  if (!manifest.pages.some((entry) => entry.path === requiredRoute && entry.host === expectedSurfaceHost("hub"))) {
     throw new Error(`site manifest missing parallel runtime comparison route: ${requiredRoute}`);
   }
 }
