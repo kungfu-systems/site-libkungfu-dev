@@ -92,6 +92,12 @@ test -f dist/runtime.json
 test -f dist/agent-supply-chain.json
 test -f dist/dogfood/index.html
 test -f dist/dogfood-evidence.json
+test -f dist/dogfood/parallel-runtime-paths/index.html
+test -f dist/dogfood/parallel-runtime-paths.json
+test -f dist/dogfood/agent-output-comparison-data.json
+test -f dist/dogfood/agent-output-comparison-data.json.sha256
+test -f dist/dogfood/agent-output-comparison-operating-data.json
+test -f dist/dogfood/agent-output-comparison-operating-data.json.sha256
 test -f dist/.buildchain/observed-evidence-ownership.json
 test -f dist/.well-known/kungfu-release-status.json
 test -f dist/llms.txt

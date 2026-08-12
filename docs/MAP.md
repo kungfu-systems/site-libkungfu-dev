@@ -8,7 +8,7 @@ confidence: high
 sensitivity: public
 evidence_grade: A
 review_state: self-reviewed
-last_reviewed: 2026-07-24
+last_reviewed: 2026-08-12
 ai_provenance:
   model_family: GPT-5
   product: Codex
@@ -28,6 +28,13 @@ ai_provenance:
 - Use `https://libkungfu.dev/runtime.json` for the exact runtime source,
   package availability, quickstart, KFD Runtime 100, qualification, and
   claim-boundary projection.
+- Use `https://libkungfu.dev/dogfood/` for the rolling public construction
+  evidence. Continue to `/dogfood/parallel-runtime-paths/` for the fixed-window
+  Google AX and Kungfu public-output comparison. Its machine peers are
+  `/dogfood/parallel-runtime-paths.json`, the complete normalized record set at
+  `/dogfood/agent-output-comparison-data.json`, the Buildchain operating-window
+  record set at `/dogfood/agent-output-comparison-operating-data.json`, and
+  their adjacent SHA-256 files.
 - Use `https://libkungfu.dev/skills/` for the user-facing Skills value,
   comparison, release example, and no-code path. Continue to `/skills/spec/`
   for exact technical evidence and `/skills/roadmap/` for current, next, and
@@ -96,6 +103,11 @@ must understand, while the depth page preserves the complete cited authority.
   observed qualification, package availability, and known limits. The site
   renders this projection but does not become the runtime or conformance
   authority.
+- `src/fixtures/agent-runtime-comparison.json` owns the dated, non-normative
+  Google AX and Kungfu v4 comparison. Every clause resolves through exact
+  public sources in `src/fixtures/site-manifest.json#readerContract.sources`;
+  the comparison is not a benchmark, equivalence claim, or productivity
+  ranking.
 - `src/fixtures/skills-site.json` is the single Site-owned Skills reader source.
   It pins exact protected Kungfu documents, keeps partial implementation and
   known-limit boundaries visible, and drives the human page plus all four Agent
