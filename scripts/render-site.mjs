@@ -5200,12 +5200,36 @@ function kfdIndependentImplementationPanel() {
 function kfdSelfConformancePanel() {
   const contract = kfdSite.homepage.selfConformance;
   const recursiveCase = kfdSelfConformancePage?.recursiveCase;
-  if (!contract || !recursiveCase) {
-    throw new Error("KFD site bundle must expose homepage.selfConformance and its recursive case");
+  const readerModel = contract?.readerModel;
+  if (
+    !contract
+    || !recursiveCase
+    || !readerModel
+    || JSON.stringify(readerModel) !== JSON.stringify(kfdSelfConformancePage?.readerModel)
+  ) {
+    throw new Error("KFD site bundle must expose one coherent homepage and verification Self-Conformance reader model");
   }
-  return `<section class="panel" id="self-conformance" data-kfd-self-conformance>
+  return `<section class="panel" id="self-conformance" data-kfd-self-conformance data-claim-boundary="${escapeAttr(contract.claimBoundary)}">
     <p class="eyebrow">${escapeHtml(contract.status)} · governed self-change</p>
     <h2>${escapeHtml(contract.label)}</h2>
+    <p class="lead" data-kfd-self-conformance-reader-question>${escapeHtml(readerModel.question)}</p>
+    <div class="grid" data-kfd-self-conformance-reader-model>
+      <article class="panel" data-reader-lane="prospective">
+        <p class="eyebrow">Live gate</p>
+        <h3>${escapeHtml(readerModel.prospective.label)}</h3>
+        <p>${escapeHtml(readerModel.prospective.applicability)}</p>
+        <p><strong>Gate:</strong> ${escapeHtml(readerModel.prospective.gate)}</p>
+        <p class="reader-claim-boundary"><strong>Edit boundary:</strong> ${escapeHtml(readerModel.prospective.ordinaryEditsBoundary)}</p>
+      </article>
+      <article class="panel" data-reader-lane="retrospective">
+        <p class="eyebrow">Historical replay</p>
+        <h3>${escapeHtml(readerModel.retrospective.label)}</h3>
+        <p>Starts at <code>${escapeHtml(readerModel.retrospective.start.gitTag)}</code> and converges additively with <code>${escapeHtml(readerModel.retrospective.convergence.liveAnchorId)}</code>.</p>
+        <p><code>retrospective: ${escapeHtml(String(readerModel.retrospective.retrospective))}</code> · <code>profileAvailableAtEvent: ${escapeHtml(String(readerModel.retrospective.profileAvailableAtEvent))}</code></p>
+        <p class="reader-claim-boundary"><strong>Historical boundary:</strong> ${escapeHtml(readerModel.retrospective.claim)}</p>
+      </article>
+    </div>
+    <p class="reader-claim-boundary" data-reader-authority-boundary><strong>Authority boundary:</strong> The verifier is necessary but not sufficient; accountable human approval remains required. It does not establish ${escapeHtml(readerModel.authorityBoundary.forbiddenInferences.join(", "))}.</p>
     <dl class="meta">
       <dt>Profile</dt><dd><code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code></dd>
       <dt>Candidate</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code> · non-normative · no allocated number</dd>
@@ -5214,8 +5238,8 @@ function kfdSelfConformancePanel() {
     <div class="card-actions">
       <a class="card-action" href="${escapeAttr(`${contract.url.replace(/\/+$/, "")}/`)}">Open evidence</a>
       <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
+      ${readerModel.links.map((entry) => `<a class="card-action secondary" href="${escapeAttr(entry.url)}">${escapeHtml(entry.label)}</a>`).join("\n")}
     </div>
-    <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(contract.claimBoundary)}</p>
   </section>`;
 }
 
@@ -8220,6 +8244,8 @@ writeFile(
     alternates: kfdSurfaceAlternates(),
     body: `${kfdHomepageHero()}
 
+    ${kfdSelfConformancePanel()}
+
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
       <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
@@ -8241,7 +8267,6 @@ writeFile(
     </section>
 
     ${kfdIndependentImplementationPanel()}
-    ${kfdSelfConformancePanel()}
 
     <section class="panel" id="agent-hub-qualification">
       <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
@@ -9822,6 +9847,9 @@ const kfdAgentManifest = {
     independentVerification: surfaceEndpointHref("kfd", "verify/"),
     independentVerificationAssets: Object.fromEntries(
       kfdIndependentVerificationAssets.map((entry) => [entry.role, surfaceEndpointHref("kfd", entry.outputPath)]),
+    ),
+    independentVerificationAssetsBySource: Object.fromEntries(
+      kfdIndependentVerificationAssets.map((entry) => [entry.sourcePath, surfaceEndpointHref("kfd", entry.outputPath)]),
     ),
     selfConformance: surfaceEndpointHref("kfd", "verify/self-conformance/"),
     selfConformanceAssets: Object.fromEntries(

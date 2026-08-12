@@ -1012,10 +1012,10 @@ if (
   || kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.partial !== 8
   || (kfdIndependentVerificationPage.semanticSelfSufficiency?.coverageCounts?.gap || 0) !== 0
   || kfdIndependentVerificationPage.warrantEvidence?.decisionStatus !== "draft"
-  || kfdIndependentVerificationPage.warrantEvidence?.fixedVectorCount !== 14
+  || kfdIndependentVerificationPage.warrantEvidence?.fixedVectorCount !== 23
   || kfdIndependentVerificationPage.warrantEvidence?.report?.qualifying !== false
   || kfdIndependentVerificationPage.warrantEvidence?.report?.selfCertified !== false
-  || kfdIndependentVerificationAssets.length !== 4
+  || kfdIndependentVerificationAssets.length !== 5
   || kfdIndependentVerificationPage.rendererContract?.showMachineAssets !== true
   || kfdIndependentVerificationPage.rendererContract?.showClaimBoundaries !== true
 ) {
@@ -1033,6 +1033,14 @@ if (
   || kfdSelfConformancePage.releaseSeparation?.verifierNecessary !== true
   || kfdSelfConformancePage.releaseSeparation?.verifierSufficient !== false
   || kfdSelfConformancePage.releaseSeparation?.releaseAuthoritySeparate !== true
+  || JSON.stringify(kfdSite.homepage.selfConformance?.readerModel) !== JSON.stringify(kfdSelfConformancePage.readerModel)
+  || kfdSelfConformancePage.readerModel?.retrospective?.start?.packageVersion !== "1.0.0-alpha.28"
+  || kfdSelfConformancePage.readerModel?.retrospective?.convergence?.liveAnchorId !== "kfd-alpha-55-pre-profile"
+  || kfdSelfConformancePage.readerModel?.retrospective?.retrospective !== true
+  || kfdSelfConformancePage.readerModel?.retrospective?.profileAvailableAtEvent !== false
+  || kfdSelfConformancePage.readerModel?.authorityBoundary?.verifierNecessary !== true
+  || kfdSelfConformancePage.readerModel?.authorityBoundary?.verifierSufficient !== false
+  || kfdSelfConformancePage.readerModel?.authorityBoundary?.humanApprovalRequired !== true
   || kfdSelfConformancePage.recursiveCase?.candidate?.status !== "merged"
   || kfdSelfConformancePage.recursiveCase?.candidate?.normative !== false
   || kfdSelfConformancePage.recursiveCase?.liveCase?.status !== "closed"
@@ -2069,7 +2077,7 @@ for (const asset of kfdIndependentVerificationAssets) {
     || !canonical.equals(source)
     || !alias.equals(source)
     || renderedAsset?.url !== expectedSurfaceEndpoint("kfd", output)
-    || kfdAgentManifest.agentEntries?.independentVerificationAssets?.[asset.role] !== expectedSurfaceEndpoint("kfd", output)
+    || kfdAgentManifest.agentEntries?.independentVerificationAssetsBySource?.[asset.sourcePath] !== expectedSurfaceEndpoint("kfd", output)
     || !kfdAgentManifest.readOrder.includes(expectedSurfaceEndpoint("kfd", output))
   ) {
     throw new Error(`KFD independent-verification machine asset drifted: ${asset.sourcePath}`);
@@ -2546,10 +2554,10 @@ const kfdFirstCommandPosition = kfdHomeHtml.indexOf('<pre class="kfd-command">')
 const kfdHomeH1s = [...kfdHomeHtml.matchAll(/<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/g)];
 if (
   kfdAuthorityPositionOnHome < 0
-  || kfdFoundationPosition <= kfdAuthorityPositionOnHome
+  || kfdSelfConformancePosition <= kfdAuthorityPositionOnHome
+  || kfdFoundationPosition <= kfdSelfConformancePosition
   || kfdIndependentPosition <= kfdFoundationPosition
-  || kfdSelfConformancePosition <= kfdIndependentPosition
-  || kfdInstalledProjectionPosition <= kfdSelfConformancePosition
+  || kfdInstalledProjectionPosition <= kfdIndependentPosition
   || kfdActivationPosition <= kfdInstalledProjectionPosition
   || kfdFirstCommandPosition <= kfdIndependentPosition
   || kfdHomeH1s.length !== 1
@@ -2559,7 +2567,7 @@ if (
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
 ) {
-  throw new Error("KFD homepage hierarchy must be identity, foundation, independent implementation, Self-Conformance, installed Kungfu, then activation interfaces");
+  throw new Error("KFD homepage hierarchy must be identity, Self-Conformance reader model, foundation, independent implementation, installed Kungfu, then activation interfaces");
 }
 if (
   !kfdHomeHtml.includes('<a class="reader-action" href="#foundation-triad">Understand KFD</a>')
@@ -2576,6 +2584,11 @@ if (
   || !kfdHomeHtml.includes('href="/verify/self-conformance/"')
   || !kfdHomeHtml.includes('href="/cases/live/recursive-normative-self-conformance/"')
   || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code>`)
+  || !kfdHomeHtml.includes(`data-reader-lane="prospective"`)
+  || !kfdHomeHtml.includes(`data-reader-lane="retrospective"`)
+  || !kfdHomeHtml.includes(`<code>retrospective: true</code>`)
+  || !kfdHomeHtml.includes(`<code>profileAvailableAtEvent: false</code>`)
+  || !kfdHomeHtml.includes("accountable human approval remains required")
   || !kfdHomeHtml.includes("no allocated number")
   || !kfdLlms.includes("Governed KFD self-change:")
   || !kfdLlms.includes(kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot)
@@ -3635,6 +3648,10 @@ grep -q 'workflow-registry.json' dist/buildchain/mechanism/index.html
 grep -q 'buildchain.release.json' dist/buildchain/mechanism/index.html
 grep -q '@kungfu-tech/kfd' dist/kfd/manifest.json
 grep -q 'KFD — Kung Fu Decisions' dist/kfd/index.html
+grep -q 'Prospective governance' dist/kfd/index.html
+grep -q 'Retrospective structural conformance' dist/kfd/index.html
+grep -q 'profileAvailableAtEvent: false' dist/kfd/index.html
+grep -q 'accountable human approval remains required' dist/kfd/index.html
 grep -q 'non-drifting facts' dist/kfd/decisions/index.html
 grep -q 'KFD-1' dist/kfd/1/index.html
 grep -q 'KFD-4' dist/kfd/4/index.html
