@@ -115,7 +115,7 @@ must understand, while the depth page preserves the complete cited authority.
   coordinates without an upstream trigger, and applies only claimed Family
   State v2 / Warrant-bound Work. Paper and KFD automatic capture remain owned
   by their existing release propagation surfaces.
-- `@kungfu-tech/kfd@1.0.0-alpha.59` supplies the KFD site bundle, registry,
+- `@kungfu-tech/kfd@1.0.0-alpha.61` supplies the KFD site bundle, registry,
   standards and terminology metadata, KFD-11 through KFD-13 draft activation
   discovery contracts and schemas, reference pages, decision markdown, and the
   package-owned Self-Conformance Profile, terminal evidence, and recursive live
