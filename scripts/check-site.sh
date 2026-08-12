@@ -6,6 +6,8 @@ cd "$repo_root"
 
 node scripts/check-infra-outputs.mjs
 node scripts/check-dogfood-evidence.mjs
+node scripts/check-agent-output-comparison.mjs
+node scripts/check-agent-output-comparison.mjs src/fixtures/agent-output-comparison-operating.snapshot.json
 node scripts/check-paper-propagation.cjs
 node scripts/code-upstream-pickup.cjs check
 node scripts/site-upstream-agent.cjs check
@@ -167,6 +169,12 @@ const requiredBaseFiles = [
   "dist/agent-supply-chain.json",
   "dist/dogfood/index.html",
   "dist/dogfood-evidence.json",
+  "dist/dogfood/parallel-runtime-paths/index.html",
+  "dist/dogfood/parallel-runtime-paths.json",
+  "dist/dogfood/agent-output-comparison-data.json",
+  "dist/dogfood/agent-output-comparison-data.json.sha256",
+  "dist/dogfood/agent-output-comparison-operating-data.json",
+  "dist/dogfood/agent-output-comparison-operating-data.json.sha256",
   "dist/llms.txt",
   "dist/papers/index.html",
   "dist/papers/manifest.json",
@@ -201,6 +209,11 @@ const dogfoodRenderInputPath = ".buildchain/render-inputs/dogfood-evidence.json"
 const dogfoodRenderSourcePath = ".buildchain/render-inputs/dogfood-evidence-source.json";
 const dogfoodEvidence = JSON.parse(fs.readFileSync(dogfoodRenderInputPath, "utf8"));
 const dogfoodEvidenceSource = JSON.parse(fs.readFileSync(dogfoodRenderSourcePath, "utf8"));
+const runtimeComparison = JSON.parse(fs.readFileSync("src/fixtures/agent-runtime-comparison.json", "utf8"));
+const agentOutputComparisonBytes = fs.readFileSync("src/fixtures/agent-output-comparison.snapshot.json");
+const agentOutputComparison = JSON.parse(agentOutputComparisonBytes);
+const agentOutputOperatingBytes = fs.readFileSync("src/fixtures/agent-output-comparison-operating.snapshot.json");
+const agentOutputOperating = JSON.parse(agentOutputOperatingBytes);
 const publicationPackageSet = JSON.parse(fs.readFileSync("src/publication-packages.json", "utf8"));
 const publicationSource = loadPublicationPackageSet(process.cwd());
 const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
@@ -587,6 +600,11 @@ const architectureAuthority = [
     commit: skillsSite.sources[0].ref,
     documents: skillsSite.sources.map((source) => ({ path: source.path, sha256: source.sha256 })),
   },
+  ...runtimeComparison.sourceAuthorities.map((source) => ({
+    repository: source.repository,
+    commit: source.ref,
+    documents: [{ path: source.path, sha256: source.sha256 }],
+  })),
 ];
 for (const source of readerContract.sources) {
   if (!source.id || !source.owner || !source.path || !/^[0-9a-f]{64}$/.test(source.sha256 || "")) {
@@ -703,13 +721,44 @@ for (const requiredText of [
   "A reviewed-by search match is not automatically an approval",
   "Three actors continued one exact Project Cut without a human relay",
   "The Hub architecture explanation was built, reviewed, settled, and released through the same loop",
-  "Related first-party interpretation",
+  "Interpret the signal",
   "A Public Week of Agent-Mediated Work",
   "This interpretation is not additional qualification evidence.",
+  "One human × Agents",
+  "Inspect the one-human output study",
+  "Are these just tiny PRs?",
+  "They are different observation windows, not conflicting totals.",
+  "Six deterministic entry points",
+  "Download all 4,065 PR records",
 ]) {
   if (!dogfoodHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
     throw new Error(`dogfood page missing required evidence text: ${requiredText}`);
   }
+}
+const dogfoodOneHumanInterpretationIndex = dogfoodHtml.indexOf('id="dogfood-interpretation-one-human"');
+const dogfoodBootstrapInterpretationIndex = dogfoodHtml.indexOf('id="dogfood-interpretation-bootstrap"');
+if (
+  dogfoodOneHumanInterpretationIndex < 0
+  || dogfoodBootstrapInterpretationIndex < 0
+  || dogfoodOneHumanInterpretationIndex > dogfoodBootstrapInterpretationIndex
+) {
+  throw new Error("dogfood one-human interpretation must precede the organizational bootstrap interpretation");
+}
+const rollingDogfoodHeadline = dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US");
+const rollingDogfoodEndDate = dogfoodEvidence.observation.window.endInclusive.slice(0, 10);
+if (
+  !dogfoodHtml.includes(`The ${rollingDogfoodHeadline} headline above is the latest rolling snapshot ending <code>${rollingDogfoodEndDate}</code>`)
+  || !dogfoodHtml.includes(`<code>${agentOutputOperating.window.startInclusive.slice(0, 10)}</code> up to but excluding <code>${agentOutputOperating.window.endExclusive.slice(0, 10)}</code>`)
+) {
+  throw new Error("dogfood page must derive the rolling headline and both observation boundaries from admitted evidence");
+}
+if (
+  !dogfoodHtml.includes('<details class="pr-audit-disclosure">')
+  || dogfoodHtml.includes('<details class="pr-audit-disclosure" open>')
+  || !dogfoodHtml.includes("Expand PR evidence")
+  || !dogfoodHtml.includes("Collapse PR evidence")
+) {
+  throw new Error("dogfood PR audit examples must remain discoverable and collapsed by default");
 }
 if (!dogfoodHtml.includes(`href="${site.relatedInterpretations.dogfoodBootstrap.url}"`)) {
   throw new Error("dogfood page missing bounded bootstrap interpretation URL");
@@ -719,6 +768,159 @@ if (
   manifest.relatedInterpretations.dogfoodBootstrap.claimBoundary !== "This interpretation is not additional qualification evidence."
 ) {
   throw new Error("site manifest must preserve the bootstrap interpretation boundary");
+}
+if (
+  manifest.relatedInterpretations.parallelRuntimePaths.relationship !== "bounded-first-party-comparison" ||
+  manifest.relatedInterpretations.parallelRuntimePaths.claimBoundary !== "The observed gap is not a feature, quality, maturity, or causal ranking."
+) {
+  throw new Error("site manifest must preserve the parallel runtime comparison boundary");
+}
+const runtimeComparisonProjection = JSON.parse(fs.readFileSync("dist/dogfood/parallel-runtime-paths.json", "utf8"));
+const runtimeComparisonHtml = fs.readFileSync("dist/dogfood/parallel-runtime-paths/index.html", "utf8");
+if (runtimeComparisonProjection.contract !== "libkungfu-dev-agent-output-comparison-editorial/v1") {
+  throw new Error("parallel runtime comparison machine contract drifted");
+}
+if (runtimeComparisonProjection.asOf !== runtimeComparison.asOf) {
+  throw new Error("parallel runtime comparison as-of boundary drifted");
+}
+if (runtimeComparisonProjection.sources.map((source) => source.id).join(",") !== runtimeComparison.sourceRefs.join(",")) {
+  throw new Error("parallel runtime comparison source projection drifted");
+}
+const agentOutputComparisonDigest = crypto.createHash("sha256").update(agentOutputComparisonBytes).digest("hex");
+const agentOutputOperatingDigest = crypto.createHash("sha256").update(agentOutputOperatingBytes).digest("hex");
+if (
+  runtimeComparisonProjection.observedDataset.sha256 !== agentOutputComparisonDigest
+  || runtimeComparisonProjection.observedDataset.path !== "/dogfood/agent-output-comparison-data.json"
+  || runtimeComparisonProjection.observedDataset.comparison.pullRequestRatio !== 22.77
+  || !fs.readFileSync("dist/dogfood/agent-output-comparison-data.json").equals(agentOutputComparisonBytes)
+  || fs.readFileSync("dist/dogfood/agent-output-comparison-data.json.sha256", "utf8").trim() !== `${agentOutputComparisonDigest}  agent-output-comparison-data.json`
+) {
+  throw new Error("parallel runtime comparison observed dataset or digest drifted");
+}
+if (
+  runtimeComparisonProjection.operatingDataset.sha256 !== agentOutputOperatingDigest
+  || runtimeComparisonProjection.operatingDataset.path !== "/dogfood/agent-output-comparison-operating-data.json"
+  || runtimeComparisonProjection.operatingDataset.comparison.pullRequestRatio !== 78.17
+  || agentOutputOperating.window.duration !== "P30D"
+  || !fs.readFileSync("dist/dogfood/agent-output-comparison-operating-data.json").equals(agentOutputOperatingBytes)
+  || fs.readFileSync("dist/dogfood/agent-output-comparison-operating-data.json.sha256", "utf8").trim() !== `${agentOutputOperatingDigest}  agent-output-comparison-operating-data.json`
+) {
+  throw new Error("parallel runtime operating dataset or digest drifted");
+}
+const pullRequestAudit = runtimeComparisonProjection.operatingDataset.pullRequestAudit;
+if (
+  pullRequestAudit?.contract !== "libkungfu.pr-corpus-audit/v1"
+  || pullRequestAudit.totalPullRequests !== 4065
+  || pullRequestAudit.bodyCoverage.nonEmpty !== 4065
+  || pullRequestAudit.bodyCoverage.summaryAndValidation !== 964
+  || pullRequestAudit.sizeDistribution.median !== 106
+  || pullRequestAudit.sizeDistribution.p75 !== 542
+  || pullRequestAudit.totalChangedFiles !== 53052
+  || pullRequestAudit.botAuthored !== 87
+  || pullRequestAudit.zeroGrossChangedLines !== 223
+  || pullRequestAudit.sample.seed !== "kungfu-pr-audit-v1"
+  || pullRequestAudit.sample.records.map((record) => record.type).join(",") !== "feat,fix,ci,docs,refactor,release"
+  || pullRequestAudit.sample.records.some((record) => !record.url || !record.title || !record.repository || !record.number)
+) {
+  throw new Error("parallel runtime PR corpus audit drifted");
+}
+for (const sourceRef of runtimeComparison.sourceRefs) {
+  if (!readerSourceById.has(sourceRef)) {
+    throw new Error(`parallel runtime comparison references an unknown reader source: ${sourceRef}`);
+  }
+  const source = readerSourceById.get(sourceRef);
+  const authority = runtimeComparison.sourceAuthorities.find((entry) => entry.id === sourceRef);
+  if (
+    !authority
+    || authority.repository !== source.repository
+    || authority.ref !== source.ref
+    || authority.path !== source.path
+    || authority.sha256 !== source.sha256
+  ) {
+    throw new Error(`parallel runtime comparison source authority drifted: ${sourceRef}`);
+  }
+}
+function verifyRuntimeComparisonSourceRefs(value, location = "comparison") {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => verifyRuntimeComparisonSourceRefs(entry, `${location}[${index}]`));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value.sourceRefs)) {
+    for (const sourceRef of value.sourceRefs) {
+      if (!readerSourceById.has(sourceRef)) {
+        throw new Error(`parallel runtime comparison has unknown source at ${location}: ${sourceRef}`);
+      }
+    }
+  }
+  for (const [key, entry] of Object.entries(value)) {
+    if (key !== "sourceAuthorities") verifyRuntimeComparisonSourceRefs(entry, `${location}.${key}`);
+  }
+}
+verifyRuntimeComparisonSourceRefs(runtimeComparison);
+for (const requiredText of [
+  runtimeComparison.title,
+  "2,323",
+  "102",
+  "4,065",
+  "3,913",
+  "75×",
+  "75.25×",
+  "99",
+  "explicitly authored by Claude (Code)",
+  "The anomaly is human leverage, not pull-request volume alone.",
+  "Gemini on AX. Codex, Claude Code, Cursor, and Amp on Kungfu.",
+  "This evidence comes from commit provenance, not from product copy mentioning an Agent.",
+  "build(v4): bring up the ARM64 C++ core and modernize to Conan 2 + fmt 10",
+  "English translation of the original commit title; the source record remains unchanged.",
+  "merged public PRs · one primary Kungfu account",
+  "Audit PR size and deterministic samples",
+  "Google AX contributor accounts",
+  "AX contributor account A",
+  "comparison concerns organization form, not individual performance",
+  "Public usernames remain in the downloadable records for reproducibility.",
+  "Google internal work and all other private work are outside the dataset.",
+  "Download bootstrap records",
+  "Download operating records",
+  "Google AX",
+  "Kungfu Systems",
+]) {
+  if (!runtimeComparisonHtml.includes(requiredText.replaceAll("&", "&amp;"))) {
+    throw new Error(`parallel runtime comparison page missing required text: ${requiredText}`);
+  }
+}
+const axEditorialAccountNames = new Set([
+  ...agentOutputComparison.subjects.ax.summary.authors.map((entry) => entry.name),
+  ...agentOutputOperating.subjects.ax.summary.authors.map((entry) => entry.name),
+]);
+for (const accountName of axEditorialAccountNames) {
+  if (runtimeComparisonHtml.includes(accountName)) {
+    throw new Error(`parallel runtime editorial view exposes AX contributor account: ${accountName}`);
+  }
+}
+if (runtimeComparisonHtml.includes("build(v4): arm64 点亮 C++ 内核，conan2 + fmt10 现代化")) {
+  throw new Error("parallel runtime editorial view must not expose the untranslated Claude example title");
+}
+for (const requiredRoute of [
+  "/dogfood/parallel-runtime-paths/",
+  "/dogfood/parallel-runtime-paths.json",
+  "/dogfood/agent-output-comparison-data.json",
+  "/dogfood/agent-output-comparison-data.json.sha256",
+  "/dogfood/agent-output-comparison-operating-data.json",
+  "/dogfood/agent-output-comparison-operating-data.json.sha256",
+]) {
+  if (!manifest.pages.some((entry) => entry.path === requiredRoute && entry.host === site.canonicalHost)) {
+    throw new Error(`site manifest missing parallel runtime comparison route: ${requiredRoute}`);
+  }
+}
+if (!site.stableMachineEntries.some((entry) => entry.path === "/dogfood/parallel-runtime-paths.json")) {
+  throw new Error("site fixture missing parallel runtime comparison machine entry");
+}
+if (!site.stableMachineEntries.some((entry) => entry.path === "/dogfood/agent-output-comparison-data.json")) {
+  throw new Error("site fixture missing agent output comparison data entry");
+}
+if (!site.stableMachineEntries.some((entry) => entry.path === "/dogfood/agent-output-comparison-operating-data.json")) {
+  throw new Error("site fixture missing operating-window comparison data entry");
 }
 for (const historyContract of [
   'id="dogfood-snapshot-select"',
@@ -2393,7 +2595,7 @@ for (const source of readerContract.sources) {
   } else if (source.package === "@kungfu-tech/site") {
     href = expectedSurfaceEndpoint("core", "site-bundle.json");
   }
-  if (!href || ![hubDetailHtml, kfxHtml, skillsHtml, skillsSpecHtml, skillsRoadmapHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml].some((html) => (
+  if (!href || ![hubDetailHtml, kfxHtml, skillsHtml, skillsSpecHtml, skillsRoadmapHtml, coreHtml, buildchainDetailHtml, kfdDetailHtml, runtimeComparisonHtml].some((html) => (
     html.includes(`href="${escapeHtml(href)}"`)
     || (localHref && html.includes(`href="${escapeHtml(localHref)}"`))
   ))) {
