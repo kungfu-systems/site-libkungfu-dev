@@ -2792,6 +2792,10 @@ if (
   || !kfdHomeHtml.includes(`<code>profileAvailableAtEvent: false</code>`)
   || !kfdHomeHtml.includes("accountable human approval remains required")
   || !kfdHomeHtml.includes("no allocated number")
+  || !kfdHomeHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/profiles/self-conformance/README.md"`)
+  || !kfdHomeHtml.includes(`href="${kfdSourceRepository}/blob/${escapeHtml(encodeURIComponent(kfdSourceRef))}/profiles/self-conformance/history/README.md"`)
+  || kfdHomeHtml.includes('href="/profiles/self-conformance/README.md"')
+  || kfdHomeHtml.includes('href="/profiles/self-conformance/history/README.md"')
   || !kfdLlms.includes("Governed KFD self-change:")
   || !kfdLlms.includes(kfdSelfConformancePage.recursiveCase.terminal.terminalReportRoot)
 ) {

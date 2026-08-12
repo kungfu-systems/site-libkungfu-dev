@@ -5385,6 +5385,10 @@ function kfdSelfConformancePanel() {
   ) {
     throw new Error("KFD site bundle must expose one coherent homepage and verification Self-Conformance reader model");
   }
+  const readerLinkHref = (entry) => {
+    const sourcePath = entry.url.replace(/^\/+/, "");
+    return sourcePath.endsWith(".md") ? kfdSourceHref(sourcePath) : entry.url;
+  };
   return `<section class="panel" id="self-conformance" data-kfd-self-conformance data-claim-boundary="${escapeAttr(contract.claimBoundary)}">
     <p class="eyebrow">${escapeHtml(contract.status)} · governed self-change</p>
     <h2>${escapeHtml(contract.label)}</h2>
@@ -5414,7 +5418,7 @@ function kfdSelfConformancePanel() {
     <div class="card-actions">
       <a class="card-action" href="${escapeAttr(`${contract.url.replace(/\/+$/, "")}/`)}">Open evidence</a>
       <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
-      ${readerModel.links.map((entry) => `<a class="card-action secondary" href="${escapeAttr(entry.url)}">${escapeHtml(entry.label)}</a>`).join("\n")}
+      ${readerModel.links.map((entry) => `<a class="card-action secondary" href="${escapeAttr(readerLinkHref(entry))}">${escapeHtml(entry.label)}</a>`).join("\n")}
     </div>
   </section>`;
 }
