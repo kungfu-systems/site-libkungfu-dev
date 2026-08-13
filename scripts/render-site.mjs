@@ -2584,6 +2584,51 @@ ${current === "papers" ? "" : `
       line-height: 1.08;
     }
 
+    .kfd-native-install {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 16px;
+      align-items: start;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+      border-radius: 8px;
+      background: var(--bg);
+      padding: 16px;
+    }
+
+    .kfd-native-install h3,
+    .kfd-native-install p {
+      margin-top: 0;
+    }
+
+    .kfd-native-install h3 {
+      margin-bottom: 8px;
+      font-size: clamp(20px, 2.2vw, 28px);
+    }
+
+    .kfd-native-install-command {
+      display: grid;
+      min-width: 0;
+      gap: 8px;
+    }
+
+    .kfd-native-capabilities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .kfd-native-capabilities li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: var(--muted);
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
     .kfd-language-list,
     .kfd-independent-steps {
       margin: 0;
@@ -3514,6 +3559,7 @@ ${immutableArchive ? "" : `
       }
 
       .kfd-independent-steps,
+      .kfd-native-install,
       .kfd-boundaries {
         grid-template-columns: 1fr;
       }
@@ -5168,14 +5214,32 @@ function renderReaderOrientation(surfaceId, stateLabel) {
 
 function kfdIndependentImplementationPanel() {
   const contract = kfdSite.homepage.independentImplementation;
-  if (!contract) {
-    throw new Error("KFD site bundle must expose homepage.independentImplementation");
+  const nativeCli = contract?.nativeCli;
+  if (!contract || !nativeCli) {
+    throw new Error("KFD site bundle must expose homepage.independentImplementation and its native CLI install path");
   }
   return `<section class="panel kfd-independent" id="independent-implementation" data-kfd-independent-implementation>
     <div>
       <p class="eyebrow">${escapeHtml(contract.label)}</p>
       <h2>${escapeHtml(contract.promise)}</h2>
     </div>
+    <aside class="kfd-native-install" data-native-cli-install>
+      <div>
+        <p class="eyebrow">Native CLI · no coding required</p>
+        <h3>${escapeHtml(nativeCli.label)}</h3>
+        <p>${escapeHtml(nativeCli.summary)}</p>
+        <ul class="kfd-native-capabilities" aria-label="Native CLI capabilities">
+          ${nativeCli.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("\n")}
+        </ul>
+      </div>
+      <div class="kfd-native-install-command">
+        <pre class="kfd-command"><code>${escapeHtml(nativeCli.installCommand)}</code></pre>
+        <button class="copy-command" type="button" data-copy-command aria-label="Copy native kfd install command">Copy command</button>
+        <pre class="kfd-command"><code>${escapeHtml(nativeCli.versionCommand)}</code></pre>
+        <p>${inlineMarkdown(nativeCli.capabilityBoundary)}</p>
+        <a class="card-action secondary" href="${escapeAttr(nativeCli.docs.url)}">${escapeHtml(nativeCli.docs.label)} ↗</a>
+      </div>
+    </aside>
     <ul class="kfd-language-list" aria-label="Supported adapter languages">
       ${contract.supportedLanguages.map((entry) => `<li data-language="${escapeAttr(entry.id)}">${escapeHtml(entry.label)}</li>`).join("\n")}
     </ul>
@@ -10108,6 +10172,10 @@ ${kfdActivationSchemas.map((entry) => `- ${entry.contract}: ${surfaceEndpointHre
 
 Independent implementation and verification:
 - Promise: ${kfdSite.homepage.independentImplementation.promise}
+- Native install: ${kfdSite.homepage.independentImplementation.nativeCli.installCommand}
+- Native version: ${kfdSite.homepage.independentImplementation.nativeCli.versionCommand}
+- Native capabilities: ${kfdSite.homepage.independentImplementation.nativeCli.capabilities.join(", ")}
+- Native capability boundary: ${kfdSite.homepage.independentImplementation.nativeCli.capabilityBoundary}
 - Languages: ${kfdSite.homepage.independentImplementation.supportedLanguages.map((entry) => entry.label).join(", ")}
 ${kfdSite.homepage.independentImplementation.steps.map((entry) => `- ${entry.label}: ${entry.command}`).join("\n")}
 - Starter boundary: ${kfdSite.homepage.independentImplementation.starterBoundary}

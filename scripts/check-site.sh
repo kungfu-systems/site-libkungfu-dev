@@ -2538,6 +2538,12 @@ if (
   || kfdIndependentImplementation.supportedLanguages?.map((entry) => entry.id).join(",") !== "python,rust,node,cpp"
   || kfdIndependentImplementation.steps?.map((entry) => entry.id).join(",") !== "scaffold,test,verify"
   || kfdIndependentImplementation.links?.map((entry) => entry.url).join(",") !== "/agent-hub/,/verify/"
+  || kfdIndependentImplementation.nativeCli?.installCommand !== "brew install kungfu-systems/tap/kfd"
+  || kfdIndependentImplementation.nativeCli?.versionCommand !== "kfd --version"
+  || kfdIndependentImplementation.nativeCli?.executable !== "kfd"
+  || kfdIndependentImplementation.nativeCli?.requiresCoding !== false
+  || kfdIndependentImplementation.nativeCli?.platforms?.join(",") !== "macOS,Linux"
+  || kfdIndependentImplementation.nativeCli?.capabilities?.join(",") !== "verify,bundle"
 ) {
   throw new Error("KFD package must own the exact independent implementation first-screen contract");
 }
@@ -2566,6 +2572,10 @@ if (
   || !kfdHomeHtml.includes('aria-label="Supported adapter languages"')
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
+  || !kfdHomeHtml.includes('data-native-cli-install')
+  || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.installCommand)}</code>`)
+  || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.versionCommand)}</code>`)
+  || !kfdHomeHtml.includes("Native CLI · no coding required")
 ) {
   throw new Error("KFD homepage hierarchy must be identity, Self-Conformance reader model, foundation, independent implementation, installed Kungfu, then activation interfaces");
 }
@@ -2622,8 +2632,8 @@ for (const step of kfdIndependentImplementation.steps) {
     throw new Error(`KFD homepage proof strip is missing package-owned step: ${step.id}`);
   }
 }
-if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 3) {
-  throw new Error("KFD independent path must expose one copy control for each package-owned command");
+if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 4) {
+  throw new Error("KFD independent path must expose one native install copy control plus the three package-owned workflow commands");
 }
 const claimBoundaryText = kfdIndependentImplementation.claimBoundary.split(" [", 1)[0];
 if (
@@ -2633,6 +2643,9 @@ if (
   || !kfdLlms.includes(kfdIndependentImplementation.starterBoundary)
   || !kfdLlms.includes(kfdIndependentImplementation.offlineBoundary)
   || !kfdLlms.includes(kfdIndependentImplementation.claimBoundary)
+  || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.installCommand)
+  || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.versionCommand)
+  || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.capabilityBoundary)
 ) {
   throw new Error("KFD human and machine entries must retain all independent implementation boundaries");
 }
