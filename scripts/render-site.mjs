@@ -3914,6 +3914,19 @@ function renderDogfoodMetric(metric, emphasis = false) {
   </article>`;
 }
 
+function renderPullRequestAuditSample(sample) {
+  return `<article class="panel pr-audit-sample">
+    <p class="eyebrow">${escapeHtml(sample.type)} · ${escapeHtml(sample.repository.replace("kungfu-systems/", ""))} #${escapeHtml(sample.number)}</p>
+    <h3><a href="${escapeAttr(sample.url)}">${escapeHtml(sample.title)}</a></h3>
+    <p>${escapeHtml(sample.summaryExcerpt)}</p>
+    <dl class="pr-audit-sample-meta">
+      <div><dt>Changed lines</dt><dd>+${escapeHtml(formatMetric(sample.additions))} / -${escapeHtml(formatMetric(sample.deletions))}</dd></div>
+      <div><dt>Files</dt><dd>${escapeHtml(formatMetric(sample.changedFiles))}</dd></div>
+      <div><dt>Validation section</dt><dd>${sample.validationSectionPresent ? "Present" : "Not declared"}</dd></div>
+    </dl>
+  </article>`;
+}
+
 function renderRepositoryBar(repository, maximum) {
   const percentage = Math.max(1, Math.round((repository.mergedPublicPullRequests / maximum) * 100));
   return `<li class="repo-work-row">
@@ -4459,6 +4472,169 @@ const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
   sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodEvidence)).digest("hex"),
 };
 const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
+const dogfoodParallelRuntimePaths = site.relatedInterpretations.parallelRuntimePaths;
+const runtimeComparison = readFixtureJson("agent-runtime-comparison.json");
+const agentOutputComparisonPath = path.join(repoRoot, "src", "fixtures", "agent-output-comparison.snapshot.json");
+const agentOutputComparisonBytes = fs.readFileSync(agentOutputComparisonPath);
+const agentOutputComparison = JSON.parse(agentOutputComparisonBytes);
+const agentOutputComparisonSha256 = crypto.createHash("sha256").update(agentOutputComparisonBytes).digest("hex");
+const agentOutputOperatingPath = path.join(repoRoot, "src", "fixtures", "agent-output-comparison-operating.snapshot.json");
+const agentOutputOperatingBytes = fs.readFileSync(agentOutputOperatingPath);
+const agentOutputOperating = JSON.parse(agentOutputOperatingBytes);
+const agentOutputOperatingSha256 = crypto.createHash("sha256").update(agentOutputOperatingBytes).digest("hex");
+
+function classifyPullRequestTitle(title) {
+  const match = String(title || "").match(/^([a-z]+)(?:\([^)]*\))?[!:]/i);
+  if (match) return match[1].toLowerCase();
+  if (/^docs?\b/i.test(title)) return "docs";
+  if (/^test\b/i.test(title)) return "test";
+  return "unclassified";
+}
+
+function hasMarkdownSection(body, section) {
+  return new RegExp(`^## ${section}\\s*$`, "im").test(String(body || ""));
+}
+
+function markdownSectionExcerpt(body, section) {
+  const lines = String(body || "").split("\n");
+  const headingIndex = lines.findIndex((line) => line.trim().toLowerCase() === `## ${section.toLowerCase()}`);
+  const nextHeadingIndex = lines.findIndex((line, index) => index > headingIndex && /^##\s+/.test(line.trim()));
+  const sectionLines = headingIndex >= 0
+    ? lines.slice(headingIndex + 1, nextHeadingIndex >= 0 ? nextHeadingIndex : undefined)
+    : lines;
+  const excerpt = sectionLines
+    .map((line) => line.trim().replace(/^[-*]\s+/, ""))
+    .find((line) => line && !line.startsWith("#"));
+  if (!excerpt) return "Open the PR to inspect its complete body and validation record.";
+  return excerpt.length > 180 ? `${excerpt.slice(0, 177)}...` : excerpt;
+}
+
+function buildPullRequestAudit(records) {
+  const sampleSeed = "kungfu-pr-audit-v1";
+  const sampleTypes = ["feat", "fix", "ci", "docs", "refactor", "release"];
+  const samples = sampleTypes.map((type) => {
+    const candidates = records
+      .filter((record) => classifyPullRequestTitle(record.title) === type)
+      .map((record) => ({
+        record,
+        rank: crypto.createHash("sha256").update(`${sampleSeed}:${type}:${record.repository}#${record.number}`).digest("hex"),
+      }))
+      .sort((left, right) => left.rank.localeCompare(right.rank));
+    if (!candidates.length) throw new Error(`PR audit sample has no candidates for ${type}`);
+    const { record, rank } = candidates[0];
+    return {
+      type,
+      rank,
+      repository: record.repository,
+      number: record.number,
+      url: record.url,
+      title: record.title,
+      author: record.author,
+      mergedAt: record.mergedAt,
+      additions: record.additions,
+      deletions: record.deletions,
+      changedFiles: record.changedFiles,
+      summaryExcerpt: markdownSectionExcerpt(record.body, "Summary"),
+      validationSectionPresent: hasMarkdownSection(record.body, "Validation"),
+    };
+  });
+  const count = (predicate) => records.filter(predicate).length;
+  const grossChangedLines = (record) => record.additions + record.deletions;
+  return {
+    contract: "libkungfu.pr-corpus-audit/v1",
+    window: agentOutputOperating.window,
+    totalPullRequests: records.length,
+    bodyCoverage: {
+      nonEmpty: count((record) => String(record.body || "").trim().length > 0),
+      summarySection: count((record) => hasMarkdownSection(record.body, "Summary")),
+      validationSection: count((record) => hasMarkdownSection(record.body, "Validation")),
+      summaryAndValidation: count((record) => hasMarkdownSection(record.body, "Summary") && hasMarkdownSection(record.body, "Validation")),
+    },
+    sizeDistribution: agentOutputOperating.subjects.kungfu.summary.changeSize,
+    totalChangedFiles: agentOutputOperating.subjects.kungfu.summary.totalChangedFiles,
+    zeroGrossChangedLines: count((record) => grossChangedLines(record) === 0),
+    botAuthored: count((record) => String(record.author || "").startsWith("app/")),
+    sample: {
+      method: "For each declared Conventional Commit type, sort every matching PR by SHA-256(seed:type:repository#number) and select the lowest digest.",
+      seed: sampleSeed,
+      types: sampleTypes,
+      records: samples,
+    },
+    boundaries: [
+      "Changed-line and changed-file counts measure visible change surface, not quality or value.",
+      "Generated files, repeated edits, release automation, and zero-line GitHub records remain in the full dataset.",
+      "The deterministic sample is a navigation aid across declared work types, not proof that every PR has the same depth.",
+    ],
+  };
+}
+
+const operatingPullRequestAudit = buildPullRequestAudit(agentOutputOperating.subjects.kungfu.records);
+const runtimeComparisonSourceById = new Map(site.readerContract.sources.map((source) => [source.id, source]));
+for (const sourceRef of runtimeComparison.sourceRefs) {
+  if (!runtimeComparisonSourceById.has(sourceRef)) {
+    throw new Error(`Agent runtime comparison references an unknown source: ${sourceRef}`);
+  }
+}
+const runtimeComparisonProjection = {
+  ...runtimeComparison,
+  observedDataset: {
+    path: "/dogfood/agent-output-comparison-data.json",
+    sha256: agentOutputComparisonSha256,
+    collectedAt: agentOutputComparison.collectedAt,
+    window: agentOutputComparison.window,
+    subjects: Object.fromEntries(Object.entries(agentOutputComparison.subjects).map(([id, subject]) => [id, {
+      label: subject.label,
+      scope: subject.scope,
+      query: subject.query,
+      organizationForm: subject.organizationForm,
+      summary: subject.summary,
+      defaultBranchActivity: subject.defaultBranchActivity,
+      developmentAttribution: subject.developmentAttribution,
+    }])),
+    comparison: agentOutputComparison.comparison,
+    boundaries: agentOutputComparison.boundaries,
+  },
+  operatingDataset: {
+    path: "/dogfood/agent-output-comparison-operating-data.json",
+    sha256: agentOutputOperatingSha256,
+    collectedAt: agentOutputOperating.collectedAt,
+    window: agentOutputOperating.window,
+    subjects: Object.fromEntries(Object.entries(agentOutputOperating.subjects).map(([id, subject]) => [id, {
+      label: subject.label,
+      scope: subject.scope,
+      query: subject.query,
+      organizationForm: subject.organizationForm,
+      summary: subject.summary,
+      defaultBranchActivity: subject.defaultBranchActivity,
+      developmentAttribution: subject.developmentAttribution,
+    }])),
+    comparison: agentOutputOperating.comparison,
+    pullRequestAudit: operatingPullRequestAudit,
+    boundaries: agentOutputOperating.boundaries,
+  },
+  sources: runtimeComparison.sourceRefs.map((sourceRef) => runtimeComparisonSourceById.get(sourceRef)),
+};
+
+function runtimeComparisonSourceHref(sourceRef, { preferPublicUrl = false } = {}) {
+  const source = runtimeComparisonSourceById.get(sourceRef);
+  if (!source) throw new Error(`Agent runtime comparison references an unknown source: ${sourceRef}`);
+  if (preferPublicUrl && source.url) return source.url;
+  if (source.repository && source.ref && source.path) {
+    return `${source.repository}/blob/${source.ref}/${source.path}`;
+  }
+  if (source.repository && source.ref) return `${source.repository}/commit/${source.ref}`;
+  if (source.url) return source.url;
+  return source.repository;
+}
+
+function renderRuntimeComparisonSourceLinks(sourceRefs, options = {}) {
+  return [...new Set(sourceRefs)]
+    .map((sourceRef) => {
+      const source = runtimeComparisonSourceById.get(sourceRef);
+      return `<a href="${escapeAttr(runtimeComparisonSourceHref(sourceRef, options))}">${escapeHtml(source.owner)}</a>`;
+    })
+    .join(" · ");
+}
 const buildchainSite = readPackageJson("@kungfu-tech/buildchain/site/buildchain-site.json");
 const buildchainSurfaceManifest = readPackageJson("@kungfu-tech/buildchain/site/site-manifest.json");
 const buildchainHomepageCopy = normalizeBuildchainHomepageCopy(buildchainSite.homepage, buildchainSite.pages);
@@ -6179,6 +6355,116 @@ const dogfoodStyles = `<style>
 
   .dogfood-window code { font-size: 12px; }
 
+  .dogfood-interpretations {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .dogfood-interpretation {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+  }
+
+  .dogfood-interpretation h2,
+  .dogfood-interpretation p { margin: 0; }
+
+  .dogfood-interpretation .card-action { margin-top: auto; padding-top: 6px; }
+
+  .pr-audit {
+    display: grid;
+    gap: 22px;
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--warn);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: clamp(20px, 4vw, 36px);
+  }
+
+  .pr-audit-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+    gap: 22px;
+    align-items: end;
+  }
+
+  .pr-audit-header h2,
+  .pr-audit-header p,
+  .pr-audit-sample h3,
+  .pr-audit-sample p { margin: 0; }
+
+  .pr-audit-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .pr-audit-stat {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    border-top: 3px solid var(--accent);
+    background: var(--bg);
+    padding: 16px;
+  }
+
+  .pr-audit-stat strong { font-size: clamp(26px, 4vw, 42px); line-height: 1; }
+  .pr-audit-stat span { color: var(--muted); font-size: 13px; }
+
+  .pr-audit-samples {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .pr-audit-disclosure {
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+
+  .pr-audit-disclosure summary {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    cursor: pointer;
+    list-style: none;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    padding: 13px 15px;
+    color: var(--accent-dark);
+    font-weight: 800;
+  }
+
+  .pr-audit-disclosure summary::-webkit-details-marker { display: none; }
+  .pr-audit-disclosure summary::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 140ms ease;
+  }
+  .pr-audit-disclosure[open] summary::before { transform: translateY(3px) rotate(225deg); }
+  .pr-audit-disclosure summary span { color: var(--muted); font-size: 12px; font-weight: 700; }
+  .pr-audit-disclosure .collapse-label { display: none; }
+  .pr-audit-disclosure[open] .expand-label { display: none; }
+  .pr-audit-disclosure[open] .collapse-label { display: inline; }
+  .pr-audit-disclosure-body { display: grid; gap: 18px; padding-top: 18px; }
+
+  .pr-audit-sample { display: grid; align-content: start; gap: 10px; }
+  .pr-audit-sample h3,
+  .pr-audit-sample a,
+  .pr-audit-sample p { overflow-wrap: anywhere; }
+  .pr-audit-sample > p:not(.eyebrow) { color: var(--muted); font-size: 14px; }
+  .pr-audit-sample-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+  .pr-audit-sample-meta div { border-top: 1px solid var(--line); padding-top: 8px; }
+  .pr-audit-sample-meta dt { color: var(--muted); font-size: 11px; }
+  .pr-audit-sample-meta dd { margin: 3px 0 0; font-size: 12px; font-weight: 750; overflow-wrap: anywhere; }
+  .pr-audit-method { border-left: 3px solid var(--accent); padding-left: 14px; color: var(--muted); font-size: 13px; }
+
   .dogfood-history {
     display: grid;
     gap: 18px;
@@ -6365,12 +6651,19 @@ const dogfoodStyles = `<style>
     font-size: 13px;
   }
 
+  #dogfood-cut { overflow-wrap: anywhere; }
+
   @media (max-width: 820px) {
     .dogfood-rail,
     .dogfood-hero,
+    .dogfood-interpretations,
+    .pr-audit-header,
     .dogfood-dashboard,
     .dogfood-metric-grid,
     .boundary-list { grid-template-columns: 1fr; }
+
+    .pr-audit-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pr-audit-samples { grid-template-columns: 1fr; }
 
     .dogfood-flow { grid-template-columns: 1fr; }
     .dogfood-flow li { min-height: 0; }
@@ -6388,6 +6681,296 @@ const dogfoodStyles = `<style>
     .case-roots { grid-template-columns: 1fr; }
     .case-roots dd + dt { margin-top: 6px; }
     .repo-work-row { grid-template-columns: minmax(100px, 0.8fr) minmax(70px, 1fr) 48px; }
+  }
+
+  @media (max-width: 480px) {
+    .pr-audit-stat-grid,
+    .pr-audit-sample-meta { grid-template-columns: 1fr; }
+    .pr-audit-disclosure summary { grid-template-columns: auto minmax(0, 1fr); }
+    .pr-audit-disclosure summary span { grid-column: 2; }
+  }
+</style>`;
+
+const runtimeComparisonStyles = `<style>
+  .runtime-comparison-hero {
+    display: grid;
+    gap: 20px;
+    max-width: 960px;
+    margin-bottom: 42px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 36px;
+  }
+
+  .runtime-comparison-hero h1,
+  .runtime-comparison-hero p { margin: 0; }
+
+  .runtime-comparison-dates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .runtime-comparison-date {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 14px;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 16px;
+  }
+
+  .runtime-comparison-date time {
+    grid-row: span 2;
+    color: var(--fg);
+    font: 750 13px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .runtime-comparison-date strong { font-size: 15px; }
+  .runtime-comparison-date span { color: var(--muted); font-size: 13px; }
+
+  .runtime-paths {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .runtime-path {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    border-top: 4px solid var(--accent);
+  }
+
+  .runtime-path h2,
+  .runtime-path h3,
+  .runtime-path p { margin: 0; }
+
+  .runtime-path-meta {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .runtime-path-meta div {
+    display: grid;
+    gap: 4px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .runtime-path-meta dt {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  .runtime-path-meta dd { margin: 0; }
+
+  .runtime-convergence-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .runtime-convergence {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 16px;
+  }
+
+  .runtime-convergence h3,
+  .runtime-convergence p { margin: 0; }
+  .runtime-convergence h3 { font-size: 15px; }
+  .runtime-convergence p { color: var(--muted); font-size: 13px; }
+
+  .source-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .runtime-comparison-table th:first-child { min-width: 170px; }
+  .runtime-comparison-table th:nth-child(2),
+  .runtime-comparison-table th:nth-child(3) { min-width: 260px; }
+
+  .runtime-interpretation {
+    border-left: 5px solid var(--accent);
+    padding: clamp(20px, 4vw, 34px);
+  }
+
+  .runtime-question-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .runtime-question-list li {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft);
+    padding: 16px;
+    color: var(--fg);
+  }
+
+  .runtime-source-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .runtime-source-list li {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
+    gap: 8px 18px;
+    margin: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+  }
+
+  .runtime-source-list code { overflow-wrap: anywhere; }
+
+  .output-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.42fr);
+    gap: 32px;
+    align-items: end;
+    margin-bottom: 42px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 38px;
+  }
+
+  .output-hero-copy { display: grid; gap: 18px; }
+  .output-hero-copy h1,
+  .output-hero-copy p { margin: 0; }
+  .output-ratio {
+    display: grid;
+    gap: 8px;
+    border-left: 5px solid var(--accent);
+    padding: 10px 0 10px 24px;
+  }
+  .output-ratio strong { font-size: clamp(62px, 10vw, 124px); line-height: 0.82; }
+  .output-ratio span { color: var(--muted); font-weight: 750; }
+
+  .common-ground {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .common-ground-points { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .common-ground-points li { border-left: 3px solid var(--accent); background: var(--soft); padding: 12px 14px; }
+
+  .organization-grid,
+  .output-scoreboard,
+  .scale-checks,
+  .agent-proof-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .organization-card,
+  .output-subject {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    border-top: 4px solid var(--accent);
+  }
+  .organization-card h3,
+  .organization-card p,
+  .output-subject h2,
+  .output-subject p { margin: 0; }
+  .observed-label { color: var(--muted); font-size: 12px; font-weight: 750; text-transform: uppercase; }
+
+  .subject-primary-number { display: grid; gap: 4px; }
+  .subject-primary-number strong { font-size: clamp(48px, 7vw, 86px); line-height: 0.9; }
+  .subject-primary-number span { color: var(--muted); font-weight: 700; }
+  .subject-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+  .subject-metrics div { border-top: 1px solid var(--line); padding-top: 10px; }
+  .subject-metrics dt { color: var(--muted); font-size: 12px; }
+  .subject-metrics dd { margin: 3px 0 0; font-weight: 750; overflow-wrap: anywhere; }
+
+  .scale-check { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); padding: 18px; }
+  .scale-check strong { font-size: 28px; }
+  .scale-check span { color: var(--muted); }
+
+  .daily-output { display: grid; gap: 8px; }
+  .daily-row {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 56px minmax(0, 1fr) 56px;
+    gap: 9px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .daily-label { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  .daily-track { display: block; height: 9px; overflow: hidden; border-radius: 99px; background: var(--code); }
+  .daily-track span { display: block; height: 100%; border-radius: inherit; }
+  .daily-track.ax span { background: var(--warn); }
+  .daily-track.kungfu span { background: var(--accent); }
+  .daily-value { text-align: right; font-weight: 750; }
+  .daily-legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
+  .daily-legend span::before { content: ""; display: inline-block; width: 18px; height: 4px; margin-right: 6px; vertical-align: middle; background: var(--accent); }
+  .daily-legend .ax-key::before { background: var(--warn); }
+
+  .distribution-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: 18px; }
+  .distribution-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .distribution-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .distribution-list span { overflow-wrap: anywhere; }
+
+  .agent-proof { display: grid; align-content: start; gap: 10px; }
+  .agent-proof > * { min-width: 0; width: auto; max-width: 100%; }
+  .agent-proof h3,
+  .agent-proof p { margin: 0; }
+  .agent-proof h3,
+  .agent-proof blockquote { overflow-wrap: anywhere; }
+  .agent-proof blockquote { margin: 0; border-left: 3px solid var(--accent); padding-left: 14px; color: var(--muted); }
+  .agent-proof .editorial-translation-note { color: var(--muted); font-size: 12px; }
+  .proof-boundary { border-left: 4px solid var(--warn); background: var(--soft); padding: 16px; }
+  .identity-boundary { border-left: 3px solid var(--accent); padding-left: 14px; color: var(--muted); font-size: 13px; }
+
+  .method-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .method-grid article { display: grid; align-content: start; gap: 8px; }
+  .method-grid h3,
+  .method-grid p { margin: 0; }
+
+  @media (max-width: 920px) {
+    .runtime-convergence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .output-hero,
+    .common-ground,
+    .distribution-grid { grid-template-columns: 1fr; }
+    .method-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 680px) {
+    .runtime-comparison-dates,
+    .runtime-paths,
+    .runtime-convergence-grid,
+    .runtime-question-list,
+    .organization-grid,
+    .output-scoreboard,
+    .scale-checks,
+    .agent-proof-grid,
+    .method-grid { grid-template-columns: 1fr; }
+
+    .runtime-source-list li { grid-template-columns: 1fr; }
+    .subject-metrics { grid-template-columns: 1fr; }
+    .daily-row { grid-template-columns: 76px minmax(0, 1fr) 34px; }
+    .daily-row .kungfu { grid-column: 2; }
+    .daily-row .kungfu + .daily-value { grid-column: 3; }
   }
 </style>`;
 
@@ -7775,10 +8358,57 @@ writeFile(
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="bootstrap-interpretation-heading">
-      <p class="eyebrow">Related first-party interpretation</p>
-      <h2 id="bootstrap-interpretation-heading">What this public work suggests about organizational bootstrap</h2>
-      <p>For a bounded first-party interpretation of what this public work suggests about organizational bootstrap, read <a href="${escapeAttr(dogfoodRelatedInterpretation.url)}">${escapeHtml(dogfoodRelatedInterpretation.label)}</a>. ${escapeHtml(dogfoodRelatedInterpretation.claimBoundary)}</p>
+    <section class="pr-audit" id="pr-audit" aria-labelledby="pr-audit-heading">
+      <div class="pr-audit-header">
+        <div class="section-heading">
+          <p class="eyebrow">Audit the count · fixed operating window</p>
+          <h2 id="pr-audit-heading">Are these just tiny PRs?</h2>
+          <p>The ${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} headline above is the latest rolling snapshot ending <code>${escapeHtml(dogfoodEvidence.observation.window.endInclusive.slice(0, 10))}</code>. This audit uses the separate fixed ${escapeHtml(agentOutputOperating.window.duration)} window shared with the AX comparison: <code>${escapeHtml(agentOutputOperating.window.startInclusive.slice(0, 10))}</code> up to but excluding <code>${escapeHtml(agentOutputOperating.window.endExclusive.slice(0, 10))}</code>. They are different observation windows, not conflicting totals.</p>
+        </div>
+        <p><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.bodyCoverage.summaryAndValidation))}</strong> PR bodies declare both <code>Summary</code> and <code>Validation</code> sections. All ${escapeHtml(formatMetric(operatingPullRequestAudit.totalPullRequests))} records retain a non-empty body. Neither fact proves quality; both are directly checkable.</p>
+      </div>
+      <div class="pr-audit-stat-grid" aria-label="Kungfu merged public pull request distribution">
+        <article class="pr-audit-stat"><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.sizeDistribution.median))}</strong><span>median gross changed lines per PR</span></article>
+        <article class="pr-audit-stat"><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.sizeDistribution.p75))}</strong><span>75th percentile gross changed lines</span></article>
+        <article class="pr-audit-stat"><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.totalChangedFiles))}</strong><span>changed-file touches across the corpus</span></article>
+        <article class="pr-audit-stat"><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.botAuthored))}</strong><span>bot-authored PRs retained, not hidden</span></article>
+      </div>
+      <details class="pr-audit-disclosure">
+        <summary>Six deterministic entry points <span><span class="expand-label">Expand PR evidence</span><span class="collapse-label">Collapse PR evidence</span></span></summary>
+        <div class="pr-audit-disclosure-body">
+          <div class="pr-audit-samples">${operatingPullRequestAudit.sample.records.map(renderPullRequestAuditSample).join("\n")}</div>
+          <p class="pr-audit-method"><strong>Sampling rule:</strong> ${escapeHtml(operatingPullRequestAudit.sample.method)} Seed: <code>${escapeHtml(operatingPullRequestAudit.sample.seed)}</code>. The full corpus also retains ${escapeHtml(formatMetric(operatingPullRequestAudit.zeroGrossChangedLines))} records reporting zero gross changed lines and all automation or generated-file effects for independent reanalysis.</p>
+          <div class="card-actions">
+            <a class="card-action" href="/dogfood/agent-output-comparison-operating-data.json">Download all ${escapeAttr(formatMetric(operatingPullRequestAudit.totalPullRequests))} PR records</a>
+            <a class="card-action" href="/dogfood/parallel-runtime-paths.json">Open the audit projection</a>
+            <a class="card-action" href="https://github.com/kungfu-systems/site-libkungfu-dev/blob/main/scripts/render-site.mjs">Inspect the sampling implementation</a>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section aria-labelledby="dogfood-interpretations-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Interpret the signal</p>
+        <h2 id="dogfood-interpretations-heading">Two questions behind the public record.</h2>
+        <p>The evidence above is the shared input. These bounded first-party readings ask what it may mean without turning interpretation into qualification.</p>
+      </div>
+      <div class="dogfood-interpretations">
+        <article class="panel dogfood-interpretation" id="dogfood-interpretation-one-human">
+          <p class="eyebrow">One human × Agents</p>
+          <h2>How much public engineering can one accountable human carry through Agents?</h2>
+          <p>Two strict 30-day datasets separate the v4 bootstrap from a full Buildchain operating window, then compare one primary Kungfu account with the complete visible AX team.</p>
+          <p><strong>Boundary:</strong> The records show responsibility throughput, not labor hours, interchangeable features, quality, or maturity.</p>
+          <a class="card-action" href="${escapeAttr(dogfoodParallelRuntimePaths.url)}">Inspect the one-human output study</a>
+        </article>
+        <article class="panel dogfood-interpretation" id="dogfood-interpretation-bootstrap">
+          <p class="eyebrow">Organizational bootstrap</p>
+          <h2>What can one human organize when Agents execute most operational work?</h2>
+          <p>The fixed public sample separates mechanical activity, first-party attribution, and what the record cannot establish.</p>
+          <p><strong>Boundary:</strong> ${escapeHtml(dogfoodRelatedInterpretation.claimBoundary)}</p>
+          <a class="card-action" href="${escapeAttr(dogfoodRelatedInterpretation.url)}">Read ${escapeHtml(dogfoodRelatedInterpretation.label)}</a>
+        </article>
+      </div>
     </section>
 
     <section class="dogfood-history" aria-labelledby="dogfood-history-heading">
@@ -7885,6 +8515,312 @@ writeFile(
       </dl>
     </section>
     ${dogfoodLiveProjectionScript(dogfoodEvidence)}`,
+  }),
+);
+
+writeFile(
+  "dogfood/parallel-runtime-paths.json",
+  `${JSON.stringify(runtimeComparisonProjection, null, 2)}\n`,
+);
+writeFile("dogfood/agent-output-comparison-data.json", agentOutputComparisonBytes);
+writeFile("dogfood/agent-output-comparison-data.json.sha256", `${agentOutputComparisonSha256}  agent-output-comparison-data.json\n`);
+writeFile("dogfood/agent-output-comparison-operating-data.json", agentOutputOperatingBytes);
+writeFile("dogfood/agent-output-comparison-operating-data.json.sha256", `${agentOutputOperatingSha256}  agent-output-comparison-operating-data.json\n`);
+
+const axOutput = agentOutputComparison.subjects.ax;
+const kungfuOutput = agentOutputComparison.subjects.kungfu;
+const outputComparison = agentOutputComparison.comparison;
+const operatingAxOutput = agentOutputOperating.subjects.ax;
+const operatingKungfuOutput = agentOutputOperating.subjects.kungfu;
+const operatingComparison = agentOutputOperating.comparison;
+const bootstrapLeverage = outputComparison.publicAuthorLeverage;
+const operatingLeverage = operatingComparison.publicAuthorLeverage;
+const outputDays = [];
+for (
+  let cursor = new Date(agentOutputComparison.window.startInclusive);
+  cursor < new Date(agentOutputComparison.window.endExclusive);
+  cursor = new Date(cursor.getTime() + 86400000)
+) outputDays.push(cursor.toISOString().slice(0, 10));
+const axDaily = new Map(axOutput.summary.daily.map((entry) => [entry.name, entry.count]));
+const kungfuDaily = new Map(kungfuOutput.summary.daily.map((entry) => [entry.name, entry.count]));
+const maximumDailyOutput = Math.max(...kungfuDaily.values(), ...axDaily.values());
+const operatingDays = [];
+for (
+  let cursor = new Date(agentOutputOperating.window.startInclusive);
+  cursor < new Date(agentOutputOperating.window.endExclusive);
+  cursor = new Date(cursor.getTime() + 86400000)
+) operatingDays.push(cursor.toISOString().slice(0, 10));
+const operatingAxDaily = new Map(operatingAxOutput.summary.daily.map((entry) => [entry.name, entry.count]));
+const operatingKungfuDaily = new Map(operatingKungfuOutput.summary.daily.map((entry) => [entry.name, entry.count]));
+const maximumOperatingDailyOutput = Math.max(...operatingKungfuDaily.values(), ...operatingAxDaily.values());
+const numberFormat = new Intl.NumberFormat("en-US");
+const percentFormat = new Intl.NumberFormat("en-US", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const axOperatingAccountNames = operatingAxOutput.summary.authors.map((entry) => entry.name);
+const axBootstrapOnlyAccountNames = axOutput.summary.authors
+  .map((entry) => entry.name)
+  .filter((account) => !axOperatingAccountNames.includes(account));
+const axAccountAliases = new Map([...axOperatingAccountNames, ...axBootstrapOnlyAccountNames]
+  .map((account, index) => [account, `AX contributor account ${String.fromCharCode(65 + index)}`]));
+const axContributorAlias = (account) => axAccountAliases.get(account) || "AX contributor account";
+const changedLines = (subject) => subject.summary.totalAdditions + subject.summary.totalDeletions;
+const perActiveDay = (subject) => subject.summary.mergedPullRequests / subject.summary.activeMergeDays;
+const attributionEditorialTitles = new Map([
+  ["a20748de6117b627d8ad9e41551f53fe7fa9f5f2", "build(v4): bring up the ARM64 C++ core and modernize to Conan 2 + fmt 10"],
+]);
+const attributionCards = (subject, owner) => subject.developmentAttribution.byAgent.map((summary) => {
+  const entry = subject.developmentAttribution.records.find((record) => record.agent === summary.agent);
+  const editorialTitle = attributionEditorialTitles.get(entry.sha);
+  return `<article class="panel agent-proof">
+  <p class="eyebrow">${escapeHtml(owner)} · ${escapeHtml(summary.agent)} · ${escapeHtml(numberFormat.format(summary.commits))} explicit commits</p>
+  <h3><a href="${escapeAttr(entry.url)}">${escapeHtml(editorialTitle || entry.title)}</a></h3>
+  ${editorialTitle ? '<p class="editorial-translation-note">English translation of the original commit title; the source record remains unchanged.</p>' : ""}
+  <blockquote>${escapeHtml(entry.marker)}</blockquote>
+  <p>${escapeHtml(entry.sha.slice(0, 10))} · ${escapeHtml(entry.observedAt.slice(0, 10))} · ${escapeHtml(entry.markerType.replaceAll("-", " "))}</p>
+</article>`;
+}).join("\n");
+
+writeFile(
+  "dogfood/parallel-runtime-paths/index.html",
+  page({
+    title: `${runtimeComparison.title} | ${site.title}`,
+    description: runtimeComparison.lead,
+    current: "hub",
+    alternates: `  <link rel="alternate" type="application/json" title="Google AX and Kungfu v4 bounded comparison" href="/dogfood/parallel-runtime-paths.json">`,
+    body: `${runtimeComparisonStyles}
+    <section class="output-hero" aria-labelledby="runtime-comparison-title">
+      <div class="output-hero-copy">
+        <p class="eyebrow page-kicker"><a href="/dogfood/" aria-label="Back to Kungfu dogfood evidence">Back to public dogfood</a><span class="page-kicker-state">two fixed P30D observations / collected ${escapeHtml(agentOutputOperating.collectedAt.slice(0, 10))}</span></p>
+        <h1 id="runtime-comparison-title">${escapeHtml(runtimeComparison.title)}</h1>
+        <p class="lead">${escapeHtml(runtimeComparison.lead)}</p>
+        <p>${escapeHtml(runtimeComparison.premise)}</p>
+        <div class="card-actions">
+          <a class="card-action" href="/dogfood/agent-output-comparison-data.json">Download bootstrap records</a>
+          <a class="card-action" href="/dogfood/agent-output-comparison-operating-data.json">Download operating records</a>
+          <a class="card-action" href="/dogfood/#pr-audit">Audit PR size and deterministic samples</a>
+          <a class="card-action" href="/dogfood/parallel-runtime-paths.json">Open analysis JSON</a>
+        </div>
+      </div>
+      <div class="output-ratio" aria-label="One primary Kungfu account carried approximately ${escapeAttr(Math.round(operatingLeverage.ratios.kungfuPrimaryToAxAllAuthorsCombined.mergedPullRequests))} times as many merged public pull requests as the complete visible AX team">
+        <strong>${escapeHtml(numberFormat.format(Math.round(operatingLeverage.ratios.kungfuPrimaryToAxAllAuthorsCombined.mergedPullRequests)))}×</strong>
+        <span>merged public PRs · one primary Kungfu account versus all ${escapeHtml(operatingAxOutput.summary.authorAccounts)} visible AX accounts combined</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="bootstrap-phase-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Why the first chart looked empty</p>
+        <h2 id="bootstrap-phase-heading">Engineering started on June 16. PR-mediated settlement started later.</h2>
+        <p>The first window must preserve both facts. Counting only merged PRs makes the bootstrap work disappear, even though the public default branch records sustained activity.</p>
+      </div>
+      <div class="scale-checks">
+        <article class="scale-check"><strong>Jun 16</strong><span>first public Kungfu v4 commit</span></article>
+        <article class="scale-check"><strong>${escapeHtml(agentOutputComparison.bootstrapCommitPhase.commits)}</strong><span>default-branch commits before June 29</span></article>
+        <article class="scale-check"><strong>${escapeHtml(agentOutputComparison.bootstrapCommitPhase.explicitClaudeAuthoredCommits)}</strong><span>explicitly authored by Claude (Code)</span></article>
+        <article class="scale-check"><strong>Jun 29</strong><span>Buildchain repository and systematic PR settlement begin</span></article>
+      </div>
+    </section>
+
+    <section class="common-ground" aria-labelledby="common-ground-heading">
+      <div>
+        <p class="eyebrow">Brief technical background</p>
+        <h2 id="common-ground-heading">${escapeHtml(runtimeComparison.technicalBackground.heading)}</h2>
+        <p>${escapeHtml(runtimeComparison.technicalBackground.body)}</p>
+        <p class="source-note">Sources: ${renderRuntimeComparisonSourceLinks(runtimeComparison.technicalBackground.sourceRefs)}</p>
+      </div>
+      <ul class="common-ground-points">
+        ${runtimeComparison.technicalBackground.points.map((point) => `<li>${escapeHtml(point)}</li>`).join("\n")}
+      </ul>
+    </section>
+
+    <section aria-labelledby="organization-heading">
+      <div class="section-heading">
+        <p class="eyebrow">The comparison unit</p>
+        <h2 id="organization-heading">Two real organization forms, kept intact.</h2>
+        <p>Reducing Kungfu to one repository would remove the release, protocol, build-image, site, and publication work that the same human-Agent system actually had to carry.</p>
+      </div>
+      <div class="organization-grid">
+        <article class="panel organization-card">
+          <p class="eyebrow">Google AX</p><h3>${escapeHtml(runtimeComparison.organizationFrame.ax.label)}</h3>
+          <p>${escapeHtml(runtimeComparison.organizationFrame.ax.body)}</p>
+          <p class="observed-label">Observed: ${escapeHtml(axOutput.summary.authorAccounts)} author accounts in bootstrap · ${escapeHtml(operatingAxOutput.summary.authorAccounts)} in operating window</p>
+        </article>
+        <article class="panel organization-card">
+          <p class="eyebrow">Kungfu Systems</p><h3>${escapeHtml(runtimeComparison.organizationFrame.kungfu.label)}</h3>
+          <p>${escapeHtml(runtimeComparison.organizationFrame.kungfu.body)}</p>
+          <p class="observed-label">Operating window: ${escapeHtml(operatingKungfuOutput.summary.activeRepositories)} repositories · ${escapeHtml(percentFormat.format(operatingComparison.kungfuPrimaryAuthor.share))} from dongkeren</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="scoreboard-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Window 1 · v4 bootstrap · strict P30D</p>
+        <h2 id="scoreboard-heading">2026-06-16 00:00 UTC → 2026-07-16 00:00 UTC</h2>
+        <p>This window contains two Kungfu operating modes, so its merged-PR ratio is a conservative whole-period observation rather than a steady-state productivity measure. AX remained continuously active: ${escapeHtml(axOutput.defaultBranchActivity.commits)} main-branch commits across ${escapeHtml(axOutput.defaultBranchActivity.activeDays)} days.</p>
+      </div>
+      <div class="output-scoreboard">
+        <article class="panel output-subject">
+          <p class="eyebrow">Google AX · single repository</p>
+          <div class="subject-primary-number"><strong>${escapeHtml(numberFormat.format(axOutput.summary.mergedPullRequests))}</strong><span>merged public PRs</span></div>
+          <dl class="subject-metrics">
+            <div><dt>PR author accounts</dt><dd>${escapeHtml(axOutput.summary.authorAccounts)}</dd></div>
+            <div><dt>Active merge days</dt><dd>${escapeHtml(axOutput.summary.activeMergeDays)}</dd></div>
+            <div><dt>Gross changed lines</dt><dd>${escapeHtml(numberFormat.format(changedLines(axOutput)))}</dd></div>
+            <div><dt>Changed files</dt><dd>${escapeHtml(numberFormat.format(axOutput.summary.totalChangedFiles))}</dd></div>
+            <div><dt>Median changed lines / PR</dt><dd>${escapeHtml(numberFormat.format(axOutput.summary.changeSize.median))}</dd></div>
+            <div><dt>PRs / active merge day</dt><dd>${escapeHtml(perActiveDay(axOutput).toFixed(1))}</dd></div>
+          </dl>
+        </article>
+        <article class="panel output-subject">
+          <p class="eyebrow">Kungfu Systems · complete public system</p>
+          <div class="subject-primary-number"><strong>${escapeHtml(numberFormat.format(kungfuOutput.summary.mergedPullRequests))}</strong><span>merged public PRs</span></div>
+          <dl class="subject-metrics">
+            <div><dt>Active repositories</dt><dd>${escapeHtml(kungfuOutput.summary.activeRepositories)}</dd></div>
+            <div><dt>Active merge days</dt><dd>${escapeHtml(kungfuOutput.summary.activeMergeDays)}</dd></div>
+            <div><dt>Gross changed lines</dt><dd>${escapeHtml(numberFormat.format(changedLines(kungfuOutput)))}</dd></div>
+            <div><dt>Changed files</dt><dd>${escapeHtml(numberFormat.format(kungfuOutput.summary.totalChangedFiles))}</dd></div>
+            <div><dt>Median changed lines / PR</dt><dd>${escapeHtml(numberFormat.format(kungfuOutput.summary.changeSize.median))}</dd></div>
+            <div><dt>PRs / active merge day</dt><dd>${escapeHtml(perActiveDay(kungfuOutput).toFixed(1))}</dd></div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="operating-scoreboard-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Window 2 · Buildchain operating · strict P30D</p>
+        <h2 id="operating-scoreboard-heading">2026-07-02 00:00 UTC → 2026-08-01 00:00 UTC</h2>
+        <p>This second window begins after Buildchain and PR-mediated settlement are already operating. Kungfu records merged work on every one of the 30 calendar days.</p>
+      </div>
+      <div class="output-scoreboard">
+        <article class="panel output-subject">
+          <p class="eyebrow">Google AX · complete visible team</p>
+          <div class="subject-primary-number"><strong>${escapeHtml(numberFormat.format(operatingAxOutput.summary.mergedPullRequests))}</strong><span>merged public PRs</span></div>
+          <dl class="subject-metrics">
+            <div><dt>PR author accounts</dt><dd>${escapeHtml(operatingAxOutput.summary.authorAccounts)}</dd></div>
+            <div><dt>Active merge days</dt><dd>${escapeHtml(operatingAxOutput.summary.activeMergeDays)}</dd></div>
+            <div><dt>Gross changed lines</dt><dd>${escapeHtml(numberFormat.format(changedLines(operatingAxOutput)))}</dd></div>
+            <div><dt>Changed-file touches</dt><dd>${escapeHtml(numberFormat.format(operatingAxOutput.summary.totalChangedFiles))}</dd></div>
+            <div><dt>Median changed lines / PR</dt><dd>${escapeHtml(numberFormat.format(operatingAxOutput.summary.changeSize.median))}</dd></div>
+            <div><dt>Active repositories</dt><dd>${escapeHtml(operatingAxOutput.summary.activeRepositories)}</dd></div>
+          </dl>
+        </article>
+        <article class="panel output-subject">
+          <p class="eyebrow">Kungfu Systems · complete public system</p>
+          <div class="subject-primary-number"><strong>${escapeHtml(numberFormat.format(operatingKungfuOutput.summary.mergedPullRequests))}</strong><span>merged public settlements</span></div>
+          <dl class="subject-metrics">
+            <div><dt>Primary accountable account</dt><dd>${escapeHtml(numberFormat.format(operatingLeverage.kungfuPrimary.mergedPullRequests))}</dd></div>
+            <div><dt>Active merge days</dt><dd>${escapeHtml(operatingKungfuOutput.summary.activeMergeDays)} / 30</dd></div>
+            <div><dt>Gross changed lines</dt><dd>${escapeHtml(numberFormat.format(changedLines(operatingKungfuOutput)))}</dd></div>
+            <div><dt>Changed-file touches</dt><dd>${escapeHtml(numberFormat.format(operatingKungfuOutput.summary.totalChangedFiles))}</dd></div>
+            <div><dt>Median changed lines / PR</dt><dd>${escapeHtml(numberFormat.format(operatingKungfuOutput.summary.changeSize.median))}</dd></div>
+            <div><dt>Active repositories</dt><dd>${escapeHtml(operatingKungfuOutput.summary.activeRepositories)}</dd></div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="scale-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Public output per accountable human</p>
+        <h2 id="scale-heading">Compare one primary Kungfu account with the complete visible AX team.</h2>
+        <p>This is stricter than comparing with an AX per-author average. It also avoids removing low-volume contributors: every AX author account in the operating window remains in the denominator.</p>
+      </div>
+      <div class="scale-checks">
+        <article class="scale-check"><strong>${escapeHtml(operatingLeverage.ratios.kungfuPrimaryToAxAllAuthorsCombined.mergedPullRequests)}×</strong><span>merged public PRs: one Kungfu account versus all ${escapeHtml(operatingLeverage.axAllAuthors.accounts.length)} AX accounts combined</span></article>
+        <article class="scale-check"><strong>${escapeHtml(numberFormat.format(operatingLeverage.kungfuPrimary.mergedPullRequests))}</strong><span>operating-window items under the primary Kungfu account</span></article>
+        <article class="scale-check"><strong>${escapeHtml(operatingLeverage.kungfuPrimary.medianChangedLinesPerPullRequest)} vs ${escapeHtml(operatingLeverage.axAllAuthors.combined.medianChangedLinesPerPullRequest)}</strong><span>median gross changed lines per item; the count gap is not explained by tiny Kungfu PRs</span></article>
+        <article class="scale-check"><strong>${escapeHtml(percentFormat.format(operatingComparison.kungfuPrimaryAuthor.share))}</strong><span>of Kungfu operating-window PRs under one primary account</span></article>
+      </div>
+      <p class="proof-boundary"><strong>Measurement boundary:</strong> Kungfu PRs are settlement objects while AX PRs follow a conventional contribution workflow. These ratios measure visible responsibility throughput, not interchangeable features, labor hours, or code quality. Gross line and file totals remain in the raw dataset as stress tests, not as the headline efficiency coefficient.</p>
+    </section>
+
+    <section aria-labelledby="daily-heading">
+      <div class="section-heading"><p class="eyebrow">Bootstrap-window merged PRs</p><h2 id="daily-heading">The empty first half is a workflow boundary, not an absence of work.</h2><p>The 99 pre-Buildchain commits above are intentionally not converted into synthetic PRs. The chart changes only when public PR settlement actually begins.</p></div>
+      <div class="daily-legend"><span class="ax-key">Google AX</span><span>Kungfu Systems</span><span>Bars use one shared linear scale.</span></div>
+      <div class="daily-output">
+        ${outputDays.map((day) => {
+          const axCount = axDaily.get(day) || 0;
+          const kungfuCount = kungfuDaily.get(day) || 0;
+          return `<div class="daily-row"><span class="daily-label">${escapeHtml(day.slice(5))}</span><span class="daily-track ax"><span style="width:${escapeAttr((axCount / maximumDailyOutput) * 100)}%"></span></span><span class="daily-value">${escapeHtml(axCount)}</span><span class="daily-track kungfu"><span style="width:${escapeAttr((kungfuCount / maximumDailyOutput) * 100)}%"></span></span><span class="daily-value">${escapeHtml(kungfuCount)}</span></div>`;
+        }).join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="operating-daily-heading">
+      <div class="section-heading"><p class="eyebrow">Buildchain operating-window merged work</p><h2 id="operating-daily-heading">Kungfu sustains public settlement on all 30 days.</h2><p>The same linear scale is used for AX and Kungfu within this window. This chart shows operating regularity; it does not claim that one PR has identical semantics across the two systems.</p></div>
+      <div class="daily-legend"><span class="ax-key">Google AX</span><span>Kungfu Systems</span><span>Bars use one shared linear scale.</span></div>
+      <div class="daily-output">
+        ${operatingDays.map((day) => {
+          const axCount = operatingAxDaily.get(day) || 0;
+          const kungfuCount = operatingKungfuDaily.get(day) || 0;
+          return `<div class="daily-row"><span class="daily-label">${escapeHtml(day.slice(5))}</span><span class="daily-track ax"><span style="width:${escapeAttr((axCount / maximumOperatingDailyOutput) * 100)}%"></span></span><span class="daily-value">${escapeHtml(axCount)}</span><span class="daily-track kungfu"><span style="width:${escapeAttr((kungfuCount / maximumOperatingDailyOutput) * 100)}%"></span></span><span class="daily-value">${escapeHtml(kungfuCount)}</span></div>`;
+        }).join("\n")}
+      </div>
+    </section>
+
+    <section aria-labelledby="distribution-heading">
+      <div class="section-heading"><p class="eyebrow">Operating-window organization shape</p><h2 id="distribution-heading">Four AX contributor accounts. One dominant Kungfu account across sixteen repositories.</h2><p>AX contributor identities are pseudonymized here because the comparison concerns organization form, not individual performance.</p></div>
+      <div class="distribution-grid">
+        <article class="panel"><h3>Kungfu repository distribution</h3><ul class="distribution-list">${operatingKungfuOutput.summary.repositories.map((entry) => `<li><span>${escapeHtml(entry.name)}</span><strong>${escapeHtml(numberFormat.format(entry.count))}</strong></li>`).join("\n")}</ul></article>
+        <div class="stack">
+          <article class="panel"><h3>Google AX contributor accounts</h3><ul class="distribution-list">${operatingAxOutput.summary.authors.map((entry) => `<li><span>${escapeHtml(axContributorAlias(entry.name))}</span><strong>${escapeHtml(entry.count)}</strong></li>`).join("\n")}</ul><p class="identity-boundary">Aliases follow merged PR rank in the operating window; accounts seen only in the bootstrap window are appended. Ties are resolved lexically. Public usernames remain in the downloadable records for reproducibility.</p></article>
+          <article class="panel"><h3>Kungfu PR authors</h3><ul class="distribution-list">${operatingKungfuOutput.summary.authors.map((entry) => `<li><span>${escapeHtml(entry.name)}</span><strong>${escapeHtml(numberFormat.format(entry.count))}</strong></li>`).join("\n")}</ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="agent-proof-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Explicit development attribution</p>
+        <h2 id="agent-proof-heading">Gemini on AX. Codex, Claude Code, Cursor, and Amp on Kungfu.</h2>
+        <p>This evidence comes from commit provenance, not from product copy mentioning an Agent. AX records ${escapeHtml(numberFormat.format(operatingAxOutput.developmentAttribution.explicitlyAttributedCommits))} default-branch commits explicitly co-authored by Gemini Code Assist before the comparison cutoff. Kungfu's public v4 branch records ${escapeHtml(numberFormat.format(operatingKungfuOutput.developmentAttribution.explicitlyAttributedCommits))} unique explicitly attributed commits from June 16 through August 1.</p>
+      </div>
+      <div class="agent-proof-grid">${attributionCards(operatingAxOutput, "Google AX")}${attributionCards(operatingKungfuOutput, "Kungfu")}</div>
+      <p class="proof-boundary"><strong>Evidence boundary:</strong> AX's cited Gemini commits are repository-history evidence outside the two numeric windows. Kungfu's attribution census spans the v4 bootstrap and operating observations. These markers establish some Agent participation, not autonomous authorship of every change or Agent use as the sole cause of the output gap.</p>
+    </section>
+
+    <section class="panel runtime-interpretation" aria-labelledby="runtime-interpretation-heading">
+      <p class="eyebrow">First-party interpretation</p>
+      <h2 id="runtime-interpretation-heading">${escapeHtml(runtimeComparison.interpretation.heading)}</h2>
+      <p>${escapeHtml(runtimeComparison.interpretation.body)}</p>
+    </section>
+
+    <section aria-labelledby="method-heading">
+      <div class="section-heading"><p class="eyebrow">Reproduce before believing</p><h2 id="method-heading">The conclusion is downstream of the records.</h2></div>
+      <div class="method-grid">
+        <article class="panel"><h3>1. Two strict P30D windows</h3><p><code>${escapeHtml(agentOutputComparison.window.githubQualifier)}</code><br><code>${escapeHtml(agentOutputOperating.window.githubQualifier)}</code></p></article>
+        <article class="panel"><h3>2. Complete scopes</h3><p><code>repo:google/ax</code><br><code>org:kungfu-systems is:public</code></p></article>
+        <article class="panel"><h3>3. Full records</h3><p>PR metadata, bodies, authors, timestamps, additions, deletions, and changed-file counts.</p></article>
+        <article class="panel"><h3>4. Coverage check</h3><p>Per-repository records must equal independent GitHub Search totals; 1,000-result scopes are split by day.</p></article>
+        <article class="panel"><h3>5. Public collector</h3><p><code>node scripts/collect-agent-output-comparison.mjs --window bootstrap</code><br><code>--window operating</code></p></article>
+        <article class="panel"><h3>6. Immutable digests</h3><p><code>bootstrap:${escapeHtml(agentOutputComparisonSha256)}</code><br><code>operating:${escapeHtml(agentOutputOperatingSha256)}</code></p></article>
+      </div>
+      <div class="card-actions">
+        <a class="card-action" href="/dogfood/agent-output-comparison-data.json">Download bootstrap records</a>
+        <a class="card-action" href="/dogfood/agent-output-comparison-operating-data.json">Download operating records</a>
+        <a class="card-action" href="https://github.com/kungfu-systems/site-libkungfu-dev/blob/main/scripts/collect-agent-output-comparison.mjs">Read collector source</a>
+        <a class="card-action" href="/dogfood/agent-output-comparison-data.json.sha256">Verify SHA-256</a>
+        <a class="card-action" href="/dogfood/agent-output-comparison-operating-data.json.sha256">Verify operating SHA-256</a>
+      </div>
+    </section>
+
+    <section class="panel warning" aria-labelledby="runtime-boundaries-heading">
+      <p class="eyebrow">Comparison boundaries</p>
+      <h2 id="runtime-boundaries-heading">What the public data does not prove</h2>
+      <ul>${agentOutputComparison.boundaries.map((boundary) => `<li>${escapeHtml(boundary)}</li>`).join("\n")}</ul>
+    </section>
+
+    <section class="panel" aria-labelledby="runtime-sources-heading">
+      <p class="eyebrow">Exact public sources</p>
+      <h2 id="runtime-sources-heading">Read both projects at the cited cuts.</h2>
+      <ul class="runtime-source-list">
+        ${runtimeComparisonProjection.sources.map((source) => `<li>
+          <strong><a href="${escapeAttr(runtimeComparisonSourceHref(source.id))}">${escapeHtml(source.id)}</a></strong>
+          <span>${escapeHtml(source.kind)} · <code>${escapeHtml(source.ref || source.url)}</code>${source.sha256 ? ` · <code>sha256:${escapeHtml(source.sha256)}</code>` : ""}</span>
+        </li>`).join("\n")}
+      </ul>
+    </section>`,
   }),
 );
 
@@ -9567,6 +10503,38 @@ const manifest = {
       sha256: dogfoodEvidenceSource.sha256,
     },
     {
+      path: "/dogfood/parallel-runtime-paths/",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-runtime-comparison.json",
+    },
+    {
+      path: "/dogfood/parallel-runtime-paths.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-runtime-comparison.json",
+    },
+    {
+      path: "/dogfood/agent-output-comparison-data.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-output-comparison.snapshot.json",
+      sha256: agentOutputComparisonSha256,
+    },
+    {
+      path: "/dogfood/agent-output-comparison-data.json.sha256",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-output-comparison.snapshot.json.sha256",
+    },
+    {
+      path: "/dogfood/agent-output-comparison-operating-data.json",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-output-comparison-operating.snapshot.json",
+      sha256: agentOutputOperatingSha256,
+    },
+    {
+      path: "/dogfood/agent-output-comparison-operating-data.json.sha256",
+      host: surfaceCanonicalHost("hub"),
+      source: "src/fixtures/agent-output-comparison-operating.snapshot.json.sha256",
+    },
+    {
       path: "/runtime.json",
       host: surfaceCanonicalHost("hub"),
       source: "src/fixtures/libkungfu-runtime-surface.json",
@@ -10290,6 +11258,7 @@ Primary pages:
 - ${surfaceCanonicalHref("hub")}
 - ${surfaceEndpointHref("hub", "architecture/")} (complete continuity architecture)
 - ${surfaceEndpointHref("hub", "dogfood/")}
+- ${surfaceEndpointHref("hub", "dogfood/parallel-runtime-paths/")} (fixed-window Google AX and Kungfu public-output comparison)
 - ${surfaceCanonicalHref("kfx")} (KFX developer architecture and capability map)
 - ${surfaceCanonicalHref("skills")} (Skills source facts, Agent guidance, future picture, and non-claims)
 - ${surfaceCanonicalHref("core")}
@@ -10306,6 +11275,11 @@ Machine entries:
 - ${surfaceEndpointHref("hub", "runtime.json")}
 - ${surfaceEndpointHref("hub", "agent-supply-chain.json")}
 - ${surfaceEndpointHref("hub", "dogfood-evidence.json")}
+- ${surfaceEndpointHref("hub", "dogfood/parallel-runtime-paths.json")}
+- ${surfaceEndpointHref("hub", "dogfood/agent-output-comparison-data.json")}
+- ${surfaceEndpointHref("hub", "dogfood/agent-output-comparison-data.json.sha256")}
+- ${surfaceEndpointHref("hub", "dogfood/agent-output-comparison-operating-data.json")}
+- ${surfaceEndpointHref("hub", "dogfood/agent-output-comparison-operating-data.json.sha256")}
 - ${surfaceEndpointHref("hub", "llms.txt")}
 - ${surfaceEndpointHref("hub", "llms-full.txt")}
 - ${surfaceEndpointHref("kfx", "manifest.json")}

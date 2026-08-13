@@ -1,0 +1,77 @@
+{
+  "contract": "libkungfu-dev-agent-output-comparison-editorial/v1",
+  "asOf": "2026-08-12",
+  "status": "bounded-first-party-analysis",
+  "claimClass": "site-synthesis",
+  "title": "One human. Agents. Two thirty-day windows.",
+  "lead": "Google AX provides a professional multi-contributor Agent-runtime baseline. Kungfu provides two observable operating states: a v4 bootstrap before standardized settlement, and a full Buildchain operating window.",
+  "premise": "The central question is not whether one project opened more pull requests. It is how much public engineering surface one accountable human could carry through Agents, and whether that capacity changed when delivery responsibility became systematic.",
+  "sourceRefs": [
+    "google-ax-v0.1.0-release",
+    "google-ax-runtime-readme",
+    "kungfu-v4-first-build",
+    "kungfu-evolution-timeline",
+    "kungfu-current-readme"
+  ],
+  "sourceAuthorities": [
+    {
+      "id": "google-ax-v0.1.0-release",
+      "repository": "https://github.com/google/ax",
+      "ref": "8946475c236a7ce30e81b47393937ae1b1855eed",
+      "path": "README.md",
+      "sha256": "0ec2759bf3021cd7fb659ecc0582e8b7001a9418923330b28d47240934b61066"
+    },
+    {
+      "id": "google-ax-runtime-readme",
+      "repository": "https://github.com/google/ax",
+      "ref": "8ee3b7d734264b6e3c86b1afe63b08ba7f851284",
+      "path": "README.md",
+      "sha256": "512f605ecbf92346d79f3c4e6b4b48821abb6b01b3f5a875f86a6da28b176db1"
+    },
+    {
+      "id": "kungfu-v4-first-build",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "a20748de6117b627d8ad9e41551f53fe7fa9f5f2",
+      "path": "framework/core/.v4/README.md",
+      "sha256": "89733b0cbc7ff5befca1bbc1938dfc96054e08c850514e97c9f92f7dbb296be3"
+    },
+    {
+      "id": "kungfu-evolution-timeline",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "445b2fd84ec7f613ccbfc3d5f06980a3b07f0690",
+      "path": "docs/evolution/timeline.md",
+      "sha256": "134837a0aa6b49a92d22c015a7fdd1c1618c8e2816403710f6814ee42f92c4c6"
+    },
+    {
+      "id": "kungfu-current-readme",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "445b2fd84ec7f613ccbfc3d5f06980a3b07f0690",
+      "path": "README.md",
+      "sha256": "5324b9578d391bb452ee4e31d6302691fd706508886e3086bba4fac95a31834a"
+    }
+  ],
+  "technicalBackground": {
+    "heading": "Why these two projects belong in the same frame",
+    "body": "Both are infrastructure for Agent execution that must outlive one prompt or process. Both make durable state, recovery, resumability, and inspection part of the runtime rather than an afterthought. They are not equivalent products, but their goals are sufficiently isomorphic to make the organizational contrast meaningful.",
+    "points": [
+      "Durable state below transient model context",
+      "Recovery and continuation as normal runtime behavior",
+      "Inspectable execution history and explicit consistency boundaries"
+    ],
+    "sourceRefs": ["google-ax-runtime-readme", "kungfu-current-readme"]
+  },
+  "organizationFrame": {
+    "ax": {
+      "label": "Multi-contributor, single repository",
+      "body": "The public windows contain five PR author accounts working in google/ax. Its three leading accounts carry most of the visible change, giving the comparison a strong, non-tail baseline."
+    },
+    "kungfu": {
+      "label": "One human, Agents, multiple repositories",
+      "body": "Keren declares product direction and engineering boundaries; Agents carry most implementation, testing, and integration work. One primary account remains responsible for more than 96% of the observed merged work across the public system."
+    }
+  },
+  "interpretation": {
+    "heading": "The anomaly is human leverage, not pull-request volume alone.",
+    "body": "The public record does not prove labor productivity, feature value, or that Agent mediation alone caused the gap. It does show one accountable human carrying a radically larger visible engineering surface than the leading public contributors of a professional Agent-runtime project, with a second fixed window exposing the level sustained after Buildchain became operational."
+  }
+}

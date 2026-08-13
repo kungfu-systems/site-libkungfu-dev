@@ -11,6 +11,12 @@
       "url": "https://kungfu.tech/about/bootstrapping/evidence/",
       "relationship": "bounded-first-party-interpretation",
       "claimBoundary": "This interpretation is not additional qualification evidence."
+    },
+    "parallelRuntimePaths": {
+      "label": "One Month, Two Forms of Agent Engineering",
+      "url": "/dogfood/parallel-runtime-paths/",
+      "relationship": "bounded-first-party-comparison",
+      "claimBoundary": "The observed gap is not a feature, quality, maturity, or causal ranking."
     }
   },
   "homepage": {
@@ -162,6 +168,57 @@
         "ref": "1f3893fae1a7a666d8abe736cd9563128f48549b",
         "path": "docs/concepts/project-cut-product-loop.md",
         "sha256": "edc59fbaf5ecfc1417bb7296695345c7589c55899f737c07775a6b3e0216b6f4"
+      },
+      {
+        "id": "google-ax-v0.1.0-release",
+        "owner": "google/ax",
+        "kind": "git-document",
+        "repository": "https://github.com/google/ax",
+        "ref": "8946475c236a7ce30e81b47393937ae1b1855eed",
+        "path": "README.md",
+        "sha256": "0ec2759bf3021cd7fb659ecc0582e8b7001a9418923330b28d47240934b61066",
+        "tag": "v0.1.0",
+        "commit": "8946475c236a7ce30e81b47393937ae1b1855eed",
+        "publishedAt": "2026-05-20T00:12:05Z",
+        "url": "https://github.com/google/ax/releases/tag/v0.1.0"
+      },
+      {
+        "id": "google-ax-runtime-readme",
+        "owner": "google/ax",
+        "kind": "git-document",
+        "repository": "https://github.com/google/ax",
+        "ref": "8ee3b7d734264b6e3c86b1afe63b08ba7f851284",
+        "path": "README.md",
+        "sha256": "512f605ecbf92346d79f3c4e6b4b48821abb6b01b3f5a875f86a6da28b176db1"
+      },
+      {
+        "id": "kungfu-v4-first-build",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "a20748de6117b627d8ad9e41551f53fe7fa9f5f2",
+        "path": "framework/core/.v4/README.md",
+        "sha256": "89733b0cbc7ff5befca1bbc1938dfc96054e08c850514e97c9f92f7dbb296be3",
+        "committedAt": "2026-06-16T18:01:10+08:00",
+        "url": "https://github.com/kungfu-systems/kungfu/commit/a20748de6117b627d8ad9e41551f53fe7fa9f5f2"
+      },
+      {
+        "id": "kungfu-evolution-timeline",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "445b2fd84ec7f613ccbfc3d5f06980a3b07f0690",
+        "path": "docs/evolution/timeline.md",
+        "sha256": "134837a0aa6b49a92d22c015a7fdd1c1618c8e2816403710f6814ee42f92c4c6"
+      },
+      {
+        "id": "kungfu-current-readme",
+        "owner": "kungfu-systems/kungfu",
+        "kind": "git-document",
+        "repository": "https://github.com/kungfu-systems/kungfu",
+        "ref": "445b2fd84ec7f613ccbfc3d5f06980a3b07f0690",
+        "path": "README.md",
+        "sha256": "5324b9578d391bb452ee4e31d6302691fd706508886e3086bba4fac95a31834a"
       },
       {
         "id": "kungfu-site-bundle",
@@ -590,6 +647,21 @@
       "label": "Public dogfood evidence",
       "path": "/dogfood-evidence.json",
       "purpose": "Versioned 30-day GitHub work snapshot, retained Project Cut counts, real cases, reproduction queries, and counting boundaries."
+    },
+    {
+      "label": "Parallel Agent runtime comparison",
+      "path": "/dogfood/parallel-runtime-paths.json",
+      "purpose": "Fixed-window, source-bound analysis of public delivery across two Agent-runtime projects and two organization forms."
+    },
+    {
+      "label": "Agent output comparison records",
+      "path": "/dogfood/agent-output-comparison-data.json",
+      "purpose": "All normalized public pull-request records, bootstrap commit-phase evidence, author-leverage statistics, collection contract, and explicit non-claims for the v4 bootstrap P30D comparison."
+    },
+    {
+      "label": "Buildchain operating-window records",
+      "path": "/dogfood/agent-output-comparison-operating-data.json",
+      "purpose": "All normalized public pull-request records and author-leverage statistics for the strict P30D Buildchain operating window from 2026-07-02 through 2026-08-01 exclusive."
     },
     {
       "label": "Embeddable runtime projection",
