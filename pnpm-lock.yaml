@@ -12,8 +12,8 @@ importers:
         specifier: 3.0.6-alpha.0
         version: 3.0.6-alpha.0
       '@kungfu-tech/kfd':
-        specifier: 1.0.0-alpha.61
-        version: 1.0.0-alpha.61
+        specifier: 1.0.0-alpha.65
+        version: 1.0.0-alpha.65
       '@kungfu-tech/paper-episodes-to-primitives':
         specifier: 0.1.0-alpha.2
         version: 0.1.0-alpha.2
@@ -53,12 +53,21 @@ packages:
     engines: {node: '>=22.14.0'}
     hasBin: true
 
+  '@kungfu-tech/buildchain@3.0.9-alpha.11':
+    resolution: {integrity: sha512-4ZVP7dN9agJw2APN3CEjjstJcwPoOB9vLo4uDQxQmDfhAJwPlKHvDW31LcBICJgR+OfwVRtXNZsp1pvuHYzkiA==}
+    engines: {node: '>=22.14.0'}
+    hasBin: true
+
   '@kungfu-tech/kfd@1.0.0-alpha.47':
     resolution: {integrity: sha512-tFyFev5UKm2snujWB0FXwHkwLpKhWxmE16MPjn1zSyl0X/y7QTERG7oCL0TIBuMpKC20QnNi6r0oVKRawyQ7fA==}
     hasBin: true
 
-  '@kungfu-tech/kfd@1.0.0-alpha.61':
-    resolution: {integrity: sha512-ElG9hUOhpe3XbhaPzLF89j5pT0f4oBE5jVfLguLj/52/ae6b2Vrmg+TF1klLsDEfFnFMWkMx+JnTnXjORt3hZg==}
+  '@kungfu-tech/kfd@1.0.0-alpha.62':
+    resolution: {integrity: sha512-x5MgFZzphfOo3BiWH8zdyw0JcGGTxVZ5x/0Vzyv0xKOh4RvwVzdGW4kRffIgVQ6bWXCeZFkgz9d1iSlfcHcfMw==}
+    hasBin: true
+
+  '@kungfu-tech/kfd@1.0.0-alpha.65':
+    resolution: {integrity: sha512-GFrt8tE3shupQJVDIDq+4xEAmYYUmURdjn2wDKq4gkx3uCVOTn/4oDiJANxjrfpRP2CjxE0N2gYsetH+2pMWXw==}
     hasBin: true
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2':
@@ -91,12 +100,24 @@ packages:
   '@types/mdurl@2.0.0':
     resolution: {integrity: sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==}
 
+  ajv@8.20.0:
+    resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
+
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
   entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
+
+  fast-deep-equal@3.1.3:
+    resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
+
+  fast-uri@3.1.5:
+    resolution: {integrity: sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==}
+
+  json-schema-traverse@1.0.0:
+    resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
 
   linkify-it@5.0.2:
     resolution: {integrity: sha512-ONTm2jCMAVZjgQa/Fy1kScXsuOoF5NPTsoFBdE1KVIZ2vAh/r9+Bqo+0jINCBYnavTPQZz38QzFTme79ENoN3Q==}
@@ -118,6 +139,10 @@ packages:
     resolution: {integrity: sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA==}
     engines: {node: '>=6'}
 
+  require-from-string@2.0.2:
+    resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
+    engines: {node: '>=0.10.0'}
+
   smol-toml@1.7.0:
     resolution: {integrity: sha512-aqVvWoyO21L23mb+drl4RmMXbf6N7FdHjAhTRA9ZBL7apWBgfWC16KjrASI+1p9GAroljyMHj6fK67i0UiTNvQ==}
     engines: {node: '>= 18'}
@@ -132,9 +157,19 @@ snapshots:
       '@kungfu-tech/kfd': 1.0.0-alpha.47
       smol-toml: 1.7.0
 
+  '@kungfu-tech/buildchain@3.0.9-alpha.11':
+    dependencies:
+      '@kungfu-tech/kfd': 1.0.0-alpha.62
+      ajv: 8.20.0
+      smol-toml: 1.7.0
+
   '@kungfu-tech/kfd@1.0.0-alpha.47': {}
 
-  '@kungfu-tech/kfd@1.0.0-alpha.61': {}
+  '@kungfu-tech/kfd@1.0.0-alpha.62': {}
+
+  '@kungfu-tech/kfd@1.0.0-alpha.65':
+    dependencies:
+      '@kungfu-tech/buildchain': 3.0.9-alpha.11
 
   '@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2': {}
 
@@ -159,9 +194,22 @@ snapshots:
 
   '@types/mdurl@2.0.0': {}
 
+  ajv@8.20.0:
+    dependencies:
+      fast-deep-equal: 3.1.3
+      fast-uri: 3.1.5
+      json-schema-traverse: 1.0.0
+      require-from-string: 2.0.2
+
   argparse@2.0.1: {}
 
   entities@4.5.0: {}
+
+  fast-deep-equal@3.1.3: {}
+
+  fast-uri@3.1.5: {}
+
+  json-schema-traverse@1.0.0: {}
 
   linkify-it@5.0.2:
     dependencies:
@@ -184,6 +232,8 @@ snapshots:
   mdurl@2.0.0: {}
 
   punycode.js@2.3.1: {}
+
+  require-from-string@2.0.2: {}
 
   smol-toml@1.7.0: {}
 

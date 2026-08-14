@@ -5412,7 +5412,7 @@ function kfdIndependentImplementationPanel() {
         <pre class="kfd-command"><code>${escapeHtml(nativeCli.installCommand)}</code></pre>
         <button class="copy-command" type="button" data-copy-command aria-label="Copy native kfd install command">Copy command</button>
         <pre class="kfd-command"><code>${escapeHtml(nativeCli.versionCommand)}</code></pre>
-        <p>${inlineMarkdown(nativeCli.capabilityBoundary)}</p>
+        <p><strong>What you get.</strong> ${nativeCli.capabilities.map((capability) => `<code>${escapeHtml(capability)}</code>`).join(" and ")}. Use the npm workflow below for <code>scaffold</code> and <code>test</code>.</p>
         <a class="card-action secondary" href="${escapeAttr(nativeCli.docs.url)}">${escapeHtml(nativeCli.docs.label)} ↗</a>
       </div>
     </aside>
@@ -5429,11 +5429,6 @@ function kfdIndependentImplementationPanel() {
     <nav class="card-actions" aria-label="Independent implementation reading paths">
       ${contract.links.map((entry, index) => `<a class="card-action${index > 0 ? " secondary" : ""}" href="${escapeAttr(entry.url)}">${escapeHtml(entry.label)}</a>`).join("\n")}
     </nav>
-    <div class="kfd-boundaries" aria-label="Independent implementation claim boundaries">
-      <p><strong>Starter boundary.</strong> ${escapeHtml(contract.starterBoundary)}</p>
-      <p><strong>Offline boundary.</strong> ${escapeHtml(contract.offlineBoundary)}</p>
-      <p><strong>Claim boundary.</strong> ${inlineMarkdown(contract.claimBoundary)}</p>
-    </div>
   </section>`;
 }
 

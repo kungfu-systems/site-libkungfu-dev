@@ -1,5 +1,6 @@
 minimumReleaseAgeExclude:
   - "@kungfu-tech/buildchain@3.0.0 || 3.0.1-alpha.2 || 3.0.2-alpha.2 || 3.0.3 || 3.0.4 || 3.0.5-alpha.7 || 3.0.5-alpha.8 || 3.0.6-alpha.0"
+  - "@kungfu-tech/buildchain@3.0.9-alpha.11"
   - "@kungfu-tech/kfd@1.0.0-alpha.16 || 1.0.0-alpha.19 || 1.0.0-alpha.21 || 1.0.0-alpha.22 || 1.0.0-alpha.24 || 1.0.0-alpha.25 || 1.0.0-alpha.29 || 1.0.0-alpha.31 || 1.0.0-alpha.34 || 1.0.0-alpha.38 || 1.0.0-alpha.39 || 1.0.0-alpha.40 || 1.0.0-alpha.41 || 1.0.0-alpha.42 || 1.0.0-alpha.47 || 1.0.0-alpha.48 || 1.0.0-alpha.50"
   - "@kungfu-tech/kfd@1.0.0-alpha.50"
   - "@kungfu-tech/kfd@1.0.0-alpha.53"
@@ -9,6 +10,7 @@ minimumReleaseAgeExclude:
   - "@kungfu-tech/kfd@1.0.0-alpha.58"
   - "@kungfu-tech/kfd@1.0.0-alpha.59"
   - "@kungfu-tech/kfd@1.0.0-alpha.61"
+  - "@kungfu-tech/kfd@1.0.0-alpha.65"
   - "@kungfu-tech/paper-episodes-to-primitives@0.1.0-alpha.2"
   - "@kungfu-tech/paper-kfd-foundation-real-world-agent-work@0.1.0-alpha.1 || 0.1.0-alpha.3 || 0.1.0-alpha.6 || 0.1.0-alpha.7 || 0.1.0-alpha.8"
   - "@kungfu-tech/paper-kfd-machine-life-roadmap@0.1.0-alpha.2 || 0.1.0-alpha.4 || 0.1.0-alpha.5 || 0.1.0-alpha.6 || 0.1.0-alpha.11"

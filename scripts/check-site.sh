@@ -2837,19 +2837,15 @@ for (const step of kfdIndependentImplementation.steps) {
 if ((kfdHomeHtml.match(/<button[^>]+data-copy-command/g) || []).length !== 4) {
   throw new Error("KFD independent path must expose one native install copy control plus the three package-owned workflow commands");
 }
-const claimBoundaryText = kfdIndependentImplementation.claimBoundary.split(" [", 1)[0];
 if (
-  !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.starterBoundary))
-  || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.offlineBoundary))
-  || !kfdHomeHtml.includes(escapeHtml(claimBoundaryText))
-  || !kfdLlms.includes(kfdIndependentImplementation.starterBoundary)
+  !kfdLlms.includes(kfdIndependentImplementation.starterBoundary)
   || !kfdLlms.includes(kfdIndependentImplementation.offlineBoundary)
   || !kfdLlms.includes(kfdIndependentImplementation.claimBoundary)
   || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.installCommand)
   || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.versionCommand)
   || !kfdLlms.includes(kfdIndependentImplementation.nativeCli.capabilityBoundary)
 ) {
-  throw new Error("KFD human and machine entries must retain all independent implementation boundaries");
+  throw new Error("KFD machine entry must retain the complete independent implementation boundaries");
 }
 const visibleWordCount = (html) => html
   .replace(/<style[\s\S]*?<\/style>/gi, " ")
