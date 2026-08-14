@@ -14,6 +14,7 @@
     "check:paper-propagation": "node scripts/check-paper-propagation.cjs",
     "site:update": "node scripts/site-upstream-agent.cjs",
     "upstream:pickup": "node scripts/code-upstream-pickup.cjs",
+    "installer:refresh": "node scripts/refresh-installer-catalog.mjs",
     "render": "node scripts/render-site.mjs"
   },
   "dependencies": {

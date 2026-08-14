@@ -4,6 +4,13 @@
   "catalogVersion": "1",
   "scope": "posix-shell",
   "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
+  "refresh": {
+    "mode": "explicit-exact-release",
+    "command": "pnpm run installer:refresh -- product@version --write",
+    "source": "github-release",
+    "movingSelectorsAllowed": false,
+    "retention": "append-only-versions"
+  },
   "homebrew": {
     "repository": "https://github.com/kungfu-systems/homebrew-tap",
     "products": [

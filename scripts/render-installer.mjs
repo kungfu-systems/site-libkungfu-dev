@@ -44,6 +44,14 @@ export function validateCatalog(catalog) {
   if (catalog.schemaVersion !== 1 || catalog.scope !== "posix-shell") {
     throw new Error("unsupported installer catalog scope");
   }
+  if (
+    catalog.refresh?.mode !== "explicit-exact-release"
+    || catalog.refresh?.source !== "github-release"
+    || catalog.refresh?.movingSelectorsAllowed !== false
+    || catalog.refresh?.retention !== "append-only-versions"
+  ) {
+    throw new Error("installer catalog must retain the reviewed exact-release refresh policy");
+  }
   if (!Array.isArray(catalog.products) || catalog.products.length !== productIds.length) {
     throw new Error("installer catalog must contain exactly four products");
   }
@@ -209,7 +217,7 @@ export function renderInstaller({ catalog, catalogBytes, template }) {
 }
 
 export function writeInstallerPublication({ root = repoRoot } = {}) {
-  const catalogPath = path.join(root, "src", "fixtures", "installer-catalog.json");
+  const catalogPath = path.join(root, "src", "install", "installer-catalog.json");
   const templatePath = path.join(root, "src", "installers", "install.sh.in");
   const catalogBytes = fs.readFileSync(catalogPath);
   const catalog = JSON.parse(catalogBytes.toString("utf8"));

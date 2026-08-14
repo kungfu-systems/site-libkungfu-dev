@@ -4655,7 +4655,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 const site = readFixtureJson("site-manifest.json");
 const kfxSite = readFixtureJson("kfx-site.json");
 const skillsSite = readFixtureJson("skills-site.json");
-const installerCatalog = readFixtureJson("installer-catalog.json");
+const installerCatalog = readJsonFile(path.join(repoRoot, "src", "install", "installer-catalog.json"));
 const installerPublication = readJsonFile(path.join(distDir, "install", "v1", "manifest.json"));
 const coreSiteApi = require("@kungfu-tech/site");
 const coreBundleVerification = coreSiteApi.verifyBundle();
@@ -5064,6 +5064,7 @@ const surfaceTimestampPolicy = createSurfaceTimestampPolicy({
     "scripts/render-site.mjs",
     "scripts/publication-packages.cjs",
     "src/fixtures/*.json",
+    "src/install/installer-catalog.json",
     "src/publication-packages.json",
     "buildchain.upstreams/paper-*.release.json",
     "src/upstream-release-evidence/**/buildchain.release.json",
@@ -5725,6 +5726,7 @@ function renderInstallerGuide() {
     <p class="eyebrow">Install a native CLI · no coding required</p>
     <h1>One installer. Choose the product and version you need.</h1>
     <p class="lead">Install KFD, Buildchain, Kungfu, or Agent Hub Demo on supported macOS and Linux systems. Use the current reviewed release by default, select an exact historical version, or roll back a managed installation.</p>
+    <p><code>https://libkungfu.dev/install.sh</code> is the canonical public entry. Its one reviewed Site catalog projects exact product-owned GitHub Releases without becoming another release authority.</p>
     <div class="installer-hero-command" data-command-block>
       <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("all"))}</code></pre>
       <button class="copy-command" type="button" data-copy-command aria-label="Copy command to install all products">Copy command</button>
@@ -5766,7 +5768,7 @@ function renderInstallerGuide() {
       <li>The named upstream GitHub Release remains the authority for product identity, release bytes, provenance, and qualification.</li>
     </ul>
     <div class="card-actions">
-      <a class="card-action" href="${escapeAttr(surfaceEndpointHref("hub", "install/v1/catalog.json"))}" data-local-href="/install/v1/catalog.json">Inspect the reviewed catalog</a>
+      <a class="card-action" href="${escapeAttr(surfaceEndpointHref("hub", "install/v1/catalog.json"))}" data-local-href="/install/v1/catalog.json">Inspect the canonical Site catalog</a>
       <a class="card-action secondary" href="${escapeAttr(surfaceEndpointHref("hub", "install/v1/manifest.json"))}" data-local-href="/install/v1/manifest.json">Inspect publication integrity</a>
     </div>
   </section>`;
@@ -10875,13 +10877,13 @@ const manifest = {
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     { path: "/architecture/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
-    { path: "/install/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/installer-catalog.json" },
+    { path: "/install/", host: surfaceCanonicalHost("hub"), source: "src/install/installer-catalog.json" },
     ...[
       ["/install.sh", "src/installers/install.sh.in"],
-      ["/install/v1/manifest.json", "src/fixtures/installer-catalog.json"],
-      ["/install/v1/catalog.json", "src/fixtures/installer-catalog.json"],
+      ["/install/v1/manifest.json", "src/install/installer-catalog.json"],
+      ["/install/v1/catalog.json", "src/install/installer-catalog.json"],
       [new URL(installerPublication.installer.immutableUrl).pathname, "src/installers/install.sh.in"],
-      [new URL(installerPublication.catalog.immutableUrl).pathname, "src/fixtures/installer-catalog.json"],
+      [new URL(installerPublication.catalog.immutableUrl).pathname, "src/install/installer-catalog.json"],
     ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("hub"), source })),
     ...[
       ["/kfx/", "src/fixtures/kfx-site.json"],
