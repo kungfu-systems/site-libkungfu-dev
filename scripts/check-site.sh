@@ -13,7 +13,7 @@ node scripts/code-upstream-pickup.cjs check
 node scripts/site-upstream-agent.cjs check
 node scripts/check-kfx-surface.mjs
 node scripts/check-skills-surface.mjs
-node --test scripts/render-installer.test.mjs
+node --test scripts/render-installer.test.mjs scripts/refresh-installer-catalog.test.mjs
 node scripts/check-installer-surface.mjs
 
 pnpm exec buildchain badges readme --check
@@ -69,9 +69,11 @@ const requiredBaseFiles = [
   "src/fixtures/site-manifest.json",
   "src/fixtures/kfx-site.json",
   "src/fixtures/skills-site.json",
-  "src/fixtures/installer-catalog.json",
+  "src/install/installer-catalog.json",
   "src/installers/install.sh.in",
   "scripts/render-installer.mjs",
+  "scripts/refresh-installer-catalog.mjs",
+  "scripts/refresh-installer-catalog.test.mjs",
   "scripts/check-installer-surface.mjs",
   "src/fixtures/libkungfu-runtime-surface.json",
   "src/fixtures/dogfood-evidence.json",

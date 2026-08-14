@@ -8,7 +8,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative));
 const json = (relative) => JSON.parse(read(relative).toString("utf8"));
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 
-const sourceCatalog = read("src/fixtures/installer-catalog.json");
+const sourceCatalog = read("src/install/installer-catalog.json");
 const friendlyCatalog = read("dist/install/v1/catalog.json");
 const friendlyInstaller = read("dist/install.sh");
 const publication = json("dist/install/v1/manifest.json");
@@ -55,6 +55,9 @@ for (const route of ["/install/v1/manifest.json", "/install/v1/catalog.json"]) {
   assert.ok(siteManifest.machineEntries.some((entry) => entry.path === route), `machine entries missing ${route}`);
 }
 assert.deepEqual(siteManifest.installerPublication, publication);
+assert.equal(JSON.parse(sourceCatalog).refresh.mode, "explicit-exact-release");
+assert.equal(JSON.parse(sourceCatalog).refresh.source, "github-release");
+assert.equal(JSON.parse(sourceCatalog).refresh.movingSelectorsAllowed, false);
 
 for (const product of publication.products) {
   assert.ok(installPage.includes(`id="${product.id}"`), `install page missing ${product.id} card`);
@@ -71,6 +74,8 @@ for (const productId of ["kfd", "buildchain", "kungfu"]) {
   );
 }
 assert.ok(installPage.includes("Homebrew owns package-manager installation, upgrades, and removal"));
+assert.ok(installPage.includes("is the canonical public entry"));
+assert.ok(installPage.includes("one reviewed Site catalog projects exact product-owned GitHub Releases"));
 assert.ok(installPage.includes("--version 3.0.6"), "install page missing historical Buildchain example");
 assert.ok(installPage.includes("--rollback"), "install page missing rollback example");
 assert.ok(kfdPage.includes('data-local-href="/install/#kfd"'), "KFD page missing install guide card");

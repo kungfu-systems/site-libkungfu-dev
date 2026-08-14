@@ -149,6 +149,13 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
     catalogVersion: "test",
     scope: "posix-shell",
     authorityBoundary: "Fixture upstream assets remain authoritative.",
+    refresh: {
+      mode: "explicit-exact-release",
+      command: "pnpm run installer:refresh -- product@version --write",
+      source: "github-release",
+      movingSelectorsAllowed: false,
+      retention: "append-only-versions",
+    },
     homebrew: {
       repository: "https://github.com/kungfu-systems/homebrew-tap",
       products: ["kfd", "buildchain", "kungfu"].map((id) => ({
@@ -270,7 +277,7 @@ test("streamed help drains the installer without breaking its producer", async (
 });
 
 test("catalog rejects a second product set or an unpinned digest", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "fixtures", "installer-catalog.json"), "utf8"));
+  const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "install", "installer-catalog.json"), "utf8"));
   assert.equal(validateCatalog(catalog).length, 18);
   assert.throws(() => validateCatalog({ ...catalog, products: catalog.products.slice(1) }), /exactly four products/);
   const broken = structuredClone(catalog);

@@ -291,7 +291,7 @@ brew install kungfu-systems/tap/buildchain
 brew install kungfu-systems/tap/kungfu
 ```
 
-The reviewed source catalog is `src/fixtures/installer-catalog.json`. The build
+The single Site-maintained source catalog is `src/install/installer-catalog.json`. The build
 publishes matching friendly and content-addressed routes at
 `/install/v1/catalog.json`, `/install/v1/catalog/<sha256>.json`,
 `/install/v1/manifest.json`, and `/installers/v1/<sha256>/install.sh`. It records
@@ -299,6 +299,23 @@ the exact upstream product, version, platform, byte size, SHA-256, provenance
 URL, and release source SHA. The upstream GitHub Releases and Kungfu's signed
 installer publication remain the release authorities; this site does not
 create another release channel.
+
+One Site refresh can admit one or several exact product releases:
+
+```bash
+pnpm run installer:refresh -- kfd@1.0.0-alpha.65
+pnpm run installer:refresh -- kfd@1.0.0-alpha.65 kungfu@4.0.0-alpha.1 --write
+```
+
+The default mode is a read-only plan. `--write` verifies the exact GitHub
+Release assets and product-owned provenance metadata before changing the
+catalog, preserves every previously admitted version, and fails if an existing
+`product@version` resolves to different bytes. It never follows `latest` or
+mutates this repository from an upstream product release. After the reviewed
+catalog change, the normal protected Site release updates the canonical
+`https://libkungfu.dev/install.sh` and catalog routes together. Other web
+surfaces can link to or redirect to that entry without maintaining installation
+data of their own.
 
 Installations use user-owned, content-addressed roots and bounded symlink
 activation. The installer does not invoke `sudo`, edit shell startup files, or

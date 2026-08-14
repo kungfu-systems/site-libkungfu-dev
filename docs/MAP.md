@@ -118,11 +118,14 @@ must understand, while the depth page preserves the complete cited authority.
   It pins exact protected Kungfu documents, keeps partial implementation and
   known-limit boundaries visible, and drives the human page plus all four Agent
   endpoints without claiming a released Skill runtime.
-- `src/fixtures/installer-catalog.json` is the reviewed POSIX installation
+- `src/install/installer-catalog.json` is the single Site-maintained POSIX installation
   projection for KFD, Buildchain, Kungfu, and Agent Hub Demo. Upstream releases
   retain artifact and provenance authority; `scripts/render-installer.mjs`
   publishes `/install.sh`, `/install/v1/manifest.json`, friendly catalog, and
   content-addressed installer/catalog routes from the exact checked-in bytes.
+- `scripts/refresh-installer-catalog.mjs` plans or writes one batched refresh
+  from exact GitHub Release coordinates. Moving selectors and upstream-initiated
+  Site mutation are rejected; existing catalogued coordinates are immutable.
 - `src/fixtures/buildchain-badge-endpoint-registry.json` and
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain
