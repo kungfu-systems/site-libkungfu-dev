@@ -19,6 +19,7 @@ for surface in kfx skills core buildchain kfd papers; do
 done
 
 node scripts/prepare-dogfood-render-input.mjs
+node scripts/render-installer.mjs
 node scripts/render-site.mjs
 mkdir -p dist/.buildchain
 cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evidence-ownership.json
@@ -26,6 +27,9 @@ cp src/fixtures/observed-evidence-ownership.json dist/.buildchain/observed-evide
 test -f dist/index.html
 test -f dist/404.html
 test -f dist/architecture/index.html
+test -f dist/install.sh
+test -f dist/install/v1/catalog.json
+test -f dist/install/v1/manifest.json
 test -f dist/kfx/index.html
 test -f dist/kfx/manifest.json
 test -f dist/kfx/llms.txt

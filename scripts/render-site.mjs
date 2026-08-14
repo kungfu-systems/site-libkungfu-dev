@@ -4445,6 +4445,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 const site = readFixtureJson("site-manifest.json");
 const kfxSite = readFixtureJson("kfx-site.json");
 const skillsSite = readFixtureJson("skills-site.json");
+const installerPublication = readJsonFile(path.join(distDir, "install", "v1", "manifest.json"));
 const coreSiteApi = require("@kungfu-tech/site");
 const coreBundleVerification = coreSiteApi.verifyBundle();
 const coreBundle = readPackageJson("@kungfu-tech/site/site-bundle.json");
@@ -10466,9 +10467,17 @@ const manifest = {
     reproducibility: "Fetch the immutable URL and verify its SHA-256 before rendering the same snapshot.",
   },
   readerContract: site.readerContract,
+  installerPublication,
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     { path: "/architecture/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    ...[
+      ["/install.sh", "src/installers/install.sh.in"],
+      ["/install/v1/manifest.json", "src/fixtures/installer-catalog.json"],
+      ["/install/v1/catalog.json", "src/fixtures/installer-catalog.json"],
+      [new URL(installerPublication.installer.immutableUrl).pathname, "src/installers/install.sh.in"],
+      [new URL(installerPublication.catalog.immutableUrl).pathname, "src/fixtures/installer-catalog.json"],
+    ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("hub"), source })),
     ...[
       ["/kfx/", "src/fixtures/kfx-site.json"],
       ["/kfx/manifest.json", "src/fixtures/kfx-site.json"],
@@ -11267,6 +11276,8 @@ Primary pages:
 
 Machine entries:
 - ${surfaceEndpointHref("hub", "manifest.json")}
+- ${surfaceEndpointHref("hub", "install/v1/manifest.json")}
+- ${surfaceEndpointHref("hub", "install/v1/catalog.json")}
 - ${surfaceEndpointHref("hub", "runtime.json")}
 - ${surfaceEndpointHref("hub", "agent-supply-chain.json")}
 - ${surfaceEndpointHref("hub", "dogfood-evidence.json")}

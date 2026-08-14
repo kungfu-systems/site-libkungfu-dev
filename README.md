@@ -268,6 +268,35 @@ documentation” section. Together they render all thirty bundle-declared
 product authorities under `/docs/authority/`, with exact raw bytes under
 `/sources/`.
 
+## Versioned multi-product installer
+
+`https://libkungfu.dev/install.sh` is the public POSIX entry for KFD,
+Buildchain, Kungfu, and Agent Hub Demo. No arguments prints help and makes no
+machine changes. A person or Agent can select one exact version without writing
+code:
+
+```bash
+curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd
+curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- buildchain --version 3.0.6
+curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- all
+```
+
+The reviewed source catalog is `src/fixtures/installer-catalog.json`. The build
+publishes matching friendly and content-addressed routes at
+`/install/v1/catalog.json`, `/install/v1/catalog/<sha256>.json`,
+`/install/v1/manifest.json`, and `/installers/v1/<sha256>/install.sh`. It records
+the exact upstream product, version, platform, byte size, SHA-256, provenance
+URL, and release source SHA. The upstream GitHub Releases and Kungfu's signed
+installer publication remain the release authorities; this site does not
+create another release channel.
+
+Installations use user-owned, content-addressed roots and bounded symlink
+activation. The installer does not invoke `sudo`, edit shell startup files, or
+write into Homebrew-owned prefixes. It rejects unrelated existing commands,
+wrong sizes or digests, unsafe archives, unsupported targets, and partial
+all-product activation. A previously activated managed version can be restored
+with `install.sh PRODUCT --rollback`.
+
 ## KFD Compliance
 
 This repository is itself a Kungfu product surface and must follow the current

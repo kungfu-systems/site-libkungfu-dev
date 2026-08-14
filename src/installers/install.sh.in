@@ -1,0 +1,557 @@
+#!/bin/sh
+# Generated from the reviewed libkungfu.dev installer catalog. Do not edit the rendered file.
+set -eu
+
+catalog_url='@@CATALOG_URL@@'
+catalog_sha256='@@CATALOG_SHA256@@'
+catalog_size='@@CATALOG_SIZE@@'
+install_root=${XDG_DATA_HOME:-"$HOME/.local/share"}/libkungfu/installer
+bin_dir="$HOME/.local/bin"
+dry_run=0
+verbose=0
+rollback=0
+product=
+requested_version=
+kfd_version=
+buildchain_version=
+kungfu_version=
+agent_hub_demo_version=
+stage_root=
+lock_dir=
+
+usage() {
+  printf '%s\n' 'Install exact verified Kungfu system release artifacts.'
+  printf '%s\n' 'usage: install.sh PRODUCT [--version VERSION] [--install-dir DIR] [--bin-dir DIR] [--dry-run] [--verbose]'
+  printf '%s\n' '       install.sh all [--kfd-version VERSION] [--buildchain-version VERSION] [--kungfu-version VERSION] [--agent-hub-demo-version VERSION] [--install-dir DIR] [--bin-dir DIR] [--dry-run]'
+  printf '%s\n' '       install.sh PRODUCT --rollback [--install-dir DIR] [--bin-dir DIR]'
+  printf '%s\n' 'products: kfd, buildchain, kungfu, agent-hub-demo, all'
+  printf '%s\n' 'examples:'
+  printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd'
+  printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- buildchain --version 3.0.6'
+  printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- all'
+  printf '%s\n' 'supported versions:'
+  printf '%b\n' '@@VERSION_HELP@@'
+  printf '%s\n' 'The installer never edits shell startup files, invokes sudo, or writes into Homebrew prefixes.'
+}
+
+log() { printf '%s\n' "libkungfu-install: $*" >&2; }
+debug() { [ "$verbose" -eq 0 ] || log "$@"; }
+fail() { log "error[$1]: $2"; exit 1; }
+
+[ "$#" -gt 0 ] || { usage; exit 0; }
+case "$1" in
+  -h|--help) usage; exit 0 ;;
+  kfd|buildchain|kungfu|agent-hub-demo|all) product=$1; shift ;;
+  *) fail product-unknown "unknown product: $1" ;;
+esac
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --version) [ "$#" -ge 2 ] || fail option-missing '--version needs a value'; requested_version=$2; shift 2 ;;
+    --kfd-version) [ "$#" -ge 2 ] || fail option-missing '--kfd-version needs a value'; kfd_version=$2; shift 2 ;;
+    --buildchain-version) [ "$#" -ge 2 ] || fail option-missing '--buildchain-version needs a value'; buildchain_version=$2; shift 2 ;;
+    --kungfu-version) [ "$#" -ge 2 ] || fail option-missing '--kungfu-version needs a value'; kungfu_version=$2; shift 2 ;;
+    --agent-hub-demo-version) [ "$#" -ge 2 ] || fail option-missing '--agent-hub-demo-version needs a value'; agent_hub_demo_version=$2; shift 2 ;;
+    --install-dir) [ "$#" -ge 2 ] || fail option-missing '--install-dir needs a value'; install_root=$2; shift 2 ;;
+    --bin-dir) [ "$#" -ge 2 ] || fail option-missing '--bin-dir needs a value'; bin_dir=$2; shift 2 ;;
+    --dry-run) dry_run=1; shift ;;
+    --rollback) rollback=1; shift ;;
+    --verbose) verbose=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) fail option-unknown "unknown option: $1" ;;
+  esac
+done
+
+validate_destination_path() {
+  label=$1
+  destination=$2
+  case "$destination" in
+    /*) ;;
+    *) fail path-invalid "$label must be an absolute path" ;;
+  esac
+  case "$destination" in
+    /|*/../*|*/..|*/./*|*/.) fail path-invalid "$label must not be / or contain dot path segments" ;;
+  esac
+}
+
+validate_destination_path install-dir "$install_root"
+validate_destination_path bin-dir "$bin_dir"
+
+if [ "$product" = all ] && [ -n "$requested_version" ]; then
+  fail option-conflict '--version is only valid for one product; use the per-product version options with all'
+fi
+if [ "$product" != all ] && { [ -n "$kfd_version" ] || [ -n "$buildchain_version" ] || [ -n "$kungfu_version" ] || [ -n "$agent_hub_demo_version" ]; }; then
+  fail option-conflict 'per-product version options are only valid with all'
+fi
+if [ "$rollback" -eq 1 ] && { [ "$product" = all ] || [ -n "$requested_version" ] || [ "$dry_run" -eq 1 ]; }; then
+  fail option-conflict '--rollback needs one product and cannot be combined with a version or --dry-run'
+fi
+
+os=$(uname -s 2>/dev/null || true)
+machine=$(uname -m 2>/dev/null || true)
+case "$os/$machine" in
+  Darwin/arm64|Darwin/aarch64) target=darwin-arm64 ;;
+  Darwin/x86_64|Darwin/amd64) target=darwin-x64 ;;
+  Linux/arm64|Linux/aarch64) target=linux-arm64 ;;
+  Linux/x86_64|Linux/amd64) target=linux-x64 ;;
+  *) fail unsupported-host "supported POSIX targets are macOS and Linux on catalogued architectures; observed $os/$machine" ;;
+esac
+case "$target" in
+  linux-*)
+    libc=$(getconf GNU_LIBC_VERSION 2>/dev/null || ldd --version 2>&1 | head -1 || true)
+    case "$libc" in *glibc*|*"GNU libc"*|*GLIBC*) ;; *) fail unsupported-libc 'catalogued Linux artifacts require glibc' ;; esac
+    ;;
+esac
+
+select_product() {
+  selected_product=$1
+  command_name=
+  default_version=
+  case "$selected_product" in
+@@DEFAULT_CASES@@
+    *) return 1 ;;
+  esac
+}
+
+version_for() {
+  selected_product=$1
+  select_product "$selected_product" || return 1
+  case "$selected_product" in
+    kfd) selected_version=${kfd_version:-$default_version} ;;
+    buildchain) selected_version=${buildchain_version:-$default_version} ;;
+    kungfu) selected_version=${kungfu_version:-$default_version} ;;
+    agent-hub-demo) selected_version=${agent_hub_demo_version:-$default_version} ;;
+  esac
+  if [ "$product" != all ] && [ -n "$requested_version" ]; then selected_version=$requested_version; fi
+}
+
+select_target() {
+  selected_product=$1
+  selected_version=$2
+  artifact_kind=
+  artifact_name=
+  artifact_url=
+  artifact_size=
+  artifact_sha256=
+  provenance_url=
+  provenance_size=
+  provenance_sha256=
+  source_sha=
+  binary_path=
+  binary_sha256=
+  platform_trust=digest
+  delegate_url=
+  delegate_size=
+  delegate_sha256=
+  case "$selected_product:$selected_version:$target" in
+@@TARGET_CASES@@
+    *) return 1 ;;
+  esac
+}
+
+sha256_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    fail prerequisite-missing 'shasum or sha256sum is required'
+  fi
+}
+
+file_size() { wc -c < "$1" | tr -d ' '; }
+
+managed_path() {
+  candidate=$1
+  prefix=$2
+  case "$candidate" in "$prefix"/*) return 0 ;; *) return 1 ;; esac
+}
+
+homebrew_prefix_conflict() {
+  case "$bin_dir" in /opt/homebrew|/opt/homebrew/*|/usr/local/Homebrew|/usr/local/Homebrew/*|/usr/local/Cellar|/usr/local/Cellar/*) return 0 ;; esac
+  if command -v brew >/dev/null 2>&1; then
+    brew_prefix=$(brew --prefix 2>/dev/null || true)
+    [ -z "$brew_prefix" ] || case "$bin_dir" in "$brew_prefix"|"$brew_prefix"/*) return 0 ;; esac
+  fi
+  return 1
+}
+
+preflight_product() {
+  selected_product=$1
+  selected_version=$2
+  select_product "$selected_product" || return 1
+  select_target "$selected_product" "$selected_version" || return 2
+  launcher="$bin_dir/$command_name"
+  existing=$(command -v "$command_name" 2>/dev/null || true)
+  [ -z "$existing" ] || [ "$existing" = "$launcher" ] || {
+    log "error[ownership-conflict]: $command_name is owned outside $launcher: $existing"
+    return 3
+  }
+  homebrew_prefix_conflict && {
+    log "error[homebrew-prefix]: refusing to write $launcher inside a Homebrew-owned prefix"
+    return 4
+  }
+  if [ -e "$launcher" ] && [ ! -L "$launcher" ]; then
+    log "error[ownership-conflict]: $launcher is not an installer-owned symlink"
+    return 5
+  fi
+  if [ -L "$launcher" ]; then
+    observed_link=$(readlink "$launcher")
+    if [ "$selected_product" = kungfu ]; then
+      managed_path "$observed_link" "$install_root/delegates/kungfu/product/versions" || {
+        log "error[ownership-conflict]: $launcher does not point into the delegated Kungfu root"
+        return 6
+      }
+    else
+      expected_link="$install_root/products/$selected_product/current/.libkungfu-bin/$command_name"
+      [ "$observed_link" = "$expected_link" ] || {
+        log "error[ownership-conflict]: $launcher is not the expected managed link"
+        return 7
+      }
+    fi
+  fi
+  return 0
+}
+
+plan_product() {
+  selected_product=$1
+  selected_version=$2
+  select_product "$selected_product"
+  select_target "$selected_product" "$selected_version" || fail target-unavailable "no verified $selected_product $selected_version artifact exists for $target"
+  if [ "$artifact_kind" = delegated-installer ]; then
+    log "plan: $selected_product $selected_version source $source_sha $target -> signed upstream installer -> $bin_dir/$command_name"
+  else
+    content_key=$(printf '%s' "$artifact_sha256" | cut -c1-16)
+    log "plan: $selected_product $selected_version source $source_sha $target -> $install_root/products/$selected_product/versions/$selected_version-$content_key -> $bin_dir/$command_name"
+  fi
+}
+
+download_verified() {
+  url=$1
+  expected_size=$2
+  expected_sha=$3
+  output=$4
+  label=$5
+  curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --output "$output" "$url" || {
+    log "error[download-failed]: could not download $label"
+    return 1
+  }
+  observed_size=$(file_size "$output")
+  [ "$observed_size" = "$expected_size" ] || {
+    log "error[size-mismatch]: $label size $observed_size differs from $expected_size"
+    return 1
+  }
+  observed_sha=$(sha256_file "$output")
+  [ "$observed_sha" = "$expected_sha" ] || {
+    log "error[digest-mismatch]: $label digest $observed_sha differs from $expected_sha"
+    return 1
+  }
+}
+
+ensure_catalog() {
+  [ -f "$stage_root/catalog.json" ] && return 0
+  download_verified "$catalog_url" "$catalog_size" "$catalog_sha256" "$stage_root/catalog.json" 'installer catalog'
+}
+
+check_archive() {
+  archive=$1
+  tar -tzf "$archive" | awk '
+    /^\// || /(^|\/)\.\.(\/|$)/ { exit 1 }
+    { count += 1 }
+    END { if (count == 0) exit 1 }
+  ' || return 1
+  tar -tvzf "$archive" | awk '
+    substr($0, 1, 1) != "-" && substr($0, 1, 1) != "d" { exit 1 }
+    { count += 1 }
+    END { if (count == 0) exit 1 }
+  '
+}
+
+marker_line() { printf '%s\n' "$1:$2:$3:$4"; }
+
+prepare_product() {
+  selected_product=$1
+  selected_version=$2
+  select_product "$selected_product"
+  select_target "$selected_product" "$selected_version" || return 1
+  prepare_dir="$stage_root/$selected_product"
+  mkdir "$prepare_dir" || return 1
+  ensure_catalog || return 1
+  download_verified "$provenance_url" "$provenance_size" "$provenance_sha256" "$prepare_dir/provenance.json" "$selected_product provenance" || return 1
+  if [ "$artifact_kind" = delegated-installer ]; then
+    download_verified "$delegate_url" "$delegate_size" "$delegate_sha256" "$prepare_dir/delegate.sh" 'signed Kungfu installer' || return 1
+    sh "$prepare_dir/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
+    return 0
+  fi
+
+  content_key=$(printf '%s' "$artifact_sha256" | cut -c1-16)
+  version_root="$install_root/products/$selected_product/versions/$selected_version-$content_key"
+  expected_marker=$(marker_line "$selected_product" "$selected_version" "$target" "$artifact_sha256")
+  if [ -d "$version_root" ]; then
+    [ -f "$version_root/.libkungfu-installer-owner" ] || return 1
+    [ "$(cat "$version_root/.libkungfu-installer-owner")" = "$expected_marker" ] || return 1
+    [ -f "$version_root/.libkungfu-bin/$command_name" ] && [ ! -L "$version_root/.libkungfu-bin/$command_name" ] || return 1
+    [ "$(sha256_file "$version_root/.libkungfu-bin/$command_name")" = "$binary_sha256" ] || return 1
+    : > "$prepare_dir/reuse"
+    return 0
+  fi
+
+  download_verified "$artifact_url" "$artifact_size" "$artifact_sha256" "$prepare_dir/$artifact_name" "$selected_product artifact" || return 1
+  mkdir "$prepare_dir/extract" || return 1
+  if [ "$artifact_kind" = archive ]; then
+    check_archive "$prepare_dir/$artifact_name" || {
+      log "error[archive-unsafe]: $selected_product archive contains unsafe paths or entry types"
+      return 1
+    }
+    tar -xzf "$prepare_dir/$artifact_name" -C "$prepare_dir/extract" || return 1
+  else
+    cp "$prepare_dir/$artifact_name" "$prepare_dir/extract/$binary_path" || return 1
+  fi
+  candidate="$prepare_dir/extract/$binary_path"
+  [ -f "$candidate" ] && [ ! -L "$candidate" ] || return 1
+  observed_binary=$(sha256_file "$candidate")
+  [ "$observed_binary" = "$binary_sha256" ] || {
+    log "error[binary-digest-mismatch]: extracted $selected_product binary differs from provenance"
+    return 1
+  }
+  chmod 755 "$candidate" || return 1
+  if [ "$platform_trust" = codesign ]; then
+    command -v codesign >/dev/null 2>&1 || return 1
+    codesign --verify --deep --strict "$candidate" >/dev/null 2>&1 || {
+      log "error[platform-trust-failed]: $selected_product macOS signature did not verify"
+      return 1
+    }
+  fi
+  mkdir "$prepare_dir/extract/.libkungfu-bin" || return 1
+  ln "$candidate" "$prepare_dir/extract/.libkungfu-bin/$command_name" 2>/dev/null ||
+    cp "$candidate" "$prepare_dir/extract/.libkungfu-bin/$command_name" || return 1
+  chmod 755 "$prepare_dir/extract/.libkungfu-bin/$command_name" || return 1
+  printf '%s\n' "$expected_marker" > "$prepare_dir/extract/.libkungfu-installer-owner"
+}
+
+publish_content() {
+  selected_product=$1
+  selected_version=$2
+  select_target "$selected_product" "$selected_version"
+  content_key=$(printf '%s' "$artifact_sha256" | cut -c1-16)
+  product_root="$install_root/products/$selected_product"
+  version_root="$product_root/versions/$selected_version-$content_key"
+  mkdir -p "$product_root/versions" || return 1
+  if [ ! -d "$version_root" ]; then
+    mv "$stage_root/$selected_product/extract" "$version_root" || return 1
+  fi
+}
+
+restore_link() {
+  link=$1
+  old_target=$2
+  if [ -n "$old_target" ]; then
+    temporary="$link.restore.$$"
+    ln -s "$old_target" "$temporary" || return 1
+    replace_symlink "$temporary" "$link" || return 1
+  elif [ -L "$link" ]; then
+    unlink "$link" || return 1
+  fi
+}
+
+replace_symlink() {
+  source_link=$1
+  destination_link=$2
+  case "$os" in
+    Darwin) mv -fh "$source_link" "$destination_link" ;;
+    Linux) mv -fT "$source_link" "$destination_link" ;;
+    *) return 1 ;;
+  esac
+}
+
+activate_internal() {
+  selected_product=$1
+  selected_version=$2
+  select_product "$selected_product"
+  select_target "$selected_product" "$selected_version"
+  product_root="$install_root/products/$selected_product"
+  content_key=$(printf '%s' "$artifact_sha256" | cut -c1-16)
+  version_root="$product_root/versions/$selected_version-$content_key"
+  current="$product_root/current"
+  previous="$product_root/previous"
+  launcher="$bin_dir/$command_name"
+  old_current=$(readlink "$current" 2>/dev/null || true)
+  old_previous=$(readlink "$previous" 2>/dev/null || true)
+  old_launcher=$(readlink "$launcher" 2>/dev/null || true)
+  printf '%s\n' "$old_current" > "$stage_root/$selected_product/old-current"
+  printf '%s\n' "$old_previous" > "$stage_root/$selected_product/old-previous"
+  printf '%s\n' "$old_launcher" > "$stage_root/$selected_product/old-launcher"
+  [ "$old_current" != "$version_root" ] || return 0
+
+  temporary_current="$product_root/.current.$$"
+  ln -s "$version_root" "$temporary_current" || return 1
+  if ! replace_symlink "$temporary_current" "$current"; then
+    unlink "$temporary_current" 2>/dev/null || true
+    return 1
+  fi
+  if [ -n "$old_current" ]; then
+    temporary_previous="$product_root/.previous.$$"
+    if ! ln -s "$old_current" "$temporary_previous" || ! replace_symlink "$temporary_previous" "$previous"; then
+      restore_link "$current" "$old_current" || true
+      restore_link "$previous" "$old_previous" || true
+      return 1
+    fi
+  fi
+  if [ -z "$old_launcher" ]; then
+    temporary_launcher="$bin_dir/.$command_name.$$"
+    if ! ln -s "$current/.libkungfu-bin/$command_name" "$temporary_launcher" || ! replace_symlink "$temporary_launcher" "$launcher"; then
+      restore_link "$current" "$old_current" || true
+      restore_link "$previous" "$old_previous" || true
+      restore_link "$launcher" "$old_launcher" || true
+      return 1
+    fi
+  fi
+}
+
+restore_internal_activation() {
+  selected_product=$1
+  select_product "$selected_product"
+  product_root="$install_root/products/$selected_product"
+  old_current=$(cat "$stage_root/$selected_product/old-current" 2>/dev/null || true)
+  old_previous=$(cat "$stage_root/$selected_product/old-previous" 2>/dev/null || true)
+  old_launcher=$(cat "$stage_root/$selected_product/old-launcher" 2>/dev/null || true)
+  restore_link "$product_root/current" "$old_current" || true
+  restore_link "$product_root/previous" "$old_previous" || true
+  restore_link "$bin_dir/$command_name" "$old_launcher" || true
+}
+
+activate_delegate() {
+  selected_version=$1
+  launcher="$bin_dir/kungfu"
+  old_launcher=$(readlink "$launcher" 2>/dev/null || true)
+  printf '%s\n' "$old_launcher" > "$stage_root/kungfu/old-launcher"
+  if ! sh "$stage_root/kungfu/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir"; then
+    restore_link "$launcher" "$old_launcher" || true
+    return 1
+  fi
+  new_launcher=$(readlink "$launcher" 2>/dev/null || true)
+  if [ -n "$old_launcher" ] && [ "$old_launcher" != "$new_launcher" ]; then
+    mkdir -p "$install_root/delegates/kungfu"
+    printf '%s\n' "$old_launcher" > "$install_root/delegates/kungfu/previous-target"
+  fi
+}
+
+rollback_internal() {
+  selected_product=$1
+  select_product "$selected_product"
+  product_root="$install_root/products/$selected_product"
+  current="$product_root/current"
+  previous="$product_root/previous"
+  [ -L "$current" ] && [ -L "$previous" ] || fail rollback-unavailable "no previous $selected_product activation is recorded"
+  current_target=$(readlink "$current")
+  previous_target=$(readlink "$previous")
+  managed_path "$current_target" "$product_root/versions" || fail rollback-unsafe 'current target is outside the managed root'
+  managed_path "$previous_target" "$product_root/versions" || fail rollback-unsafe 'previous target is outside the managed root'
+  [ -f "$current_target/.libkungfu-installer-owner" ] || fail rollback-unsafe 'current owner marker is missing'
+  [ -f "$previous_target/.libkungfu-installer-owner" ] || fail rollback-unsafe 'previous owner marker is missing'
+  next_current="$product_root/.current.rollback.$$"
+  next_previous="$product_root/.previous.rollback.$$"
+  ln -s "$previous_target" "$next_current"
+  ln -s "$current_target" "$next_previous"
+  replace_symlink "$next_current" "$current"
+  replace_symlink "$next_previous" "$previous"
+  log "rolled back: $selected_product -> $previous_target"
+}
+
+rollback_kungfu() {
+  previous_file="$install_root/delegates/kungfu/previous-target"
+  [ -f "$previous_file" ] || fail rollback-unavailable 'no previous Kungfu activation is recorded'
+  previous_target=$(cat "$previous_file")
+  launcher="$bin_dir/kungfu"
+  current_target=$(readlink "$launcher" 2>/dev/null || true)
+  prefix="$install_root/delegates/kungfu/product/versions"
+  managed_path "$previous_target" "$prefix" || fail rollback-unsafe 'previous Kungfu target is outside the delegated root'
+  [ -z "$current_target" ] || managed_path "$current_target" "$prefix" || fail rollback-unsafe 'current Kungfu target is outside the delegated root'
+  temporary="$bin_dir/.kungfu.rollback.$$"
+  ln -s "$previous_target" "$temporary"
+  replace_symlink "$temporary" "$launcher"
+  printf '%s\n' "$current_target" > "$previous_file"
+  log "rolled back: kungfu -> $previous_target"
+}
+
+cleanup() {
+  [ -z "$stage_root" ] || rm -rf "$stage_root"
+  [ -z "$lock_dir" ] || rmdir "$lock_dir" 2>/dev/null || true
+}
+
+if [ "$rollback" -eq 1 ]; then
+  version_for "$product"
+  preflight_product "$product" "$selected_version" || fail rollback-unsafe "$product ownership or target support could not be verified"
+  umask 077
+  mkdir -p "$install_root"
+  lock_dir="$install_root/.install.lock"
+  mkdir "$lock_dir" 2>/dev/null || fail concurrent-install "another installer owns $lock_dir"
+  trap cleanup EXIT HUP INT TERM
+  if [ "$product" = kungfu ]; then rollback_kungfu; else rollback_internal "$product"; fi
+  trap - EXIT HUP INT TERM
+  cleanup
+  exit 0
+fi
+
+if [ "$product" = all ]; then
+  products='kfd buildchain agent-hub-demo kungfu'
+else
+  products=$product
+fi
+
+for selected_product in $products; do
+  version_for "$selected_product"
+  preflight_product "$selected_product" "$selected_version" || {
+    status=$?
+    [ "$status" -ne 2 ] || fail target-unavailable "no verified $selected_product $selected_version artifact exists for $target"
+    fail preflight-failed "$selected_product cannot be installed safely"
+  }
+  plan_product "$selected_product" "$selected_version"
+done
+[ "$dry_run" -eq 0 ] || exit 0
+
+command -v curl >/dev/null 2>&1 || fail prerequisite-missing 'curl is required'
+command -v tar >/dev/null 2>&1 || fail prerequisite-missing 'tar is required'
+homebrew_prefix_conflict && fail homebrew-prefix "refusing to write into $bin_dir"
+umask 077
+mkdir -p "$install_root" "$bin_dir"
+lock_dir="$install_root/.install.lock"
+mkdir "$lock_dir" 2>/dev/null || fail concurrent-install "another installer owns $lock_dir"
+stage_root="$install_root/.stage.$$"
+[ ! -e "$stage_root" ] || fail staging-conflict "staging path already exists: $stage_root"
+mkdir "$stage_root"
+trap cleanup EXIT HUP INT TERM
+
+for selected_product in $products; do
+  version_for "$selected_product"
+  prepare_product "$selected_product" "$selected_version" || fail prepare-failed "could not prepare $selected_product $selected_version without activation"
+done
+
+activated=
+for selected_product in $products; do
+  [ "$selected_product" != kungfu ] || continue
+  version_for "$selected_product"
+  if ! publish_content "$selected_product" "$selected_version" || ! activate_internal "$selected_product" "$selected_version"; then
+    for prior in $activated; do restore_internal_activation "$prior"; done
+    fail activation-failed "activation failed; earlier product links were restored"
+  fi
+  activated="$selected_product $activated"
+done
+
+case " $products " in
+  *' kungfu '*)
+    version_for kungfu
+    if ! activate_delegate "$selected_version"; then
+      for prior in $activated; do restore_internal_activation "$prior"; done
+      fail activation-failed 'Kungfu activation failed; earlier product links were restored'
+    fi
+    ;;
+esac
+
+trap - EXIT HUP INT TERM
+cleanup
+for selected_product in $products; do
+  select_product "$selected_product"
+  log "installed: $selected_product -> $bin_dir/$command_name"
+done
+log "PATH was not modified; add $bin_dir explicitly if it is not already present"

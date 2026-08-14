@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 1,
+  "contract": "libkungfu.multi-product-installer-catalog/v1",
+  "catalogVersion": "1",
+  "scope": "posix-shell",
+  "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
+  "products": [
+    {
+      "id": "kfd",
+      "command": "kfd",
+      "repository": "https://github.com/kungfu-systems/kfd",
+      "defaultVersion": "1.0.0-alpha.65",
+      "versions": [
+        {
+          "version": "1.0.0-alpha.65",
+          "tag": "v1.0.0-alpha.65",
+          "publishedAt": "2026-08-13T23:35:20Z",
+          "sourceSha": "790992240985794e5f528d7b415c13de213e9556",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.65-aarch64-apple-darwin/kfd",
+              "binarySha256": "831b915ed889e5a7789813e1c2f805a83a58fbe7187868f23505751b63edac4e",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.65-aarch64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-aarch64-apple-darwin.tar.gz",
+                "size": 1183530,
+                "sha256": "edbd833435c56c6ff0a16b73806677e2179936228e94bc53651d193c7066f2aa"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-aarch64-apple-darwin.provenance.json",
+                "size": 1424,
+                "sha256": "050caa4c3f2df33f5ce35cc309103237df64c98ff616822285b8b3793a733a5d"
+              }
+            },
+            {
+              "platform": "darwin-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.65-x86_64-apple-darwin/kfd",
+              "binarySha256": "1e56b4c93766284727666c7dc61b58489e3dce6336ae2e0d6e9a6d7c36070c5b",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.65-x86_64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-apple-darwin.tar.gz",
+                "size": 1236898,
+                "sha256": "e0d7d07d38b18a1bf091558d410e78fe3adcc3c5158216a4685b2717d882f6f3"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-apple-darwin.provenance.json",
+                "size": 1420,
+                "sha256": "719139129d9d80033f500aab9cd6cdc37ec3cc57c93c82d22b92de33911e8908"
+              }
+            },
+            {
+              "platform": "linux-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.65-aarch64-unknown-linux-gnu/kfd",
+              "binarySha256": "da773e219c34683819c091fcea44a358502f4c4a715e491ec0d5e227a174e02f",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.65-aarch64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-aarch64-unknown-linux-gnu.tar.gz",
+                "size": 1287552,
+                "sha256": "5bae00053feb2adb3c2b4f121e8274f47d2af359fa43ddd1b374248b14242ced"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-aarch64-unknown-linux-gnu.provenance.json",
+                "size": 1444,
+                "sha256": "86baf68a79cc15181c57e4bfcb9374f4a492d07b6cd393434d8ddb38f3bc407b"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.65-x86_64-unknown-linux-gnu/kfd",
+              "binarySha256": "a1a8933f4b577aa061e697b37c85bf5697746d1cfc639f068fdedc60e3ad7ed4",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.65-x86_64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-unknown-linux-gnu.tar.gz",
+                "size": 1315460,
+                "sha256": "8d1f419e1e0c3c93b80238beb0ac67718775a3aac532d2aa464a841b1e94937f"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-unknown-linux-gnu.provenance.json",
+                "size": 1440,
+                "sha256": "4e0ada3dc6f48631841d903981964f45920a2b6c0c07f1110e96856f264c7cb7"
+              }
+            }
+          ]
+        },
+        {
+          "version": "1.0.0-alpha.63",
+          "tag": "v1.0.0-alpha.63",
+          "publishedAt": "2026-08-13T02:11:18Z",
+          "sourceSha": "73de46d66090fe71621fb32ceb70c5962e53d10c",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.63-aarch64-apple-darwin/kfd",
+              "binarySha256": "103325bb59319599ac4c60dde97f48b1bf74f721f7c69bf0d4b876ca98fad80b",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.63-aarch64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-aarch64-apple-darwin.tar.gz",
+                "size": 1183337,
+                "sha256": "80b1d9531e30509f038b2672bc6e85160475adbebe4e9b4033e3be7e840c91fa"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-aarch64-apple-darwin.provenance.json",
+                "size": 1424,
+                "sha256": "829b8c5403ce023e5e5c42c4cc2c7fca152f78f6b636a87f76dfbbbbf734021a"
+              }
+            },
+            {
+              "platform": "darwin-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.63-x86_64-apple-darwin/kfd",
+              "binarySha256": "c577c34757954c2f21c14e60e2f5d48739234d3292f03bcba65977784e364ee1",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.63-x86_64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-apple-darwin.tar.gz",
+                "size": 1236650,
+                "sha256": "5de2fa2fe4f1ec61132279667841151e3fecd815c67ff88595c36fe5eaa31530"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-apple-darwin.provenance.json",
+                "size": 1420,
+                "sha256": "c4558786e52ec9a7d9044c141c5f893d9f5245398b6d457599057f5de44eda2e"
+              }
+            },
+            {
+              "platform": "linux-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.63-aarch64-unknown-linux-gnu/kfd",
+              "binarySha256": "398c038f90e32f793cd23dbf7d76faa150c55850b167ca81da332bef0fa4ab9f",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.63-aarch64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-aarch64-unknown-linux-gnu.tar.gz",
+                "size": 1287348,
+                "sha256": "dd23d74c5010218e9336d5422897b8504e47d722fc6697d72f18396401bcc941"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-aarch64-unknown-linux-gnu.provenance.json",
+                "size": 1444,
+                "sha256": "762684c39ecb751c8a5381aa32e25a1413f322d0e1a96c45e601fc84c7bdcd58"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "kfd-1.0.0-alpha.63-x86_64-unknown-linux-gnu/kfd",
+              "binarySha256": "fee823680825362d23d9d247e365c840bc6500af8c82f985a5cac55fa0bc2656",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.63-x86_64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-unknown-linux-gnu.tar.gz",
+                "size": 1315596,
+                "sha256": "e85c3071958b1e665b73c20555b874a9bfdf2090ec7b343afe7fa98ae43cacf2"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-unknown-linux-gnu.provenance.json",
+                "size": 1440,
+                "sha256": "3bb9af60ad820a5d7d3bdc2c6474ccf3d30c06970bd0b859501537ccdd5ee525"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buildchain",
+      "command": "buildchain",
+      "repository": "https://github.com/kungfu-systems/buildchain",
+      "defaultVersion": "4.0.0",
+      "versions": [
+        {
+          "version": "4.0.0",
+          "tag": "v4.0.0",
+          "publishedAt": "2026-08-13T09:28:36Z",
+          "sourceSha": "45a49dcaa0fcef59bc66481a85c39514d08972cc",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "buildchain",
+              "binarySha256": "f3049a26b0cfe7dd8d4b3a88c31888ab8bcf6b00cbf801bb0523e1a7483128fb",
+              "artifact": {
+                "name": "buildchain-aarch64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-aarch64-apple-darwin.tar.gz",
+                "size": 38620653,
+                "sha256": "ad18019518fc4d6fca30120c9532eb2dc945f0f502c8d7f37cb3bd747f703657"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-aarch64-apple-darwin.json",
+                "size": 815,
+                "sha256": "2317e9f18d01c7625e91182a9f114fd6c89713879a2ac89849648cd5282a1ae4"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "buildchain",
+              "binarySha256": "4df5ce9c7a9cb9b9420c0d9288e50f93ed3092376d24db92aa7e45817b14f953",
+              "artifact": {
+                "name": "buildchain-x86_64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-x86_64-unknown-linux-gnu.tar.gz",
+                "size": 43301054,
+                "sha256": "23ffa5167c035799ff3e70e9d7217b8f4e750ec654f8d8f2bc2d2f109f066737"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-x86_64-unknown-linux-gnu.json",
+                "size": 813,
+                "sha256": "9a500847b25794a2ac20bb2ae0b1f4972204075345d0101b4eaa8018cbeedde1"
+              }
+            }
+          ]
+        },
+        {
+          "version": "3.0.6",
+          "tag": "v3.0.6",
+          "publishedAt": "2026-08-07T06:29:45Z",
+          "sourceSha": "4d3415855debb03bac01c4f5d11417f0d1ea42d8",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "buildchain",
+              "binarySha256": "fa6580659f5abccfa43679c23a6f5f3e3b6a89c6710e8a380c84f08087e09368",
+              "artifact": {
+                "name": "buildchain-aarch64-apple-darwin.tar.gz",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-aarch64-apple-darwin.tar.gz",
+                "size": 38593918,
+                "sha256": "26d196427eb201856efab9a0a44c5fd4f6f831715253dfbf638821dda89e60e1"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-aarch64-apple-darwin.json",
+                "size": 815,
+                "sha256": "ea935369bb931ee0ddd8fc37d299c969899079fe9a476847e98256d5152498e5"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "archive",
+              "archiveType": "tar.gz",
+              "binaryPath": "buildchain",
+              "binarySha256": "d3065e4cddac162d9d74f705942feba6536dfb00ee37b8d74fbbeedce0efab03",
+              "artifact": {
+                "name": "buildchain-x86_64-unknown-linux-gnu.tar.gz",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-x86_64-unknown-linux-gnu.tar.gz",
+                "size": 43274027,
+                "sha256": "809916e805d5918ad8e8138285bf2bad653332bc96a1cc2bb83f854d69bd2bda"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-x86_64-unknown-linux-gnu.json",
+                "size": 813,
+                "sha256": "f18d64f78e7237206761d78ce7515ea8f490f61d79bcfb5b43785bcaa425806f"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kungfu",
+      "command": "kungfu",
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "defaultVersion": "4.0.0-alpha.1",
+      "versions": [
+        {
+          "version": "4.0.0-alpha.1",
+          "tag": "v4.0.0-alpha.1",
+          "publishedAt": "2026-08-08T09:03:38Z",
+          "sourceSha": "ad7c7db6df076f969c5939728bcbe70ccd4771b3",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "size": 159116574,
+                "sha256": "360880cc7b0826924d078dc27a97f062a8731029f5a724c9cbe2bfa1d9ca0c09"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
+              },
+              "delegate": {
+                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "size": 9630,
+                "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-linux-x64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-episodes-cli-linux-x64.tar.gz",
+                "size": 219557472,
+                "sha256": "cd8310b8e6a4baf346f5248adf78496bc7e87502a7f2ec8d51bcbb689fef1023"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
+              },
+              "delegate": {
+                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "size": 9630,
+                "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "agent-hub-demo",
+      "command": "agent-hub-demo",
+      "repository": "https://github.com/kungfu-systems/agent-hub-demo",
+      "defaultVersion": "0.2.0",
+      "versions": [
+        {
+          "version": "0.2.0",
+          "tag": "v0.2.0",
+          "publishedAt": "2026-08-12T16:00:31Z",
+          "sourceSha": "f186be657943bce7c7e29c80b7ae77dcd48961c6",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo",
+              "binarySha256": "00880396be470e77f3814d010803133b87c974fa6ffe8f1e7834724fcebafafd",
+              "platformTrust": "codesign",
+              "artifact": {
+                "name": "agent-hub-demo-macos-arm64",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/agent-hub-demo-macos-arm64",
+                "size": 120780768,
+                "sha256": "00880396be470e77f3814d010803133b87c974fa6ffe8f1e7834724fcebafafd"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/binary-macos-arm64.json",
+                "size": 1545,
+                "sha256": "765b25cc1cd19d1fc5830f75864fe38217595ca33a0e008313a156c9f00b0db0"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo",
+              "binarySha256": "2ecffae244485971ccbfa347a3b34794a5cc5c9199a3814d13d237688124a75f",
+              "artifact": {
+                "name": "agent-hub-demo-linux-x64",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/agent-hub-demo-linux-x64",
+                "size": 126094528,
+                "sha256": "2ecffae244485971ccbfa347a3b34794a5cc5c9199a3814d13d237688124a75f"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/binary-linux-x64.json",
+                "size": 1565,
+                "sha256": "68655c0ded2c897c1aa2634202f6c7da40846974a3fbec66ea797c83b2d67d1a"
+              }
+            }
+          ]
+        },
+        {
+          "version": "0.2.0-alpha.8",
+          "tag": "v0.2.0-alpha.8",
+          "publishedAt": "2026-08-12T15:11:50Z",
+          "sourceSha": "7f3450f2fb6fbc77855057039d520ad0e3c82db1",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo",
+              "binarySha256": "0cf370b4087c7072efe7bd05ddf3d1facd2a49e9fc146af27382728b5a22fedb",
+              "platformTrust": "codesign",
+              "artifact": {
+                "name": "agent-hub-demo-macos-arm64",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/agent-hub-demo-macos-arm64",
+                "size": 120780768,
+                "sha256": "0cf370b4087c7072efe7bd05ddf3d1facd2a49e9fc146af27382728b5a22fedb"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/binary-macos-arm64.json",
+                "size": 1553,
+                "sha256": "549ba8072384ca46874b8d5b29aee665a8c46d676d34210edc058b7a2e4446c3"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo",
+              "binarySha256": "c5d02a085e4ffea46e1fe8e2e9c56af77285792af43a57fdf99f9a9b32ddafbd",
+              "artifact": {
+                "name": "agent-hub-demo-linux-x64",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/agent-hub-demo-linux-x64",
+                "size": 123735232,
+                "sha256": "c5d02a085e4ffea46e1fe8e2e9c56af77285792af43a57fdf99f9a9b32ddafbd"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/binary-linux-x64.json",
+                "size": 1573,
+                "sha256": "b6e32e80e8abc6ecf6eaa8183265b26d4cf64ca3cb1f73d22649f22a91e58481"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
