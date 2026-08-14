@@ -28,12 +28,12 @@ function global:Invoke-WebRequest {
 try {
   New-Item -ItemType Directory -Path $TestRoot | Out-Null
 
-  $DefaultPlan = (& $Installer -DryRun -InstallDir (Join-Path $TestRoot 'default-install') -BinDir (Join-Path $TestRoot 'default-bin') | Out-String)
+  $DefaultPlan = (& $Installer -DryRun -InstallDir (Join-Path $TestRoot 'default-install') -BinDir (Join-Path $TestRoot 'default-bin') 6>&1 | Out-String)
   if ($DefaultPlan -notmatch 'plan: kungfu 4\.0\.0-alpha\.1 .* windows-x64') {
     throw "no-argument PowerShell execution did not default to Kungfu: $DefaultPlan"
   }
 
-  $AllPlan = (& $Installer all -DryRun -InstallDir (Join-Path $TestRoot 'all-install') -BinDir (Join-Path $TestRoot 'all-bin') | Out-String)
+  $AllPlan = (& $Installer all -DryRun -InstallDir (Join-Path $TestRoot 'all-install') -BinDir (Join-Path $TestRoot 'all-bin') 6>&1 | Out-String)
   foreach ($Product in @('kfd', 'buildchain', 'kungfu', 'agent-hub-demo')) {
     if ($AllPlan -notmatch "plan: $Product ") { throw "all-products preflight omitted $Product" }
   }
