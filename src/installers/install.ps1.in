@@ -93,8 +93,8 @@ function Assert-KungfuLauncher([string]$Path) {
   }
   $DelegateRoot = [IO.Path]::GetFullPath((Join-Path $InstallDir 'delegates\kungfu\product\versions'))
   $LauncherText = $Lines -join "`n"
-  if (-not $LauncherText.StartsWith('@rem kungfu-archive-bootstrap/v1')
-      -or $LauncherText.IndexOf($DelegateRoot, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
+  if (-not $LauncherText.StartsWith('@rem kungfu-archive-bootstrap/v1') -or
+      $LauncherText.IndexOf($DelegateRoot, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
     Fail 'ownership-conflict' "$Path does not target the managed Kungfu delegate root"
   }
 }
@@ -346,9 +346,9 @@ function Rollback-Kungfu {
   Write-InstallerLog 'rolled back: kungfu -> previous signed launcher'
 }
 
-if (-not [Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([Runtime.InteropServices.OSPlatform]::Windows)
-    -or -not [Environment]::Is64BitOperatingSystem
-    -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
+if (-not [Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([Runtime.InteropServices.OSPlatform]::Windows) -or
+    -not [Environment]::Is64BitOperatingSystem -or
+    [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
   Fail 'unsupported-host' 'the catalog currently supports 64-bit x86 Windows'
 }
 if ($Product -eq 'all' -and $Version) { Fail 'option-conflict' '-Version is valid for one product; use the per-product version parameters with all' }
