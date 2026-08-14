@@ -270,6 +270,7 @@ product authorities under `/docs/authority/`, with exact raw bytes under
 
 ## Versioned multi-product installer
 
+`https://libkungfu.dev/install/` is the human installation guide and
 `https://libkungfu.dev/install.sh` is the public POSIX entry for KFD,
 Buildchain, Kungfu, and Agent Hub Demo. No arguments prints help and makes no
 machine changes. A person or Agent can select one exact version without writing

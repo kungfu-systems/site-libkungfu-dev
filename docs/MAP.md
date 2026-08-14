@@ -41,6 +41,11 @@ ai_provenance:
   future delivery horizons. Its machine peers remain `/skills/manifest.json`,
   `/skills/llms.txt`, `/skills/architecture.json`, and
   `/skills/capability-map.json`.
+- Use `https://libkungfu.dev/install/` for the human installation guide across
+  KFD, Buildchain, Kungfu, and Agent Hub Demo, including current versions,
+  exact historical versions, supported targets, rollback, and integrity
+  boundaries. The executable and machine peers remain `/install.sh`,
+  `/install/v1/manifest.json`, and `/install/v1/catalog.json`.
 - Use `https://core.libkungfu.dev` for the complete Kungfu product and adoption
   map. Stable depth routes cover `.kungfu` format, primitives, runtime, ABI,
   SDKs, extensions, products, qualification, ADR navigation, and domain

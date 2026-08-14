@@ -412,6 +412,7 @@ function buildchainCanonicalPath(route) {
 function surfaceSitePath(id) {
   const paths = {
     hub: "/",
+    install: "/install/",
     kfx: "/kfx/",
     skills: "/skills/",
     core: "/core/",
@@ -431,6 +432,7 @@ function surfaceCanonicalHref(id) {
   const hrefsByChannel = {
     production: {
       hub: "https://libkungfu.dev/",
+      install: "https://libkungfu.dev/install/",
       kfx: "https://kfx.libkungfu.dev/",
       skills: "https://libkungfu.dev/skills/",
       core: "https://core.libkungfu.dev/",
@@ -440,6 +442,7 @@ function surfaceCanonicalHref(id) {
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
+      install: "https://staging.libkungfu.dev/install/",
       kfx: "https://kfx.staging.libkungfu.dev/",
       skills: "https://staging.libkungfu.dev/skills/",
       core: "https://core.staging.libkungfu.dev/",
@@ -451,6 +454,7 @@ function surfaceCanonicalHref(id) {
   if (channel === "preview" && previewAlias) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
+      install: `https://${previewAlias}.preview.libkungfu.dev/install/`,
       kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
       skills: `https://${previewAlias}.preview.libkungfu.dev/skills/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
@@ -475,6 +479,9 @@ function surfaceEndpointHref(id, pathPart = "") {
 }
 
 function pageMachineEntryHref(current, pathPart) {
+  if (current === "install") {
+    return `/${pathPart}`;
+  }
   if (current === "buildchain" && pathPart === "manifest.json") {
     return "/manifest.json";
   }
@@ -1540,6 +1547,7 @@ function page({ title, description, current, body, alternates = "", preserveRela
     ["kfx", "Extensions"],
     ["skills", "Skills"],
     ["papers", "Papers"],
+    ["install", "Install"],
   ];
 
   const navHtml = nav
@@ -2717,6 +2725,119 @@ ${current === "papers" ? "" : `
       cursor: pointer;
     }
 
+    .product-install-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 34px;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--line));
+      border-left: 5px solid var(--accent);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--soft) 92%, var(--bg));
+      padding: clamp(20px, 3vw, 30px);
+    }
+
+    .product-install-card h2,
+    .product-install-card p {
+      margin-top: 0;
+    }
+
+    .product-install-command,
+    .installer-hero-command,
+    .installer-product-card {
+      display: grid;
+      min-width: 0;
+      gap: 10px;
+    }
+
+    .product-install-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+    }
+
+    .product-install-actions .card-action {
+      margin-top: 0;
+    }
+
+    .installer-hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 34px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 34px;
+    }
+
+    .installer-hero h1 {
+      max-width: 880px;
+    }
+
+    .installer-hero .lead {
+      max-width: 840px;
+    }
+
+    .installer-hero-command {
+      max-width: 900px;
+    }
+
+    .installer-product-grid,
+    .installer-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 34px;
+    }
+
+    .installer-product-card {
+      scroll-margin-top: 24px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--accent);
+      border-radius: 10px;
+      background: var(--soft);
+      padding: clamp(18px, 3vw, 26px);
+    }
+
+    .installer-product-heading h2,
+    .installer-product-heading p {
+      margin-top: 0;
+    }
+
+    .installer-target-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .installer-target-list li {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .installer-guide-grid .panel {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+
+    .installer-guide-grid .panel h2,
+    .installer-guide-grid .panel p {
+      margin: 0;
+    }
+
+    .installer-safety {
+      display: grid;
+      gap: 16px;
+    }
+
     .kfd-boundaries {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3560,7 +3681,10 @@ ${immutableArchive ? "" : `
 
       .kfd-independent-steps,
       .kfd-native-install,
-      .kfd-boundaries {
+      .kfd-boundaries,
+      .product-install-card,
+      .installer-product-grid,
+      .installer-guide-grid {
         grid-template-columns: 1fr;
       }
 
@@ -3788,7 +3912,8 @@ ${immutableArchive
       }
       for (const button of document.querySelectorAll("[data-copy-command]")) {
         button.addEventListener("click", async () => {
-          const command = button.parentElement?.querySelector("code")?.textContent || "";
+          const commandBlock = button.closest("[data-command-block]") || button.parentElement;
+          const command = commandBlock?.querySelector("pre code")?.textContent || "";
           if (!command || !navigator.clipboard) return;
           await navigator.clipboard.writeText(command);
           button.textContent = "Copied";
@@ -4445,6 +4570,7 @@ function kfdDecisionNav(currentEntry, currentPage = "decision", currentCandidate
 const site = readFixtureJson("site-manifest.json");
 const kfxSite = readFixtureJson("kfx-site.json");
 const skillsSite = readFixtureJson("skills-site.json");
+const installerCatalog = readFixtureJson("installer-catalog.json");
 const installerPublication = readJsonFile(path.join(distDir, "install", "v1", "manifest.json"));
 const coreSiteApi = require("@kungfu-tech/site");
 const coreBundleVerification = coreSiteApi.verifyBundle();
@@ -5389,6 +5515,131 @@ function renderReaderOrientation(surfaceId, stateLabel) {
   </section>`;
 }
 
+const installerProductLabels = {
+  kfd: "KFD",
+  buildchain: "Buildchain",
+  kungfu: "Kungfu",
+  "agent-hub-demo": "Agent Hub Demo",
+};
+
+const installerTargetLabels = {
+  "darwin-arm64": "macOS · Apple silicon",
+  "darwin-x64": "macOS · Intel",
+  "linux-arm64": "Linux · arm64",
+  "linux-x64": "Linux · x64",
+};
+
+function installerProduct(productId) {
+  const product = installerCatalog.products.find((entry) => entry.id === productId);
+  if (!product || !installerProductLabels[productId]) {
+    throw new Error(`installer catalog is missing supported product: ${productId}`);
+  }
+  return product;
+}
+
+function installerCurlCommand(productId, args = "") {
+  const suffix = args ? ` ${args}` : "";
+  return `curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- ${productId}${suffix}`;
+}
+
+function installGuideLinkAttrs(productId) {
+  return surfaceRouteLinkAttrs("install", productId ? `#${productId}` : "");
+}
+
+function renderHomepageInstallCard(productId, summary) {
+  const product = installerProduct(productId);
+  const label = installerProductLabels[productId];
+  return `<section class="product-install-card" data-product-install-card="${escapeAttr(productId)}" aria-labelledby="${escapeAttr(productId)}-install-heading">
+    <div>
+      <p class="eyebrow">Install ${escapeHtml(label)} · no coding required</p>
+      <h2 id="${escapeAttr(productId)}-install-heading"><a ${installGuideLinkAttrs(productId)}>Start with the installation guide</a></h2>
+      <p>${escapeHtml(summary)} The current catalog selects <code>${escapeHtml(product.defaultVersion)}</code>; the guide also covers exact versions and rollback.</p>
+    </div>
+    <div class="product-install-command" data-command-block>
+      <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand(productId))}</code></pre>
+      <div class="product-install-actions">
+        <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(label)} install command">Copy command</button>
+        <a class="card-action secondary" ${installGuideLinkAttrs(productId)}>Open installation guide</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderInstallerProductCard(product) {
+  const label = installerProductLabels[product.id];
+  const currentRelease = product.versions.find((entry) => entry.version === product.defaultVersion);
+  if (!currentRelease) {
+    throw new Error(`installer product ${product.id} has no default release ${product.defaultVersion}`);
+  }
+  const targets = currentRelease.targets.map((entry) => installerTargetLabels[entry.platform] || entry.platform);
+  return `<article class="installer-product-card" id="${escapeAttr(product.id)}" data-installer-product="${escapeAttr(product.id)}" data-command-block>
+    <div class="installer-product-heading">
+      <p class="eyebrow">Current · ${escapeHtml(product.defaultVersion)}</p>
+      <h2>${escapeHtml(label)}</h2>
+      <p>Installs the <code>${escapeHtml(product.command)}</code> command from the selected upstream release.</p>
+    </div>
+    <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand(product.id))}</code></pre>
+    <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(label)} install command">Copy command</button>
+    <ul class="installer-target-list" aria-label="Supported targets for ${escapeAttr(label)} ${escapeAttr(product.defaultVersion)}">
+      ${targets.map((target) => `<li>${escapeHtml(target)}</li>`).join("\n")}
+    </ul>
+    <a class="card-action secondary" href="${escapeAttr(product.repository)}">View upstream releases ↗</a>
+  </article>`;
+}
+
+function renderInstallerGuide() {
+  const productIds = ["kfd", "buildchain", "kungfu", "agent-hub-demo"];
+  const products = productIds.map(installerProduct);
+  return `<section class="installer-hero">
+    <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Versioned multi-product installer</span></p>
+    <p class="eyebrow">Install a native CLI · no coding required</p>
+    <h1>One installer. Choose the product and version you need.</h1>
+    <p class="lead">Install KFD, Buildchain, Kungfu, or Agent Hub Demo on supported macOS and Linux systems. Use the current reviewed release by default, select an exact historical version, or roll back a managed installation.</p>
+    <div class="installer-hero-command" data-command-block>
+      <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("all"))}</code></pre>
+      <button class="copy-command" type="button" data-copy-command aria-label="Copy command to install all products">Copy command</button>
+    </div>
+  </section>
+
+  <section class="installer-product-grid" aria-label="Available products">
+    ${products.map(renderInstallerProductCard).join("\n")}
+  </section>
+
+  <section class="installer-guide-grid" aria-label="Version selection and recovery">
+    <article class="panel">
+      <p class="eyebrow">Choose an exact version</p>
+      <h2>Current is convenient. Exact is reproducible.</h2>
+      <p>Pass <code>--version</code> when a project, receipt, or recovery needs a specific published release. Historical releases stay selectable while they remain in the reviewed catalog.</p>
+      <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("buildchain", "--version 3.0.6"))}</code></pre>
+      <button class="copy-command" type="button" data-copy-command aria-label="Copy exact Buildchain version install command">Copy command</button>
+    </article>
+    <article class="panel">
+      <p class="eyebrow">Recover a managed installation</p>
+      <h2>Roll back without guessing.</h2>
+      <p>The installer keeps content-addressed versions and activates commands through bounded user-owned links. Rollback restores the previously managed activation.</p>
+      <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("buildchain", "--rollback"))}</code></pre>
+      <button class="copy-command" type="button" data-copy-command aria-label="Copy Buildchain rollback command">Copy command</button>
+    </article>
+  </section>
+
+  <section class="panel installer-safety" id="integrity" aria-labelledby="installer-safety-heading">
+    <div>
+      <p class="eyebrow">Safety and release authority</p>
+      <h2 id="installer-safety-heading">A small command with explicit boundaries.</h2>
+    </div>
+    <ul>
+      <li>Verifies the selected artifact size and SHA-256 before activation.</li>
+      <li>Uses user-owned install roots; it does not invoke <code>sudo</code>, edit shell startup files, or write into Homebrew-owned prefixes.</li>
+      <li>Rejects unsupported targets, unsafe archives, unrelated existing commands, and partial all-product activation.</li>
+      <li>The named upstream GitHub Release remains the authority for product identity, release bytes, provenance, and qualification.</li>
+    </ul>
+    <div class="card-actions">
+      <a class="card-action" href="${escapeAttr(surfaceEndpointHref("hub", "install/v1/catalog.json"))}" data-local-href="/install/v1/catalog.json">Inspect the reviewed catalog</a>
+      <a class="card-action secondary" href="${escapeAttr(surfaceEndpointHref("hub", "install/v1/manifest.json"))}" data-local-href="/install/v1/manifest.json">Inspect publication integrity</a>
+    </div>
+  </section>`;
+}
+
 function kfdIndependentImplementationPanel() {
   const contract = kfdSite.homepage.independentImplementation;
   const nativeCli = contract?.nativeCli;
@@ -5402,19 +5653,22 @@ function kfdIndependentImplementationPanel() {
     </div>
     <aside class="kfd-native-install" data-native-cli-install>
       <div>
-        <p class="eyebrow">Native CLI · no coding required</p>
-        <h3>${escapeHtml(nativeCli.label)}</h3>
-        <p>${escapeHtml(nativeCli.summary)}</p>
+        <p class="eyebrow">Install KFD · no coding required</p>
+        <h3><a ${installGuideLinkAttrs("kfd")}>Start with the installation guide</a></h3>
+        <p>Use the shared versioned installer for the current native KFD CLI, an exact historical version, or rollback.</p>
         <ul class="kfd-native-capabilities" aria-label="Native CLI capabilities">
           ${nativeCli.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("\n")}
         </ul>
       </div>
       <div class="kfd-native-install-command">
-        <pre class="kfd-command"><code>${escapeHtml(nativeCli.installCommand)}</code></pre>
+        <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("kfd"))}</code></pre>
         <button class="copy-command" type="button" data-copy-command aria-label="Copy native kfd install command">Copy command</button>
         <pre class="kfd-command"><code>${escapeHtml(nativeCli.versionCommand)}</code></pre>
         <p><strong>What you get.</strong> ${nativeCli.capabilities.map((capability) => `<code>${escapeHtml(capability)}</code>`).join(" and ")}. Use the npm workflow below for <code>scaffold</code> and <code>test</code>.</p>
-        <a class="card-action secondary" href="${escapeAttr(nativeCli.docs.url)}">${escapeHtml(nativeCli.docs.label)} ↗</a>
+        <div class="card-actions">
+          <a class="card-action" ${installGuideLinkAttrs("kfd")}>Open installation guide</a>
+          <a class="card-action secondary" href="${escapeAttr(nativeCli.docs.url)}">${escapeHtml(nativeCli.docs.label)} ↗</a>
+        </div>
       </div>
     </aside>
     <ul class="kfd-language-list" aria-label="Supported adapter languages">
@@ -10356,12 +10610,23 @@ writeFile(
 );
 
 writeFile(
+  "install/index.html",
+  page({
+    title: "Install KFD, Buildchain, Kungfu, and Agent Hub Demo | libkungfu.dev",
+    description: "Install current or exact versions of KFD, Buildchain, Kungfu, and Agent Hub Demo with one verified POSIX installer.",
+    current: "install",
+    body: renderInstallerGuide(),
+  }),
+);
+
+writeFile(
   "buildchain/index.html",
   page({
     title: "buildchain.libkungfu.dev | Buildchain surface",
     description: buildchainPageDescription(),
     current: "buildchain",
     body: `${renderReaderOrientation("buildchain", "Buildchain product surface")}
+    ${renderHomepageInstallCard("buildchain", "Install the native Buildchain CLI with one copyable command.")}
     ${renderBuildchainHomepageSummary()}`,
   }),
 );
@@ -10471,6 +10736,7 @@ const manifest = {
   pages: [
     { path: "/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
     { path: "/architecture/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/site-manifest.json" },
+    { path: "/install/", host: surfaceCanonicalHost("hub"), source: "src/fixtures/installer-catalog.json" },
     ...[
       ["/install.sh", "src/installers/install.sh.in"],
       ["/install/v1/manifest.json", "src/fixtures/installer-catalog.json"],
@@ -11260,6 +11526,7 @@ ${site.readerContract.surfacePaths.map((entry) => `- ${entry.id} / ${entry.audie
 
 Primary pages:
 - ${surfaceCanonicalHref("hub")}
+- ${surfaceCanonicalHref("install")} (versioned installer guide for current, exact, and rollback workflows)
 - ${surfaceEndpointHref("hub", "architecture/")} (complete continuity architecture)
 - ${surfaceEndpointHref("hub", "dogfood/")}
 - ${surfaceEndpointHref("hub", "dogfood/parallel-runtime-paths/")} (fixed-window Google AX and Kungfu public-output comparison)
