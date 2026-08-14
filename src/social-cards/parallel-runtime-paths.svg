@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">75 times more merged PRs: Kungfu vs. Google AX</title>
+  <desc id="desc">A bounded comparison of fixed 30-day public GitHub windows.</desc>
+  <rect width="1200" height="630" fill="#111820"/>
+  <rect x="0" y="0" width="1200" height="14" fill="#2563eb"/>
+  <rect x="0" y="14" width="1200" height="7" fill="#0b6f68"/>
+  <text x="72" y="82" fill="#8fd9d1" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">KUNGFU / BOUNDED PUBLIC COMPARISON</text>
+  <text x="72" y="276" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="182" font-weight="700">75&#215;</text>
+  <text x="72" y="362" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700">more merged public PRs</text>
+  <text x="72" y="425" fill="#b9c7cf" font-family="Arial, Helvetica, sans-serif" font-size="30">one primary Kungfu account vs. all visible Google AX accounts</text>
+  <line x1="72" y1="474" x2="1128" y2="474" stroke="#344650" stroke-width="2"/>
+  <text x="72" y="529" fill="#8fd9d1" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">TWO FIXED 30-DAY WINDOWS</text>
+  <text x="1128" y="529" text-anchor="end" fill="#b9c7cf" font-family="Arial, Helvetica, sans-serif" font-size="23">Not a productivity claim. Audit the records.</text>
+  <text x="1128" y="579" text-anchor="end" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">libkungfu.dev/dogfood/parallel-runtime-paths</text>
+</svg>

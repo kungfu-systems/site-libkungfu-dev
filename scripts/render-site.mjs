@@ -1539,7 +1539,21 @@ ${registry.archivePolicy.rule}
   };
 }
 
-function page({ title, description, current, body, alternates = "", preserveRelativeMachineEntries = false, machineEntryPrefix = "", immutableArchive = false }) {
+function page({
+  title,
+  description,
+  current,
+  body,
+  alternates = "",
+  preserveRelativeMachineEntries = false,
+  machineEntryPrefix = "",
+  immutableArchive = false,
+  canonicalUrl = "",
+  socialTitle = title,
+  socialDescription = description,
+  socialImage = "",
+  socialImageAlt = "",
+}) {
   const nav = [
     ["kfd", "KFD"],
     ["buildchain", "Buildchain"],
@@ -1622,11 +1636,20 @@ function page({ title, description, current, body, alternates = "", preserveRela
   <meta name="description" content="${escapeAttr(description)}">${immutableArchive ? "" : `
   <meta name="application-name" content="${escapeAttr(BRAND_SIGNATURE)}">
   <meta property="og:site_name" content="${escapeAttr(BRAND_SIGNATURE)}">
-  <meta property="og:title" content="${escapeAttr(title)}">
-  <meta property="og:description" content="${escapeAttr(description)}">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="${escapeAttr(title)}">
-  <meta name="twitter:description" content="${escapeAttr(description)}">`}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${escapeAttr(socialTitle)}">
+  <meta property="og:description" content="${escapeAttr(socialDescription)}">${canonicalUrl ? `
+  <meta property="og:url" content="${escapeAttr(canonicalUrl)}">` : ""}${socialImage ? `
+  <meta property="og:image" content="${escapeAttr(socialImage)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapeAttr(socialImageAlt)}">` : ""}
+  <meta name="twitter:card" content="${socialImage ? "summary_large_image" : "summary"}">
+  <meta name="twitter:title" content="${escapeAttr(socialTitle)}">
+  <meta name="twitter:description" content="${escapeAttr(socialDescription)}">${socialImage ? `
+  <meta name="twitter:image" content="${escapeAttr(socialImage)}">
+  <meta name="twitter:image:alt" content="${escapeAttr(socialImageAlt)}">` : ""}${canonicalUrl ? `
+  <link rel="canonical" href="${escapeAttr(canonicalUrl)}">` : ""}`}
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="alternate" type="application/json" title="libkungfu.dev manifest" href="${escapeAttr(machineEntryHref("manifest.json"))}">
   <link rel="alternate" type="text/plain" title="Agent entrypoint" href="${escapeAttr(machineEntryHref("llms.txt"))}">
@@ -8724,6 +8747,11 @@ writeFile(
   page({
     title: "Kungfu Dogfood | Public evidence",
     description: dogfoodEvidence.headline,
+    canonicalUrl: "https://libkungfu.dev/dogfood/",
+    socialTitle: "One Human. Agents. Thousands of Merged PRs in 30 Days.",
+    socialDescription: "A rolling public record of Agent-mediated work, with retained evidence, deterministic samples, and explicit limits.",
+    socialImage: "https://libkungfu.dev/assets/social/dogfood-public-evidence.png",
+    socialImageAlt: "One human, Agents, and thousands of merged public pull requests in a rolling 30-day evidence record.",
     current: "hub",
     alternates: `  <link rel="alternate" type="application/json" title="Kungfu public dogfood evidence" href="/dogfood-evidence.json">`,
     body: `${dogfoodStyles}
@@ -8975,6 +9003,11 @@ writeFile(
   page({
     title: `${runtimeComparison.title} | ${site.title}`,
     description: runtimeComparison.lead,
+    canonicalUrl: "https://libkungfu.dev/dogfood/parallel-runtime-paths/",
+    socialTitle: "75× More Merged PRs: Kungfu vs. Google AX",
+    socialDescription: "One primary Kungfu account versus all visible Google AX accounts across fixed 30-day windows. A public PR anomaly, not a productivity claim.",
+    socialImage: "https://libkungfu.dev/assets/social/parallel-runtime-paths.png",
+    socialImageAlt: "75 times more merged public pull requests from one primary Kungfu account than all visible Google AX accounts in fixed 30-day windows.",
     current: "hub",
     alternates: `  <link rel="alternate" type="application/json" title="Google AX and Kungfu v4 bounded comparison" href="/dogfood/parallel-runtime-paths.json">`,
     body: `${runtimeComparisonStyles}
