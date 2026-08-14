@@ -92,6 +92,7 @@ const requiredBaseFiles = [
   "dist/index.html",
   "dist/404.html",
   "dist/architecture/index.html",
+  "dist/install/index.html",
   "dist/install.sh",
   "dist/install/v1/catalog.json",
   "dist/install/v1/manifest.json",
@@ -412,6 +413,7 @@ function expectedSurfaceHref(id) {
   const hrefsByChannel = {
     production: {
       hub: "https://libkungfu.dev/",
+      install: "https://libkungfu.dev/install/",
       kfx: "https://kfx.libkungfu.dev/",
       skills: "https://libkungfu.dev/skills/",
       core: "https://core.libkungfu.dev/",
@@ -421,6 +423,7 @@ function expectedSurfaceHref(id) {
     },
     staging: {
       hub: "https://staging.libkungfu.dev/",
+      install: "https://staging.libkungfu.dev/install/",
       kfx: "https://kfx.staging.libkungfu.dev/",
       skills: "https://staging.libkungfu.dev/skills/",
       core: "https://core.staging.libkungfu.dev/",
@@ -432,6 +435,7 @@ function expectedSurfaceHref(id) {
   if (channel === "preview" && previewAlias) {
     hrefsByChannel.preview = {
       hub: `https://${previewAlias}.preview.libkungfu.dev/`,
+      install: `https://${previewAlias}.preview.libkungfu.dev/install/`,
       kfx: `https://kfx-${previewAlias}.preview.libkungfu.dev/`,
       skills: `https://${previewAlias}.preview.libkungfu.dev/skills/`,
       core: `https://core-${previewAlias}.preview.libkungfu.dev/`,
@@ -2463,14 +2467,14 @@ if (!hubHtml.includes(`<a class="brand" href="${escapeHtml(expectedSurfaceHref("
   throw new Error("human header brand must expose the shared Kungfu signature, local role, canonical hub, and local fallback");
 }
 if (
-  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">Extensions</a><a href="${escapeHtml(expectedSurfaceHref("skills"))}" data-local-href="/skills/">Skills</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
+  !hubHtml.includes(`<nav aria-label="Primary"><a href="${escapeHtml(expectedSurfaceHref("kfd"))}" data-local-href="/kfd/">KFD</a><a href="${escapeHtml(expectedSurfaceHref("buildchain"))}" data-local-href="/buildchain/">Buildchain</a><a href="${escapeHtml(expectedSurfaceHref("core"))}" data-local-href="/core/">Core</a><a href="${escapeHtml(expectedSurfaceHref("kfx"))}" data-local-href="/kfx/">Extensions</a><a href="${escapeHtml(expectedSurfaceHref("skills"))}" data-local-href="/skills/">Skills</a><a href="${escapeHtml(expectedSurfaceHref("papers"))}" data-local-href="/papers/">Papers</a><a href="${escapeHtml(expectedSurfaceHref("install"))}" data-local-href="/install/">Install</a><a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a></nav>`)
 ) {
-  throw new Error("human header navigation must use the KFD, Buildchain, Core, Extensions, Skills, Papers order, canonical surface URLs, local fallbacks, and the Kungfu main-site return link");
+  throw new Error("human header navigation must use the KFD, Buildchain, Core, Extensions, Skills, Papers, Install order, canonical surface URLs, local fallbacks, and the Kungfu main-site return link");
 }
 if (!hubHtml.includes('nav > a:not(:first-child):not(.main-site-link)::before')) {
   throw new Error("human header navigation must retain the kungfu.tech-style desktop separators");
 }
-for (const path of ["index.html", "kfx/index.html", "skills/index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
+for (const path of ["index.html", "install/index.html", "kfx/index.html", "skills/index.html", "core/index.html", "buildchain/index.html", "kfd/index.html", "papers/index.html"]) {
   const html = fs.readFileSync(`dist/${path}`, "utf8");
   if (!html.includes(`<a class="main-site-link" href="${escapeHtml(site.homepage.futureProducts.url)}" aria-label="Back to the Kungfu main site">kungfu.tech <span aria-hidden="true">↗</span></a>`)) {
     throw new Error(`${path} header must expose the Kungfu main-site return link`);
@@ -2784,9 +2788,9 @@ if (
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
   || !kfdHomeHtml.includes('data-native-cli-install')
-  || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.installCommand)}</code>`)
+  || !kfdHomeHtml.includes(`<code>${escapeHtml("curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd")}</code>`)
   || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.versionCommand)}</code>`)
-  || !kfdHomeHtml.includes("Native CLI · no coding required")
+  || !kfdHomeHtml.includes("Install KFD · no coding required")
 ) {
   throw new Error("KFD homepage hierarchy must be identity, Self-Conformance reader model, foundation, independent implementation, installed Kungfu, then activation interfaces");
 }
@@ -2869,7 +2873,7 @@ for (const [label, html, maximum] of [
   ["Core", coreHtml, 350],
   ["Buildchain", buildchainHomeHtml, 550],
   ["KFD", kfdHomeHtml, 650],
-  ["Papers", papersIndex, 351],
+  ["Papers", papersIndex, 352],
 ]) {
   const count = visibleWordCount(html);
   if (count > maximum) {

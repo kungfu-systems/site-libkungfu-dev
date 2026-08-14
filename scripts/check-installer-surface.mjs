@@ -13,6 +13,9 @@ const friendlyCatalog = read("dist/install/v1/catalog.json");
 const friendlyInstaller = read("dist/install.sh");
 const publication = json("dist/install/v1/manifest.json");
 const siteManifest = json("dist/manifest.json");
+const installPage = read("dist/install/index.html").toString("utf8");
+const kfdPage = read("dist/kfd/index.html").toString("utf8");
+const buildchainPage = read("dist/buildchain/index.html").toString("utf8");
 
 assert.deepEqual(friendlyCatalog, sourceCatalog);
 assert.equal(sha256(friendlyCatalog), publication.catalog.sha256);
@@ -35,6 +38,7 @@ assert.ok(publication.products.find((entry) => entry.id === "buildchain").versio
 assert.ok(publication.products.find((entry) => entry.id === "kfd").versions.includes("1.0.0-alpha.63"));
 
 for (const route of [
+  "/install/",
   "/install.sh",
   "/install/v1/manifest.json",
   "/install/v1/catalog.json",
@@ -50,6 +54,26 @@ for (const route of ["/install/v1/manifest.json", "/install/v1/catalog.json"]) {
   assert.ok(siteManifest.machineEntries.some((entry) => entry.path === route), `machine entries missing ${route}`);
 }
 assert.deepEqual(siteManifest.installerPublication, publication);
+
+for (const product of publication.products) {
+  assert.ok(installPage.includes(`id="${product.id}"`), `install page missing ${product.id} card`);
+  assert.ok(
+    installPage.includes(`https://libkungfu.dev/install.sh | sh -s -- ${product.id}`),
+    `install page missing ${product.id} copy command`,
+  );
+}
+assert.ok(installPage.includes("--version 3.0.6"), "install page missing historical Buildchain example");
+assert.ok(installPage.includes("--rollback"), "install page missing rollback example");
+assert.ok(kfdPage.includes('data-local-href="/install/#kfd"'), "KFD page missing install guide card");
+assert.ok(buildchainPage.includes('data-local-href="/install/#buildchain"'), "Buildchain page missing install guide card");
+assert.ok(
+  kfdPage.includes("https://libkungfu.dev/install.sh | sh -s -- kfd"),
+  "KFD page missing copyable installer command",
+);
+assert.ok(
+  buildchainPage.includes("https://libkungfu.dev/install.sh | sh -s -- buildchain"),
+  "Buildchain page missing copyable installer command",
+);
 
 const shell = friendlyInstaller.toString("utf8");
 for (const contract of [
