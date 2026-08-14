@@ -8,7 +8,7 @@ const safeValue = /^[A-Za-z0-9._:/@+=-]+$/u;
 const digest = /^[0-9a-f]{64}$/u;
 const gitSha = /^[0-9a-f]{40}$/u;
 const productIds = ["kfd", "buildchain", "kungfu", "agent-hub-demo"];
-const targetIds = new Set(["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"]);
+const targetIds = new Set(["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "windows-x64"]);
 
 function sha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
@@ -41,7 +41,7 @@ export function validateCatalog(catalog) {
   if (catalog?.contract !== "libkungfu.multi-product-installer-catalog/v1") {
     throw new Error("unsupported installer catalog contract");
   }
-  if (catalog.schemaVersion !== 1 || catalog.scope !== "posix-shell") {
+  if (catalog.schemaVersion !== 1 || catalog.scope !== "multi-platform-native-installers") {
     throw new Error("unsupported installer catalog scope");
   }
   if (
@@ -112,11 +112,16 @@ export function validateCatalog(catalog) {
         } else {
           requireSafe(target.binaryPath, `${product.id}@${version.version}/${target.platform}.binaryPath`);
           requireDigest(target.binarySha256, `${product.id}@${version.version}/${target.platform}.binarySha256`);
-          if (target.kind === "archive" && target.archiveType !== "tar.gz") {
-            throw new Error("the POSIX installer currently accepts only tar.gz archives");
+          if (target.kind === "archive"
+            && !((target.platform === "windows-x64" && target.archiveType === "zip")
+              || (target.platform !== "windows-x64" && target.archiveType === "tar.gz"))) {
+            throw new Error("installer archive type does not match its platform");
           }
         }
         records.push({ product, version, target });
+      }
+      if (!targets.has("windows-x64")) {
+        throw new Error(`${product.id}@${version.version} must retain a verified Windows x64 target`);
       }
     }
   }
@@ -175,7 +180,7 @@ function renderVersionHelp(catalog) {
     .join("\\n");
 }
 
-export function renderInstaller({ catalog, catalogBytes, template }) {
+export function renderInstaller({ catalog, catalogBytes, template, powershellTemplate }) {
   const records = validateCatalog(catalog);
   const catalogSha256 = sha256(catalogBytes);
   const catalogUrl = `https://libkungfu.dev/install/v1/catalog/${catalogSha256}.json`;
@@ -189,6 +194,26 @@ export function renderInstaller({ catalog, catalogBytes, template }) {
   if (installer.includes("@@")) throw new Error("installer template contains an unresolved token");
   const installerBytes = Buffer.from(installer, "utf8");
   const installerSha256 = sha256(installerBytes);
+  let powershellInstaller = powershellTemplate
+    .replaceAll("@@CATALOG_SHA256@@", catalogSha256)
+    .replaceAll("@@CATALOG_SIZE@@", String(catalogBytes.length))
+    .replaceAll("@@CATALOG_URL@@", catalogUrl)
+    .replace("@@CATALOG_BASE64@@", catalogBytes.toString("base64"));
+  if (powershellInstaller.includes("@@")) throw new Error("PowerShell installer template contains an unresolved token");
+  const powershellInstallerBytes = Buffer.from(powershellInstaller, "utf8");
+  const powershellInstallerSha256 = sha256(powershellInstallerBytes);
+  const shellPublication = {
+    sha256: installerSha256,
+    size: installerBytes.length,
+    friendlyUrl: "https://libkungfu.dev/install.sh",
+    immutableUrl: `https://libkungfu.dev/installers/v1/${installerSha256}/install.sh`,
+  };
+  const powershellPublication = {
+    sha256: powershellInstallerSha256,
+    size: powershellInstallerBytes.length,
+    friendlyUrl: "https://libkungfu.dev/install.ps1",
+    immutableUrl: `https://libkungfu.dev/installers/v1/${powershellInstallerSha256}/install.ps1`,
+  };
   const manifest = {
     schemaVersion: 1,
     contract: "libkungfu.multi-product-installer-publication/v1",
@@ -199,11 +224,10 @@ export function renderInstaller({ catalog, catalogBytes, template }) {
       friendlyUrl: "https://libkungfu.dev/install/v1/catalog.json",
       immutableUrl: catalogUrl,
     },
-    installer: {
-      sha256: installerSha256,
-      size: installerBytes.length,
-      friendlyUrl: "https://libkungfu.dev/install.sh",
-      immutableUrl: `https://libkungfu.dev/installers/v1/${installerSha256}/install.sh`,
+    installer: shellPublication,
+    installers: {
+      shell: shellPublication,
+      powershell: powershellPublication,
     },
     products: catalog.products.map((product) => ({
       id: product.id,
@@ -213,22 +237,33 @@ export function renderInstaller({ catalog, catalogBytes, template }) {
     })),
     authorityBoundary: catalog.authorityBoundary,
   };
-  return { catalogSha256, installerBytes, installerSha256, manifest };
+  return {
+    catalogSha256,
+    installerBytes,
+    installerSha256,
+    powershellInstallerBytes,
+    powershellInstallerSha256,
+    manifest,
+  };
 }
 
 export function writeInstallerPublication({ root = repoRoot } = {}) {
   const catalogPath = path.join(root, "src", "install", "installer-catalog.json");
   const templatePath = path.join(root, "src", "installers", "install.sh.in");
+  const powershellTemplatePath = path.join(root, "src", "installers", "install.ps1.in");
   const catalogBytes = fs.readFileSync(catalogPath);
   const catalog = JSON.parse(catalogBytes.toString("utf8"));
   const template = fs.readFileSync(templatePath, "utf8");
-  const rendered = renderInstaller({ catalog, catalogBytes, template });
+  const powershellTemplate = fs.readFileSync(powershellTemplatePath, "utf8");
+  const rendered = renderInstaller({ catalog, catalogBytes, template, powershellTemplate });
   const dist = path.join(root, "dist");
   const writes = new Map([
     ["install.sh", rendered.installerBytes],
+    ["install.ps1", rendered.powershellInstallerBytes],
     ["install/v1/catalog.json", catalogBytes],
     [`install/v1/catalog/${rendered.catalogSha256}.json`, catalogBytes],
     [`installers/v1/${rendered.installerSha256}/install.sh`, rendered.installerBytes],
+    [`installers/v1/${rendered.powershellInstallerSha256}/install.ps1`, rendered.powershellInstallerBytes],
     ["install/v1/manifest.json", Buffer.from(`${JSON.stringify(rendered.manifest, null, 2)}\n`)],
   ]);
   for (const [relative, bytes] of writes) {
@@ -241,5 +276,5 @@ export function writeInstallerPublication({ root = repoRoot } = {}) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const rendered = writeInstallerPublication();
-  process.stdout.write(`render-installer: ${rendered.installerSha256} ${rendered.catalogSha256}\n`);
+  process.stdout.write(`render-installer: ${rendered.installerSha256} ${rendered.powershellInstallerSha256} ${rendered.catalogSha256}\n`);
 }

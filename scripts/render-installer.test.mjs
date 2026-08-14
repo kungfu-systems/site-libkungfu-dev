@@ -103,6 +103,8 @@ function createFixture(root) {
   const kfd2 = createArchive(root, "kfd-v2.tar.gz", "kfd-v2/kfd", shell("kfd", "2.0.0"));
   const buildchain = createArchive(root, "buildchain.tar.gz", "buildchain", shell("buildchain", "4.0.0"));
   writeExecutable(path.join(root, "agent-hub-demo"), shell("agent-hub-demo", "0.2.0"));
+  fs.writeFileSync(path.join(root, "windows-fixture.exe"), "windows fixture\n");
+  fs.writeFileSync(path.join(root, "kungfu-install.ps1"), "param()\n");
   writeExecutable(path.join(root, "kungfu-install.sh"), `#!/bin/sh
 set -eu
 version=
@@ -141,13 +143,21 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
     artifact: asset(root, artifactName),
     provenance: { ...asset(root, provenanceName, "fixture-provenance"), name: undefined },
   });
+  const windowsTarget = (commandName, provenanceName) => ({
+    platform: "windows-x64",
+    kind: "binary",
+    binaryPath: `${commandName}.exe`,
+    binarySha256: sha256(fs.readFileSync(path.join(root, "windows-fixture.exe"))),
+    artifact: asset(root, "windows-fixture.exe"),
+    provenance: { ...asset(root, provenanceName, "fixture-provenance"), name: undefined },
+  });
   const sourceSha = "0123456789abcdef0123456789abcdef01234567";
   const version = (value, targets) => ({ version: value, tag: `v${value}`, publishedAt: "2026-08-14T00:00:00Z", sourceSha, targets });
   const catalog = {
     schemaVersion: 1,
     contract: "libkungfu.multi-product-installer-catalog/v1",
     catalogVersion: "test",
-    scope: "posix-shell",
+    scope: "multi-platform-native-installers",
     authorityBoundary: "Fixture upstream assets remain authoritative.",
     refresh: {
       mode: "explicit-exact-release",
@@ -171,8 +181,8 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         repository: "https://github.com/kungfu-systems/kfd",
         defaultVersion: "1.0.0",
         versions: [
-          version("1.0.0", [makeTarget({ artifactName: "kfd-v1.tar.gz", binaryPath: "kfd-v1/kfd", binarySha256: kfd1.binarySha256, provenanceName: "kfd-v1.provenance.json" })]),
-          version("2.0.0", [makeTarget({ artifactName: "kfd-v2.tar.gz", binaryPath: "kfd-v2/kfd", binarySha256: kfd2.binarySha256, provenanceName: "kfd-v2.provenance.json" })]),
+          version("1.0.0", [makeTarget({ artifactName: "kfd-v1.tar.gz", binaryPath: "kfd-v1/kfd", binarySha256: kfd1.binarySha256, provenanceName: "kfd-v1.provenance.json" }), windowsTarget("kfd", "kfd-v1.provenance.json")]),
+          version("2.0.0", [makeTarget({ artifactName: "kfd-v2.tar.gz", binaryPath: "kfd-v2/kfd", binarySha256: kfd2.binarySha256, provenanceName: "kfd-v2.provenance.json" }), windowsTarget("kfd", "kfd-v2.provenance.json")]),
         ],
       },
       {
@@ -180,33 +190,43 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         command: "buildchain",
         repository: "https://github.com/kungfu-systems/buildchain",
         defaultVersion: "4.0.0",
-        versions: [version("4.0.0", [makeTarget({ artifactName: "buildchain.tar.gz", binaryPath: "buildchain", binarySha256: buildchain.binarySha256, provenanceName: "buildchain.provenance.json" })])],
+        versions: [version("4.0.0", [makeTarget({ artifactName: "buildchain.tar.gz", binaryPath: "buildchain", binarySha256: buildchain.binarySha256, provenanceName: "buildchain.provenance.json" }), windowsTarget("buildchain", "buildchain.provenance.json")])],
       },
       {
         id: "kungfu",
         command: "kungfu",
         repository: "https://github.com/kungfu-systems/kungfu",
         defaultVersion: "4.0.0-alpha.1",
-        versions: [version("4.0.0-alpha.1", [{
-          platform,
-          kind: "delegated-installer",
-          artifact: asset(root, "kungfu-install.sh"),
-          provenance: { ...asset(root, "kungfu.provenance.json", "fixture-provenance"), name: undefined },
-          delegate: { ...asset(root, "kungfu-install.sh"), name: undefined },
-        }])],
+        versions: [version("4.0.0-alpha.1", [
+          {
+            platform,
+            kind: "delegated-installer",
+            artifact: asset(root, "kungfu-install.sh"),
+            provenance: { ...asset(root, "kungfu.provenance.json", "fixture-provenance"), name: undefined },
+            delegate: { ...asset(root, "kungfu-install.sh"), name: undefined },
+          },
+          {
+            platform: "windows-x64",
+            kind: "delegated-installer",
+            artifact: asset(root, "windows-fixture.exe"),
+            provenance: { ...asset(root, "kungfu.provenance.json", "fixture-provenance"), name: undefined },
+            delegate: { ...asset(root, "kungfu-install.ps1"), name: undefined },
+          },
+        ])],
       },
       {
         id: "agent-hub-demo",
         command: "agent-hub-demo",
         repository: "https://github.com/kungfu-systems/agent-hub-demo",
         defaultVersion: "0.2.0",
-        versions: [version("0.2.0", [makeTarget({ artifactName: "agent-hub-demo", binaryPath: "agent-hub-demo", binarySha256: sha256(fs.readFileSync(path.join(root, "agent-hub-demo"))), provenanceName: "agent-hub-demo.provenance.json", kind: "binary" })])],
+        versions: [version("0.2.0", [makeTarget({ artifactName: "agent-hub-demo", binaryPath: "agent-hub-demo", binarySha256: sha256(fs.readFileSync(path.join(root, "agent-hub-demo"))), provenanceName: "agent-hub-demo.provenance.json", kind: "binary" }), windowsTarget("agent-hub-demo", "agent-hub-demo.provenance.json")])],
       },
     ],
   };
   const catalogBytes = Buffer.from(`${JSON.stringify(catalog, null, 2)}\n`);
   const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
-  const rendered = renderInstaller({ catalog, catalogBytes, template });
+  const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+  const rendered = renderInstaller({ catalog, catalogBytes, template, powershellTemplate });
   const catalogFile = path.join(root, "catalog.json");
   const installerFile = path.join(root, "install.sh");
   fs.writeFileSync(catalogFile, catalogBytes);
@@ -258,8 +278,10 @@ test("actual publication is content-addressed and shell-valid", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "dist", "install", "v1", "manifest.json"), "utf8"));
   assert.equal(manifest.catalog.sha256, rendered.catalogSha256);
   assert.equal(manifest.installer.sha256, rendered.installerSha256);
+  assert.equal(manifest.installers.powershell.sha256, rendered.powershellInstallerSha256);
   assert.ok(fs.existsSync(path.join(repoRoot, "dist", new URL(manifest.catalog.immutableUrl).pathname)));
   assert.ok(fs.existsSync(path.join(repoRoot, "dist", new URL(manifest.installer.immutableUrl).pathname)));
+  assert.ok(fs.existsSync(path.join(repoRoot, "dist", new URL(manifest.installers.powershell.immutableUrl).pathname)));
   const syntax = run("sh", ["-n", path.join(repoRoot, "dist", "install.sh")]);
   assert.equal(syntax.status, 0, syntax.stderr);
   const relative = run("sh", [path.join(repoRoot, "dist", "install.sh"), "kfd", "--dry-run", "--install-dir", "relative"]);
@@ -267,18 +289,23 @@ test("actual publication is content-addressed and shell-valid", () => {
   assert.match(relative.stderr, /path-invalid/);
 });
 
-test("streamed help drains the installer without breaking its producer", async () => {
-  writeInstallerPublication({ root: repoRoot });
-  const installer = fs.readFileSync(path.join(repoRoot, "dist", "install.sh"));
-  const result = await runStreamed("sh", ["-s", "--"], installer);
+test("streamed no-argument execution defaults to Kungfu without breaking its producer", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "libkungfu-installer-stream-test-"));
+  const fixture = createFixture(root);
+  const installer = fs.readFileSync(fixture.installerFile);
+  const result = await runStreamed("sh", ["-s", "--"], installer, {
+    env: fixtureEnv(root, fixture.fakeBin),
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.writeError, null, result.writeError?.message);
-  assert.match(result.stdout, /usage: install\.sh PRODUCT/);
+  assert.match(result.stderr, /installed: kungfu/);
+  assert.ok(fs.existsSync(path.join(root, "home", ".local", "bin", "kungfu")));
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("catalog rejects a second product set or an unpinned digest", () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "install", "installer-catalog.json"), "utf8"));
-  assert.equal(validateCatalog(catalog).length, 18);
+  assert.equal(validateCatalog(catalog).length, 25);
   assert.throws(() => validateCatalog({ ...catalog, products: catalog.products.slice(1) }), /exactly four products/);
   const broken = structuredClone(catalog);
   broken.products[0].versions[0].targets[0].artifact.sha256 = "latest";
@@ -367,7 +394,8 @@ test("unsafe archive paths fail before activation", () => {
     target.artifact.sha256 = sha256(unsafe);
     const catalogBytes = Buffer.from(`${JSON.stringify(fixture.catalog, null, 2)}\n`);
     const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
-    const rendered = renderInstaller({ catalog: fixture.catalog, catalogBytes, template });
+    const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+    const rendered = renderInstaller({ catalog: fixture.catalog, catalogBytes, template, powershellTemplate });
     fs.writeFileSync(fixture.catalogFile, catalogBytes);
     fs.writeFileSync(fixture.installerFile, rendered.installerBytes);
     const binDir = path.join(root, "unsafe-bin");

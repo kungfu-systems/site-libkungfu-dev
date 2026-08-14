@@ -11,6 +11,7 @@ const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex"
 const sourceCatalog = read("src/install/installer-catalog.json");
 const friendlyCatalog = read("dist/install/v1/catalog.json");
 const friendlyInstaller = read("dist/install.sh");
+const friendlyPowerShellInstaller = read("dist/install.ps1");
 const publication = json("dist/install/v1/manifest.json");
 const siteManifest = json("dist/manifest.json");
 const installPage = read("dist/install/index.html").toString("utf8");
@@ -23,11 +24,16 @@ assert.equal(sha256(friendlyCatalog), publication.catalog.sha256);
 assert.equal(friendlyCatalog.length, publication.catalog.size);
 assert.equal(sha256(friendlyInstaller), publication.installer.sha256);
 assert.equal(friendlyInstaller.length, publication.installer.size);
+assert.equal(sha256(friendlyPowerShellInstaller), publication.installers.powershell.sha256);
+assert.equal(friendlyPowerShellInstaller.length, publication.installers.powershell.size);
+assert.deepEqual(publication.installers.shell, publication.installer);
 
 const catalogImmutablePath = `dist${new URL(publication.catalog.immutableUrl).pathname}`;
 const installerImmutablePath = `dist${new URL(publication.installer.immutableUrl).pathname}`;
+const powershellInstallerImmutablePath = `dist${new URL(publication.installers.powershell.immutableUrl).pathname}`;
 assert.deepEqual(read(catalogImmutablePath), friendlyCatalog);
 assert.deepEqual(read(installerImmutablePath), friendlyInstaller);
+assert.deepEqual(read(powershellInstallerImmutablePath), friendlyPowerShellInstaller);
 
 assert.deepEqual(publication.products.map((entry) => entry.id), [
   "kfd",
@@ -41,10 +47,12 @@ assert.ok(publication.products.find((entry) => entry.id === "kfd").versions.incl
 for (const route of [
   "/install/",
   "/install.sh",
+  "/install.ps1",
   "/install/v1/manifest.json",
   "/install/v1/catalog.json",
   new URL(publication.catalog.immutableUrl).pathname,
   new URL(publication.installer.immutableUrl).pathname,
+  new URL(publication.installers.powershell.immutableUrl).pathname,
 ]) {
   assert.ok(
     siteManifest.pages.some((entry) => entry.path === route && entry.host === siteManifest.canonicalHost),
@@ -58,12 +66,21 @@ assert.deepEqual(siteManifest.installerPublication, publication);
 assert.equal(JSON.parse(sourceCatalog).refresh.mode, "explicit-exact-release");
 assert.equal(JSON.parse(sourceCatalog).refresh.source, "github-release");
 assert.equal(JSON.parse(sourceCatalog).refresh.movingSelectorsAllowed, false);
+for (const product of JSON.parse(sourceCatalog).products) {
+  for (const version of product.versions) {
+    assert.ok(version.targets.some((target) => target.platform === "windows-x64"), `${product.id}@${version.version} missing Windows x64`);
+  }
+}
 
 for (const product of publication.products) {
   assert.ok(installPage.includes(`id="${product.id}"`), `install page missing ${product.id} card`);
   assert.ok(
     installPage.includes(`https://libkungfu.dev/install.sh | sh -s -- ${product.id}`),
     `install page missing ${product.id} copy command`,
+  );
+  assert.ok(
+    installPage.includes(`(irm https://libkungfu.dev/install.ps1))) ${product.id}`),
+    `install page missing ${product.id} Windows copy command`,
   );
 }
 assert.equal(installPage.includes("curl --fail --proto"), false, "install page must use the main-site minimal curl style");
@@ -74,8 +91,11 @@ for (const productId of ["kfd", "buildchain", "kungfu"]) {
   );
 }
 assert.ok(installPage.includes("Homebrew owns package-manager installation, upgrades, and removal"));
-assert.ok(installPage.includes("is the canonical public entry"));
-assert.ok(installPage.includes("one reviewed Site catalog projects exact product-owned GitHub Releases"));
+assert.ok(installPage.includes("are the canonical public entries"));
+assert.ok(installPage.includes("one reviewed Site catalog that projects exact product-owned GitHub Releases"));
+assert.ok(installPage.includes("curl -fsSL https://libkungfu.dev/install.sh | sh"));
+assert.ok(installPage.includes("irm https://libkungfu.dev/install.ps1 | iex"));
+assert.ok(installPage.includes("both installers default to Kungfu"));
 assert.ok(installPage.includes("--version 3.0.6"), "install page missing historical Buildchain example");
 assert.ok(installPage.includes("--rollback"), "install page missing rollback example");
 assert.ok(kfdPage.includes('data-local-href="/install/#kfd"'), "KFD page missing install guide card");
@@ -100,6 +120,7 @@ for (const contract of [
   "--rollback",
   "PATH was not modified",
   "signed upstream installer",
+  "product=kungfu",
 ]) {
   assert.ok(shell.includes(contract), `installer safety contract missing: ${contract}`);
 }
@@ -107,4 +128,20 @@ for (const forbidden of ["sudo ", ".bashrc", ".zshrc", "brew install", "kungfu.t
   assert.equal(shell.includes(forbidden), false, `installer contains forbidden mutation or mutable delegation: ${forbidden}`);
 }
 
-process.stdout.write(`check-installer-surface: ${publication.installer.sha256} ${publication.catalog.sha256}\n`);
+const powershell = friendlyPowerShellInstaller.toString("utf8");
+for (const contract of [
+  "$Product = 'kungfu'",
+  "windows-x64",
+  "ownership-conflict",
+  "archive-unsafe",
+  "-Rollback",
+  "PATH was not modified",
+  "signed upstream installer",
+]) {
+  assert.ok(powershell.includes(contract), `PowerShell installer safety contract missing: ${contract}`);
+}
+for (const forbidden of ["SetEnvironmentVariable", "Start-Process -Verb RunAs", "HKLM:", "winget install", "choco install"]) {
+  assert.equal(powershell.includes(forbidden), false, `PowerShell installer contains forbidden system mutation: ${forbidden}`);
+}
+
+process.stdout.write(`check-installer-surface: ${publication.installer.sha256} ${publication.installers.powershell.sha256} ${publication.catalog.sha256}\n`);

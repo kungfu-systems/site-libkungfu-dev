@@ -17,18 +17,22 @@ const targetDefinitions = {
     ["darwin-x64", "x86_64-apple-darwin"],
     ["linux-arm64", "aarch64-unknown-linux-gnu"],
     ["linux-x64", "x86_64-unknown-linux-gnu"],
+    ["windows-x64", "x86_64-pc-windows-msvc"],
   ],
   buildchain: [
     ["darwin-arm64", "aarch64-apple-darwin"],
     ["linux-x64", "x86_64-unknown-linux-gnu"],
+    ["windows-x64", "x86_64-pc-windows-msvc"],
   ],
   "agent-hub-demo": [
     ["darwin-arm64", "macos-arm64"],
     ["linux-x64", "linux-x64"],
+    ["windows-x64", "windows-x64"],
   ],
   kungfu: [
     ["darwin-arm64", "darwin-arm64"],
     ["linux-x64", "linux-x64"],
+    ["windows-x64", "windows-x64"],
   ],
 };
 
@@ -98,7 +102,8 @@ async function resolveKfd({ version, release, loadAssetBytes }) {
   let sourceSha = "";
   const targets = [];
   for (const [platform, triple] of targetDefinitions.kfd) {
-    const artifact = releaseAsset(release, `kfd-${version}-${triple}.tar.gz`);
+    const archiveType = platform === "windows-x64" ? "zip" : "tar.gz";
+    const artifact = releaseAsset(release, `kfd-${version}-${triple}.${archiveType}`);
     const provenanceAsset = releaseAsset(release, `kfd-${version}-${triple}.provenance.json`);
     const provenance = await verifiedJson(provenanceAsset, loadAssetBytes);
     if (provenance.schema !== "kfd.native-release-provenance/v1") fail("kfd-provenance-contract-mismatch", triple);
@@ -116,8 +121,8 @@ async function resolveKfd({ version, release, loadAssetBytes }) {
     targets.push({
       platform,
       kind: "archive",
-      archiveType: "tar.gz",
-      binaryPath: `kfd-${version}-${triple}/kfd`,
+      archiveType,
+      binaryPath: `kfd-${version}-${triple}/${platform === "windows-x64" ? "kfd.exe" : "kfd"}`,
       binarySha256,
       artifact,
       provenance: provenanceReference(provenance.schema, provenanceAsset),
@@ -130,7 +135,8 @@ async function resolveBuildchain({ version, release, loadAssetBytes }) {
   let sourceSha = "";
   const targets = [];
   for (const [platform, triple] of targetDefinitions.buildchain) {
-    const artifact = releaseAsset(release, `buildchain-${triple}.tar.gz`);
+    const archiveType = platform === "windows-x64" ? "zip" : "tar.gz";
+    const artifact = releaseAsset(release, `buildchain-${triple}.${archiveType}`);
     const provenanceAsset = releaseAsset(release, `buildchain-${triple}.json`);
     const provenance = await verifiedJson(provenanceAsset, loadAssetBytes);
     if (provenance.contract !== "kungfu-buildchain-standalone-binary") {
@@ -142,15 +148,16 @@ async function resolveBuildchain({ version, release, loadAssetBytes }) {
     const candidateSourceSha = requireGitSha(provenance.sourceSha, `buildchain@${version}`);
     if (sourceSha && sourceSha !== candidateSourceSha) fail("release-source-divergence", `buildchain@${version}`);
     sourceSha = candidateSourceSha;
-    const executable = provenance.executableFiles?.find((entry) => entry.path === "buildchain");
+    const binaryPath = platform === "windows-x64" ? "buildchain.exe" : "buildchain";
+    const executable = provenance.executableFiles?.find((entry) => entry.path === binaryPath);
     if (!executable || !/^[0-9a-f]{64}$/u.test(executable.sha256 || "")) {
       fail("buildchain-binary-digest-missing", triple);
     }
     targets.push({
       platform,
       kind: "archive",
-      archiveType: "tar.gz",
-      binaryPath: "buildchain",
+      archiveType,
+      binaryPath,
       binarySha256: executable.sha256,
       artifact,
       provenance: provenanceReference(provenance.contract, provenanceAsset),
@@ -170,8 +177,11 @@ async function resolveAgentHubDemo({ version, release, loadAssetBytes }) {
   const sourceSha = requireGitSha(evidence.release.sourceSha, `agent-hub-demo@${version}`);
   const targets = [];
   for (const [platform, releasePlatform] of targetDefinitions["agent-hub-demo"]) {
-    const suffix = releasePlatform === "macos-arm64" ? "macos-arm64" : "linux-x64";
-    const artifact = releaseAsset(release, `agent-hub-demo-${suffix}`);
+    const suffix = releasePlatform;
+    const artifactName = platform === "windows-x64"
+      ? `agent-hub-demo-${suffix}.exe`
+      : `agent-hub-demo-${suffix}`;
+    const artifact = releaseAsset(release, artifactName);
     const provenanceAsset = releaseAsset(release, `binary-${suffix}.json`);
     const provenance = await verifiedJson(provenanceAsset, loadAssetBytes);
     if (provenance.contract !== "agent-hub-demo.binary-artifact/v1"
@@ -183,7 +193,7 @@ async function resolveAgentHubDemo({ version, release, loadAssetBytes }) {
     const target = {
       platform,
       kind: "binary",
-      binaryPath: "agent-hub-demo",
+      binaryPath: platform === "windows-x64" ? "agent-hub-demo.exe" : "agent-hub-demo",
       binarySha256: provenance.sha256,
       artifact,
       provenance: provenanceReference(provenance.contract, provenanceAsset),
@@ -207,30 +217,35 @@ async function resolveKungfu({ version, release, loadAssetBytes }) {
     fail("kungfu-installer-bundle-mismatch", version);
   }
   const sourceSha = requireGitSha(bundle.identity.sourceCommit, `kungfu@${version}`);
-  const immutableInstaller = bundle.assets?.find((asset) => asset.path === `${bundle.routes?.immutablePath}/install.sh`);
-  if (!immutableInstaller || immutableInstaller.role !== "immutable-installer") {
-    fail("kungfu-immutable-installer-missing", version);
-  }
-  const installerAsset = releaseAsset(release, immutableInstaller.releaseAsset);
-  const installerDigest = digestPattern.exec(immutableInstaller.digest || "")?.[1];
-  if (installerDigest !== installerAsset.sha256 || immutableInstaller.size !== installerAsset.size) {
-    fail("kungfu-installer-release-mismatch", version);
-  }
-  const delegate = {
-    url: `https://kungfu.tech/${bundle.routes.immutablePath}/install.sh`,
-    size: immutableInstaller.size,
-    sha256: installerDigest,
+  const delegateFor = (installerName) => {
+    const immutableInstaller = bundle.assets?.find((asset) => asset.path === `${bundle.routes?.immutablePath}/${installerName}`);
+    if (!immutableInstaller || immutableInstaller.role !== "immutable-installer") {
+      fail("kungfu-immutable-installer-missing", `${version}/${installerName}`);
+    }
+    const installerAsset = releaseAsset(release, immutableInstaller.releaseAsset);
+    const installerDigest = digestPattern.exec(immutableInstaller.digest || "")?.[1];
+    if (installerDigest !== installerAsset.sha256 || immutableInstaller.size !== installerAsset.size) {
+      fail("kungfu-installer-release-mismatch", `${version}/${installerName}`);
+    }
+    return {
+      url: `https://kungfu.tech/${bundle.routes.immutablePath}/${installerName}`,
+      size: immutableInstaller.size,
+      sha256: installerDigest,
+    };
   };
+  const shellDelegate = delegateFor("install.sh");
+  const powershellDelegate = delegateFor("install.ps1");
   const artifactNames = {
     "darwin-arm64": "kungfu-episodes-cli-darwin-arm64.tar.gz",
     "linux-x64": "kungfu-episodes-cli-linux-x64.tar.gz",
+    "windows-x64": "kungfu-episodes-cli-windows-x64.zip",
   };
   const targets = targetDefinitions.kungfu.map(([platform]) => ({
     platform,
     kind: "delegated-installer",
     artifact: releaseAsset(release, artifactNames[platform]),
     provenance: provenanceReference(bundle.schema, provenanceAsset),
-    delegate,
+    delegate: platform === "windows-x64" ? powershellDelegate : shellDelegate,
   }));
   return { sourceSha, targets };
 }
@@ -268,9 +283,19 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
     const release = await loadRelease(request.productId, request.version);
     const resolved = await resolveVersionEntry({ ...request, release, loadAssetBytes });
     const existingIndex = product.versions.findIndex((entry) => entry.version === request.version);
+    let expanded = false;
     if (existingIndex >= 0) {
-      if (!isDeepStrictEqual(product.versions[existingIndex], resolved)) {
+      const existing = product.versions[existingIndex];
+      const comparableResolved = {
+        ...resolved,
+        targets: existing.targets.map((target) => resolved.targets.find((candidate) => candidate.platform === target.platform)),
+      };
+      if (!isDeepStrictEqual(existing, comparableResolved)) {
         fail("immutable-catalog-drift", `${request.productId}@${request.version}`);
+      }
+      if (resolved.targets.length > existing.targets.length) {
+        product.versions[existingIndex] = resolved;
+        expanded = true;
       }
     } else {
       product.versions.unshift(resolved);
@@ -280,7 +305,7 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
     changes.push({
       product: request.productId,
       version: request.version,
-      action: existingIndex < 0 ? "added" : previousDefault === request.version ? "verified" : "promoted",
+      action: existingIndex < 0 ? "added" : expanded ? "expanded" : previousDefault === request.version ? "verified" : "promoted",
       retainedVersions: product.versions.map((entry) => entry.version),
     });
   }

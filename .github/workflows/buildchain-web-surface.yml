@@ -32,6 +32,25 @@ permissions:
   pull-requests: write
 
 jobs:
+  windows-installer:
+    runs-on: windows-2025
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Site source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Render and exercise the Windows installer
+        shell: pwsh
+        run: |
+          node scripts/render-installer.mjs
+          & scripts/test-installer-windows.ps1
+
   production-governance:
     runs-on: ubuntu-24.04
     permissions:
@@ -89,7 +108,8 @@ jobs:
   web-surface:
     needs:
       - production-governance
-    if: ${{ always() && needs.production-governance.result == 'success' }}
+      - windows-installer
+    if: ${{ always() && needs.production-governance.result == 'success' && needs.windows-installer.result == 'success' }}
     uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@ca36670853acf419f8d19ce3d77eefbb520135f4
     with:
       buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || '' }}
