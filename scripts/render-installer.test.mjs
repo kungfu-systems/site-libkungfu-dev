@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 
@@ -14,6 +14,33 @@ const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex"
 
 function run(command, args, options = {}) {
   return spawnSync(command, args, { encoding: "utf8", ...options });
+}
+
+async function runStreamed(command, args, input, options = {}) {
+  const child = spawn(command, args, { ...options, stdio: ["pipe", "pipe", "pipe"] });
+  let stdout = "";
+  let stderr = "";
+  let writeError = null;
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => { stdout += chunk; });
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  child.stdin.on("error", () => {});
+  const closed = new Promise((resolve) => child.once("close", (status, signal) => resolve({ status, signal })));
+  try {
+    for (let offset = 0; offset < input.length; offset += 128) {
+      const chunk = input.subarray(offset, Math.min(offset + 128, input.length));
+      await new Promise((resolve, reject) => {
+        child.stdin.write(chunk, (error) => error ? reject(error) : resolve());
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+    child.stdin.end();
+  } catch (error) {
+    writeError = error;
+  }
+  const result = await closed;
+  return { ...result, stdout, stderr, writeError };
 }
 
 function writeExecutable(file, body) {
@@ -223,6 +250,15 @@ test("actual publication is content-addressed and shell-valid", () => {
   const relative = run("sh", [path.join(repoRoot, "dist", "install.sh"), "kfd", "--dry-run", "--install-dir", "relative"]);
   assert.notEqual(relative.status, 0);
   assert.match(relative.stderr, /path-invalid/);
+});
+
+test("streamed help drains the installer without breaking its producer", async () => {
+  writeInstallerPublication({ root: repoRoot });
+  const installer = fs.readFileSync(path.join(repoRoot, "dist", "install.sh"));
+  const result = await runStreamed("sh", ["-s", "--"], installer);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.writeError, null, result.writeError?.message);
+  assert.match(result.stdout, /usage: install\.sh PRODUCT/);
 });
 
 test("catalog rejects a second product set or an unpinned digest", () => {
