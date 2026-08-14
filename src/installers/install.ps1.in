@@ -1,0 +1,420 @@
+# Generated from the reviewed libkungfu.dev installer catalog. Do not edit the rendered file.
+[CmdletBinding()]
+param(
+  [Parameter(Position = 0)]
+  [ValidateSet('kfd', 'buildchain', 'kungfu', 'agent-hub-demo', 'all')]
+  [string]$Product = 'kungfu',
+  [string]$Version,
+  [string]$KfdVersion,
+  [string]$BuildchainVersion,
+  [string]$KungfuVersion,
+  [string]$AgentHubDemoVersion,
+  [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'libkungfu\installer'),
+  [string]$BinDir = (Join-Path $env:LOCALAPPDATA 'libkungfu\bin'),
+  [switch]$DryRun,
+  [switch]$Rollback,
+  [switch]$VerboseOutput
+)
+
+$ErrorActionPreference = 'Stop'
+$CatalogUrl = '@@CATALOG_URL@@'
+$CatalogSha256 = '@@CATALOG_SHA256@@'
+$CatalogSize = [int64]@@CATALOG_SIZE@@
+$Catalog = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('@@CATALOG_BASE64@@')) | ConvertFrom-Json
+$OwnerMarker = 'libkungfu-installer-owner/v1'
+$TargetPlatform = 'windows-x64'
+$StageRoot = $null
+$LockDir = $null
+
+function Write-InstallerLog([string]$Message) {
+  Write-Host "libkungfu-install: $Message"
+}
+
+function Write-InstallerDebug([string]$Message) {
+  if ($VerboseOutput) { Write-InstallerLog $Message }
+}
+
+function Fail([string]$Code, [string]$Detail) {
+  throw "libkungfu-install: error[$Code]: $Detail"
+}
+
+function Normalize-Destination([string]$Label, [string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value) -or -not [IO.Path]::IsPathFullyQualified($Value)) {
+    Fail 'path-invalid' "$Label must be an absolute path"
+  }
+  if ($Value.IndexOfAny([char[]]"%&|<>^!`r`n") -ge 0) {
+    Fail 'path-invalid' "$Label contains characters that cannot be represented safely in a command launcher"
+  }
+  $Full = [IO.Path]::GetFullPath($Value).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+  $Root = [IO.Path]::GetPathRoot($Full).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+  if ([StringComparer]::OrdinalIgnoreCase.Equals($Full, $Root)) {
+    Fail 'path-invalid' "$Label must not be a filesystem root"
+  }
+  return $Full
+}
+
+function Get-CatalogProduct([string]$Id) {
+  $Entry = @($Catalog.products | Where-Object { $_.id -eq $Id })
+  if ($Entry.Count -ne 1) { Fail 'product-unknown' "unknown product: $Id" }
+  return $Entry[0]
+}
+
+function Get-RequestedVersion([string]$Id) {
+  $Entry = Get-CatalogProduct $Id
+  $Selected = switch ($Id) {
+    'kfd' { $KfdVersion }
+    'buildchain' { $BuildchainVersion }
+    'kungfu' { $KungfuVersion }
+    'agent-hub-demo' { $AgentHubDemoVersion }
+  }
+  if ($Product -ne 'all' -and $Version) { $Selected = $Version }
+  if (-not $Selected) { $Selected = $Entry.defaultVersion }
+  return $Selected
+}
+
+function Get-CatalogTarget([string]$Id, [string]$SelectedVersion) {
+  $Entry = Get-CatalogProduct $Id
+  $Release = @($Entry.versions | Where-Object { $_.version -eq $SelectedVersion })
+  if ($Release.Count -ne 1) { Fail 'version-unavailable' "no catalogued $Id release exists for $SelectedVersion" }
+  $Target = @($Release[0].targets | Where-Object { $_.platform -eq $TargetPlatform })
+  if ($Target.Count -ne 1) { Fail 'target-unavailable' "no verified $Id $SelectedVersion artifact exists for $TargetPlatform" }
+  return [pscustomobject]@{ Product = $Entry; Release = $Release[0]; Target = $Target[0] }
+}
+
+function Get-Launcher([string]$CommandName) {
+  return Join-Path $BinDir "$CommandName.cmd"
+}
+
+function Assert-KungfuLauncher([string]$Path) {
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return }
+  $Lines = @(Get-Content -LiteralPath $Path)
+  if ($Lines.Count -eq 0 -or $Lines[0] -ne '@rem kungfu-archive-bootstrap/v1') {
+    Fail 'ownership-conflict' "$Path is not owned by the signed Kungfu installer"
+  }
+  $DelegateRoot = [IO.Path]::GetFullPath((Join-Path $InstallDir 'delegates\kungfu\product\versions'))
+  $LauncherText = $Lines -join "`n"
+  if (-not $LauncherText.StartsWith('@rem kungfu-archive-bootstrap/v1')
+      -or $LauncherText.IndexOf($DelegateRoot, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
+    Fail 'ownership-conflict' "$Path does not target the managed Kungfu delegate root"
+  }
+}
+
+function Assert-LauncherOwnership([string]$Id) {
+  $Entry = Get-CatalogProduct $Id
+  $Launcher = Get-Launcher $Entry.command
+  $Existing = Get-Command $Entry.command -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($Existing -and -not [StringComparer]::OrdinalIgnoreCase.Equals($Existing.Source, $Launcher)) {
+    Fail 'ownership-conflict' "$($Entry.command) is owned outside $Launcher`: $($Existing.Source)"
+  }
+  foreach ($Extension in @('.exe', '.ps1', '.bat')) {
+    $Conflict = Join-Path $BinDir "$($Entry.command)$Extension"
+    if (Test-Path -LiteralPath $Conflict) { Fail 'ownership-conflict' "$Conflict would override the managed launcher" }
+  }
+  if (Test-Path -LiteralPath $Launcher) {
+    if ($Id -eq 'kungfu') {
+      Assert-KungfuLauncher $Launcher
+    } elseif ((Get-Content -LiteralPath $Launcher -TotalCount 1) -ne "@rem $OwnerMarker") {
+      Fail 'ownership-conflict' "$Launcher is not owned by the libkungfu.dev installer"
+    }
+  }
+}
+
+function Download-Verified($Asset, [string]$Destination, [string]$Label) {
+  Write-InstallerDebug "download: $($Asset.url)"
+  Invoke-WebRequest -UseBasicParsing -Uri $Asset.url -OutFile $Destination
+  $File = Get-Item -LiteralPath $Destination
+  if ($File.Length -ne [int64]$Asset.size) { Fail 'size-mismatch' "$Label size differs from the reviewed catalog" }
+  $Observed = (Get-FileHash -Algorithm SHA256 -LiteralPath $Destination).Hash.ToLowerInvariant()
+  if ($Observed -ne $Asset.sha256) { Fail 'digest-mismatch' "$Label digest differs from the reviewed catalog" }
+}
+
+function Assert-SafeZip([string]$Archive, [string]$Destination) {
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $DestinationRoot = [IO.Path]::GetFullPath($Destination).TrimEnd('\') + '\'
+  $Zip = [IO.Compression.ZipFile]::OpenRead($Archive)
+  try {
+    foreach ($Entry in $Zip.Entries) {
+      if ([IO.Path]::IsPathRooted($Entry.FullName)) { Fail 'archive-unsafe' "absolute zip member: $($Entry.FullName)" }
+      $Resolved = [IO.Path]::GetFullPath((Join-Path $Destination $Entry.FullName.Replace('/', '\')))
+      if (-not $Resolved.StartsWith($DestinationRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        Fail 'archive-unsafe' "escaping zip member: $($Entry.FullName)"
+      }
+      $UnixType = (($Entry.ExternalAttributes -shr 16) -band 0xF000)
+      if ($UnixType -eq 0xA000) { Fail 'archive-unsafe' "symbolic link zip member: $($Entry.FullName)" }
+    }
+  } finally {
+    $Zip.Dispose()
+  }
+}
+
+function Write-AtomicText([string]$Path, [string]$Content, [Text.Encoding]$Encoding) {
+  $Temporary = "$Path.$PID.$([Guid]::NewGuid().ToString('N')).tmp"
+  [IO.File]::WriteAllText($Temporary, $Content, $Encoding)
+  Move-Item -Force -LiteralPath $Temporary -Destination $Path
+}
+
+function Write-AtomicBytes([string]$Path, [byte[]]$Content) {
+  $Temporary = "$Path.$PID.$([Guid]::NewGuid().ToString('N')).tmp"
+  [IO.File]::WriteAllBytes($Temporary, $Content)
+  Move-Item -Force -LiteralPath $Temporary -Destination $Path
+}
+
+function Write-Launcher([string]$Path, [string]$BinaryPath) {
+  $Content = "@rem $OwnerMarker`r`n@`"$BinaryPath`" %*`r`n@exit /b %errorlevel%`r`n"
+  Write-AtomicText $Path $Content ([Text.Encoding]::ASCII)
+}
+
+function Read-State([string]$Path) {
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+  return Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json
+}
+
+function Write-State([string]$Path, $State) {
+  Write-AtomicText $Path (($State | ConvertTo-Json -Depth 8) + "`n") (New-Object Text.UTF8Encoding($false))
+}
+
+function Assert-ManagedState([string]$Id, $State) {
+  $VersionsRoot = [IO.Path]::GetFullPath((Join-Path $InstallDir "products\$Id\versions")).TrimEnd('\') + '\'
+  $Target = [IO.Path]::GetFullPath([string]$State.target)
+  if (-not $Target.StartsWith($VersionsRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    Fail 'rollback-unsafe' "$Id state points outside its managed versions root"
+  }
+  if ((Get-Content -LiteralPath (Join-Path $Target '.libkungfu-installer-owner') -ErrorAction SilentlyContinue) -ne $OwnerMarker) {
+    Fail 'rollback-unsafe' "$Id owner marker is missing"
+  }
+}
+
+function Prepare-Internal([string]$Id, [string]$SelectedVersion) {
+  $Selection = Get-CatalogTarget $Id $SelectedVersion
+  $Target = $Selection.Target
+  $ContentKey = $Target.artifact.sha256.Substring(0, 16)
+  $VersionRoot = Join-Path $InstallDir "products\$Id\versions\$SelectedVersion-$ContentKey"
+  $PrepareRoot = Join-Path $StageRoot "$Id\content"
+  $DownloadRoot = Join-Path $StageRoot "$Id\download"
+  New-Item -ItemType Directory -Force -Path $PrepareRoot, $DownloadRoot | Out-Null
+  $ArtifactFile = Join-Path $DownloadRoot $Target.artifact.name
+  Download-Verified $Target.artifact $ArtifactFile "$Id $SelectedVersion artifact"
+  $SourceBinary = $ArtifactFile
+  if ($Target.kind -eq 'archive') {
+    if ($Target.archiveType -ne 'zip') { Fail 'archive-unsupported' "$Id Windows target is not a zip archive" }
+    $ExtractRoot = Join-Path $StageRoot "$Id\extract"
+    New-Item -ItemType Directory -Path $ExtractRoot | Out-Null
+    Assert-SafeZip $ArtifactFile $ExtractRoot
+    Expand-Archive -LiteralPath $ArtifactFile -DestinationPath $ExtractRoot
+    $SourceBinary = Join-Path $ExtractRoot ([string]$Target.binaryPath).Replace('/', '\')
+  }
+  if (-not (Test-Path -LiteralPath $SourceBinary -PathType Leaf)) { Fail 'binary-missing' "$Id archive lacks $($Target.binaryPath)" }
+  if ((Get-FileHash -Algorithm SHA256 -LiteralPath $SourceBinary).Hash.ToLowerInvariant() -ne $Target.binarySha256) {
+    Fail 'binary-digest-mismatch' "$Id executable differs from product-owned provenance"
+  }
+  $PayloadRoot = Join-Path $PrepareRoot '.libkungfu-bin'
+  New-Item -ItemType Directory -Path $PayloadRoot | Out-Null
+  $ManagedBinary = Join-Path $PayloadRoot "$($Selection.Product.command).exe"
+  Copy-Item -LiteralPath $SourceBinary -Destination $ManagedBinary
+  [IO.File]::WriteAllText((Join-Path $PrepareRoot '.libkungfu-installer-owner'), "$OwnerMarker`n", (New-Object Text.UTF8Encoding($false)))
+  return [pscustomobject]@{
+    Id = $Id
+    Version = $SelectedVersion
+    Product = $Selection.Product
+    Target = $Target
+    PrepareRoot = $PrepareRoot
+    VersionRoot = $VersionRoot
+    BinaryPath = (Join-Path $VersionRoot ".libkungfu-bin\$($Selection.Product.command).exe")
+  }
+}
+
+function Publish-Internal($Prepared) {
+  $VersionsRoot = Split-Path -Parent $Prepared.VersionRoot
+  New-Item -ItemType Directory -Force -Path $VersionsRoot | Out-Null
+  if (Test-Path -LiteralPath $Prepared.VersionRoot) {
+    if ((Get-Content -LiteralPath (Join-Path $Prepared.VersionRoot '.libkungfu-installer-owner') -ErrorAction SilentlyContinue) -ne $OwnerMarker) {
+      Fail 'ownership-conflict' "$($Prepared.VersionRoot) is not installer-owned"
+    }
+    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $Prepared.BinaryPath).Hash.ToLowerInvariant() -ne $Prepared.Target.binarySha256) {
+      Fail 'binary-digest-mismatch' "existing $($Prepared.Id) content differs from the reviewed catalog"
+    }
+  } else {
+    Move-Item -LiteralPath $Prepared.PrepareRoot -Destination $Prepared.VersionRoot
+  }
+}
+
+function Activate-Internal($Prepared) {
+  $ProductRoot = Join-Path $InstallDir "products\$($Prepared.Id)"
+  $CurrentPath = Join-Path $ProductRoot 'current.json'
+  $PreviousPath = Join-Path $ProductRoot 'previous.json'
+  $Launcher = Get-Launcher $Prepared.Product.command
+  $OldCurrent = Read-State $CurrentPath
+  $OldPrevious = Read-State $PreviousPath
+  $OldLauncher = if (Test-Path -LiteralPath $Launcher) { [IO.File]::ReadAllBytes($Launcher) } else { $null }
+  if ($OldCurrent) { Assert-ManagedState $Prepared.Id $OldCurrent }
+  $NewState = [ordered]@{ product = $Prepared.Id; version = $Prepared.Version; target = $Prepared.VersionRoot; artifactSha256 = $Prepared.Target.artifact.sha256 }
+  $Activation = [pscustomobject]@{ Id = $Prepared.Id; Launcher = $Launcher; CurrentPath = $CurrentPath; PreviousPath = $PreviousPath; OldCurrent = $OldCurrent; OldPrevious = $OldPrevious; OldLauncher = $OldLauncher }
+  try {
+    if ($OldCurrent -and [StringComparer]::OrdinalIgnoreCase.Equals([string]$OldCurrent.target, $Prepared.VersionRoot)) {
+      Write-Launcher $Launcher $Prepared.BinaryPath
+    } else {
+      if ($OldCurrent) { Write-State $PreviousPath $OldCurrent }
+      Write-State $CurrentPath $NewState
+      Write-Launcher $Launcher $Prepared.BinaryPath
+    }
+  } catch {
+    Restore-Internal $Activation
+    throw
+  }
+  return $Activation
+}
+
+function Restore-Internal($Activation) {
+  if ($Activation.OldCurrent) { Write-State $Activation.CurrentPath $Activation.OldCurrent }
+  elseif (Test-Path -LiteralPath $Activation.CurrentPath) { Remove-Item -Force -LiteralPath $Activation.CurrentPath }
+  if ($Activation.OldPrevious) { Write-State $Activation.PreviousPath $Activation.OldPrevious }
+  elseif (Test-Path -LiteralPath $Activation.PreviousPath) { Remove-Item -Force -LiteralPath $Activation.PreviousPath }
+  if ($Activation.OldLauncher) { Write-AtomicBytes $Activation.Launcher $Activation.OldLauncher }
+  elseif (Test-Path -LiteralPath $Activation.Launcher) { Remove-Item -Force -LiteralPath $Activation.Launcher }
+}
+
+function Rollback-Internal([string]$Id) {
+  $Entry = Get-CatalogProduct $Id
+  $ProductRoot = Join-Path $InstallDir "products\$Id"
+  $CurrentPath = Join-Path $ProductRoot 'current.json'
+  $PreviousPath = Join-Path $ProductRoot 'previous.json'
+  $Current = Read-State $CurrentPath
+  $Previous = Read-State $PreviousPath
+  if (-not $Current -or -not $Previous) { Fail 'rollback-unavailable' "no previous $Id activation is recorded" }
+  Assert-ManagedState $Id $Current
+  Assert-ManagedState $Id $Previous
+  $Launcher = Get-Launcher $Entry.command
+  $OldLauncher = [IO.File]::ReadAllBytes($Launcher)
+  try {
+    Write-State $CurrentPath $Previous
+    Write-State $PreviousPath $Current
+    $Binary = Join-Path ([string]$Previous.target) ".libkungfu-bin\$($Entry.command).exe"
+    Write-Launcher $Launcher $Binary
+  } catch {
+    Write-State $CurrentPath $Current
+    Write-State $PreviousPath $Previous
+    Write-AtomicBytes $Launcher $OldLauncher
+    throw
+  }
+  Write-InstallerLog "rolled back: $Id -> $($Previous.target)"
+}
+
+function Prepare-KungfuDelegate([string]$SelectedVersion) {
+  $Selection = Get-CatalogTarget 'kungfu' $SelectedVersion
+  $DelegateFile = Join-Path $StageRoot 'kungfu\delegate.ps1'
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $DelegateFile) | Out-Null
+  Download-Verified $Selection.Target.delegate $DelegateFile 'signed Kungfu PowerShell installer'
+  return [pscustomobject]@{ Version = $SelectedVersion; File = $DelegateFile; Selection = $Selection }
+}
+
+function Activate-KungfuDelegate($Prepared) {
+  $Launcher = Get-Launcher 'kungfu'
+  $OldLauncher = if (Test-Path -LiteralPath $Launcher) { [IO.File]::ReadAllBytes($Launcher) } else { $null }
+  try {
+    & $Prepared.File -Version $Prepared.Version -InstallDir (Join-Path $InstallDir 'delegates\kungfu\product') -BinDir $BinDir -NoPath -Yes
+  } catch {
+    if ($OldLauncher) { Write-AtomicBytes $Launcher $OldLauncher }
+    elseif (Test-Path -LiteralPath $Launcher) { Remove-Item -Force -LiteralPath $Launcher }
+    throw
+  }
+  Assert-KungfuLauncher $Launcher
+  if ($OldLauncher -and [Convert]::ToBase64String($OldLauncher) -ne [Convert]::ToBase64String([IO.File]::ReadAllBytes($Launcher))) {
+    $Previous = Join-Path $InstallDir 'delegates\kungfu\previous-launcher.cmd'
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Previous) | Out-Null
+    Write-AtomicBytes $Previous $OldLauncher
+  }
+}
+
+function Rollback-Kungfu {
+  $Launcher = Get-Launcher 'kungfu'
+  $Previous = Join-Path $InstallDir 'delegates\kungfu\previous-launcher.cmd'
+  if (-not (Test-Path -LiteralPath $Launcher) -or -not (Test-Path -LiteralPath $Previous)) {
+    Fail 'rollback-unavailable' 'no previous Kungfu activation is recorded'
+  }
+  Assert-KungfuLauncher $Launcher
+  Assert-KungfuLauncher $Previous
+  $CurrentBytes = [IO.File]::ReadAllBytes($Launcher)
+  $PreviousBytes = [IO.File]::ReadAllBytes($Previous)
+  try {
+    Write-AtomicBytes $Launcher $PreviousBytes
+    Write-AtomicBytes $Previous $CurrentBytes
+  } catch {
+    Write-AtomicBytes $Launcher $CurrentBytes
+    Write-AtomicBytes $Previous $PreviousBytes
+    throw
+  }
+  Write-InstallerLog 'rolled back: kungfu -> previous signed launcher'
+}
+
+if (-not [Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([Runtime.InteropServices.OSPlatform]::Windows)
+    -or -not [Environment]::Is64BitOperatingSystem
+    -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
+  Fail 'unsupported-host' 'the catalog currently supports 64-bit x86 Windows'
+}
+if ($Product -eq 'all' -and $Version) { Fail 'option-conflict' '-Version is valid for one product; use the per-product version parameters with all' }
+if ($Product -ne 'all' -and ($KfdVersion -or $BuildchainVersion -or $KungfuVersion -or $AgentHubDemoVersion)) {
+  Fail 'option-conflict' 'per-product version parameters are only valid with all'
+}
+if ($Rollback -and ($Product -eq 'all' -or $Version -or $DryRun)) {
+  Fail 'option-conflict' '-Rollback needs one product and cannot be combined with a version or -DryRun'
+}
+
+$InstallDir = Normalize-Destination 'InstallDir' $InstallDir
+$BinDir = Normalize-Destination 'BinDir' $BinDir
+$Products = if ($Product -eq 'all') { @('kfd', 'buildchain', 'agent-hub-demo', 'kungfu') } else { @($Product) }
+foreach ($Id in $Products) {
+  $SelectedVersion = Get-RequestedVersion $Id
+  $Selection = Get-CatalogTarget $Id $SelectedVersion
+  Assert-LauncherOwnership $Id
+  if ($Selection.Target.kind -eq 'delegated-installer') {
+    Write-InstallerLog "plan: $Id $SelectedVersion source $($Selection.Release.sourceSha) $TargetPlatform -> signed upstream installer -> $(Get-Launcher $Selection.Product.command)"
+  } else {
+    $ContentKey = $Selection.Target.artifact.sha256.Substring(0, 16)
+    Write-InstallerLog "plan: $Id $SelectedVersion source $($Selection.Release.sourceSha) $TargetPlatform -> $InstallDir\products\$Id\versions\$SelectedVersion-$ContentKey -> $(Get-Launcher $Selection.Product.command)"
+  }
+}
+if ($DryRun) { return }
+
+New-Item -ItemType Directory -Force -Path $InstallDir, $BinDir | Out-Null
+$LockDir = Join-Path $InstallDir '.install.lock'
+try { New-Item -ItemType Directory -Path $LockDir -ErrorAction Stop | Out-Null }
+catch { Fail 'concurrent-install' "another installer owns $LockDir" }
+$StageRoot = Join-Path $InstallDir ".stage.$([Guid]::NewGuid().ToString('N'))"
+try {
+  New-Item -ItemType Directory -Path $StageRoot | Out-Null
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+  $CatalogFile = Join-Path $StageRoot 'catalog.json'
+  Download-Verified ([pscustomobject]@{ url = $CatalogUrl; size = $CatalogSize; sha256 = $CatalogSha256 }) $CatalogFile 'installer catalog'
+
+  if ($Rollback) {
+    if ($Product -eq 'kungfu') { Rollback-Kungfu } else { Rollback-Internal $Product }
+    return
+  }
+
+  $PreparedInternal = @()
+  $PreparedKungfu = $null
+  foreach ($Id in $Products) {
+    $SelectedVersion = Get-RequestedVersion $Id
+    if ($Id -eq 'kungfu') { $PreparedKungfu = Prepare-KungfuDelegate $SelectedVersion }
+    else { $PreparedInternal += Prepare-Internal $Id $SelectedVersion }
+  }
+  foreach ($Prepared in $PreparedInternal) { Publish-Internal $Prepared }
+  $Activations = @()
+  try {
+    foreach ($Prepared in $PreparedInternal) { $Activations += Activate-Internal $Prepared }
+    if ($PreparedKungfu) { Activate-KungfuDelegate $PreparedKungfu }
+  } catch {
+    for ($Index = $Activations.Count - 1; $Index -ge 0; $Index--) {
+      Restore-Internal $Activations[$Index]
+    }
+    throw
+  }
+  foreach ($Id in $Products) {
+    $Entry = Get-CatalogProduct $Id
+    Write-InstallerLog "installed: $Id -> $(Get-Launcher $Entry.command)"
+  }
+  Write-InstallerLog "PATH was not modified; add $BinDir explicitly if it is not already present"
+} finally {
+  if ($StageRoot -and (Test-Path -LiteralPath $StageRoot)) { Remove-Item -Recurse -Force -LiteralPath $StageRoot }
+  if ($LockDir -and (Test-Path -LiteralPath $LockDir)) { Remove-Item -Force -LiteralPath $LockDir }
+}

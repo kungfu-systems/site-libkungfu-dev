@@ -4021,7 +4021,7 @@ ${immutableArchive
       for (const button of document.querySelectorAll("[data-copy-command]")) {
         button.addEventListener("click", async () => {
           const commandBlock = button.closest("[data-command-block]") || button.parentElement;
-          const command = commandBlock?.querySelector("pre code")?.textContent || "";
+          const command = button.getAttribute("data-copy-value") || commandBlock?.querySelector("pre code")?.textContent || "";
           if (!command || !navigator.clipboard) return;
           await navigator.clipboard.writeText(command);
           button.textContent = "Copied";
@@ -5636,6 +5636,7 @@ const installerTargetLabels = {
   "darwin-x64": "macOS · Intel",
   "linux-arm64": "Linux · arm64",
   "linux-x64": "Linux · x64",
+  "windows-x64": "Windows · x64",
 };
 
 function installerProduct(productId) {
@@ -5649,6 +5650,12 @@ function installerProduct(productId) {
 function installerCurlCommand(productId, args = "") {
   const suffix = args ? ` ${args}` : "";
   return `curl -fsSL https://libkungfu.dev/install.sh | sh -s -- ${productId}${suffix}`;
+}
+
+function installerPowerShellCommand(productId = "", args = "") {
+  if (!productId && !args) return "irm https://libkungfu.dev/install.ps1 | iex";
+  const suffix = args ? ` ${args}` : "";
+  return `& ([scriptblock]::Create((irm https://libkungfu.dev/install.ps1))) ${productId}${suffix}`;
 }
 
 function installGuideLinkAttrs(productId) {
@@ -5714,6 +5721,9 @@ function renderInstallerProductCard(product) {
     </div>
     <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand(product.id))}</code></pre>
     <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(label)} install command">Copy command</button>
+    <p><strong>Windows PowerShell</strong></p>
+    <pre class="kfd-command"><code>${escapeHtml(installerPowerShellCommand(product.id))}</code></pre>
+    <button class="copy-command" type="button" data-copy-command data-copy-value="${escapeAttr(installerPowerShellCommand(product.id))}" aria-label="Copy ${escapeAttr(label)} Windows install command">Copy Windows command</button>
     <ul class="installer-target-list" aria-label="Supported targets for ${escapeAttr(label)} ${escapeAttr(product.defaultVersion)}">
       ${targets.map((target) => `<li>${escapeHtml(target)}</li>`).join("\n")}
     </ul>
@@ -5748,11 +5758,15 @@ function renderInstallerGuide() {
     <p class="eyebrow page-kicker"><a ${surfaceLinkAttrs("hub")} aria-label="Back to libkungfu.dev home">Back to libkungfu.dev</a><span class="page-kicker-state">Versioned multi-product installer</span></p>
     <p class="eyebrow">Install a native CLI · no coding required</p>
     <h1>One installer. Choose the product and version you need.</h1>
-    <p class="lead">Install KFD, Buildchain, Kungfu, or Agent Hub Demo on supported macOS and Linux systems. Use the current reviewed release by default, select an exact historical version, or roll back a managed installation.</p>
-    <p><code>https://libkungfu.dev/install.sh</code> is the canonical public entry. Its one reviewed Site catalog projects exact product-owned GitHub Releases without becoming another release authority.</p>
+    <p class="lead">Install KFD, Buildchain, Kungfu, or Agent Hub Demo on supported macOS, Linux, and Windows systems. With no product argument, both installers default to Kungfu; choose a product when you need another CLI, an exact historical version, or rollback.</p>
+    <p><code>https://libkungfu.dev/install.sh</code> and <code>https://libkungfu.dev/install.ps1</code> are the canonical public entries. They consume one reviewed Site catalog that projects exact product-owned GitHub Releases without becoming another release authority.</p>
     <div class="installer-hero-command" data-command-block>
-      <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("all"))}</code></pre>
-      <button class="copy-command" type="button" data-copy-command aria-label="Copy command to install all products">Copy command</button>
+      <p><strong>macOS and Linux · defaults to Kungfu</strong></p>
+      <pre class="kfd-command"><code>${escapeHtml("curl -fsSL https://libkungfu.dev/install.sh | sh")}</code></pre>
+      <button class="copy-command" type="button" data-copy-command aria-label="Copy default macOS and Linux Kungfu install command">Copy command</button>
+      <p><strong>Windows PowerShell · defaults to Kungfu</strong></p>
+      <pre class="kfd-command"><code>${escapeHtml(installerPowerShellCommand())}</code></pre>
+      <button class="copy-command" type="button" data-copy-command data-copy-value="${escapeAttr(installerPowerShellCommand())}" aria-label="Copy default Windows Kungfu install command">Copy Windows command</button>
     </div>
   </section>
 
@@ -5769,6 +5783,8 @@ function renderInstallerGuide() {
       <p>Pass <code>--version</code> when a project, receipt, or recovery needs a specific published release. Historical releases stay selectable while they remain in the reviewed catalog.</p>
       <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("buildchain", "--version 3.0.6"))}</code></pre>
       <button class="copy-command" type="button" data-copy-command aria-label="Copy exact Buildchain version install command">Copy command</button>
+      <pre class="kfd-command"><code>${escapeHtml(installerPowerShellCommand("buildchain", "-Version 3.0.6"))}</code></pre>
+      <button class="copy-command" type="button" data-copy-command data-copy-value="${escapeAttr(installerPowerShellCommand("buildchain", "-Version 3.0.6"))}" aria-label="Copy exact Buildchain Windows version install command">Copy Windows command</button>
     </article>
     <article class="panel">
       <p class="eyebrow">Recover a managed installation</p>
@@ -5776,6 +5792,8 @@ function renderInstallerGuide() {
       <p>The installer keeps content-addressed versions and activates commands through bounded user-owned links. Rollback restores the previously managed activation.</p>
       <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand("buildchain", "--rollback"))}</code></pre>
       <button class="copy-command" type="button" data-copy-command aria-label="Copy Buildchain rollback command">Copy command</button>
+      <pre class="kfd-command"><code>${escapeHtml(installerPowerShellCommand("buildchain", "-Rollback"))}</code></pre>
+      <button class="copy-command" type="button" data-copy-command data-copy-value="${escapeAttr(installerPowerShellCommand("buildchain", "-Rollback"))}" aria-label="Copy Buildchain Windows rollback command">Copy Windows command</button>
     </article>
   </section>
 
@@ -10787,7 +10805,7 @@ writeFile(
   "install/index.html",
   page({
     title: "Install KFD, Buildchain, Kungfu, and Agent Hub Demo | libkungfu.dev",
-    description: "Install current or exact versions of KFD, Buildchain, Kungfu, and Agent Hub Demo with one verified POSIX installer.",
+    description: "Install current or exact versions of KFD, Buildchain, Kungfu, and Agent Hub Demo with verified shell and PowerShell installers.",
     current: "install",
     body: renderInstallerGuide(),
   }),
@@ -10913,9 +10931,11 @@ const manifest = {
     { path: "/install/", host: surfaceCanonicalHost("hub"), source: "src/install/installer-catalog.json" },
     ...[
       ["/install.sh", "src/installers/install.sh.in"],
+      ["/install.ps1", "src/installers/install.ps1.in"],
       ["/install/v1/manifest.json", "src/install/installer-catalog.json"],
       ["/install/v1/catalog.json", "src/install/installer-catalog.json"],
       [new URL(installerPublication.installer.immutableUrl).pathname, "src/installers/install.sh.in"],
+      [new URL(installerPublication.installers.powershell.immutableUrl).pathname, "src/installers/install.ps1.in"],
       [new URL(installerPublication.catalog.immutableUrl).pathname, "src/install/installer-catalog.json"],
     ].map(([path, source]) => ({ path, host: surfaceCanonicalHost("hub"), source })),
     ...[

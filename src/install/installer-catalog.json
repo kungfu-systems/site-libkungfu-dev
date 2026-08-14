@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "libkungfu.multi-product-installer-catalog/v1",
   "catalogVersion": "1",
-  "scope": "posix-shell",
+  "scope": "multi-platform-native-installers",
   "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
   "refresh": {
     "mode": "explicit-exact-release",
@@ -117,6 +117,25 @@
                 "size": 1440,
                 "sha256": "4e0ada3dc6f48631841d903981964f45920a2b6c0c07f1110e96856f264c7cb7"
               }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "archive",
+              "archiveType": "zip",
+              "binaryPath": "kfd-1.0.0-alpha.65-x86_64-pc-windows-msvc/kfd.exe",
+              "binarySha256": "cc6dbce3c926a531e168ddd466fc6aff4485d3cff644075a6d189b75fe8f9f35",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.65-x86_64-pc-windows-msvc.zip",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-pc-windows-msvc.zip",
+                "size": 2943955,
+                "sha256": "78a691ba7cf0d7f6aac125ed4b2d101334a0959d5d2a79b0719b7c8f76328009"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.65/kfd-1.0.0-alpha.65-x86_64-pc-windows-msvc.provenance.json",
+                "size": 1433,
+                "sha256": "213ddf678d0cec4113011fe7a3db9750c20b8cb9dde9610e6c6a2625b554967c"
+              }
             }
           ]
         },
@@ -201,6 +220,25 @@
                 "size": 1440,
                 "sha256": "3bb9af60ad820a5d7d3bdc2c6474ccf3d30c06970bd0b859501537ccdd5ee525"
               }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "archive",
+              "archiveType": "zip",
+              "binaryPath": "kfd-1.0.0-alpha.63-x86_64-pc-windows-msvc/kfd.exe",
+              "binarySha256": "d031910195bb9868842b32b0309f86ffe8e14c149e044b63a0819bba9986a331",
+              "artifact": {
+                "name": "kfd-1.0.0-alpha.63-x86_64-pc-windows-msvc.zip",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-pc-windows-msvc.zip",
+                "size": 2945125,
+                "sha256": "e10f1526983c134b021763d2b47757da7871420fa2a2bca64a6ecbd3862cd808"
+              },
+              "provenance": {
+                "kind": "kfd.native-release-provenance/v1",
+                "url": "https://github.com/kungfu-systems/kfd/releases/download/v1.0.0-alpha.63/kfd-1.0.0-alpha.63-x86_64-pc-windows-msvc.provenance.json",
+                "size": 1433,
+                "sha256": "4b843f2f2e9f0290bd62d0317dac2b46532b1ff6dfb5accea2f3a62b2d5a1b10"
+              }
             }
           ]
         }
@@ -255,6 +293,25 @@
                 "size": 813,
                 "sha256": "9a500847b25794a2ac20bb2ae0b1f4972204075345d0101b4eaa8018cbeedde1"
               }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "archive",
+              "archiveType": "zip",
+              "binaryPath": "buildchain.exe",
+              "binarySha256": "649c22793147bb371269e1c7bf235f23d776e8e56c0b566cef9f0dcc9809d84a",
+              "artifact": {
+                "name": "buildchain-x86_64-pc-windows-msvc.zip",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-x86_64-pc-windows-msvc.zip",
+                "size": 34945128,
+                "sha256": "dc247d841c9438ed7a0366e64136367c16f71c533cde4a8f195ffe28375f8373"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v4.0.0/buildchain-x86_64-pc-windows-msvc.json",
+                "size": 827,
+                "sha256": "ee9a5dd03129efa3e73b1b013ef2af5b8fb746f42a2bf65292099bd1fea9c347"
+              }
             }
           ]
         },
@@ -300,6 +357,25 @@
                 "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-x86_64-unknown-linux-gnu.json",
                 "size": 813,
                 "sha256": "f18d64f78e7237206761d78ce7515ea8f490f61d79bcfb5b43785bcaa425806f"
+              }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "archive",
+              "archiveType": "zip",
+              "binaryPath": "buildchain.exe",
+              "binarySha256": "bcd64ca51a6cd37fa7aa17d55710f97f84177d0f262d338cc1b0ccaf9c2632b8",
+              "artifact": {
+                "name": "buildchain-x86_64-pc-windows-msvc.zip",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-x86_64-pc-windows-msvc.zip",
+                "size": 34918433,
+                "sha256": "c4bd2877fe8ec31729e32dda1d8bde5bf73536458d25a77b7d97e0f191713690"
+              },
+              "provenance": {
+                "kind": "kungfu-buildchain-standalone-binary",
+                "url": "https://github.com/kungfu-systems/buildchain/releases/download/v3.0.6/buildchain-x86_64-pc-windows-msvc.json",
+                "size": 827,
+                "sha256": "46dceb99c6df0242bf40dc97f4ea964813b8b4af5a8700b2905d8c64298c4d0c"
               }
             }
           ]
@@ -359,6 +435,27 @@
                 "size": 9630,
                 "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
               }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-windows-x64.zip",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-episodes-cli-windows-x64.zip",
+                "size": 1214020883,
+                "sha256": "bdae85d3aa517668ef48ba5a24a1bcbddb65eafb8f19887b13743fcb4027557a"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
+              },
+              "delegate": {
+                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.ps1",
+                "size": 6280,
+                "sha256": "62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68"
+              }
             }
           ]
         }
@@ -381,7 +478,6 @@
               "kind": "binary",
               "binaryPath": "agent-hub-demo",
               "binarySha256": "00880396be470e77f3814d010803133b87c974fa6ffe8f1e7834724fcebafafd",
-              "platformTrust": "codesign",
               "artifact": {
                 "name": "agent-hub-demo-macos-arm64",
                 "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/agent-hub-demo-macos-arm64",
@@ -393,7 +489,8 @@
                 "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/binary-macos-arm64.json",
                 "size": 1545,
                 "sha256": "765b25cc1cd19d1fc5830f75864fe38217595ca33a0e008313a156c9f00b0db0"
-              }
+              },
+              "platformTrust": "codesign"
             },
             {
               "platform": "linux-x64",
@@ -412,6 +509,24 @@
                 "size": 1565,
                 "sha256": "68655c0ded2c897c1aa2634202f6c7da40846974a3fbec66ea797c83b2d67d1a"
               }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo.exe",
+              "binarySha256": "aa1b733a5e561c6573cc2f051683de2bb8269867bbc208d913f7b04c636f4519",
+              "artifact": {
+                "name": "agent-hub-demo-windows-x64.exe",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/agent-hub-demo-windows-x64.exe",
+                "size": 92715520,
+                "sha256": "aa1b733a5e561c6573cc2f051683de2bb8269867bbc208d913f7b04c636f4519"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0/binary-windows-x64.json",
+                "size": 1508,
+                "sha256": "6353514730f1fa4829f264eae7048a30ec30f16cb1d0e3a2d08aac3a4dd6383a"
+              }
             }
           ]
         },
@@ -426,7 +541,6 @@
               "kind": "binary",
               "binaryPath": "agent-hub-demo",
               "binarySha256": "0cf370b4087c7072efe7bd05ddf3d1facd2a49e9fc146af27382728b5a22fedb",
-              "platformTrust": "codesign",
               "artifact": {
                 "name": "agent-hub-demo-macos-arm64",
                 "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/agent-hub-demo-macos-arm64",
@@ -438,7 +552,8 @@
                 "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/binary-macos-arm64.json",
                 "size": 1553,
                 "sha256": "549ba8072384ca46874b8d5b29aee665a8c46d676d34210edc058b7a2e4446c3"
-              }
+              },
+              "platformTrust": "codesign"
             },
             {
               "platform": "linux-x64",
@@ -456,6 +571,24 @@
                 "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/binary-linux-x64.json",
                 "size": 1573,
                 "sha256": "b6e32e80e8abc6ecf6eaa8183265b26d4cf64ca3cb1f73d22649f22a91e58481"
+              }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "binary",
+              "binaryPath": "agent-hub-demo.exe",
+              "binarySha256": "bcee8dfcbcfc978a24da337ae274ff85209e95085f99827a0f64bca4b1c8f56b",
+              "artifact": {
+                "name": "agent-hub-demo-windows-x64.exe",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/agent-hub-demo-windows-x64.exe",
+                "size": 92715520,
+                "sha256": "bcee8dfcbcfc978a24da337ae274ff85209e95085f99827a0f64bca4b1c8f56b"
+              },
+              "provenance": {
+                "kind": "agent-hub-demo.binary-artifact/v1",
+                "url": "https://github.com/kungfu-systems/agent-hub-demo/releases/download/v0.2.0-alpha.8/binary-windows-x64.json",
+                "size": 1516,
+                "sha256": "022bcd6b5fc74a643d18e8bb7d25984914d7fddc1d9fc754e0d49e41b6bca2c0"
               }
             }
           ]

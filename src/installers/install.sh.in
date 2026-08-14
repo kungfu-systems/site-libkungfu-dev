@@ -21,11 +21,13 @@ lock_dir=
 
 usage() {
   printf '%s\n' 'Install exact verified Kungfu system release artifacts.'
-  printf '%s\n' 'usage: install.sh PRODUCT [--version VERSION] [--install-dir DIR] [--bin-dir DIR] [--dry-run] [--verbose]'
+  printf '%s\n' 'usage: install.sh [PRODUCT] [--version VERSION] [--install-dir DIR] [--bin-dir DIR] [--dry-run] [--verbose]'
   printf '%s\n' '       install.sh all [--kfd-version VERSION] [--buildchain-version VERSION] [--kungfu-version VERSION] [--agent-hub-demo-version VERSION] [--install-dir DIR] [--bin-dir DIR] [--dry-run]'
   printf '%s\n' '       install.sh PRODUCT --rollback [--install-dir DIR] [--bin-dir DIR]'
   printf '%s\n' 'products: kfd, buildchain, kungfu, agent-hub-demo, all'
+  printf '%s\n' 'default product: kungfu'
   printf '%s\n' 'examples:'
+  printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh'
   printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd'
   printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- buildchain --version 3.0.6'
   printf '%s\n' '  curl --fail --proto '\''=https'\'' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- all'
@@ -44,10 +46,12 @@ log() { printf '%s\n' "libkungfu-install: $*" >&2; }
 debug() { [ "$verbose" -eq 0 ] || log "$@"; }
 fail() { log "error[$1]: $2"; drain_script_stdin; exit 1; }
 
-[ "$#" -gt 0 ] || { usage; drain_script_stdin; exit 0; }
-case "$1" in
+[ "$#" -gt 0 ] || product=kungfu
+case "${1:-}" in
+  '') ;;
   -h|--help) usage; drain_script_stdin; exit 0 ;;
   kfd|buildchain|kungfu|agent-hub-demo|all) product=$1; shift ;;
+  --*) product=kungfu ;;
   *) fail product-unknown "unknown product: $1" ;;
 esac
 

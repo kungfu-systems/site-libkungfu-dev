@@ -42,15 +42,15 @@ function releaseFixture(productId, version) {
 function kfdFixture(version, salt = "a") {
   const fixture = releaseFixture("kfd", version);
   const sourceSha = gitSha(`kfd-source-${version}`);
-  for (const triple of ["aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu"]) {
-    const archiveName = `kfd-${version}-${triple}.tar.gz`;
+  for (const triple of ["aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]) {
+    const archiveName = `kfd-${version}-${triple}.${triple.endsWith("windows-msvc") ? "zip" : "tar.gz"}`;
     const archiveSha = hash(`${salt}-${archiveName}`);
     fixture.addStatic(archiveName, 512, archiveSha);
     fixture.addJson(`kfd-${version}-${triple}.provenance.json`, {
       schema: "kfd.native-release-provenance/v1",
       identity: { name: "kfd", version, target: triple, sourceSha },
       artifacts: {
-        executable: { name: "kfd", sha256: hash(`${salt}-${triple}-binary`) },
+        executable: { name: triple.endsWith("windows-msvc") ? "kfd.exe" : "kfd", sha256: hash(`${salt}-${triple}-binary`) },
         archive: { name: archiveName, sha256: archiveSha },
       },
     });
@@ -61,15 +61,15 @@ function kfdFixture(version, salt = "a") {
 function buildchainFixture(version) {
   const fixture = releaseFixture("buildchain", version);
   const sourceSha = gitSha(`buildchain-source-${version}`);
-  for (const triple of ["aarch64-apple-darwin", "x86_64-unknown-linux-gnu"]) {
-    fixture.addStatic(`buildchain-${triple}.tar.gz`, 1024);
+  for (const triple of ["aarch64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]) {
+    fixture.addStatic(`buildchain-${triple}.${triple.endsWith("windows-msvc") ? "zip" : "tar.gz"}`, 1024);
     fixture.addJson(`buildchain-${triple}.json`, {
       contract: "kungfu-buildchain-standalone-binary",
       name: "buildchain",
       version: `v${version}`,
       platform: triple,
       sourceSha,
-      executableFiles: [{ path: "buildchain", sha256: hash(`${triple}-binary`) }],
+      executableFiles: [{ path: triple.endsWith("windows-msvc") ? "buildchain.exe" : "buildchain", sha256: hash(`${triple}-binary`) }],
     });
   }
   return fixture;
@@ -83,8 +83,8 @@ function agentHubFixture(version) {
     repository: "kungfu-systems/agent-hub-demo",
     release: { tag: `v${version}`, sourceSha },
   });
-  for (const platform of ["macos-arm64", "linux-x64"]) {
-    const artifactName = `agent-hub-demo-${platform}`;
+  for (const platform of ["macos-arm64", "linux-x64", "windows-x64"]) {
+    const artifactName = `agent-hub-demo-${platform}${platform === "windows-x64" ? ".exe" : ""}`;
     const artifactSha = hash(artifactName);
     fixture.addStatic(artifactName, 2048, artifactSha);
     fixture.addJson(`binary-${platform}.json`, {
@@ -102,22 +102,34 @@ function kungfuFixture(version) {
   const fixture = releaseFixture("kungfu", version);
   const sourceCommit = gitSha(`kungfu-source-${version}`);
   const installerSha = hash(`kungfu-installer-${version}`);
+  const powershellInstallerSha = hash(`kungfu-powershell-installer-${version}`);
   fixture.addStatic("kungfu-install.sh", 4096, installerSha);
+  fixture.addStatic("kungfu-install.ps1", 6144, powershellInstallerSha);
   fixture.addStatic("kungfu-episodes-cli-darwin-arm64.tar.gz", 8192);
   fixture.addStatic("kungfu-episodes-cli-linux-x64.tar.gz", 16384);
+  fixture.addStatic("kungfu-episodes-cli-windows-x64.zip", 32768);
   const immutablePath = `installers/v1/alpha/${version}/${hash(version)}`;
   fixture.addJson("kungfu-installer-publication-bundle.json", {
     schema: "kungfu.installer-publication-bundle/v1",
     identity: { version, releaseTag: `v${version}`, sourceCommit },
     distribution: { repository: "kungfu-systems/kungfu" },
     routes: { immutablePath },
-    assets: [{
-      path: `${immutablePath}/install.sh`,
-      role: "immutable-installer",
-      size: 4096,
-      digest: `sha256:${installerSha}`,
-      releaseAsset: "kungfu-install.sh",
-    }],
+    assets: [
+      {
+        path: `${immutablePath}/install.sh`,
+        role: "immutable-installer",
+        size: 4096,
+        digest: `sha256:${installerSha}`,
+        releaseAsset: "kungfu-install.sh",
+      },
+      {
+        path: `${immutablePath}/install.ps1`,
+        role: "immutable-installer",
+        size: 6144,
+        digest: `sha256:${powershellInstallerSha}`,
+        releaseAsset: "kungfu-install.ps1",
+      },
+    ],
   });
   return fixture;
 }
@@ -139,7 +151,7 @@ test("exact release adapters derive all four product entries from verified metad
     });
     assert.equal(entry.version, version);
     assert.match(entry.sourceSha, /^[0-9a-f]{40}$/u);
-    assert.equal(entry.targets.length, productId === "kfd" ? 4 : 2);
+    assert.equal(entry.targets.length, productId === "kfd" ? 5 : 3);
   }
 });
 
