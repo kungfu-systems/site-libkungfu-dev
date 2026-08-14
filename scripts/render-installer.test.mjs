@@ -306,6 +306,42 @@ test("streamed no-argument execution defaults to Kungfu without breaking its pro
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("unsupported Linux libc fails before any Kungfu download", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "libkungfu-installer-libc-test-"));
+  try {
+    const fixture = createFixture(root);
+    const kungfuRelease = fixture.catalog.products.find((entry) => entry.id === "kungfu").versions[0];
+    if (!kungfuRelease.targets.some((entry) => entry.platform === "linux-x64")) {
+      kungfuRelease.targets.push({ ...kungfuRelease.targets[0], platform: "linux-x64" });
+      const catalogBytes = Buffer.from(`${JSON.stringify(fixture.catalog, null, 2)}\n`);
+      const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
+      const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+      const rendered = renderInstaller({ catalog: fixture.catalog, catalogBytes, template, powershellTemplate });
+      fs.writeFileSync(fixture.catalogFile, catalogBytes);
+      fs.writeFileSync(fixture.installerFile, rendered.installerBytes);
+    }
+    writeExecutable(path.join(fixture.fakeBin, "uname"), `#!/bin/sh
+case "\${1:-}" in
+  -s) printf '%s\\n' Linux ;;
+  -m) printf '%s\\n' x86_64 ;;
+  *) exit 1 ;;
+esac
+`);
+    writeExecutable(path.join(fixture.fakeBin, "getconf"), `#!/bin/sh
+printf '%s\\n' 'glibc 2.17'
+`);
+    const result = run("sh", [fixture.installerFile, "--dry-run"], {
+      env: fixtureEnv(root, fixture.fakeBin),
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /unsupported-host.*requires glibc 2\.39.*glibc 2\.17/);
+    assert.doesNotMatch(result.stderr, /awk:/);
+    assert.doesNotMatch(result.stderr, /download:/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("catalog rejects a second product set or an unpinned digest", () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "install", "installer-catalog.json"), "utf8"));
   assert.equal(validateCatalog(catalog).length, 25);
