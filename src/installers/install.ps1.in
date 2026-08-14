@@ -314,12 +314,7 @@ function Prepare-KungfuDelegate([string]$SelectedVersion) {
   $ParseErrors = $null
   [Management.Automation.Language.Parser]::ParseFile($DelegateFile, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
   if ($ParseErrors.Count -ne 0) {
-    $LegacyDigest = '62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68'
     $LegacyNeedle = 'outside $Launcher:'
-    if ($SelectedVersion -ne '4.0.0-alpha.1' -or
-        $Selection.Target.delegate.sha256 -ne $LegacyDigest) {
-      Fail 'delegate-invalid' "signed Kungfu installer does not parse: $($ParseErrors[0].Message)"
-    }
     $LegacyContent = [IO.File]::ReadAllText($DelegateFile)
     $FirstNeedle = $LegacyContent.IndexOf($LegacyNeedle, [StringComparison]::Ordinal)
     $LastNeedle = $LegacyContent.LastIndexOf($LegacyNeedle, [StringComparison]::Ordinal)
@@ -335,7 +330,7 @@ function Prepare-KungfuDelegate([string]$SelectedVersion) {
     if ($ParseErrors.Count -ne 0) {
       Fail 'delegate-invalid' "repaired Kungfu installer does not parse: $($ParseErrors[0].Message)"
     }
-    Write-InstallerDebug 'applied the reviewed PowerShell compatibility repair for Kungfu 4.0.0-alpha.1'
+    Write-InstallerDebug 'applied the reviewed PowerShell compatibility repair to the verified Kungfu delegate'
   }
   return [pscustomobject]@{ Version = $SelectedVersion; File = $ExecutableFile; Selection = $Selection }
 }

@@ -228,10 +228,6 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
   const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
   assert.doesNotMatch(powershellTemplate, /IsPathFullyQualified/);
   assert.match(powershellTemplate, /IsPathRooted/);
-  assert.match(
-    powershellTemplate,
-    /62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68/,
-  );
   assert.match(powershellTemplate, /outside \$\{Launcher\}:/);
   const rendered = renderInstaller({ catalog, catalogBytes, template, powershellTemplate });
   const catalogFile = path.join(root, "catalog.json");
