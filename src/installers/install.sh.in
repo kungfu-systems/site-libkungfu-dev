@@ -110,8 +110,22 @@ case "$target" in
   linux-*)
     libc=$(getconf GNU_LIBC_VERSION 2>/dev/null || ldd --version 2>&1 | head -1 || true)
     case "$libc" in *glibc*|*"GNU libc"*|*GLIBC*) ;; *) fail unsupported-libc 'catalogued Linux artifacts require glibc' ;; esac
+    glibc_version=$(printf '%s\n' "$libc" | awk '{ print $NF }')
     ;;
 esac
+
+version_at_least() {
+  awk -v observed="$1" -v required="$2" 'BEGIN {
+    split(observed, left, "."); split(required, right, ".")
+    width = length(left) > length(right) ? length(left) : length(right)
+    for (part = 1; part <= width; part += 1) {
+      left[part] += 0; right[part] += 0
+      if (left[part] > right[part]) exit 0
+      if (left[part] < right[part]) exit 1
+    }
+    exit 0
+  }'
+}
 
 select_product() {
   selected_product=$1
@@ -191,6 +205,11 @@ preflight_product() {
   selected_version=$2
   select_product "$selected_product" || return 1
   select_target "$selected_product" "$selected_version" || return 2
+  if [ "$selected_product:$selected_version:$target" = 'kungfu:4.0.0-alpha.1:linux-x64' ] &&
+     ! version_at_least "$glibc_version" '2.39'; then
+    log "error[unsupported-host]: Kungfu $selected_version requires glibc 2.39 or newer; observed $libc"
+    return 8
+  fi
   launcher="$bin_dir/$command_name"
   existing=$(command -v "$command_name" 2>/dev/null || true)
   [ -z "$existing" ] || [ "$existing" = "$launcher" ] || {
