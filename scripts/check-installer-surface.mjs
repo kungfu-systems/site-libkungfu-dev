@@ -14,6 +14,7 @@ const friendlyInstaller = read("dist/install.sh");
 const publication = json("dist/install/v1/manifest.json");
 const siteManifest = json("dist/manifest.json");
 const installPage = read("dist/install/index.html").toString("utf8");
+const hubPage = read("dist/index.html").toString("utf8");
 const kfdPage = read("dist/kfd/index.html").toString("utf8");
 const buildchainPage = read("dist/buildchain/index.html").toString("utf8");
 
@@ -62,10 +63,20 @@ for (const product of publication.products) {
     `install page missing ${product.id} copy command`,
   );
 }
+assert.equal(installPage.includes("curl --fail --proto"), false, "install page must use the main-site minimal curl style");
+for (const productId of ["kfd", "buildchain", "kungfu"]) {
+  assert.ok(
+    installPage.includes(`brew install kungfu-systems/tap/${productId}`),
+    `install page missing ${productId} Homebrew route`,
+  );
+}
+assert.ok(installPage.includes("Homebrew owns package-manager installation, upgrades, and removal"));
 assert.ok(installPage.includes("--version 3.0.6"), "install page missing historical Buildchain example");
 assert.ok(installPage.includes("--rollback"), "install page missing rollback example");
 assert.ok(kfdPage.includes('data-local-href="/install/#kfd"'), "KFD page missing install guide card");
 assert.ok(buildchainPage.includes('data-local-href="/install/#buildchain"'), "Buildchain page missing install guide card");
+assert.ok(hubPage.includes("data-hub-install-card"), "hub first screen missing installation entry card");
+assert.ok(hubPage.includes('data-local-href="/install/"'), "hub installation card missing local install guide route");
 assert.ok(
   kfdPage.includes("https://libkungfu.dev/install.sh | sh -s -- kfd"),
   "KFD page missing copyable installer command",

@@ -2788,7 +2788,7 @@ if (
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
   || !kfdHomeHtml.includes('data-native-cli-install')
-  || !kfdHomeHtml.includes(`<code>${escapeHtml("curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd")}</code>`)
+  || !kfdHomeHtml.includes(`<code>${escapeHtml("curl -fsSL https://libkungfu.dev/install.sh | sh -s -- kfd")}</code>`)
   || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.versionCommand)}</code>`)
   || !kfdHomeHtml.includes("Install KFD · no coding required")
 ) {

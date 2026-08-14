@@ -4,6 +4,24 @@
   "catalogVersion": "1",
   "scope": "posix-shell",
   "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
+  "homebrew": {
+    "repository": "https://github.com/kungfu-systems/homebrew-tap",
+    "products": [
+      {
+        "id": "kfd",
+        "command": "brew install kungfu-systems/tap/kfd"
+      },
+      {
+        "id": "buildchain",
+        "command": "brew install kungfu-systems/tap/buildchain"
+      },
+      {
+        "id": "kungfu",
+        "command": "brew install kungfu-systems/tap/kungfu"
+      }
+    ],
+    "authorityBoundary": "Homebrew owns package-manager installation, upgrades, and removal. The tap projects upstream release evidence and remains separate from this versioned installer."
+  },
   "products": [
     {
       "id": "kfd",

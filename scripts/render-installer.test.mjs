@@ -149,6 +149,14 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
     catalogVersion: "test",
     scope: "posix-shell",
     authorityBoundary: "Fixture upstream assets remain authoritative.",
+    homebrew: {
+      repository: "https://github.com/kungfu-systems/homebrew-tap",
+      products: ["kfd", "buildchain", "kungfu"].map((id) => ({
+        id,
+        command: `brew install kungfu-systems/tap/${id}`,
+      })),
+      authorityBoundary: "Fixture Homebrew ownership remains separate from the versioned installer.",
+    },
     products: [
       {
         id: "kfd",
