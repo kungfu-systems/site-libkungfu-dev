@@ -15,6 +15,7 @@ node scripts/check-kfx-surface.mjs
 node scripts/check-skills-surface.mjs
 node --test scripts/render-installer.test.mjs
 node scripts/check-installer-surface.mjs
+node scripts/check-social-cards.mjs
 
 pnpm exec buildchain badges readme --check
 
