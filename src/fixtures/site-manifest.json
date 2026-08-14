@@ -669,6 +669,16 @@
       "purpose": "Exact source, package availability, quickstart, KFD Runtime 100, qualification, and claim boundary."
     },
     {
+      "label": "Multi-product installer publication",
+      "path": "/install/v1/manifest.json",
+      "purpose": "Content-addressed install.sh and catalog routes, exact supported versions, commands, and upstream authority boundary."
+    },
+    {
+      "label": "Versioned installer catalog",
+      "path": "/install/v1/catalog.json",
+      "purpose": "Reviewed product, version, platform, size, digest, provenance, and immutable upstream asset projection for the POSIX installer."
+    },
+    {
       "label": "Agent index",
       "path": "/llms.txt",
       "purpose": "Stable text entrypoint for agents."

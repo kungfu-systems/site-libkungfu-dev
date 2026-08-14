@@ -47,6 +47,10 @@ resource lifecycle decisions belong in the infra repository.
 ## Current State
 
 - The repository builds a static `dist/` artifact.
+- The hub artifact includes `/install.sh`, `/install/v1/manifest.json`, and the
+  friendly plus content-addressed installer catalog. Staging and production
+  readback must verify the manifest digests and immutable routes, not only the
+  friendly URL status.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
 - The workflow consumes Buildchain through the floating `@v3-alpha` workflow ref and
