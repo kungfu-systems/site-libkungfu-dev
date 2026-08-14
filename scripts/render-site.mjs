@@ -2762,6 +2762,23 @@ ${current === "papers" ? "" : `
       margin-top: 0;
     }
 
+    .hub-install-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      border-left: 5px solid var(--accent);
+    }
+
+    .hub-install-card h2,
+    .hub-install-card p {
+      margin-top: 0;
+    }
+
+    .hub-install-card .card-actions {
+      margin-top: 0;
+    }
+
     .installer-hero {
       display: grid;
       gap: 18px;
@@ -2788,6 +2805,36 @@ ${current === "papers" ? "" : `
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 34px;
+    }
+
+    .installer-homebrew {
+      display: grid;
+      gap: 20px;
+      margin-bottom: 34px;
+    }
+
+    .installer-homebrew-intro h2,
+    .installer-homebrew-intro p,
+    .installer-homebrew-grid p,
+    .installer-homebrew-boundary {
+      margin-top: 0;
+    }
+
+    .installer-homebrew-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .installer-homebrew-grid > div {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .installer-homebrew-grid .kfd-command {
+      font-size: 12px;
     }
 
     .installer-product-card {
@@ -3682,9 +3729,11 @@ ${immutableArchive ? "" : `
       .kfd-independent-steps,
       .kfd-native-install,
       .kfd-boundaries,
+      .hub-install-card,
       .product-install-card,
       .installer-product-grid,
-      .installer-guide-grid {
+      .installer-guide-grid,
+      .installer-homebrew-grid {
         grid-template-columns: 1fr;
       }
 
@@ -5539,11 +5588,36 @@ function installerProduct(productId) {
 
 function installerCurlCommand(productId, args = "") {
   const suffix = args ? ` ${args}` : "";
-  return `curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- ${productId}${suffix}`;
+  return `curl -fsSL https://libkungfu.dev/install.sh | sh -s -- ${productId}${suffix}`;
 }
 
 function installGuideLinkAttrs(productId) {
   return surfaceRouteLinkAttrs("install", productId ? `#${productId}` : "");
+}
+
+function installerHomebrewProducts() {
+  const products = installerCatalog.homebrew?.products;
+  if (
+    installerCatalog.homebrew?.repository !== "https://github.com/kungfu-systems/homebrew-tap"
+    || !Array.isArray(products)
+    || products.map((entry) => entry.id).join(",") !== "kfd,buildchain,kungfu"
+  ) {
+    throw new Error("installer catalog is missing the reviewed Homebrew routes");
+  }
+  return products;
+}
+
+function renderHubInstallCard() {
+  return `<section class="panel hub-install-card" data-hub-install-card aria-labelledby="hub-install-heading">
+    <div>
+      <p class="eyebrow">Install · no coding required</p>
+      <h2 id="hub-install-heading"><a ${installGuideLinkAttrs()}>Choose a CLI and start in one command.</a></h2>
+      <p>Install KFD, Buildchain, Kungfu, or Agent Hub Demo. Choose the current release, pin an exact version, or use the official Homebrew tap where available.</p>
+    </div>
+    <div class="card-actions">
+      <a class="card-action" ${installGuideLinkAttrs()}>Open installation guide</a>
+    </div>
+  </section>`;
 }
 
 function renderHomepageInstallCard(productId, summary) {
@@ -5553,7 +5627,7 @@ function renderHomepageInstallCard(productId, summary) {
     <div>
       <p class="eyebrow">Install ${escapeHtml(label)} · no coding required</p>
       <h2 id="${escapeAttr(productId)}-install-heading"><a ${installGuideLinkAttrs(productId)}>Start with the installation guide</a></h2>
-      <p>${escapeHtml(summary)} The current catalog selects <code>${escapeHtml(product.defaultVersion)}</code>; the guide also covers exact versions and rollback.</p>
+      <p>${escapeHtml(summary)} The current catalog selects <code>${escapeHtml(product.defaultVersion)}</code>; the guide also covers exact versions, rollback, and the official Homebrew tap.</p>
     </div>
     <div class="product-install-command" data-command-block>
       <pre class="kfd-command"><code>${escapeHtml(installerCurlCommand(productId))}</code></pre>
@@ -5587,6 +5661,26 @@ function renderInstallerProductCard(product) {
   </article>`;
 }
 
+function renderInstallerHomebrew() {
+  const homebrew = installerCatalog.homebrew;
+  return `<section class="panel installer-homebrew" id="homebrew" aria-labelledby="installer-homebrew-heading">
+    <div class="installer-homebrew-intro">
+      <p class="eyebrow">Prefer a package manager?</p>
+      <h2 id="installer-homebrew-heading">KFD, Buildchain, and Kungfu are also on Homebrew.</h2>
+      <p>Use the official tap when you want Homebrew to own installation, upgrades, and removal. Use the versioned installer above when you need an exact catalogued release or rollback.</p>
+    </div>
+    <div class="installer-homebrew-grid">
+      ${installerHomebrewProducts().map((entry) => `<div data-command-block>
+        <p><strong>${escapeHtml(installerProductLabels[entry.id])}</strong></p>
+        <pre class="kfd-command"><code>${escapeHtml(entry.command)}</code></pre>
+        <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(installerProductLabels[entry.id])} Homebrew install command">Copy command</button>
+      </div>`).join("\n")}
+    </div>
+    <p class="installer-homebrew-boundary">${escapeHtml(homebrew.authorityBoundary)}</p>
+    <a class="card-action secondary" href="${escapeAttr(homebrew.repository)}">Open the Homebrew tap ↗</a>
+  </section>`;
+}
+
 function renderInstallerGuide() {
   const productIds = ["kfd", "buildchain", "kungfu", "agent-hub-demo"];
   const products = productIds.map(installerProduct);
@@ -5604,6 +5698,8 @@ function renderInstallerGuide() {
   <section class="installer-product-grid" aria-label="Available products">
     ${products.map(renderInstallerProductCard).join("\n")}
   </section>
+
+  ${renderInstallerHomebrew()}
 
   <section class="installer-guide-grid" aria-label="Version selection and recovery">
     <article class="panel">
@@ -5655,7 +5751,7 @@ function kfdIndependentImplementationPanel() {
       <div>
         <p class="eyebrow">Install KFD · no coding required</p>
         <h3><a ${installGuideLinkAttrs("kfd")}>Start with the installation guide</a></h3>
-        <p>Use the shared versioned installer for the current native KFD CLI, an exact historical version, or rollback.</p>
+        <p>Use the shared versioned installer for the current native KFD CLI, an exact historical version, or rollback. Prefer Homebrew? The installation guide includes the official tap.</p>
         <ul class="kfd-native-capabilities" aria-label="Native CLI capabilities">
           ${nativeCli.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("\n")}
         </ul>
@@ -7461,6 +7557,8 @@ writeFile(
         <a class="hero-action secondary" ${surfaceLinkAttrs("core")}>Open Core runtime</a>
       </div>
     </section>
+
+    ${renderHubInstallCard()}
 
     <section class="panel" id="installed-agent-hub-qualification">
       <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} KFD adopter profile</p>

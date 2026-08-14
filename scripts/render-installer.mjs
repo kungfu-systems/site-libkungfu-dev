@@ -50,6 +50,17 @@ export function validateCatalog(catalog) {
   if (catalog.products.map((entry) => entry.id).join(",") !== productIds.join(",")) {
     throw new Error(`installer products must stay ordered as ${productIds.join(", ")}`);
   }
+  const homebrewProductIds = ["kfd", "buildchain", "kungfu"];
+  const homebrewProducts = catalog.homebrew?.products;
+  if (
+    catalog.homebrew?.repository !== "https://github.com/kungfu-systems/homebrew-tap"
+    || !Array.isArray(homebrewProducts)
+    || homebrewProducts.map((entry) => entry.id).join(",") !== homebrewProductIds.join(",")
+    || homebrewProducts.some((entry) => entry.command !== `brew install kungfu-systems/tap/${entry.id}`)
+    || !catalog.homebrew.authorityBoundary
+  ) {
+    throw new Error("installer catalog must expose the reviewed Homebrew tap routes for KFD, Buildchain, and Kungfu");
+  }
 
   const records = [];
   for (const product of catalog.products) {

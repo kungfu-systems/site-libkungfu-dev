@@ -277,9 +277,18 @@ machine changes. A person or Agent can select one exact version without writing
 code:
 
 ```bash
-curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- kfd
-curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- buildchain --version 3.0.6
-curl --fail --proto '=https' --tlsv1.2 https://libkungfu.dev/install.sh | sh -s -- all
+curl -fsSL https://libkungfu.dev/install.sh | sh -s -- kfd
+curl -fsSL https://libkungfu.dev/install.sh | sh -s -- buildchain --version 3.0.6
+curl -fsSL https://libkungfu.dev/install.sh | sh -s -- all
+```
+
+KFD, Buildchain, and Kungfu are also available through the official Homebrew
+tap when Homebrew should own installation, upgrades, and removal:
+
+```bash
+brew install kungfu-systems/tap/kfd
+brew install kungfu-systems/tap/buildchain
+brew install kungfu-systems/tap/kungfu
 ```
 
 The reviewed source catalog is `src/fixtures/installer-catalog.json`. The build
