@@ -41,7 +41,10 @@ for (const route of [
   new URL(publication.catalog.immutableUrl).pathname,
   new URL(publication.installer.immutableUrl).pathname,
 ]) {
-  assert.ok(siteManifest.pages.some((entry) => entry.path === route && entry.host === "libkungfu.dev"), `root manifest missing ${route}`);
+  assert.ok(
+    siteManifest.pages.some((entry) => entry.path === route && entry.host === siteManifest.canonicalHost),
+    `root manifest missing ${route} on ${siteManifest.canonicalHost}`,
+  );
 }
 for (const route of ["/install/v1/manifest.json", "/install/v1/catalog.json"]) {
   assert.ok(siteManifest.machineEntries.some((entry) => entry.path === route), `machine entries missing ${route}`);
