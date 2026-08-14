@@ -2775,10 +2775,10 @@ const kfdFirstCommandPosition = kfdHomeHtml.indexOf('<pre class="kfd-command">')
 const kfdHomeH1s = [...kfdHomeHtml.matchAll(/<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/g)];
 if (
   kfdAuthorityPositionOnHome < 0
-  || kfdSelfConformancePosition <= kfdAuthorityPositionOnHome
-  || kfdFoundationPosition <= kfdSelfConformancePosition
+  || kfdFoundationPosition <= kfdAuthorityPositionOnHome
   || kfdIndependentPosition <= kfdFoundationPosition
-  || kfdInstalledProjectionPosition <= kfdIndependentPosition
+  || kfdSelfConformancePosition <= kfdIndependentPosition
+  || kfdInstalledProjectionPosition <= kfdSelfConformancePosition
   || kfdActivationPosition <= kfdInstalledProjectionPosition
   || kfdFirstCommandPosition <= kfdIndependentPosition
   || kfdHomeH1s.length !== 1
@@ -2792,7 +2792,16 @@ if (
   || !kfdHomeHtml.includes(`<code>${escapeHtml(kfdIndependentImplementation.nativeCli.versionCommand)}</code>`)
   || !kfdHomeHtml.includes("Install KFD · no coding required")
 ) {
-  throw new Error("KFD homepage hierarchy must be identity, Self-Conformance reader model, foundation, independent implementation, installed Kungfu, then activation interfaces");
+  throw new Error("KFD homepage hierarchy must be identity, foundation, independent implementation, governed self-change, installed Kungfu, then activation interfaces");
+}
+if (
+  !kfdHomeHtml.includes('data-local-href="/install/#homebrew">Prefer Homebrew?</a>')
+  || !kfdHomeHtml.includes('<details class="kfd-self-conformance-disclosure">')
+  || kfdHomeHtml.includes('<details class="kfd-self-conformance-disclosure" open>')
+  || !kfdHomeHtml.includes("Expand evidence")
+  || !kfdHomeHtml.includes("Collapse evidence")
+) {
+  throw new Error("KFD homepage must link directly to Homebrew and keep deep self-change evidence collapsed by default");
 }
 if (
   !kfdHomeHtml.includes('<a class="reader-action" href="#foundation-triad">Understand KFD</a>')

@@ -2694,6 +2694,42 @@ ${current === "papers" ? "" : `
       font: 750 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
+    .kfd-self-conformance-disclosure {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    .kfd-self-conformance-disclosure summary {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      list-style: none;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      padding: 13px 15px;
+      color: var(--accent-dark);
+      font-weight: 800;
+    }
+
+    .kfd-self-conformance-disclosure summary::-webkit-details-marker { display: none; }
+    .kfd-self-conformance-disclosure summary::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: translateY(-2px) rotate(45deg);
+      transition: transform 140ms ease;
+    }
+    .kfd-self-conformance-disclosure[open] summary::before { transform: translateY(3px) rotate(225deg); }
+    .kfd-self-conformance-disclosure summary span { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .kfd-self-conformance-disclosure .collapse-label { display: none; }
+    .kfd-self-conformance-disclosure[open] .expand-label { display: none; }
+    .kfd-self-conformance-disclosure[open] .collapse-label { display: inline; }
+    .kfd-self-conformance-disclosure-body { display: grid; gap: 18px; padding-top: 18px; }
+
     .kfd-command {
       min-width: 0;
       overflow-x: auto;
@@ -5751,7 +5787,7 @@ function kfdIndependentImplementationPanel() {
       <div>
         <p class="eyebrow">Install KFD · no coding required</p>
         <h3><a ${installGuideLinkAttrs("kfd")}>Start with the installation guide</a></h3>
-        <p>Use the shared versioned installer for the current native KFD CLI, an exact historical version, or rollback. Prefer Homebrew? The installation guide includes the official tap.</p>
+        <p>Use the shared versioned installer for the current native KFD CLI, an exact historical version, or rollback. <a ${surfaceRouteLinkAttrs("install", "#homebrew")}>Prefer Homebrew?</a> The installation guide includes the official tap.</p>
         <ul class="kfd-native-capabilities" aria-label="Native CLI capabilities">
           ${nativeCli.capabilities.map((capability) => `<li>${escapeHtml(capability)}</li>`).join("\n")}
         </ul>
@@ -5820,16 +5856,21 @@ function kfdSelfConformancePanel() {
       </article>
     </div>
     <p class="reader-claim-boundary" data-reader-authority-boundary><strong>Authority boundary:</strong> The verifier is necessary but not sufficient; accountable human approval remains required. It does not establish ${escapeHtml(readerModel.authorityBoundary.forbiddenInferences.join(", "))}.</p>
-    <dl class="meta">
-      <dt>Profile</dt><dd><code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code></dd>
-      <dt>Candidate</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code> · non-normative · no allocated number</dd>
-      <dt>Case</dt><dd><code>${escapeHtml(recursiveCase.liveCase.status)}</code> · <code>${escapeHtml(recursiveCase.liveCase.outcome)}</code></dd>
-    </dl>
-    <div class="card-actions">
-      <a class="card-action" href="${escapeAttr(`${contract.url.replace(/\/+$/, "")}/`)}">Open evidence</a>
-      <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
-      ${readerModel.links.map((entry) => `<a class="card-action secondary" href="${escapeAttr(readerLinkHref(entry))}">${escapeHtml(entry.label)}</a>`).join("\n")}
-    </div>
+    <details class="kfd-self-conformance-disclosure">
+      <summary>Evidence and source details <span><span class="expand-label">Expand evidence</span><span class="collapse-label">Collapse evidence</span></span></summary>
+      <div class="kfd-self-conformance-disclosure-body">
+        <dl class="meta">
+          <dt>Profile</dt><dd><code>${escapeHtml(kfdSelfConformancePage.profile.id)}@${escapeHtml(kfdSelfConformancePage.profile.version)}</code></dd>
+          <dt>Candidate</dt><dd><code>${escapeHtml(recursiveCase.candidate.status)}</code> · non-normative · no allocated number</dd>
+          <dt>Case</dt><dd><code>${escapeHtml(recursiveCase.liveCase.status)}</code> · <code>${escapeHtml(recursiveCase.liveCase.outcome)}</code></dd>
+        </dl>
+        <div class="card-actions">
+          <a class="card-action" href="${escapeAttr(`${contract.url.replace(/\/+$/, "")}/`)}">Open evidence</a>
+          <a class="card-action secondary" href="${escapeAttr(`${recursiveCase.liveCase.url.replace(/\/+$/, "")}/`)}">Closed live case</a>
+          ${readerModel.links.map((entry) => `<a class="card-action secondary" href="${escapeAttr(readerLinkHref(entry))}">${escapeHtml(entry.label)}</a>`).join("\n")}
+        </div>
+      </div>
+    </details>
   </section>`;
 }
 
@@ -9596,8 +9637,6 @@ writeFile(
     alternates: kfdSurfaceAlternates(),
     body: `${kfdHomepageHero()}
 
-    ${kfdSelfConformancePanel()}
-
     <section class="panel" id="foundation-triad">
       <p class="eyebrow">The minimum model</p>
       <h2>${escapeHtml(kfdSite.homepage.foundationTriad.heading)}</h2>
@@ -9619,6 +9658,8 @@ writeFile(
     </section>
 
     ${kfdIndependentImplementationPanel()}
+
+    ${kfdSelfConformancePanel()}
 
     <section class="panel" id="agent-hub-qualification">
       <p class="eyebrow">${escapeHtml(kfdSite.agentHubPage.status)} adopter profile</p>
