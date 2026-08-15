@@ -407,8 +407,79 @@
         "repository": "kungfu-systems/kungfu",
         "evidence": "kungfu-installer-publication-bundle/v1"
       },
-      "defaultVersion": "4.0.0-alpha.1",
+      "defaultVersion": "4.0.0-alpha.2",
       "versions": [
+        {
+          "version": "4.0.0-alpha.2",
+          "tag": "v4.0.0-alpha.2",
+          "publishedAt": "2026-08-15T12:54:46Z",
+          "sourceSha": "b0cff8236b8b3746f8028b9d519ed3b0e26096c9",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "size": 145730301,
+                "sha256": "d5e71be871d8f88e317eded6634bf8717c7006fbc7b10ad93a944384ce6705a8"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
+                "size": 9630,
+                "sha256": "a0ce1536f852c1a38f25042f43081e09acebde89c2f09b8a96b32f13bf76bc27"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-linux-x64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-linux-x64.tar.gz",
+                "size": 205955896,
+                "sha256": "78c8773ae5a33ae21d150b97af9ccbb3a11f8bfd4c740b83f99c04be519daeaa"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
+                "size": 9630,
+                "sha256": "a0ce1536f852c1a38f25042f43081e09acebde89c2f09b8a96b32f13bf76bc27"
+              }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-windows-x64.zip",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-windows-x64.zip",
+                "size": 1186367915,
+                "sha256": "976aa3b5a7b7ab5525a6d0209dcb6ae77feefa9c68820ffcf4ee18d157c0ed7c"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.ps1",
+                "size": 6280,
+                "sha256": "3bffe07ace5c59d2c9d3311aca55062888bbf843c6293b0e60dde4008c6aabdc"
+              }
+            }
+          ]
+        },
         {
           "version": "4.0.0-alpha.1",
           "tag": "v4.0.0-alpha.1",
