@@ -569,8 +569,10 @@ if (
   || !versioningPolicy.includes("without claiming a released Skill runtime")
   || !versioningPolicy.includes("| 2026-08-15 | open-minor | `kfd-conceptual-compression/v1` |")
   || !versioningPolicy.includes("the exact KFD source authoritative")
+  || !versioningPolicy.includes("| 2026-08-15 | open-minor | `kfd-agent-hub-three-axis/v1` |")
+  || !versioningPolicy.includes("keeps verification validity separate from behavior conformance and certification")
 ) {
-  throw new Error("KFD-1 version review must register the additive reader, activation-discovery, KFX, Skills, and conceptual-compression impacts");
+  throw new Error("KFD-1 version review must register the additive reader, activation-discovery, KFX, Skills, conceptual-compression, and Agent Hub three-axis impacts");
 }
 const readerContract = site.readerContract;
 if (
@@ -2799,8 +2801,16 @@ if (
   || kfdIndependentImplementation.release?.version !== kfdPackage.version
   || kfdIndependentImplementation.release?.immutable !== true
   || kfdIndependentImplementation.supportedLanguages?.map((entry) => entry.id).join(",") !== "python,rust,node,cpp"
-  || kfdIndependentImplementation.steps?.map((entry) => entry.id).join(",") !== "scaffold,test,verify"
-  || kfdIndependentImplementation.links?.map((entry) => entry.url).join(",") !== "/agent-hub/,/verify/"
+  || kfdIndependentImplementation.steps?.map((entry) => entry.id).join(",") !== "scaffold,smoke,implement,test,verify"
+  || kfdIndependentImplementation.links?.map((entry) => entry.url).join(",") !== "/agent-hub/#report-verification,/verify/"
+  || kfdIndependentImplementation.dimensions?.behavior?.starter !== "0/20"
+  || kfdIndependentImplementation.dimensions?.evidence?.starter !== true
+  || kfdIndependentImplementation.dimensions?.authority?.starter?.qualifying !== false
+  || kfdIndependentImplementation.dimensions?.authority?.starter?.certification !== false
+  || kfdIndependentImplementation.paths?.reference?.expected?.behavior !== "20/20"
+  || kfdIndependentImplementation.paths?.starter?.expected?.testExitCode !== 1
+  || kfdIndependentImplementation.paths?.starter?.expected?.verifyExitCode !== 0
+  || kfdIndependentImplementation.paths?.starter?.expected?.evidence !== "valid"
   || kfdIndependentImplementation.nativeCli?.installCommand !== "brew install kungfu-systems/tap/kfd"
   || kfdIndependentImplementation.nativeCli?.versionCommand !== "kfd --version"
   || kfdIndependentImplementation.nativeCli?.executable !== "kfd"
@@ -2816,9 +2826,15 @@ if (JSON.stringify(kfdAgentManifest.independentImplementation) !== JSON.stringif
 const kfdIndependentReaderModel = kfdAgentManifest.independentReaderModel;
 if (
   kfdIndependentReaderModel?.contract !== "site.libkungfu.dev/kfd-independent-reader-model/v1"
-  || kfdIndependentReaderModel?.referencePath?.expected !== "20/20 · report verified offline"
+  || kfdIndependentReaderModel?.referencePath?.expected?.demoExitCode !== 0
+  || kfdIndependentReaderModel?.referencePath?.expected?.behavior !== "20/20"
+  || kfdIndependentReaderModel?.referencePath?.expected?.evidence !== "valid"
+  || kfdIndependentReaderModel?.referencePath?.command.endsWith(" --json")
   || kfdIndependentReaderModel?.adopterPath?.steps?.map((entry) => entry.id).join(",") !== "scaffold,smoke,understand,implement,test,verify"
-  || kfdIndependentReaderModel?.adopterPath?.steps?.find((entry) => entry.id === "test")?.expected !== "Unmodified scaffold: expected 0/20"
+  || kfdIndependentReaderModel?.adopterPath?.steps?.find((entry) => entry.id === "test")?.expected !== "Untouched starter: exit 1 · 0/20 · report.valid=false"
+  || kfdIndependentReaderModel?.adopterPath?.steps?.find((entry) => entry.id === "verify")?.expected !== "Expected: exit 0 · verification.valid=true · adapter bytes checked"
+  || kfdIndependentReaderModel?.dimensions?.behavior?.starter !== "0/20"
+  || kfdIndependentReaderModel?.dimensions?.evidence?.starter !== true
   || kfdIndependentReaderModel?.categories?.map((entry) => entry.id).join(",") !== "negotiation,delivery,authority,conflict,knowledge,completion,recovery,portability"
   || kfdIndependentReaderModel?.categories?.reduce((count, entry) => count + entry.vectors.length, 0) !== 20
 ) {
@@ -2846,6 +2862,16 @@ if (
   || kfdHomeH1s.length !== 1
   || kfdHomeH1s[0][1] !== escapeHtml(kfdSite.homepage.title)
   || !kfdHomeHtml.includes(escapeHtml(kfdIndependentImplementation.promise))
+  || !kfdHomeHtml.includes('data-kfd-three-dimensions')
+  || (kfdHomeHtml.match(/data-kfd-dimension=/g) || []).length !== 3
+  || !kfdHomeHtml.includes("An implementation can fail while that failure remains independently verifiable.")
+  || !kfdHomeHtml.includes("Behavior: 0/20 (not conforming)")
+  || !kfdHomeHtml.includes("Evidence: valid (adapter bytes checked)")
+  || !kfdHomeHtml.includes("Authority: qualifying=false; certification=false")
+  || !kfdHomeHtml.includes("Need the complete machine result?")
+  || !kfdHomeHtml.includes("Inspect the complete verifier JSON")
+  || !kfdHomeHtml.includes("Untouched starter: exit 1 · 0/20 · report.valid=false")
+  || !kfdHomeHtml.includes("Expected: exit 0 · verification.valid=true · adapter bytes checked")
   || !kfdHomeHtml.includes('aria-label="Supported adapter languages"')
   || !kfdHomeHtml.includes('href="/agent-hub/"')
   || !kfdHomeHtml.includes('href="/verify/"')
@@ -2910,8 +2936,8 @@ for (const language of kfdIndependentImplementation.supportedLanguages) {
 for (const step of kfdIndependentImplementation.steps) {
   if (
     !kfdHomeHtml.includes(`data-independent-step="${escapeHtml(step.id)}"`)
-    || !kfdHomeHtml.includes(`<code>${escapeHtml(step.command)}</code>`)
-    || !kfdLlms.includes(`- ${step.label}: ${step.command}`)
+    || (step.command && !kfdHomeHtml.includes(`<code>${escapeHtml(step.command)}</code>`))
+    || (step.command && !kfdLlms.includes(`- ${step.label}: ${step.command}`))
   ) {
     throw new Error(`KFD homepage or llms entry drifted from independent step: ${step.id}`);
   }
@@ -2921,9 +2947,10 @@ const kfdReaderStepPositions = ["scaffold", "smoke", "understand", "implement", 
 if (
   !kfdHomeHtml.includes('data-onboarding-path="understand"')
   || !kfdHomeHtml.includes('data-onboarding-path="implement"')
-  || !kfdHomeHtml.includes("Expected: 20/20 · report verified offline")
-  || !kfdHomeHtml.includes("Expected: pass")
-  || !kfdHomeHtml.includes("Unmodified scaffold: expected 0/20")
+  || !kfdHomeHtml.includes("Expected: exit 0 · 20/20 · evidence valid")
+  || !kfdHomeHtml.includes("Expected: exit 0 · envelope pass")
+  || !kfdHomeHtml.includes("Untouched starter: exit 1 · 0/20 · report.valid=false")
+  || !kfdHomeHtml.includes("Target before claiming conformance: 20/20")
   || !kfdHomeHtml.includes("scenario-not-implemented")
   || !kfdHomeHtml.includes("This does not rerun the adapter or certify production fitness.")
   || kfdReaderStepPositions.some((position) => position < 0)
@@ -3098,7 +3125,9 @@ const kfdAgentHubAliasHtml = fs.readFileSync("dist/agent-hub/index.html", "utf8"
 if (kfdAgentHubAliasHtml !== kfdAgentHubCanonicalHtml) {
   throw new Error("KFD Agent Hub subdomain route alias drifted: dist/agent-hub/index.html");
 }
-const agentHubHeadings = kfdSite.agentHubPage.sections.map((section) => section.title);
+const agentHubHeadings = kfdSite.agentHubPage.sections
+  .filter((section) => section.title !== "Three independent dimensions")
+  .map((section) => section.title);
 if (
   agentHubHeadings.some((heading) => !kfdAgentHubCanonicalHtml.includes(`>${escapeHtml(heading)}</h3>`))
   || !kfdAgentHubCanonicalHtml.includes('aria-label="Agent Hub qualification sections"')
@@ -3141,17 +3170,30 @@ if (
 }
 const kfdAgentHubLayoutPosition = kfdAgentHubCanonicalHtml.indexOf('<section class="doc-layout">');
 const kfdAgentHubContentStackPosition = kfdAgentHubCanonicalHtml.indexOf('<div class="stack kfd-agent-hub-content">');
+const kfdAgentHubDimensionsPosition = kfdAgentHubCanonicalHtml.indexOf('id="three-independent-dimensions"');
+const kfdAgentHubDocumentPosition = kfdAgentHubCanonicalHtml.indexOf('<article class="panel doc-content">');
 const kfdAgentHubMapPosition = kfdAgentHubCanonicalHtml.indexOf('id="hub-20-map"');
 const kfdAgentHubInstalledPosition = kfdAgentHubCanonicalHtml.indexOf('id="installed-kungfu-qualification"');
 const kfdAgentHubActivationPosition = kfdAgentHubCanonicalHtml.indexOf('id="activation-contracts"');
 if (
   kfdAgentHubLayoutPosition < 0
   || kfdAgentHubContentStackPosition <= kfdAgentHubLayoutPosition
-  || kfdAgentHubMapPosition <= kfdAgentHubContentStackPosition
+  || kfdAgentHubDimensionsPosition <= kfdAgentHubContentStackPosition
+  || kfdAgentHubDocumentPosition <= kfdAgentHubDimensionsPosition
+  || kfdAgentHubMapPosition <= kfdAgentHubDocumentPosition
   || kfdAgentHubInstalledPosition <= kfdAgentHubMapPosition
   || kfdAgentHubActivationPosition <= kfdAgentHubInstalledPosition
 ) {
   throw new Error("KFD Agent Hub must keep its Hub 20 map, product projection, and activation material inside the standard document layout");
+}
+if (
+  (kfdAgentHubCanonicalHtml.match(/data-kfd-dimension=/g) || []).length !== 3
+  || !kfdAgentHubCanonicalHtml.includes("Read the result before the commands")
+  || !kfdAgentHubCanonicalHtml.includes("the implementation is incomplete, but that failure fact is independently verifiable.")
+  || !kfdAgentHubCanonicalHtml.includes('id="report-verification"')
+  || !kfdAgentHubCanonicalHtml.includes("Verifier validity is evidence validity, not behavior conformance.")
+) {
+  throw new Error("KFD Agent Hub must present behavior, evidence, and authority before commands and preserve the report-verification boundary");
 }
 if (
   (kfdAgentHubCanonicalHtml.match(/data-hub-category-detail=/g) || []).length !== 8
