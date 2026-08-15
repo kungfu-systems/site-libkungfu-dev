@@ -288,9 +288,14 @@ contract_file="$candidate/runtime/config/kungfu-upgrade.contract.json"
 contract_backup="$stage/kungfu-upgrade.contract.json.original"
 product_file="$candidate/product.json"
 product_backup="$stage/product.json.original"
+bundled_manifest_file="$candidate/upgrade/kungfu-release-manifest.json"
+bundled_manifest_backup="$stage/kungfu-release-manifest.json.original"
 cp -p "$contract_file" "$contract_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu upgrade contract"
 cp -p "$product_file" "$product_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu product descriptor"
-"$candidate/runtime/python/bin/python3" - "$contract_file" "$product_file" "$platform" "$architecture" <<'KUNGFU_SCHEMA_COMPAT_PY' ||
+cp -p "$bundled_manifest_file" "$bundled_manifest_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu release manifest"
+"$candidate/runtime/python/bin/python3" - \
+  "$contract_file" "$product_file" "$bundled_manifest_file" "$channel_file" \
+  "$channel" "$platform" "$architecture" "$version" "$manifest_root" "$artifact_root" <<'KUNGFU_SCHEMA_COMPAT_PY' ||
 import json
 import pathlib
 import sys
@@ -311,8 +316,14 @@ artifact["properties"]["name"] = {"type": "string", "minLength": 1}
 path.write_text(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "utf-8")
 
 product_path = pathlib.Path(sys.argv[2])
-platform = sys.argv[3]
-architecture = sys.argv[4]
+bundled_manifest_path = pathlib.Path(sys.argv[3])
+channel_path = pathlib.Path(sys.argv[4])
+channel = sys.argv[5]
+platform = sys.argv[6]
+architecture = sys.argv[7]
+version = sys.argv[8]
+manifest_root = sys.argv[9]
+artifact_root = sys.argv[10]
 product = json.loads(product_path.read_text("utf-8"))
 archive_platform = "windows" if platform == "win32" else platform
 if (
@@ -324,12 +335,49 @@ if (
     raise SystemExit("verified Kungfu product descriptor no longer matches the reviewed compatibility repair")
 product["platform"] = platform
 product_path.write_text(json.dumps(product, indent=2, ensure_ascii=False) + "\n", "utf-8")
+
+bundled_manifest = json.loads(bundled_manifest_path.read_text("utf-8"))
+channel_index = json.loads(channel_path.read_text("utf-8"))
+matches = [
+    entry
+    for entry in channel_index.get("entries", [])
+    if entry.get("channel") == channel
+    and entry.get("platform") == platform
+    and entry.get("architecture") == architecture
+    and entry.get("installSource") == "archive"
+    and entry.get("manifest", {}).get("productVersion") == version
+]
+if len(matches) != 1:
+    raise SystemExit("verified Kungfu channel no longer has one reviewed compatibility entry")
+entry = matches[0]
+signed_manifest = entry.get("manifest", {})
+if (
+    entry.get("manifestRoot") != manifest_root
+    or entry.get("artifactRoot") != artifact_root
+):
+    raise SystemExit("verified Kungfu channel roots no longer match the reviewed compatibility repair")
+if bundled_manifest != signed_manifest:
+    if not (
+        platform == "darwin"
+        and architecture == "arm64"
+        and version == "4.0.0-alpha.1"
+        and bundled_manifest.get("manifestIdentityRoot")
+        == "sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8"
+        and signed_manifest.get("manifestIdentityRoot")
+        == "sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e"
+    ):
+        raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
+    bundled_manifest_path.write_text(
+        json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
+        "utf-8",
+    )
 KUNGFU_SCHEMA_COMPAT_PY
-  fail delegate-compat-failed "could not adapt the verified Kungfu upgrade contract"
+  fail delegate-compat-failed "could not adapt the verified Kungfu bootstrap identity"
 KUNGFU_SCHEMA_COMPAT_BEFORE
   cat > "$after_patch" <<'KUNGFU_SCHEMA_COMPAT_AFTER'
 cp -p "$contract_backup" "$contract_file" || fail delegate-compat-failed "could not restore the verified Kungfu upgrade contract"
 cp -p "$product_backup" "$product_file" || fail delegate-compat-failed "could not restore the verified Kungfu product descriptor"
+cp -p "$bundled_manifest_backup" "$bundled_manifest_file" || fail delegate-compat-failed "could not restore the verified Kungfu release manifest"
 KUNGFU_SCHEMA_COMPAT_AFTER
   awk -v before_patch="$before_patch" -v after_patch="$after_patch" '
     function emit(path, line) {
