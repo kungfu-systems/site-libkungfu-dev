@@ -428,12 +428,12 @@
                 "kind": "kungfu.installer-publication-bundle/v1",
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
                 "size": 4675,
-                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+                "sha256": "a549c3714895cc32f9582036510782814be2508ab68637f6b29e220833f1b3e9"
               },
               "delegate": {
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
                 "size": 9630,
-                "sha256": "a0ce1536f852c1a38f25042f43081e09acebde89c2f09b8a96b32f13bf76bc27"
+                "sha256": "9d061f50f9de704042690d262590a65a1ce9e1422dd2928f35f6046d3d36dd8c"
               }
             },
             {
@@ -449,12 +449,12 @@
                 "kind": "kungfu.installer-publication-bundle/v1",
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
                 "size": 4675,
-                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+                "sha256": "a549c3714895cc32f9582036510782814be2508ab68637f6b29e220833f1b3e9"
               },
               "delegate": {
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
                 "size": 9630,
-                "sha256": "a0ce1536f852c1a38f25042f43081e09acebde89c2f09b8a96b32f13bf76bc27"
+                "sha256": "9d061f50f9de704042690d262590a65a1ce9e1422dd2928f35f6046d3d36dd8c"
               }
             },
             {
@@ -470,12 +470,12 @@
                 "kind": "kungfu.installer-publication-bundle/v1",
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
                 "size": 4675,
-                "sha256": "6184b1ed3532ebb4c38fe99e0b7965ce080f027468ea8b6d8dbf9506e28d6467"
+                "sha256": "a549c3714895cc32f9582036510782814be2508ab68637f6b29e220833f1b3e9"
               },
               "delegate": {
                 "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.ps1",
                 "size": 6280,
-                "sha256": "3bffe07ace5c59d2c9d3311aca55062888bbf843c6293b0e60dde4008c6aabdc"
+                "sha256": "27c19ef5e30d3c156485c38a7df59af9e1cdc43eef17f9defe240e84a921d7e8"
               }
             }
           ]
