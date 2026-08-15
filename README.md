@@ -147,7 +147,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.65` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.66` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -165,6 +165,10 @@ The package-owned Self-Conformance lane is rendered under
 `/cases/live/recursive-normative-self-conformance/`. Exact Profile and terminal
 evidence assets are copied byte-for-byte; the Site preserves the package's
 no-new-KFD and non-authority boundaries.
+The package-owned Conceptual Compression reader is rendered under `/concepts/`
+and introduced from the KFD first screen. The Site owns its visual composition
+and route placement while preserving the package wording, reading order, and
+numbered-decision authority boundary.
 The package-owned KFD-11 through KFD-13 draft activation discovery manifest and
 its adopter-witness, qualification-report, and activation-record schemas are
 published as stable machine entries. Their draft, non-normative status and
@@ -307,8 +311,8 @@ source.
 One Site refresh can admit one or several exact product releases:
 
 ```bash
-pnpm run installer:refresh -- kfd@1.0.0-alpha.65
-pnpm run installer:refresh -- kfd@1.0.0-alpha.65 kungfu@4.0.0-alpha.1 --write
+pnpm run installer:refresh -- kfd@1.0.0-alpha.66
+pnpm run installer:refresh -- kfd@1.0.0-alpha.66 kungfu@4.0.0-alpha.1 --write
 ```
 
 The default mode is a read-only plan. `--write` verifies the exact GitHub
