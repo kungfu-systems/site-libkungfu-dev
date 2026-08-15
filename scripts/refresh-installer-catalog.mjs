@@ -4,38 +4,17 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 
+import {
+  installerProductAdapters,
+  installerProductIds,
+  releaseAdapterRecord,
+} from "./installer-release-model.mjs";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = path.join(repoRoot, "src", "install", "installer-catalog.json");
 const digestPattern = /^sha256:([0-9a-f]{64})$/u;
 const gitShaPattern = /^[0-9a-f]{40}$/u;
 const versionPattern = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$/u;
-const productIds = ["kfd", "buildchain", "kungfu", "agent-hub-demo"];
-
-const targetDefinitions = {
-  kfd: [
-    ["darwin-arm64", "aarch64-apple-darwin"],
-    ["darwin-x64", "x86_64-apple-darwin"],
-    ["linux-arm64", "aarch64-unknown-linux-gnu"],
-    ["linux-x64", "x86_64-unknown-linux-gnu"],
-    ["windows-x64", "x86_64-pc-windows-msvc"],
-  ],
-  buildchain: [
-    ["darwin-arm64", "aarch64-apple-darwin"],
-    ["linux-x64", "x86_64-unknown-linux-gnu"],
-    ["windows-x64", "x86_64-pc-windows-msvc"],
-  ],
-  "agent-hub-demo": [
-    ["darwin-arm64", "macos-arm64"],
-    ["linux-x64", "linux-x64"],
-    ["windows-x64", "windows-x64"],
-  ],
-  kungfu: [
-    ["darwin-arm64", "darwin-arm64"],
-    ["linux-x64", "linux-x64"],
-    ["windows-x64", "windows-x64"],
-  ],
-};
-
 function sha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
 }
@@ -88,12 +67,12 @@ function provenanceReference(kind, asset) {
   return { kind, url: asset.url, size: asset.size, sha256: asset.sha256 };
 }
 
-function assertRelease(release, productId, version) {
+function assertRelease(release, repository, version) {
   const expectedTag = `v${version}`;
   if (release.tag_name !== expectedTag) fail("release-tag-mismatch", `${release.tag_name} != ${expectedTag}`);
   if (release.draft) fail("release-draft-forbidden", expectedTag);
   if (!release.published_at) fail("release-published-at-missing", expectedTag);
-  if (release.repository !== `kungfu-systems/${productId}`) {
+  if (release.repository !== repository) {
     fail("release-repository-mismatch", release.repository || "unknown");
   }
 }
@@ -101,7 +80,7 @@ function assertRelease(release, productId, version) {
 async function resolveKfd({ version, release, loadAssetBytes }) {
   let sourceSha = "";
   const targets = [];
-  for (const [platform, triple] of targetDefinitions.kfd) {
+  for (const [platform, triple] of installerProductAdapters.kfd.targets) {
     const archiveType = platform === "windows-x64" ? "zip" : "tar.gz";
     const artifact = releaseAsset(release, `kfd-${version}-${triple}.${archiveType}`);
     const provenanceAsset = releaseAsset(release, `kfd-${version}-${triple}.provenance.json`);
@@ -134,7 +113,7 @@ async function resolveKfd({ version, release, loadAssetBytes }) {
 async function resolveBuildchain({ version, release, loadAssetBytes }) {
   let sourceSha = "";
   const targets = [];
-  for (const [platform, triple] of targetDefinitions.buildchain) {
+  for (const [platform, triple] of installerProductAdapters.buildchain.targets) {
     const archiveType = platform === "windows-x64" ? "zip" : "tar.gz";
     const artifact = releaseAsset(release, `buildchain-${triple}.${archiveType}`);
     const provenanceAsset = releaseAsset(release, `buildchain-${triple}.json`);
@@ -176,7 +155,7 @@ async function resolveAgentHubDemo({ version, release, loadAssetBytes }) {
   }
   const sourceSha = requireGitSha(evidence.release.sourceSha, `agent-hub-demo@${version}`);
   const targets = [];
-  for (const [platform, releasePlatform] of targetDefinitions["agent-hub-demo"]) {
+  for (const [platform, releasePlatform] of installerProductAdapters["agent-hub-demo"].targets) {
     const suffix = releasePlatform;
     const artifactName = platform === "windows-x64"
       ? `agent-hub-demo-${suffix}.exe`
@@ -228,7 +207,7 @@ async function resolveKungfu({ version, release, loadAssetBytes }) {
       fail("kungfu-installer-release-mismatch", `${version}/${installerName}`);
     }
     return {
-      url: `https://kungfu.tech/${bundle.routes.immutablePath}/${installerName}`,
+      url: installerAsset.url,
       size: immutableInstaller.size,
       sha256: installerDigest,
     };
@@ -240,7 +219,7 @@ async function resolveKungfu({ version, release, loadAssetBytes }) {
     "linux-x64": "kungfu-episodes-cli-linux-x64.tar.gz",
     "windows-x64": "kungfu-episodes-cli-windows-x64.zip",
   };
-  const targets = targetDefinitions.kungfu.map(([platform]) => ({
+  const targets = installerProductAdapters.kungfu.targets.map(([platform]) => ({
     platform,
     kind: "delegated-installer",
     artifact: releaseAsset(release, artifactNames[platform]),
@@ -259,7 +238,9 @@ const resolvers = {
 
 export async function resolveVersionEntry({ productId, version, release, loadAssetBytes }) {
   requireVersion(version);
-  assertRelease(release, productId, version);
+  const adapter = installerProductAdapters[productId];
+  if (!adapter) fail("product-unsupported", productId);
+  assertRelease(release, adapter.repository, version);
   const resolved = await resolvers[productId]({ version, release, loadAssetBytes });
   return {
     version,
@@ -280,7 +261,11 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
   for (const request of requests) {
     const product = updated.products.find((entry) => entry.id === request.productId);
     if (!product) fail("product-unsupported", request.productId);
-    const release = await loadRelease(request.productId, request.version);
+    const expectedAdapter = releaseAdapterRecord(request.productId);
+    if (!isDeepStrictEqual(product.releaseAdapter, expectedAdapter)) {
+      fail("release-adapter-mismatch", request.productId);
+    }
+    const release = await loadRelease(request.productId, request.version, expectedAdapter.repository);
     const resolved = await resolveVersionEntry({ ...request, release, loadAssetBytes });
     const existingIndex = product.versions.findIndex((entry) => entry.version === request.version);
     let expanded = false;
@@ -324,7 +309,7 @@ export function parseRequests(argv) {
     const separator = spec.indexOf("@");
     const productId = spec.slice(0, separator);
     const version = spec.slice(separator + 1);
-    if (separator <= 0 || !productIds.includes(productId)) fail("product-coordinate-invalid", spec);
+    if (separator <= 0 || !installerProductIds.includes(productId)) fail("product-coordinate-invalid", spec);
     requireVersion(version);
     if (seen.has(productId)) fail("product-coordinate-duplicate", productId);
     seen.add(productId);
@@ -344,8 +329,7 @@ async function fetchResponse(url, token) {
 async function main() {
   const options = parseRequests(process.argv.slice(2));
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
-  const loadRelease = async (productId, version) => {
-    const repository = `kungfu-systems/${productId}`;
+  const loadRelease = async (_productId, version, repository) => {
     const response = await fetchResponse(`https://api.github.com/repos/${repository}/releases/tags/v${version}`, token);
     return { ...(await response.json()), repository };
   };

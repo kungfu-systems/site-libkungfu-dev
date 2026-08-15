@@ -5759,7 +5759,7 @@ function renderInstallerGuide() {
     <p class="eyebrow">Install a native CLI · no coding required</p>
     <h1>One installer. Choose the product and version you need.</h1>
     <p class="lead">Install KFD, Buildchain, Kungfu, or Agent Hub Demo on supported macOS, Linux, and Windows systems. With no product argument, both installers default to Kungfu; choose a product when you need another CLI, an exact historical version, or rollback.</p>
-    <p><code>https://libkungfu.dev/install.sh</code> and <code>https://libkungfu.dev/install.ps1</code> are the canonical public entries. They consume one reviewed Site catalog that projects exact product-owned GitHub Releases without becoming another release authority.</p>
+    <p><code>https://libkungfu.dev/install.sh</code> and <code>https://libkungfu.dev/install.ps1</code> are the canonical public entries. They consume one reviewed Site catalog that projects exact product-owned GitHub Releases without becoming another release authority. KFD, Buildchain, Kungfu, and Agent Hub Demo differ only in how their release-owned packages and evidence are interpreted.</p>
     <div class="installer-hero-command" data-command-block>
       <p><strong>macOS and Linux · defaults to Kungfu</strong></p>
       <pre class="kfd-command"><code>${escapeHtml("curl -fsSL https://libkungfu.dev/install.sh | sh")}</code></pre>

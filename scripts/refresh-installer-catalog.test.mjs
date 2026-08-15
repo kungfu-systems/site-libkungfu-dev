@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { parseRequests, refreshCatalog, resolveVersionEntry } from "./refresh-installer-catalog.mjs";
+import { releaseDownloadPrefix } from "./installer-release-model.mjs";
 
 const root = process.cwd();
 const canonicalCatalog = JSON.parse(fs.readFileSync(path.join(root, "src", "install", "installer-catalog.json"), "utf8"));
@@ -152,6 +153,12 @@ test("exact release adapters derive all four product entries from verified metad
     assert.equal(entry.version, version);
     assert.match(entry.sourceSha, /^[0-9a-f]{40}$/u);
     assert.equal(entry.targets.length, productId === "kfd" ? 5 : 3);
+    const releasePrefix = releaseDownloadPrefix(productId, entry.tag);
+    for (const target of entry.targets) {
+      for (const asset of [target.artifact, target.provenance, target.delegate].filter(Boolean)) {
+        assert.ok(asset.url.startsWith(releasePrefix), `${productId} adapter escaped its exact GitHub Release`);
+      }
+    }
   }
 });
 
@@ -201,6 +208,21 @@ test("an already catalogued coordinate is immutable", async () => {
       loadAssetBytes: mutatedFixture.loadAssetBytes,
     }),
     /immutable-catalog-drift/,
+  );
+});
+
+test("the catalog rejects a product adapter that points at another release authority", async () => {
+  const catalog = structuredClone(canonicalCatalog);
+  catalog.products.find((entry) => entry.id === "kungfu").releaseAdapter.repository = "kungfu-systems/not-kungfu";
+  const fixture = kungfuFixture("4.0.0-alpha.1");
+  await assert.rejects(
+    refreshCatalog({
+      catalog,
+      requests: [{ productId: "kungfu", version: "4.0.0-alpha.1" }],
+      loadRelease: async () => fixture.release,
+      loadAssetBytes: fixture.loadAssetBytes,
+    }),
+    /release-adapter-mismatch/,
   );
 });
 

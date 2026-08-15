@@ -74,6 +74,7 @@ const requiredBaseFiles = [
   "src/installers/install.sh.in",
   "src/installers/install.ps1.in",
   "scripts/render-installer.mjs",
+  "scripts/installer-release-model.mjs",
   "scripts/refresh-installer-catalog.mjs",
   "scripts/refresh-installer-catalog.test.mjs",
   "scripts/check-installer-surface.mjs",

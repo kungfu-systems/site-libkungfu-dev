@@ -291,14 +291,18 @@ brew install kungfu-systems/tap/buildchain
 brew install kungfu-systems/tap/kungfu
 ```
 
-The single Site-maintained source catalog is `src/install/installer-catalog.json`. The build
+The single Site-maintained source catalog is `src/install/installer-catalog.json`. Every
+product uses the same exact-tag GitHub Release model; product-specific adapters
+only interpret release-owned packaging and evidence formats. The build
 publishes matching friendly and content-addressed routes at
 `/install/v1/catalog.json`, `/install/v1/catalog/<sha256>.json`,
 `/install/v1/manifest.json`, and `/installers/v1/<sha256>/install.sh`. It records
 the exact upstream product, version, platform, byte size, SHA-256, provenance
-URL, and release source SHA. The upstream GitHub Releases and Kungfu's signed
-installer publication remain the release authorities; this site does not
-create another release channel.
+URL, and release source SHA. Artifacts, provenance, and any delegated installer
+bytes must all resolve from the named product's exact GitHub Release. Those
+upstream Releases remain the release authorities; this site does not create
+another release channel or depend on a product website as an installer data
+source.
 
 One Site refresh can admit one or several exact product releases:
 

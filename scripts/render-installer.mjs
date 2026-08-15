@@ -3,11 +3,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  installerProductAdapters,
+  installerProductIds,
+  installerReleaseModel,
+  releaseAdapterRecord,
+  releaseDownloadPrefix,
+} from "./installer-release-model.mjs";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const safeValue = /^[A-Za-z0-9._:/@+=-]+$/u;
 const digest = /^[0-9a-f]{64}$/u;
 const gitSha = /^[0-9a-f]{40}$/u;
-const productIds = ["kfd", "buildchain", "kungfu", "agent-hub-demo"];
 const targetIds = new Set(["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "windows-x64"]);
 
 function sha256(bytes) {
@@ -52,11 +59,14 @@ export function validateCatalog(catalog) {
   ) {
     throw new Error("installer catalog must retain the reviewed exact-release refresh policy");
   }
-  if (!Array.isArray(catalog.products) || catalog.products.length !== productIds.length) {
+  if (JSON.stringify(catalog.releaseModel) !== JSON.stringify(installerReleaseModel)) {
+    throw new Error("installer catalog must use the single exact GitHub Release model");
+  }
+  if (!Array.isArray(catalog.products) || catalog.products.length !== installerProductIds.length) {
     throw new Error("installer catalog must contain exactly four products");
   }
-  if (catalog.products.map((entry) => entry.id).join(",") !== productIds.join(",")) {
-    throw new Error(`installer products must stay ordered as ${productIds.join(", ")}`);
+  if (catalog.products.map((entry) => entry.id).join(",") !== installerProductIds.join(",")) {
+    throw new Error(`installer products must stay ordered as ${installerProductIds.join(", ")}`);
   }
   const homebrewProductIds = ["kfd", "buildchain", "kungfu"];
   const homebrewProducts = catalog.homebrew?.products;
@@ -72,10 +82,14 @@ export function validateCatalog(catalog) {
 
   const records = [];
   for (const product of catalog.products) {
+    const adapter = installerProductAdapters[product.id];
     requireSafe(product.id, `${product.id}.id`);
     requireSafe(product.command, `${product.id}.command`);
-    if (!String(product.repository || "").startsWith("https://github.com/kungfu-systems/")) {
-      throw new Error(`${product.id}.repository must remain an upstream kungfu-systems repository`);
+    if (JSON.stringify(product.releaseAdapter) !== JSON.stringify(releaseAdapterRecord(product.id))) {
+      throw new Error(`${product.id}.releaseAdapter must match the reviewed product adapter`);
+    }
+    if (product.repository !== `https://github.com/${adapter.repository}`) {
+      throw new Error(`${product.id}.repository must match its GitHub Release adapter`);
     }
     if (!Array.isArray(product.versions) || product.versions.length === 0) {
       throw new Error(`${product.id} must expose at least one version`);
@@ -85,8 +99,12 @@ export function validateCatalog(catalog) {
     }
     const versions = new Set();
     for (const version of product.versions) {
+      const releasePrefix = releaseDownloadPrefix(product.id, version.tag);
       requireSafe(version.version, `${product.id}.version`);
       requireSafe(version.tag, `${product.id}@${version.version}.tag`);
+      if (version.tag !== `v${version.version}`) {
+        throw new Error(`${product.id}@${version.version}.tag must be the matching exact release tag`);
+      }
       if (!gitSha.test(version.sourceSha || "")) {
         throw new Error(`${product.id}@${version.version}.sourceSha must be a 40-character Git SHA`);
       }
@@ -106,9 +124,17 @@ export function validateCatalog(catalog) {
         }
         requireAsset(target.artifact, `${product.id}@${version.version}/${target.platform}.artifact`);
         requireAsset({ ...target.provenance, name: "provenance" }, `${product.id}@${version.version}/${target.platform}.provenance`);
+        for (const [role, releaseAsset] of [["artifact", target.artifact], ["provenance", target.provenance]]) {
+          if (!releaseAsset.url.startsWith(releasePrefix)) {
+            throw new Error(`${product.id}@${version.version}/${target.platform}.${role} must come from its exact GitHub Release`);
+          }
+        }
         if (target.kind === "delegated-installer") {
           requireAsset({ ...target.delegate, name: "install.sh" }, `${product.id}@${version.version}/${target.platform}.delegate`);
           if (product.id !== "kungfu") throw new Error("only Kungfu may delegate to its signed installer");
+          if (!target.delegate.url.startsWith(releasePrefix)) {
+            throw new Error(`${product.id}@${version.version}/${target.platform}.delegate must come from its exact GitHub Release`);
+          }
         } else {
           requireSafe(target.binaryPath, `${product.id}@${version.version}/${target.platform}.binaryPath`);
           requireDigest(target.binarySha256, `${product.id}@${version.version}/${target.platform}.binarySha256`);
