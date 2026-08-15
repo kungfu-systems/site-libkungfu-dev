@@ -226,9 +226,16 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
   const catalogBytes = Buffer.from(`${JSON.stringify(catalog, null, 2)}\n`);
   const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
   const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+  assert.match(template, /repair_kungfu_delegate_schema_compat/);
+  assert.match(template, /artifact\["properties"\]\["name"\]/);
   assert.doesNotMatch(powershellTemplate, /IsPathFullyQualified/);
   assert.match(powershellTemplate, /IsPathRooted/);
+  assert.match(powershellTemplate, /Security\.Cryptography\.SHA256/);
+  assert.match(powershellTemplate, /Get-KungfuCompatSha256/);
   assert.match(powershellTemplate, /outside \$\{Launcher\}:/);
+  assert.match(powershellTemplate, /kungfu-upgrade\.contract\.json/);
+  assert.match(powershellTemplate, /WriteAllBytes\(\$ContractFile, \$ContractBytes\)/);
+  assert.match(powershellTemplate, /WriteAllBytes\(\$ProductFile, \$ProductBytes\)/);
   const rendered = renderInstaller({ catalog, catalogBytes, template, powershellTemplate });
   const catalogFile = path.join(root, "catalog.json");
   const installerFile = path.join(root, "install.sh");
