@@ -102,8 +102,10 @@ function agentHubFixture(version) {
 function kungfuFixture(version) {
   const fixture = releaseFixture("kungfu", version);
   const sourceCommit = gitSha(`kungfu-source-${version}`);
+  const manifestDigest = hash(`kungfu-inner-manifest-${version}`);
   const installerSha = hash(`kungfu-installer-${version}`);
   const powershellInstallerSha = hash(`kungfu-powershell-installer-${version}`);
+  fixture.manifestDigest = manifestDigest;
   fixture.addStatic("kungfu-install.sh", 4096, installerSha);
   fixture.addStatic("kungfu-install.ps1", 6144, powershellInstallerSha);
   fixture.addStatic("kungfu-episodes-cli-darwin-arm64.tar.gz", 8192);
@@ -112,6 +114,7 @@ function kungfuFixture(version) {
   const immutablePath = `installers/v1/alpha/${version}/${hash(version)}`;
   fixture.addJson("kungfu-installer-publication-bundle.json", {
     schema: "kungfu.installer-publication-bundle/v1",
+    manifestDigest: `sha256:${manifestDigest}`,
     identity: { version, releaseTag: `v${version}`, sourceCommit },
     distribution: { repository: "kungfu-systems/kungfu" },
     routes: { immutablePath },
@@ -134,6 +137,21 @@ function kungfuFixture(version) {
   });
   return fixture;
 }
+
+test("Kungfu provenance binds the publication bundle bytes rather than its inner manifest digest", async () => {
+  const version = "4.0.0-alpha.9";
+  const fixture = kungfuFixture(version);
+  const entry = await resolveVersionEntry({
+    productId: "kungfu",
+    version,
+    release: fixture.release,
+    loadAssetBytes: fixture.loadAssetBytes,
+  });
+  const bundleAsset = fixture.release.assets.find((asset) => asset.name === "kungfu-installer-publication-bundle.json");
+  assert.ok(bundleAsset);
+  assert.equal(entry.targets[0].provenance.sha256, bundleAsset.digest.slice("sha256:".length));
+  assert.notEqual(entry.targets[0].provenance.sha256, fixture.manifestDigest);
+});
 
 test("exact release adapters derive all four product entries from verified metadata", async () => {
   const cases = [
