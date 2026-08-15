@@ -2643,6 +2643,111 @@ ${current === "papers" ? "" : `
       font-size: 17px;
     }
 
+    .kfd-dimensions {
+      display: grid;
+      gap: 14px;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--line));
+      border-radius: 10px;
+      background: var(--bg);
+      padding: clamp(16px, 2.4vw, 22px);
+    }
+
+    .kfd-dimensions h3,
+    .kfd-dimensions p {
+      margin: 0;
+    }
+
+    .kfd-dimension-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .kfd-dimension-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .kfd-dimension-label {
+      color: var(--accent-strong);
+      font: 760 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .kfd-dimension-card h4 {
+      margin: 9px 0 13px;
+      font-size: 16px;
+    }
+
+    .kfd-dimension-card dl {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 6px 10px;
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .kfd-dimension-card dt {
+      color: var(--muted);
+    }
+
+    .kfd-dimension-card dd {
+      min-width: 0;
+      margin: 0;
+      text-align: right;
+    }
+
+    .kfd-dimension-card code {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .kfd-dimension-lesson {
+      border-left: 4px solid var(--accent);
+      background: color-mix(in srgb, var(--accent) 7%, var(--soft));
+      padding: 11px 13px;
+      font-weight: 650;
+    }
+
+    .kfd-human-summary {
+      min-width: 0;
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    .kfd-agent-hub-content {
+      min-width: 0;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kfd-agent-hub-content > .panel {
+      min-width: 0;
+    }
+
+    .kfd-agent-hub-content > .panel pre {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .kfd-machine-output {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .kfd-machine-output summary {
+      cursor: pointer;
+      font-weight: 720;
+    }
+
+    .kfd-machine-output p {
+      margin: 9px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .kfd-onboarding-paths {
       display: grid;
       grid-template-columns: minmax(300px, 0.74fr) minmax(0, 1.26fr);
@@ -2652,6 +2757,7 @@ ${current === "papers" ? "" : `
 
     .kfd-onboarding-path {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       min-width: 0;
       gap: 14px;
       align-content: start;
@@ -4019,6 +4125,7 @@ ${immutableArchive ? "" : `
 
       .kfd-independent-steps,
       .kfd-onboarding-paths,
+      .kfd-dimension-grid,
       .kfd-semantics-grid,
       .kfd-native-install,
       .kfd-boundaries,
@@ -4030,6 +4137,10 @@ ${immutableArchive ? "" : `
       .installer-guide-grid,
       .installer-homebrew-grid {
         grid-template-columns: 1fr;
+      }
+
+      .kfd-onboarding-path .kfd-independent-steps {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .buildchain-trust-loop .buildchain-story-card:not(:last-child)::after,
@@ -5223,11 +5334,13 @@ const kfdCompletionFailureExample = kfdAgentHubVectorRegistry.vectors.find(
 const kfdIndependentReaderModel = {
   contract: "site.libkungfu.dev/kfd-independent-reader-model/v1",
   source: `@kungfu-tech/kfd@${kfdPackage.version}`,
+  dimensions: kfdSite.homepage.independentImplementation.dimensions,
   referencePath: {
     id: "understand",
     label: "Two-minute understanding path",
-    command: `npx --yes --package @kungfu-tech/kfd@${kfdPackage.version} kfd demo agent-hub --output agent-hub-demo-report.json --json`,
-    expected: "20/20 · report verified offline",
+    command: kfdSite.homepage.independentImplementation.paths.reference.command,
+    machineCommand: `${kfdSite.homepage.independentImplementation.paths.reference.command} --json`,
+    expected: kfdSite.homepage.independentImplementation.paths.reference.expected,
     boundary: "The packaged reference adapter demonstrates the contract. It is non-product code and is not adopter evidence or certification.",
     failureExample: kfdCompletionFailureExample,
   },
@@ -5240,13 +5353,14 @@ const kfdIndependentReaderModel = {
         label: "Scaffold",
         detail: "Generate a deterministic fail-closed starter. No Hub semantics are implemented yet.",
         command: kfdSite.homepage.independentImplementation.steps.find((step) => step.id === "scaffold")?.command,
+        expected: `Expected: exit ${kfdSite.homepage.independentImplementation.paths.starter.expected.scaffoldExitCode} · new directory created`,
       },
       {
         id: "smoke",
         label: "Run starter smoke",
         detail: "Check only the jsonl-stdio/v1 request and response envelope.",
-        command: "cd my-agent-hub-adapter && python3 smoke.py",
-        expected: "Expected: pass",
+        command: kfdSite.homepage.independentImplementation.steps.find((step) => step.id === "smoke")?.command,
+        expected: `Expected: exit ${kfdSite.homepage.independentImplementation.paths.starter.expected.smokeExitCode} · envelope pass`,
       },
       {
         id: "understand",
@@ -5259,19 +5373,21 @@ const kfdIndependentReaderModel = {
         label: "Implement Hub semantics",
         detail: "Replace evaluate() with product-owned behavior for the fixed scenarios. KFD cannot supply your product decisions.",
         code: "my-agent-hub-adapter/adapter.py → evaluate()",
+        expected: `Target before claiming conformance: ${kfdSite.homepage.independentImplementation.dimensions.behavior.conforming}`,
       },
       {
         id: "test",
         label: "Test Hub 20",
         detail: "Run the fixed suite against your adapter bytes. The unmodified starter deliberately returns scenario-not-implemented.",
         command: kfdSite.homepage.independentImplementation.steps.find((step) => step.id === "test")?.command,
-        expected: "Unmodified scaffold: expected 0/20",
+        expected: `Untouched starter: exit ${kfdSite.homepage.independentImplementation.paths.starter.expected.testExitCode} · ${kfdSite.homepage.independentImplementation.paths.starter.expected.behavior} · report.valid=false`,
       },
       {
         id: "verify",
         label: "Verify report offline",
         detail: "Recompute the retained report and root closure, optionally including adapter bytes. This does not rerun the adapter or certify production fitness.",
         command: kfdSite.homepage.independentImplementation.steps.find((step) => step.id === "verify")?.command,
+        expected: `Expected: exit ${kfdSite.homepage.independentImplementation.paths.starter.expected.verifyExitCode} · verification.valid=true · adapter bytes checked`,
       },
     ],
   },
@@ -6214,12 +6330,48 @@ function kfdIndependentImplementationPanel() {
   const referencePath = kfdIndependentReaderModel.referencePath;
   const adopterPath = kfdIndependentReaderModel.adopterPath;
   const failureExample = referencePath.failureExample;
+  const dimensions = contract.dimensions;
+  const dimensionResults = {
+    behavior: {
+      starter: dimensions.behavior.starter,
+      reference: dimensions.behavior.conforming,
+    },
+    evidence: {
+      starter: dimensions.evidence.starter ? "valid" : "invalid",
+      reference: dimensions.evidence.conforming ? "valid" : "invalid",
+    },
+    authority: {
+      starter: `qualifying=${dimensions.authority.starter.qualifying}; certification=${dimensions.authority.starter.certification}`,
+      reference: `qualifying=${dimensions.authority.conforming.qualifying}; certification=${dimensions.authority.conforming.certification}`,
+    },
+  };
   return `<section class="panel kfd-independent" id="independent-implementation" data-kfd-independent-implementation>
     <div>
       <p class="eyebrow">${escapeHtml(contract.label)}</p>
       <h2>See the contract succeed. Then implement your own Hub.</h2>
     </div>
-    <p class="kfd-independent-intro">${escapeHtml(contract.promise)} The reference path and the adopter path have deliberately different outcomes; do not treat a generated starter as a conforming implementation.</p>
+    <p class="kfd-independent-intro">${escapeHtml(contract.promise)} The paths differ: a generated starter is not conforming.</p>
+    <section class="kfd-dimensions" aria-labelledby="kfd-dimensions-heading" data-kfd-three-dimensions>
+      <div>
+        <p class="eyebrow">Read every result on three axes</p>
+        <h3 id="kfd-dimensions-heading">Behavior, evidence, and authority answer different questions.</h3>
+      </div>
+      <div class="kfd-dimension-grid">
+        ${Object.entries(dimensions).map(([id, dimension]) => `<article class="kfd-dimension-card" data-kfd-dimension="${escapeAttr(id)}">
+          <p class="kfd-dimension-label">${escapeHtml(id)}</p>
+          <h4>${escapeHtml(id === "evidence"
+            ? "Can the report, roots, outcomes, and adapter bytes be recomputed offline?"
+            : id === "authority"
+              ? "Does this result grant qualification or certification?"
+              : dimension.question)}</h4>
+          <dl>
+            <dt>Starter</dt><dd><code>${escapeHtml(dimensionResults[id].starter)}</code></dd>
+            <dt>Reference</dt><dd><code>${escapeHtml(dimensionResults[id].reference)}</code></dd>
+          </dl>
+        </article>`).join("\n")}
+      </div>
+      <p class="kfd-dimension-lesson">An implementation can fail while that failure remains independently verifiable. Neither valid evidence nor 20/20 grants authority.</p>
+    </section>
     <div class="kfd-onboarding-paths" aria-label="Choose a KFD Agent Hub onboarding path">
       <article class="kfd-onboarding-path reference" data-onboarding-path="understand">
         <p class="kfd-path-number">Path 1 · start here</p>
@@ -6227,7 +6379,15 @@ function kfdIndependentImplementationPanel() {
         <p>Run the packaged non-product reference adapter so the complete evidence loop is visible before you write code.</p>
         <pre class="kfd-command"><code>${escapeHtml(referencePath.command)}</code></pre>
         <button class="copy-command" type="button" data-copy-command aria-label="Copy KFD Agent Hub reference demo command">Copy command</button>
-        <p class="kfd-path-outcome pass">Expected: ${escapeHtml(referencePath.expected)}</p>
+        <p class="kfd-path-outcome pass">Expected: exit ${escapeHtml(String(referencePath.expected.demoExitCode))} · ${escapeHtml(referencePath.expected.behavior)} · evidence ${escapeHtml(referencePath.expected.evidence)}</p>
+        <pre class="kfd-human-summary"><code>Behavior: ${escapeHtml(referencePath.expected.behavior)} (conforming)
+Evidence: ${escapeHtml(referencePath.expected.evidence)} (adapter bytes checked)
+Authority: qualifying=${escapeHtml(String(referencePath.expected.qualifying))}; certification=${escapeHtml(String(referencePath.expected.certification))}</code></pre>
+        <details class="kfd-machine-output">
+          <summary>Need the complete machine result?</summary>
+          <p>Add <code>--json</code>; the human command above stays concise by default.</p>
+          <pre class="kfd-command"><code>${escapeHtml(referencePath.machineCommand)}</code></pre>
+        </details>
         <div class="kfd-failure-lesson" data-hub-failure-example="${escapeAttr(failureExample.id)}">
           <p><strong>One failure that explains the model</strong></p>
           <p><code>callSucceeded: true</code> does not imply <code>completion</code>.</p>
@@ -6248,22 +6408,33 @@ function kfdIndependentImplementationPanel() {
             ${entry.command ? `<pre class="kfd-command"><code>${escapeHtml(entry.command)}</code></pre>
             <button class="copy-command" type="button" data-copy-command aria-label="Copy ${escapeAttr(entry.label)} command">Copy command</button>` : ""}
             ${entry.code ? `<p><code>${escapeHtml(entry.code)}</code></p>` : ""}
-            ${entry.expected ? `<p class="kfd-step-status ${entry.id === "smoke" ? "pass" : "expected"}">${escapeHtml(entry.expected)}</p>` : ""}
+            ${entry.expected ? `<p class="kfd-step-status ${["scaffold", "smoke", "verify"].includes(entry.id) ? "pass" : "expected"}">${escapeHtml(entry.expected)}</p>` : ""}
           </li>`).join("\n")}
         </ol>
         <p class="reader-claim-boundary"><strong>Why 0/20 is expected:</strong> the untouched scaffold returns <code>scenario-not-implemented</code> for all fixed scenarios. It fails closed so transport success cannot be mistaken for Hub semantics.</p>
+        <pre class="kfd-human-summary"><code>Behavior: ${escapeHtml(contract.paths.starter.expected.behavior)} (not conforming)
+Evidence: ${escapeHtml(contract.paths.starter.expected.evidence)} (adapter bytes checked)
+Authority: qualifying=${escapeHtml(String(contract.paths.starter.expected.qualifying))}; certification=${escapeHtml(String(contract.paths.starter.expected.certification))}</code></pre>
+        <details class="kfd-machine-output">
+          <summary>Inspect the complete verifier JSON</summary>
+          <p>Add <code>--json</code> to the verify command after the concise human result makes the three axes clear.</p>
+          <pre class="kfd-command"><code>${escapeHtml(`${adopterPath.steps.find((entry) => entry.id === "verify").command} --json`)}</code></pre>
+        </details>
       </article>
     </div>
     <section class="kfd-hub-semantics" id="hub-semantics" aria-labelledby="hub-semantics-heading">
       <p class="eyebrow">What “Hub semantics” means</p>
       <h3 id="hub-semantics-heading">Eight responsibilities, exercised by 20 fixed scenarios.</h3>
       <p>The adapter must make product-owned decisions for these boundaries. KFD supplies the shared questions and expected distinctions; it does not supply your Hub’s storage, policy, or business behavior.</p>
-      <div class="kfd-semantics-grid">
-        ${kfdIndependentReaderModel.categories.map((category) => `<article class="kfd-semantic-card" data-hub-category="${escapeAttr(category.id)}">
-          <h4>${escapeHtml(category.label)} <span>${category.vectors.length} vector${category.vectors.length === 1 ? "" : "s"}</span></h4>
-          <p>${escapeHtml(category.userValue)}</p>
-        </article>`).join("\n")}
-      </div>
+      <details class="kfd-semantics-disclosure">
+        <summary>Explore the eight responsibility categories</summary>
+        <div class="kfd-semantics-grid">
+          ${kfdIndependentReaderModel.categories.map((category) => `<article class="kfd-semantic-card" data-hub-category="${escapeAttr(category.id)}">
+            <h4>${escapeHtml(category.label)} <span>${category.vectors.length} vector${category.vectors.length === 1 ? "" : "s"}</span></h4>
+            <p>${escapeHtml(category.userValue)}</p>
+          </article>`).join("\n")}
+        </div>
+      </details>
       <div class="card-actions">
         <a class="card-action" href="${escapeAttr(kfdAgentHubPath)}#hub-20-map">See all 20 scenarios and expected outcomes</a>
         <a class="card-action secondary" href="${escapeAttr(kfdAgentHubPath)}#adapter-binding">Open the adapter contract</a>
@@ -6314,6 +6485,40 @@ function kfdHub20MapPanel() {
     <div class="card-actions">
       <a class="card-action" href="${escapeAttr(kfdSourceHref("profiles/agent-hub/vectors/hub-20.json"))}">Inspect the canonical vector registry ↗</a>
     </div>
+  </section>`;
+}
+
+function kfdAgentHubDimensionsPanel() {
+  const dimensions = kfdSite.agentHubPage.dimensions;
+  const paths = kfdSite.agentHubPage.paths;
+  const rows = [
+    ["behavior", dimensions.behavior.question, paths.starter.expected.behavior, paths.reference.expected.behavior],
+    ["evidence", dimensions.evidence.question, paths.starter.expected.evidence, paths.reference.expected.evidence],
+    [
+      "authority",
+      dimensions.authority.question,
+      `qualifying=${paths.starter.expected.qualifying}; certification=${paths.starter.expected.certification}`,
+      `qualifying=${paths.reference.expected.qualifying}; certification=${paths.reference.expected.certification}`,
+    ],
+  ];
+  return `<section class="panel kfd-agent-hub-dimensions" id="three-independent-dimensions" data-kfd-three-dimensions>
+    <p class="eyebrow">Read the result before the commands</p>
+    <h2>Behavior, evidence, and authority are independent.</h2>
+    <p>The starter is the useful edge case: its behavior is incomplete, its negative report is valid evidence, and it gains no authority.</p>
+    <div class="kfd-dimension-grid">
+      ${rows.map(([id, question, starter, reference]) => `<article class="kfd-dimension-card" data-kfd-dimension="${escapeAttr(id)}">
+        <p class="kfd-dimension-label">${escapeHtml(id)}</p>
+        <h3>${escapeHtml(question)}</h3>
+        <dl>
+          <dt>Starter</dt><dd><code>${escapeHtml(String(starter))}</code></dd>
+          <dt>Reference</dt><dd><code>${escapeHtml(String(reference))}</code></dd>
+        </dl>
+      </article>`).join("\n")}
+    </div>
+    <pre class="kfd-human-summary"><code>Behavior: 0/20 (not conforming)
+Evidence: valid (adapter bytes checked)
+Authority: qualifying=false; certification=false</code></pre>
+    <p class="reader-claim-boundary"><strong>Central lesson:</strong> the implementation is incomplete, but that failure fact is independently verifiable.</p>
   </section>`;
 }
 
@@ -10174,6 +10379,7 @@ writeFile(
 const renderedKfdAgentHub = renderDecisionMarkdown(
   rewritePackageMarkdownLinks(
     kfdSite.agentHubPage.sections
+      .filter((section) => section.id !== "three-independent-dimensions")
       .map((section) => `## ${section.title}\n\n${section.markdown}`)
       .join("\n\n"),
     "kungfu-systems/kfd",
@@ -10203,6 +10409,12 @@ const kfdAgentHubPageHtml = page({
         ${renderedKfdAgentHub.tocHtml}
       </aside>
       <div class="stack kfd-agent-hub-content">
+        ${kfdAgentHubDimensionsPanel()}
+
+        <article class="panel doc-content">
+          ${renderedKfdAgentHub.html}
+        </article>
+
         ${kfdHub20MapPanel()}
 
         <section class="panel" id="installed-kungfu-qualification">
@@ -10213,10 +10425,6 @@ ${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.verify)}</code></p
           <p>${escapeHtml(kfdSite.agentHubPage.firstPartyProductProjection.ownership)}</p>
           <p class="reader-claim-boundary"><strong>Claim boundary:</strong> ${escapeHtml(kfdSite.agentHubPage.claimBoundary)}</p>
         </section>
-
-        <article class="panel doc-content">
-          ${renderedKfdAgentHub.html}
-        </article>
 
         <section class="panel" id="activation-contracts">
           <p class="eyebrow">${escapeHtml(kfdActivationContracts.status)} / ${escapeHtml(kfdSite.activationContracts.relationship)}</p>
@@ -12158,7 +12366,7 @@ ${kfdIndependentReaderModel.adopterPath.steps.map((entry) => `  - ${entry.label}
 - Native capabilities: ${kfdSite.homepage.independentImplementation.nativeCli.capabilities.join(", ")}
 - Native capability boundary: ${kfdSite.homepage.independentImplementation.nativeCli.capabilityBoundary}
 - Languages: ${kfdSite.homepage.independentImplementation.supportedLanguages.map((entry) => entry.label).join(", ")}
-${kfdSite.homepage.independentImplementation.steps.map((entry) => `- ${entry.label}: ${entry.command}`).join("\n")}
+${kfdSite.homepage.independentImplementation.steps.filter((entry) => entry.command).map((entry) => `- ${entry.label}: ${entry.command}`).join("\n")}
 - Starter boundary: ${kfdSite.homepage.independentImplementation.starterBoundary}
 - Offline boundary: ${kfdSite.homepage.independentImplementation.offlineBoundary}
 - Claim boundary: ${kfdSite.homepage.independentImplementation.claimBoundary}

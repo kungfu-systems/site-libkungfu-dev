@@ -147,7 +147,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.66` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.67` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -311,8 +311,8 @@ source.
 One Site refresh can admit one or several exact product releases:
 
 ```bash
-pnpm run installer:refresh -- kfd@1.0.0-alpha.66
-pnpm run installer:refresh -- kfd@1.0.0-alpha.66 kungfu@4.0.0-alpha.1 --write
+pnpm run installer:refresh -- kfd@1.0.0-alpha.67
+pnpm run installer:refresh -- kfd@1.0.0-alpha.67 kungfu@4.0.0-alpha.1 --write
 ```
 
 The default mode is a read-only plan. `--write` verifies the exact GitHub
