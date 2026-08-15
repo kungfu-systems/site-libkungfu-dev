@@ -29,7 +29,7 @@ developer and agent substrate hub.
   pinned upstream package artifacts. Core product facts come from
   `@kungfu-tech/site@4.0.0-alpha.1`; Buildchain facts come from
   `@kungfu-tech/buildchain@3.0.6-alpha.0`; KFD facts come from
-  `@kungfu-tech/kfd@1.0.0-alpha.65`.
+  `@kungfu-tech/kfd@1.0.0-alpha.66`.
 - Render the package-owned KFD Self-Conformance Profile as a first-class,
   non-normative verification lane. Preserve exact machine assets and terminal
   roots, keep Candidate and live-case status reciprocal, and never convert a
