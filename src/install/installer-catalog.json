@@ -1,9 +1,15 @@
 {
   "schemaVersion": 1,
   "contract": "libkungfu.multi-product-installer-catalog/v1",
-  "catalogVersion": "1",
+  "catalogVersion": "2",
   "scope": "multi-platform-native-installers",
   "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
+  "releaseModel": {
+    "source": "github-release",
+    "selection": "exact-tag",
+    "assetAuthority": "product-repository",
+    "productVariance": "evidence-and-packaging-adapter-only"
+  },
   "refresh": {
     "mode": "explicit-exact-release",
     "command": "pnpm run installer:refresh -- product@version --write",
@@ -34,6 +40,11 @@
       "id": "kfd",
       "command": "kfd",
       "repository": "https://github.com/kungfu-systems/kfd",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/kfd",
+        "evidence": "kfd-native-release/v1"
+      },
       "defaultVersion": "1.0.0-alpha.65",
       "versions": [
         {
@@ -248,6 +259,11 @@
       "id": "buildchain",
       "command": "buildchain",
       "repository": "https://github.com/kungfu-systems/buildchain",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/buildchain",
+        "evidence": "buildchain-standalone-binary/v1"
+      },
       "defaultVersion": "4.0.0",
       "versions": [
         {
@@ -386,6 +402,11 @@
       "id": "kungfu",
       "command": "kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/kungfu",
+        "evidence": "kungfu-installer-publication-bundle/v1"
+      },
       "defaultVersion": "4.0.0-alpha.1",
       "versions": [
         {
@@ -410,7 +431,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.sh",
                 "size": 9630,
                 "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
               }
@@ -431,7 +452,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.sh",
                 "size": 9630,
                 "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
               }
@@ -452,7 +473,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.ps1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.ps1",
                 "size": 6280,
                 "sha256": "62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68"
               }
@@ -465,6 +486,11 @@
       "id": "agent-hub-demo",
       "command": "agent-hub-demo",
       "repository": "https://github.com/kungfu-systems/agent-hub-demo",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/agent-hub-demo",
+        "evidence": "agent-hub-binary-evidence/v1"
+      },
       "defaultVersion": "0.2.0",
       "versions": [
         {
