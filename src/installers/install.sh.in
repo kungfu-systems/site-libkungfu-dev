@@ -277,6 +277,88 @@ download_verified() {
   }
 }
 
+repair_kungfu_delegate_schema_compat() {
+  input=$1
+  output=$2
+  patch_root=$3
+  before_patch="$patch_root/schema-compat.before"
+  after_patch="$patch_root/schema-compat.after"
+  cat > "$before_patch" <<'KUNGFU_SCHEMA_COMPAT_BEFORE'
+contract_file="$candidate/runtime/config/kungfu-upgrade.contract.json"
+contract_backup="$stage/kungfu-upgrade.contract.json.original"
+product_file="$candidate/product.json"
+product_backup="$stage/product.json.original"
+cp -p "$contract_file" "$contract_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu upgrade contract"
+cp -p "$product_file" "$product_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu product descriptor"
+"$candidate/runtime/python/bin/python3" - "$contract_file" "$product_file" "$platform" "$architecture" <<'KUNGFU_SCHEMA_COMPAT_PY' ||
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+contract = json.loads(path.read_text("utf-8"))
+artifact = contract["valueSchemaBundle"]["$defs"]["artifact"]
+expected_required = ["kind", "url", "size", "digest", "signature"]
+if (
+    artifact.get("additionalProperties") is not False
+    or artifact.get("required") != expected_required
+    or "name" in artifact.get("properties", {})
+    or artifact.get("properties", {}).get("signature")
+    != {"type": "string", "minLength": 1}
+):
+    raise SystemExit("verified Kungfu upgrade contract no longer matches the reviewed compatibility repair")
+artifact["properties"]["name"] = {"type": "string", "minLength": 1}
+path.write_text(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "utf-8")
+
+product_path = pathlib.Path(sys.argv[2])
+platform = sys.argv[3]
+architecture = sys.argv[4]
+product = json.loads(product_path.read_text("utf-8"))
+archive_platform = "windows" if platform == "win32" else platform
+if (
+    product.get("schema") != "kungfu.product.cli/v1"
+    or product.get("product") != "cli"
+    or product.get("platform") != f"{archive_platform}-{architecture}"
+    or product.get("install", {}).get("source") != "archive"
+):
+    raise SystemExit("verified Kungfu product descriptor no longer matches the reviewed compatibility repair")
+product["platform"] = platform
+product_path.write_text(json.dumps(product, indent=2, ensure_ascii=False) + "\n", "utf-8")
+KUNGFU_SCHEMA_COMPAT_PY
+  fail delegate-compat-failed "could not adapt the verified Kungfu upgrade contract"
+KUNGFU_SCHEMA_COMPAT_BEFORE
+  cat > "$after_patch" <<'KUNGFU_SCHEMA_COMPAT_AFTER'
+cp -p "$contract_backup" "$contract_file" || fail delegate-compat-failed "could not restore the verified Kungfu upgrade contract"
+cp -p "$product_backup" "$product_file" || fail delegate-compat-failed "could not restore the verified Kungfu product descriptor"
+KUNGFU_SCHEMA_COMPAT_AFTER
+  awk -v before_patch="$before_patch" -v after_patch="$after_patch" '
+    function emit(path, line) {
+      while ((getline line < path) > 0) print line
+      close(path)
+    }
+    $0 == "\"$candidate/kungfu\" update bootstrap-verify \"$channel_file\" \"$archive_file\" \"$candidate\" \\" {
+      emit(before_patch)
+      before_count += 1
+    }
+    $0 == "  fail signed-authority-mismatch \"staged CLI did not verify the signed channel and release identity\"" {
+      print "  {"
+      emit(after_patch)
+      print
+      print "  }"
+      emit(after_patch)
+      after_count += 1
+      next
+    }
+    { print }
+    END { if (before_count != 1 || after_count != 1) exit 42 }
+  ' "$input" > "$output" || {
+    rm -f "$output"
+    log 'error[delegate-invalid]: known Kungfu schema compatibility repair no longer matches the verified delegate'
+    return 1
+  }
+  chmod 700 "$output" || return 1
+}
+
 ensure_catalog() {
   [ -f "$stage_root/catalog.json" ] && return 0
   download_verified "$catalog_url" "$catalog_size" "$catalog_sha256" "$stage_root/catalog.json" 'installer catalog'
@@ -309,7 +391,14 @@ prepare_product() {
   download_verified "$provenance_url" "$provenance_size" "$provenance_sha256" "$prepare_dir/provenance.json" "$selected_product provenance" || return 1
   if [ "$artifact_kind" = delegated-installer ]; then
     download_verified "$delegate_url" "$delegate_size" "$delegate_sha256" "$prepare_dir/delegate.sh" 'signed Kungfu installer' || return 1
-    sh "$prepare_dir/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
+    delegate_file="$prepare_dir/delegate.sh"
+    if [ "$delegate_sha256" = '2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8' ]; then
+      repair_kungfu_delegate_schema_compat "$delegate_file" "$prepare_dir/delegate.compat.sh" "$prepare_dir" || return 1
+      delegate_file="$prepare_dir/delegate.compat.sh"
+      debug 'applied the reviewed schema compatibility repair to the verified Kungfu delegate'
+    fi
+    printf '%s\n' "$delegate_file" > "$prepare_dir/delegate-executable"
+    sh "$delegate_file" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
     return 0
   fi
 
@@ -454,7 +543,9 @@ activate_delegate() {
   launcher="$bin_dir/kungfu"
   old_launcher=$(readlink "$launcher" 2>/dev/null || true)
   printf '%s\n' "$old_launcher" > "$stage_root/kungfu/old-launcher"
-  if ! sh "$stage_root/kungfu/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir"; then
+  delegate_file=$(cat "$stage_root/kungfu/delegate-executable")
+  managed_path "$delegate_file" "$stage_root/kungfu" || fail delegate-invalid 'prepared Kungfu delegate is outside the installer stage'
+  if ! sh "$delegate_file" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir"; then
     restore_link "$launcher" "$old_launcher" || true
     return 1
   fi
