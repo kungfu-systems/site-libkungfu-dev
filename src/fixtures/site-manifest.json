@@ -5,6 +5,15 @@
   "canonicalHost": "libkungfu.dev",
   "title": "libkungfu.dev",
   "tagline": "Embeddable Agent runtime facts, recovery, and open KFD evidence.",
+  "featuredDogfoodObservation": {
+    "role": "stable-reader-default",
+    "snapshotId": "kungfu-systems-2026-08-03T06:40:46.350Z",
+    "observedAt": "2026-08-03T06:40:46.350Z",
+    "immutableUrl": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-08-03T06:40:46.350Z.json",
+    "sha256": "ab342a1b6b68f90cec1a04517476dece425ea9b6211089922f584a8d0a97d35c",
+    "rationale": "This retained observation is the stable reader default for global communication while the append-only weekly observation chain continues to advance.",
+    "boundary": "The featured observation is a dated historical peak, not the latest rolling observation. Readers can select every retained window, including latest, from Observation snapshot."
+  },
   "relatedInterpretations": {
     "dogfoodBootstrap": {
       "label": "A Public Week of Agent-Mediated Work",

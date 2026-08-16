@@ -4187,12 +4187,15 @@ function renderDogfoodCase(evidenceCase, index) {
   </article>`;
 }
 
-function dogfoodLiveProjectionScript(embeddedEvidence) {
+function dogfoodLiveProjectionScript(embeddedEvidence, featuredEvidence, featuredConfig, fixedAuditWindow) {
   return `<script>
   (() => {
     const number = new Intl.NumberFormat("en-US");
     const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
     const latestUrl = "/dogfood-evidence.json";
+    const featuredSnapshotId = ${JSON.stringify(featuredConfig.snapshotId)};
+    const featuredObservedDate = ${JSON.stringify(featuredConfig.observedAt.slice(0, 10))};
+    const fixedAuditWindow = ${JSON.stringify(fixedAuditWindow)};
     const cache = new Map();
     let latestEvidence;
     let timeline = [];
@@ -4215,6 +4218,7 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
       return evidence;
     };
     const embeddedEvidence = validate(${JSON.stringify(embeddedEvidence).replaceAll("<", "\\u003c")});
+    const embeddedFeaturedEvidence = validate(${JSON.stringify(featuredEvidence).replaceAll("<", "\\u003c")}, featuredSnapshotId);
     const sha256 = async (bytes) => {
       if (!window.crypto || !window.crypto.subtle) return null;
       const digest = await window.crypto.subtle.digest("SHA-256", bytes);
@@ -4236,11 +4240,33 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
     };
     const render = (evidence, entry) => {
       document.documentElement.dataset.dogfoodSnapshot = evidence.snapshotId;
-      setText("dogfood-state", entry.current ? "public dogfood / latest observed" : "public dogfood / archived observation");
+      setText("dogfood-state", entry.featured
+        ? "public dogfood / featured observation"
+        : entry.current
+          ? "public dogfood / latest observed"
+          : "public dogfood / archived observation");
       setText("dogfood-window-start", evidence.observation.window.startInclusive);
       setText("dogfood-window-end", evidence.observation.window.endInclusive);
       setText("dogfood-pr-total", number.format(evidence.metrics.mergedPublicPullRequests.value));
       setText("dogfood-pr-caption", evidence.metrics.mergedPublicPullRequests.label + " across " + number.format(evidence.metrics.repositoriesWithMergedPullRequests.value) + " repositories");
+      const observedDate = evidence.observation.window.endInclusive.slice(0, 10);
+      const selectionContext = entry.featured
+        ? " It remains the stable reader default while weekly observations continue in Observation snapshot below."
+        : entry.current
+          ? " This latest window was explicitly selected; the page default remains the " + featuredObservedDate + " featured observation."
+          : " This archived window was explicitly selected; the page default remains the " + featuredObservedDate + " featured observation.";
+      const selectionLabel = entry.featured
+        ? "featured rolling snapshot"
+        : entry.current
+          ? "latest rolling snapshot"
+          : "selected archived rolling snapshot";
+      setText(
+        "dogfood-headline-context",
+        "The " + number.format(evidence.metrics.mergedPublicPullRequests.value) + " headline above is the " + selectionLabel + " ending " + observedDate + "." + selectionContext
+          + " The audit below uses the separate fixed " + fixedAuditWindow.duration + " window shared with the AX comparison: "
+          + fixedAuditWindow.startInclusive + " up to but excluding " + fixedAuditWindow.endExclusive
+          + ". They are different observation windows, not conflicting totals.",
+      );
       const hero = document.getElementById("dogfood-hero-number");
       if (hero) hero.setAttribute("aria-label", number.format(evidence.metrics.mergedPublicPullRequests.value) + " merged public pull requests in the observed window");
       setText("dogfood-observed-at", evidence.observation.observedAt);
@@ -4329,10 +4355,15 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
         return row;
       }));
     };
+    const defaultSnapshotId = () => timeline.find((candidate) => candidate.featured)?.snapshotId || timeline.at(-1).snapshotId;
+    const requestedSnapshotId = () => {
+      const requested = new URL(window.location.href).searchParams.get("snapshot");
+      return requested === "latest" ? timeline.at(-1).snapshotId : requested;
+    };
     const selectSnapshot = async (snapshotId, updateUrl, fallbackStatus, comparePrevious = true) => {
       const entry = timeline.find((candidate) => candidate.snapshotId === snapshotId);
       if (!entry) {
-        return selectSnapshot(timeline.at(-1).snapshotId, false, "Unknown snapshot id; showing the latest verified observation.");
+        return selectSnapshot(defaultSnapshotId(), false, "Unknown snapshot id; showing the featured verified observation.");
       }
       const index = timeline.indexOf(entry);
       try {
@@ -4351,19 +4382,26 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
         document.body.dataset.dogfoodTimelineIndex = String(index);
         if (updateUrl) {
           const url = new URL(window.location.href);
-          if (entry.current) url.searchParams.delete("snapshot"); else url.searchParams.set("snapshot", entry.snapshotId);
+          if (entry.featured) url.searchParams.delete("snapshot");
+          else url.searchParams.set("snapshot", entry.current ? "latest" : entry.snapshotId);
           window.history.pushState({ snapshotId: entry.snapshotId }, "", url);
         }
-        status(fallbackStatus || ((entry.current ? "Showing latest observation: " : "Showing archived observation: ") + entry.observedAt + ". Adjacent deltas compare overlapping P30D windows."));
+        const statusLabel = entry.featured
+          ? "Showing featured observation: "
+          : entry.current
+            ? "Showing latest observation: "
+            : "Showing archived observation: ";
+        status(fallbackStatus || (statusLabel + entry.observedAt + ". Adjacent deltas compare overlapping P30D windows."));
       } catch (error) {
-        if (!entry.current) {
-          return selectSnapshot(timeline.at(-1).snapshotId, false, "The requested snapshot failed integrity or schema validation; showing the latest verified observation.", false);
+        if (!entry.featured) {
+          return selectSnapshot(defaultSnapshotId(), false, "The requested snapshot failed integrity or schema validation; showing the featured verified observation.", false);
         }
         throw error;
       }
     };
     const move = (offset) => {
-      const index = Number(document.body.dataset.dogfoodTimelineIndex || timeline.length - 1);
+      const fallbackIndex = timeline.findIndex((candidate) => candidate.snapshotId === defaultSnapshotId());
+      const index = Number(document.body.dataset.dogfoodTimelineIndex || fallbackIndex);
       const target = timeline[index + offset];
       if (target) selectSnapshot(target.snapshotId, true);
     };
@@ -4381,8 +4419,14 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
           previousSnapshotId: evidence.history?.previousSnapshotId || null,
           current: true,
         };
-        timeline = [...(evidence.history?.entries || []), current].sort((left, right) => Date.parse(left.observedAt) - Date.parse(right.observedAt));
+        timeline = [...(evidence.history?.entries || []), current]
+          .map((entry) => ({ ...entry, featured: entry.snapshotId === featuredSnapshotId }))
+          .sort((left, right) => Date.parse(left.observedAt) - Date.parse(right.observedAt));
+        if (!timeline.some((entry) => entry.featured)) {
+          throw new Error("featured snapshot is absent from the append-only observation chain");
+        }
         cache.set(current.snapshotId, Promise.resolve(evidence));
+        cache.set(featuredSnapshotId, Promise.resolve(embeddedFeaturedEvidence));
         const postTimeline = () => postProjection({
           type: "kungfu.dogfood.timeline/v1",
           timeline,
@@ -4429,7 +4473,12 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
           selector.replaceChildren(...timeline.map((entry) => {
             const option = document.createElement("option");
             option.value = entry.snapshotId;
-            option.textContent = entry.observedAt + " · " + (entry.current ? "latest" : entry.generationKind) + (entry.offCadence ? " · off cadence" : "");
+            const labels = [];
+            if (entry.featured) labels.push("featured");
+            if (entry.current) labels.push("latest");
+            else labels.push(entry.generationKind);
+            if (entry.offCadence) labels.push("off cadence");
+            option.textContent = entry.observedAt + " · " + labels.join(" · ");
             return option;
           }));
           selector.addEventListener("change", () => selectSnapshot(selector.value, true));
@@ -4437,15 +4486,13 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
         document.getElementById("dogfood-previous")?.addEventListener("click", () => move(-1));
         document.getElementById("dogfood-next")?.addEventListener("click", () => move(1));
         window.addEventListener("popstate", () => {
-          const requested = new URL(window.location.href).searchParams.get("snapshot");
-          selectSnapshot(requested || timeline.at(-1).snapshotId, false);
+          selectSnapshot(requestedSnapshotId() || defaultSnapshotId(), false);
         });
-        const requested = new URL(window.location.href).searchParams.get("snapshot");
         await selectSnapshot(
-          requested || current.snapshotId,
+          requestedSnapshotId() || defaultSnapshotId(),
           false,
           sourceStatus === "embedded"
-            ? "Showing the latest observation embedded and verified when this site artifact was built."
+            ? "Showing the featured observation embedded and verified when this site artifact was built."
             : undefined,
           false,
         );
@@ -4462,12 +4509,12 @@ function dogfoodLiveProjectionScript(embeddedEvidence) {
           sourceStatus = "live";
         }
       } catch {
-        // The build-embedded snapshot remains a complete no-network projection.
+        // The build-embedded latest and featured snapshots remain a complete no-network projection.
       }
       await initialize(evidence, sourceStatus);
     })().catch(() => {
-      setText("dogfood-state", "public dogfood / embedded observation");
-      status("The interactive history is unavailable; the verified build-embedded observation remains readable.");
+      setText("dogfood-state", "public dogfood / featured observation");
+      status("The interactive history is unavailable; the verified featured observation remains readable.");
     });
   })();
   </script>`;
@@ -4697,6 +4744,8 @@ const coreFormatRoutes = Object.fromEntries(
 const runtimeSurface = readFixtureJson("libkungfu-runtime-surface.json");
 const dogfoodRenderInputPath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence.json");
 const dogfoodRenderSourcePath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-evidence-source.json");
+const dogfoodFeaturedInputPath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-featured-evidence.json");
+const dogfoodFeaturedSourcePath = path.join(repoRoot, ".buildchain", "render-inputs", "dogfood-featured-evidence-source.json");
 const dogfoodEvidence = readOptionalJsonFile(dogfoodRenderInputPath) || readFixtureJson("dogfood-evidence.json");
 const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
   selection: "retained-fixture",
@@ -4705,6 +4754,16 @@ const dogfoodEvidenceSource = readOptionalJsonFile(dogfoodRenderSourcePath) || {
   snapshotId: dogfoodEvidence.snapshotId,
   observedAt: dogfoodEvidence.observation.observedAt,
   sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodEvidence)).digest("hex"),
+};
+const dogfoodFeaturedEvidence = readOptionalJsonFile(dogfoodFeaturedInputPath) || readFixtureJson("dogfood-evidence.json");
+const dogfoodFeaturedEvidenceSource = readOptionalJsonFile(dogfoodFeaturedSourcePath) || {
+  contract: "kungfu-site-dogfood-featured-render-input",
+  selection: "featured-immutable",
+  source: "src/fixtures/dogfood-evidence.json",
+  immutableUrl: site.featuredDogfoodObservation.immutableUrl,
+  snapshotId: dogfoodFeaturedEvidence.snapshotId,
+  observedAt: dogfoodFeaturedEvidence.observation.observedAt,
+  sha256: crypto.createHash("sha256").update(JSON.stringify(dogfoodFeaturedEvidence)).digest("hex"),
 };
 const dogfoodRelatedInterpretation = site.relatedInterpretations.dogfoodBootstrap;
 const dogfoodParallelRuntimePaths = site.relatedInterpretations.parallelRuntimePaths;
@@ -8760,11 +8819,13 @@ const coreAgentManifest = {
   },
 };
 
+const dogfoodPageEvidence = dogfoodFeaturedEvidence;
+
 writeFile(
   "dogfood/index.html",
   page({
     title: "Kungfu Dogfood | Public evidence",
-    description: dogfoodEvidence.headline,
+    description: dogfoodPageEvidence.headline,
     canonicalUrl: "https://libkungfu.dev/dogfood/",
     socialTitle: "One Human. Agents. Thousands of Merged PRs in 30 Days.",
     socialDescription: "A rolling public record of Agent-mediated work, with retained evidence, deterministic samples, and explicit limits.",
@@ -8775,23 +8836,24 @@ writeFile(
     body: `${dogfoodStyles}
     <section class="dogfood-hero" aria-labelledby="dogfood-title">
       <div class="dogfood-hero-copy">
-        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded observation" : "retained fallback"}</span></p>
-        <h1 id="dogfood-title">${escapeHtml(dogfoodEvidence.headline)}</h1>
+        <p class="eyebrow page-kicker"><a href="/" aria-label="Back to libkungfu.dev">Back to libkungfu.dev</a><span class="page-kicker-state" id="dogfood-state">public dogfood / featured observation</span></p>
+        <h1 id="dogfood-title">${escapeHtml(dogfoodPageEvidence.headline)}</h1>
         <p class="lead">Not a demo dataset. These are public work items, repository-retained Project Cuts, independent reviews, continuations, and production releases from the system&rsquo;s own construction.</p>
         <div class="dogfood-window">
-          <span class="tag">rolling ${escapeHtml(dogfoodEvidence.observation.window.duration)}</span>
-          <code id="dogfood-window-start">${escapeHtml(dogfoodEvidence.observation.window.startInclusive)}</code>
+          <span class="tag">rolling ${escapeHtml(dogfoodPageEvidence.observation.window.duration)}</span>
+          <code id="dogfood-window-start">${escapeHtml(dogfoodPageEvidence.observation.window.startInclusive)}</code>
           <span aria-hidden="true">→</span>
-          <code id="dogfood-window-end">${escapeHtml(dogfoodEvidence.observation.window.endInclusive)}</code>
+          <code id="dogfood-window-end">${escapeHtml(dogfoodPageEvidence.observation.window.endInclusive)}</code>
         </div>
         <div class="card-actions">
-          <a class="card-action" href="/dogfood-evidence.json">Open machine-readable evidence</a>
-          <a class="card-action" href="${escapeAttr(dogfoodEvidence.sources.github.repository)}">Inspect the public organization</a>
+          <a class="card-action" href="${escapeAttr(new URL(dogfoodFeaturedEvidenceSource.immutableUrl).pathname)}">Open featured evidence</a>
+          <a class="card-action" href="/dogfood-evidence.json">Open latest evidence</a>
+          <a class="card-action" href="${escapeAttr(dogfoodPageEvidence.sources.github.repository)}">Inspect the public organization</a>
         </div>
       </div>
-      <div class="dogfood-hero-number" id="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
-        <strong id="dogfood-pr-total">${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))}</strong>
-        <span id="dogfood-pr-caption">${escapeHtml(dogfoodEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
+      <div class="dogfood-hero-number" id="dogfood-hero-number" aria-label="${escapeAttr(formatMetric(dogfoodPageEvidence.metrics.mergedPublicPullRequests.value))} merged public pull requests in the observed window">
+        <strong id="dogfood-pr-total">${escapeHtml(formatMetric(dogfoodPageEvidence.metrics.mergedPublicPullRequests.value))}</strong>
+        <span id="dogfood-pr-caption">${escapeHtml(dogfoodPageEvidence.metrics.mergedPublicPullRequests.label)} across ${escapeHtml(formatMetric(dogfoodPageEvidence.metrics.repositoriesWithMergedPullRequests.value))} repositories</span>
       </div>
     </section>
 
@@ -8800,7 +8862,7 @@ writeFile(
         <div class="section-heading">
           <p class="eyebrow">Audit the count · fixed operating window</p>
           <h2 id="pr-audit-heading">Are these just tiny PRs?</h2>
-          <p>The ${escapeHtml(formatMetric(dogfoodEvidence.metrics.mergedPublicPullRequests.value))} headline above is the latest rolling snapshot ending <code>${escapeHtml(dogfoodEvidence.observation.window.endInclusive.slice(0, 10))}</code>. This audit uses the separate fixed ${escapeHtml(agentOutputOperating.window.duration)} window shared with the AX comparison: <code>${escapeHtml(agentOutputOperating.window.startInclusive.slice(0, 10))}</code> up to but excluding <code>${escapeHtml(agentOutputOperating.window.endExclusive.slice(0, 10))}</code>. They are different observation windows, not conflicting totals.</p>
+          <p id="dogfood-headline-context">The ${escapeHtml(formatMetric(dogfoodPageEvidence.metrics.mergedPublicPullRequests.value))} headline above is the featured rolling snapshot ending <code>${escapeHtml(dogfoodPageEvidence.observation.window.endInclusive.slice(0, 10))}</code>. It remains the stable reader default while weekly observations continue in Observation snapshot below. This audit uses the separate fixed ${escapeHtml(agentOutputOperating.window.duration)} window shared with the AX comparison: <code>${escapeHtml(agentOutputOperating.window.startInclusive.slice(0, 10))}</code> up to but excluding <code>${escapeHtml(agentOutputOperating.window.endExclusive.slice(0, 10))}</code>. They are different observation windows, not conflicting totals.</p>
         </div>
         <p><strong>${escapeHtml(formatMetric(operatingPullRequestAudit.bodyCoverage.summaryAndValidation))}</strong> PR bodies declare both <code>Summary</code> and <code>Validation</code> sections. All ${escapeHtml(formatMetric(operatingPullRequestAudit.totalPullRequests))} records retain a non-empty body. Neither fact proves quality; both are directly checkable.</p>
       </div>
@@ -8857,7 +8919,7 @@ writeFile(
       <div class="dogfood-history-controls">
         <label for="dogfood-snapshot-select">Observation snapshot
           <select id="dogfood-snapshot-select" name="snapshot">
-            <option value="${escapeAttr(dogfoodEvidence.snapshotId)}">${escapeHtml(dogfoodEvidence.observation.observedAt)} · ${dogfoodEvidenceSource.selection === "observed-immutable" ? "embedded" : "retained fallback"}</option>
+            <option value="${escapeAttr(dogfoodPageEvidence.snapshotId)}">${escapeHtml(dogfoodPageEvidence.observation.observedAt)} · featured</option>
           </select>
         </label>
         <div class="dogfood-history-nav" aria-label="Adjacent observations">
@@ -8898,20 +8960,20 @@ writeFile(
           <h2 id="snapshot-heading">Scale, with the caveats attached.</h2>
         </div>
         <div class="dogfood-metric-grid" id="dogfood-live-metrics">
-          ${renderDogfoodMetric(dogfoodEvidence.metrics.reviewSearchMatches)}
-          ${renderDogfoodMetric(dogfoodEvidence.metrics.retainedPublicProjectCuts, true)}
-          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutsWithEpisodeDelta)}
-          ${renderDogfoodMetric(dogfoodEvidence.metrics.projectCutTitleMatches)}
+          ${renderDogfoodMetric(dogfoodPageEvidence.metrics.reviewSearchMatches)}
+          ${renderDogfoodMetric(dogfoodPageEvidence.metrics.retainedPublicProjectCuts, true)}
+          ${renderDogfoodMetric(dogfoodPageEvidence.metrics.projectCutsWithEpisodeDelta)}
+          ${renderDogfoodMetric(dogfoodPageEvidence.metrics.projectCutTitleMatches)}
         </div>
       </div>
       <article class="panel">
         <p class="eyebrow">Merged public PRs by repository</p>
         <h2>Where the work landed</h2>
         <ul class="repo-work-list" id="dogfood-live-repositories">
-          ${dogfoodEvidence.repositories
+          ${dogfoodPageEvidence.repositories
             .map((repository) => renderRepositoryBar(
               repository,
-              Math.max(...dogfoodEvidence.repositories.map((entry) => entry.mergedPublicPullRequests)),
+              Math.max(...dogfoodPageEvidence.repositories.map((entry) => entry.mergedPublicPullRequests)),
             ))
             .join("\n")}
         </ul>
@@ -8925,16 +8987,16 @@ writeFile(
         <p>The first proves independent continuation. The second proves the architecture pages you just read were themselves delivered through Project Cut and release review.</p>
       </div>
       <div class="stack">
-        ${dogfoodEvidence.cases.map(renderDogfoodCase).join("\n")}
+        ${dogfoodPageEvidence.cases.map(renderDogfoodCase).join("\n")}
       </div>
     </section>
 
     <section class="panel warning" aria-labelledby="boundaries-heading">
       <p class="eyebrow">Counting and attribution boundaries</p>
       <h2 id="boundaries-heading">What these numbers do not say</h2>
-      <p>${escapeHtml(dogfoodEvidence.claimBoundary)}</p>
+      <p>${escapeHtml(dogfoodPageEvidence.claimBoundary)}</p>
       <ul class="boundary-list">
-        ${dogfoodEvidence.boundaries.map((boundary) => `<li><strong>${escapeHtml(boundary.id)}</strong><br>${escapeHtml(boundary.statement)}</li>`).join("\n")}
+        ${dogfoodPageEvidence.boundaries.map((boundary) => `<li><strong>${escapeHtml(boundary.id)}</strong><br>${escapeHtml(boundary.statement)}</li>`).join("\n")}
       </ul>
     </section>
 
@@ -8943,15 +9005,24 @@ writeFile(
       <h2 id="reproduce-heading">The snapshot ships its query contract.</h2>
       <p>Run the public GitHub searches, inspect the exact Kungfu commit, or use the site checker. Historical visibility changes can affect a later API replay, so the immutable published JSON remains the admitted observation snapshot.</p>
       <dl class="meta" style="margin-top: 18px;">
-        <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodEvidence.observation.observedAt)}</code></dd>
-        <dt>Generated at</dt><dd><code id="dogfood-generated-at">${escapeHtml(dogfoodEvidence.provenance?.generatedAt || "legacy snapshot; generation timestamp was not recorded")}</code></dd>
-        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">${escapeHtml(dogfoodEvidence.provenance?.generationKind || "retained fallback")}</code></dd>
-        <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodEvidence.sources.github.baseQuery)}</code></dd>
-        <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodEvidence.sources.projectCuts.repository}/tree/${dogfoodEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodEvidence.sources.projectCuts.gitCommit)}</a></dd>
-        <dt>Machine route</dt><dd><a id="dogfood-machine-route" href="/dogfood-evidence.json"><code>/dogfood-evidence.json</code></a></dd>
+        <dt>Observed at</dt><dd><code id="dogfood-observed-at">${escapeHtml(dogfoodPageEvidence.observation.observedAt)}</code></dd>
+        <dt>Generated at</dt><dd><code id="dogfood-generated-at">${escapeHtml(dogfoodPageEvidence.provenance?.generatedAt || "legacy snapshot; generation timestamp was not recorded")}</code></dd>
+        <dt>Snapshot kind</dt><dd><code id="dogfood-snapshot-kind">${escapeHtml(dogfoodPageEvidence.provenance?.generationKind || "retained fallback")}</code></dd>
+        <dt>GitHub query</dt><dd><code id="dogfood-query">${escapeHtml(dogfoodPageEvidence.sources.github.baseQuery)}</code></dd>
+        <dt>Project Cut commit</dt><dd><a id="dogfood-cut" href="${escapeAttr(`${dogfoodPageEvidence.sources.projectCuts.repository}/tree/${dogfoodPageEvidence.sources.projectCuts.gitCommit}/.kungfu/project-cuts`)}">${escapeHtml(dogfoodPageEvidence.sources.projectCuts.gitCommit)}</a></dd>
+        <dt>Machine route</dt><dd><a id="dogfood-machine-route" href="${escapeAttr(new URL(dogfoodFeaturedEvidenceSource.immutableUrl).pathname)}"><code>${escapeHtml(new URL(dogfoodFeaturedEvidenceSource.immutableUrl).pathname)}</code></a></dd>
       </dl>
     </section>
-    ${dogfoodLiveProjectionScript(dogfoodEvidence)}`,
+    ${dogfoodLiveProjectionScript(
+      dogfoodEvidence,
+      dogfoodFeaturedEvidence,
+      site.featuredDogfoodObservation,
+      {
+        duration: agentOutputOperating.window.duration,
+        startInclusive: agentOutputOperating.window.startInclusive.slice(0, 10),
+        endExclusive: agentOutputOperating.window.endExclusive.slice(0, 10),
+      },
+    )}`,
   }),
 );
 
@@ -10922,6 +10993,18 @@ const manifest = {
     immutableUrl: dogfoodEvidenceSource.immutableUrl,
     sha256: dogfoodEvidenceSource.sha256,
     reproducibility: "Fetch the immutable URL and verify its SHA-256 before rendering the same snapshot.",
+    featured: {
+      role: site.featuredDogfoodObservation.role,
+      contract: dogfoodFeaturedEvidenceSource.contract,
+      selection: dogfoodFeaturedEvidenceSource.selection,
+      snapshotId: dogfoodFeaturedEvidenceSource.snapshotId,
+      observedAt: dogfoodFeaturedEvidenceSource.observedAt,
+      source: dogfoodFeaturedEvidenceSource.source,
+      immutableUrl: dogfoodFeaturedEvidenceSource.immutableUrl,
+      sha256: dogfoodFeaturedEvidenceSource.sha256,
+      rationale: site.featuredDogfoodObservation.rationale,
+      boundary: site.featuredDogfoodObservation.boundary,
+    },
   },
   readerContract: site.readerContract,
   installerPublication,
