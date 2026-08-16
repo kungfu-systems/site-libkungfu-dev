@@ -11,7 +11,10 @@ const required = process.env.DOGFOOD_EVIDENCE_REQUIRED === "true";
 const outputDir = path.join(repoRoot, ".buildchain", "render-inputs");
 const outputFile = path.join(outputDir, "dogfood-evidence.json");
 const sourceFile = path.join(outputDir, "dogfood-evidence-source.json");
+const featuredOutputFile = path.join(outputDir, "dogfood-featured-evidence.json");
+const featuredSourceFile = path.join(outputDir, "dogfood-featured-evidence-source.json");
 const fixtureFile = path.join(repoRoot, "src", "fixtures", "dogfood-evidence.json");
+const siteManifestFile = path.join(repoRoot, "src", "fixtures", "site-manifest.json");
 
 if (!["latest", "fixture"].includes(mode)) throw new Error(`unsupported DOGFOOD_EVIDENCE_MODE: ${mode}`);
 if (new URL(latestUrl).protocol !== "https:") throw new Error("DOGFOOD_EVIDENCE_URL must use HTTPS");
@@ -64,6 +67,28 @@ function immutableSnapshotUrl(document) {
 
 const fixtureBytes = fs.readFileSync(fixtureFile);
 const fixture = validate(fixtureBytes, "retained fixture");
+const featuredConfig = JSON.parse(fs.readFileSync(siteManifestFile, "utf8")).featuredDogfoodObservation;
+if (!featuredConfig || featuredConfig.role !== "stable-reader-default") {
+  throw new Error("site manifest is missing the stable featured dogfood observation");
+}
+if (
+  fixture.snapshotId !== featuredConfig.snapshotId
+  || fixture.observation.observedAt !== featuredConfig.observedAt
+  || sha256(fixtureBytes) !== featuredConfig.sha256
+  || new URL(featuredConfig.immutableUrl).protocol !== "https:"
+) {
+  throw new Error("retained fixture does not match the featured dogfood observation contract");
+}
+const featuredSource = {
+  schemaVersion: 1,
+  contract: "kungfu-site-dogfood-featured-render-input",
+  selection: "featured-immutable",
+  source: "src/fixtures/dogfood-evidence.json",
+  immutableUrl: featuredConfig.immutableUrl,
+  snapshotId: fixture.snapshotId,
+  observedAt: fixture.observation.observedAt,
+  sha256: sha256(fixtureBytes),
+};
 let selectedBytes = fixtureBytes;
 let selected = fixture;
 let source = {
@@ -110,4 +135,7 @@ if (mode !== "fixture") {
 
 atomicWrite(outputFile, selectedBytes);
 atomicWrite(sourceFile, `${JSON.stringify(source, null, 2)}\n`);
+atomicWrite(featuredOutputFile, fixtureBytes);
+atomicWrite(featuredSourceFile, `${JSON.stringify(featuredSource, null, 2)}\n`);
 console.log(`dogfood render input: ${source.selection} ${selected.snapshotId} sha256:${source.sha256}`);
+console.log(`dogfood featured input: ${fixture.snapshotId} sha256:${featuredSource.sha256}`);

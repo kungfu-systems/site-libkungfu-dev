@@ -223,8 +223,12 @@ const coreManifest = JSON.parse(fs.readFileSync("dist/core/manifest.json", "utf8
 const runtimeSurface = JSON.parse(fs.readFileSync("src/fixtures/libkungfu-runtime-surface.json", "utf8"));
 const dogfoodRenderInputPath = ".buildchain/render-inputs/dogfood-evidence.json";
 const dogfoodRenderSourcePath = ".buildchain/render-inputs/dogfood-evidence-source.json";
+const dogfoodFeaturedInputPath = ".buildchain/render-inputs/dogfood-featured-evidence.json";
+const dogfoodFeaturedSourcePath = ".buildchain/render-inputs/dogfood-featured-evidence-source.json";
 const dogfoodEvidence = JSON.parse(fs.readFileSync(dogfoodRenderInputPath, "utf8"));
 const dogfoodEvidenceSource = JSON.parse(fs.readFileSync(dogfoodRenderSourcePath, "utf8"));
+const dogfoodFeaturedEvidence = JSON.parse(fs.readFileSync(dogfoodFeaturedInputPath, "utf8"));
+const dogfoodFeaturedEvidenceSource = JSON.parse(fs.readFileSync(dogfoodFeaturedSourcePath, "utf8"));
 const runtimeComparison = JSON.parse(fs.readFileSync("src/fixtures/agent-runtime-comparison.json", "utf8"));
 const agentOutputComparisonBytes = fs.readFileSync("src/fixtures/agent-output-comparison.snapshot.json");
 const agentOutputComparison = JSON.parse(agentOutputComparisonBytes);
@@ -738,10 +742,25 @@ if (
 ) {
   throw new Error("site manifest does not expose the admitted dogfood render input");
 }
+if (
+  site.featuredDogfoodObservation?.role !== "stable-reader-default"
+  || dogfoodFeaturedEvidenceSource.contract !== "kungfu-site-dogfood-featured-render-input"
+  || dogfoodFeaturedEvidenceSource.selection !== "featured-immutable"
+  || dogfoodFeaturedEvidenceSource.snapshotId !== site.featuredDogfoodObservation.snapshotId
+  || dogfoodFeaturedEvidenceSource.observedAt !== site.featuredDogfoodObservation.observedAt
+  || dogfoodFeaturedEvidenceSource.immutableUrl !== site.featuredDogfoodObservation.immutableUrl
+  || dogfoodFeaturedEvidenceSource.sha256 !== site.featuredDogfoodObservation.sha256
+  || dogfoodFeaturedEvidence.snapshotId !== dogfoodFeaturedEvidenceSource.snapshotId
+  || crypto.createHash("sha256").update(fs.readFileSync(dogfoodFeaturedInputPath)).digest("hex") !== dogfoodFeaturedEvidenceSource.sha256
+  || manifest.observedEvidence?.featured?.snapshotId !== dogfoodFeaturedEvidenceSource.snapshotId
+  || manifest.observedEvidence?.featured?.sha256 !== dogfoodFeaturedEvidenceSource.sha256
+) {
+  throw new Error("featured dogfood observation contract or digest is invalid");
+}
 const dogfoodHtml = fs.readFileSync("dist/dogfood/index.html", "utf8");
 for (const requiredText of [
-  dogfoodEvidence.headline,
-  dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US"),
+  dogfoodFeaturedEvidence.headline,
+  dogfoodFeaturedEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US"),
   "A merged pull request is a work item, not a feature count.",
   "A GitHub author account is not an Agent actor identity.",
   "A reviewed-by search match is not automatically an approval",
@@ -770,13 +789,34 @@ if (
 ) {
   throw new Error("dogfood one-human interpretation must precede the organizational bootstrap interpretation");
 }
-const rollingDogfoodHeadline = dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US");
-const rollingDogfoodEndDate = dogfoodEvidence.observation.window.endInclusive.slice(0, 10);
+const featuredDogfoodHeadline = dogfoodFeaturedEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US");
+const featuredDogfoodEndDate = dogfoodFeaturedEvidence.observation.window.endInclusive.slice(0, 10);
 if (
-  !dogfoodHtml.includes(`The ${rollingDogfoodHeadline} headline above is the latest rolling snapshot ending <code>${rollingDogfoodEndDate}</code>`)
+  !dogfoodHtml.includes(`The ${featuredDogfoodHeadline} headline above is the featured rolling snapshot ending <code>${featuredDogfoodEndDate}</code>`)
+  || !dogfoodHtml.includes("It remains the stable reader default while weekly observations continue in Observation snapshot below.")
   || !dogfoodHtml.includes(`<code>${agentOutputOperating.window.startInclusive.slice(0, 10)}</code> up to but excluding <code>${agentOutputOperating.window.endExclusive.slice(0, 10)}</code>`)
 ) {
-  throw new Error("dogfood page must derive the rolling headline and both observation boundaries from admitted evidence");
+  throw new Error("dogfood page must derive the featured headline and observation boundaries from admitted evidence");
+}
+const dogfoodVisibleText = dogfoodHtml
+  .replace(/<style[\s\S]*?<\/style>/gi, " ")
+  .replace(/<script[\s\S]*?<\/script>/gi, " ")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/&(?:[a-z]+|#\d+);/gi, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+if (dogfoodEvidence.snapshotId !== dogfoodFeaturedEvidence.snapshotId) {
+  const latestVisibleReferences = [
+    dogfoodEvidence.metrics.mergedPublicPullRequests.value.toLocaleString("en-US"),
+    dogfoodEvidence.observation.observedAt,
+    dogfoodEvidence.observation.window.startInclusive,
+    dogfoodEvidence.observation.window.endInclusive,
+  ];
+  for (const reference of latestVisibleReferences) {
+    if (dogfoodVisibleText.includes(reference)) {
+      throw new Error(`dogfood default page leaks latest-only visible data outside the selector runtime: ${reference}`);
+    }
+  }
 }
 if (
   !dogfoodHtml.includes('<details class="pr-audit-disclosure">')
@@ -962,14 +1002,18 @@ for (const historyContract of [
   }
 }
 for (const runtimeContract of [
-  'url.searchParams.set("snapshot", entry.snapshotId)',
+  'entry.current ? "latest" : entry.snapshotId',
   'window.addEventListener("popstate"',
   'throw new Error("snapshot sha256 mismatch")',
   'hero.setAttribute("aria-label"',
-  "Unknown snapshot id; showing the latest verified observation.",
-  "The requested snapshot failed integrity or schema validation; showing the latest verified observation.",
+  "Unknown snapshot id; showing the featured verified observation.",
+  "The requested snapshot failed integrity or schema validation; showing the featured verified observation.",
+  '"featured rolling snapshot"',
+  'labels.push("featured")',
+  'requested === "latest"',
+  "featured snapshot is absent from the append-only observation chain",
   "Date.parse(fetched.observation.observedAt) >= Date.parse(embeddedEvidence.observation.observedAt)",
-  "The build-embedded snapshot remains a complete no-network projection.",
+  "The build-embedded latest and featured snapshots remain a complete no-network projection.",
   "comparePrevious = true",
   "Choose a retained snapshot to compare adjacent observations.",
 ]) {

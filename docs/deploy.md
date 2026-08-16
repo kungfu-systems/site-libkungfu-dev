@@ -30,13 +30,16 @@ channel plus deployment manifest.
 
 Every site build resolves the public dogfood latest alias to its matching
 immutable snapshot, verifies the repository evidence contract and identical
-bytes, and embeds that admitted snapshot in `/dogfood/`. The retained fixture
-is used only when the public latest/immutable pair cannot be verified. This
-keeps the initial HTML useful to no-JavaScript readers and records the selected
-immutable URL and SHA-256 in the site manifest; browser-side refresh may advance
-the view but must never replace the embedded observation with an older one.
-Published builds fail closed if the latest/immutable pair cannot be admitted;
-local builds may retain the repository fixture as an explicit offline fallback.
+bytes, and keeps that admitted snapshot at `/dogfood-evidence.json`. The
+`/dogfood/` reader default is independently pinned to the retained 2026-08-03
+immutable observation and its SHA-256. This keeps the initial HTML stable and
+useful to no-JavaScript readers while the append-only weekly chain and latest
+alias continue to advance. Browser-side selection may show the latest or any
+retained window, but every selected state must label itself as featured, latest,
+or archived and update all visible headline context with the metrics. Published
+builds fail closed if the latest/immutable pair or the featured fixture contract
+cannot be admitted; local builds retain the featured fixture as the explicit
+offline fallback.
 
 The AWS resource contract is owned by the private
 `kungfu-systems/infra-kungfu-sites` repository and mirrored into this repository

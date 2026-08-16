@@ -1,17 +1,17 @@
 {
-  "schema": "kungfu.public-dogfood-evidence/v1",
-  "snapshotId": "kungfu-systems-2026-07-21T04:45:00Z",
+  "schema": "kungfu.public-dogfood-evidence/v2",
+  "snapshotId": "kungfu-systems-2026-08-03T06:40:46.350Z",
   "status": "observed",
   "headline": "Kungfu is built through the same public evidence loop it exposes.",
   "claimBoundary": "This snapshot proves public repository activity and exact retained evidence objects. It does not equate pull requests with features, GitHub accounts with Agent actors, or review-search matches with approvals.",
   "observation": {
-    "observedAt": "2026-07-21T04:45:00Z",
+    "observedAt": "2026-08-03T06:40:46.350Z",
     "window": {
       "kind": "rolling-duration",
       "duration": "P30D",
-      "startInclusive": "2026-06-21T04:45:00Z",
-      "endInclusive": "2026-07-21T04:45:00Z",
-      "githubQualifier": "merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z"
+      "startInclusive": "2026-07-04T06:40:46.350Z",
+      "endInclusive": "2026-08-03T06:40:46.350Z",
+      "githubQualifier": "merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z"
     }
   },
   "sources": {
@@ -20,94 +20,148 @@
       "visibility": "public",
       "api": "https://api.github.com/search/issues",
       "repository": "https://github.com/kungfu-systems",
-      "baseQuery": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public"
+      "baseQuery": "org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public"
     },
     "projectCuts": {
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "gitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86",
+      "gitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d",
       "manifestGlob": ".kungfu/project-cuts/sha256/*/*/manifest.json",
       "receiptGlob": ".kungfu/project-cuts/sha256/*/*/receipt.json"
     }
   },
   "metrics": {
     "mergedPublicPullRequests": {
-      "value": 2740,
+      "value": 4172,
       "unit": "pull-requests",
       "evidenceClass": "github-search",
-      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public",
       "label": "merged public PRs",
       "limitation": "A merged PR is a work item. It may be a feature, fix, documentation, CI, release, promotion, or automation change."
     },
     "repositoriesWithMergedPullRequests": {
-      "value": 10,
+      "value": 16,
       "unit": "repositories",
       "evidenceClass": "derived-from-repository-counts",
       "label": "public repositories with merged work"
     },
     "authorSearchMatches": {
-      "value": 2666,
+      "value": 3984,
       "unit": "pull-requests",
       "evidenceClass": "github-search",
-      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public author:dongkeren",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public author:dongkeren",
       "label": "author-account matches",
       "limitation": "GitHub author identity is not an Agent actor record and is not used as proof of autonomous Agent work."
     },
     "reviewSearchMatches": {
-      "value": 2512,
+      "value": 4011,
       "unit": "pull-requests",
       "evidenceClass": "github-search",
-      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public reviewed-by:kungfu-origin",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public reviewed-by:kungfu-origin",
       "label": "review-account search matches",
       "limitation": "GitHub reviewed-by search proves discoverability of reviewer participation, not that every matched review was an approval or exact-root review."
     },
     "projectCutTitleMatches": {
-      "value": 26,
+      "value": 48,
       "unit": "pull-requests",
       "evidenceClass": "github-search",
-      "query": "org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public project-cut in:title",
+      "query": "org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public project-cut in:title",
       "label": "merged PR titles naming Project Cut",
       "limitation": "This title search is a visible subset, not the authoritative count of Project Cut objects."
     },
     "retainedPublicProjectCuts": {
-      "value": 148,
+      "value": 323,
       "unit": "project-cuts",
       "evidenceClass": "git-tree-scan",
       "label": "retained public Project Cuts",
-      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+      "atGitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d"
     },
     "validProjectCutReceipts": {
-      "value": 148,
+      "value": 323,
       "unit": "receipts",
       "evidenceClass": "git-tree-scan",
       "label": "valid retained receipts",
-      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+      "atGitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d"
     },
     "projectCutsWithEpisodeDelta": {
-      "value": 41,
+      "value": 62,
       "unit": "project-cuts",
       "evidenceClass": "git-tree-scan",
       "label": "Cuts with admitted Episode delta",
-      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+      "atGitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d"
     },
     "projectCutsWithExplicitEmptyEpisodeDelta": {
-      "value": 107,
+      "value": 261,
       "unit": "project-cuts",
       "evidenceClass": "git-tree-scan",
       "label": "Cuts declaring an empty Episode delta",
-      "atGitCommit": "dad7c45b63a64605e931684cf5a76ad2842a7e86"
+      "atGitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d"
     }
   },
   "repositories": [
-    { "name": "kungfu", "mergedPublicPullRequests": 830 },
-    { "name": "buildchain", "mergedPublicPullRequests": 1176 },
-    { "name": "build-images", "mergedPublicPullRequests": 224 },
-    { "name": "kfd", "mergedPublicPullRequests": 189 },
-    { "name": "site-libkungfu-dev", "mergedPublicPullRequests": 89 },
-    { "name": "libnode", "mergedPublicPullRequests": 70 },
-    { "name": "paper-observer-declared-timelines", "mergedPublicPullRequests": 57 },
-    { "name": "paper-kfd-foundation-real-world-agent-work", "mergedPublicPullRequests": 52 },
-    { "name": "paper-kungfu-product-white-paper", "mergedPublicPullRequests": 46 },
-    { "name": "homebrew-tap", "mergedPublicPullRequests": 7 }
+    {
+      "name": "buildchain",
+      "mergedPublicPullRequests": 1417
+    },
+    {
+      "name": "kungfu",
+      "mergedPublicPullRequests": 1356
+    },
+    {
+      "name": "kfd",
+      "mergedPublicPullRequests": 254
+    },
+    {
+      "name": "build-images",
+      "mergedPublicPullRequests": 249
+    },
+    {
+      "name": "site-libkungfu-dev",
+      "mergedPublicPullRequests": 178
+    },
+    {
+      "name": "site-kungfu-tech",
+      "mergedPublicPullRequests": 156
+    },
+    {
+      "name": "paper-kungfu-product-white-paper",
+      "mergedPublicPullRequests": 105
+    },
+    {
+      "name": "paper-kfd-machine-life-roadmap",
+      "mergedPublicPullRequests": 81
+    },
+    {
+      "name": "paper-observer-declared-timelines",
+      "mergedPublicPullRequests": 81
+    },
+    {
+      "name": "libnode",
+      "mergedPublicPullRequests": 77
+    },
+    {
+      "name": "paper-kfd-foundation-real-world-agent-work",
+      "mergedPublicPullRequests": 69
+    },
+    {
+      "name": "runtime-images",
+      "mergedPublicPullRequests": 61
+    },
+    {
+      "name": "agent-hub-demo",
+      "mergedPublicPullRequests": 57
+    },
+    {
+      "name": "paper-episodes-to-primitives",
+      "mergedPublicPullRequests": 19
+    },
+    {
+      "name": "homebrew-tap",
+      "mergedPublicPullRequests": 11
+    },
+    {
+      "name": ".github",
+      "mergedPublicPullRequests": 1
+    }
   ],
   "cases": [
     {
@@ -140,9 +194,18 @@
         "actorCSuccessorProjectCut": "sha256:bd41466469738ac0b1e0a0247fadb6f6358caab367a298f97651992d2bd0feb4"
       },
       "links": [
-        { "label": "Qualification directory", "url": "https://github.com/kungfu-systems/kungfu/tree/dev/v4/v4.0/framework/project-cut/qualification/three-agent-dogfood" },
-        { "label": "Settlement repair PR #983", "url": "https://github.com/kungfu-systems/kungfu/pull/983" },
-        { "label": "Qualified continuation PR #1002", "url": "https://github.com/kungfu-systems/kungfu/pull/1002" }
+        {
+          "label": "Qualification directory",
+          "url": "https://github.com/kungfu-systems/kungfu/tree/dev/v4/v4.0/framework/project-cut/qualification/three-agent-dogfood"
+        },
+        {
+          "label": "Settlement repair PR #983",
+          "url": "https://github.com/kungfu-systems/kungfu/pull/983"
+        },
+        {
+          "label": "Qualified continuation PR #1002",
+          "url": "https://github.com/kungfu-systems/kungfu/pull/1002"
+        }
       ]
     },
     {
@@ -168,11 +231,26 @@
         "sourceProjection": "sha256:f26346f1403f236e4b7c3f42eb675f10b2bc3f15891fb2891c33bf872e9ec106"
       },
       "links": [
-        { "label": "libkungfu.dev implementation PR #141", "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/141" },
-        { "label": "kungfu.tech implementation PR #43", "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/43" },
-        { "label": "Project Cut PR #1182", "url": "https://github.com/kungfu-systems/kungfu/pull/1182" },
-        { "label": "libkungfu.dev production PR #144", "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/144" },
-        { "label": "kungfu.tech production PR #47", "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/47" }
+        {
+          "label": "libkungfu.dev implementation PR #141",
+          "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/141"
+        },
+        {
+          "label": "kungfu.tech implementation PR #43",
+          "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/43"
+        },
+        {
+          "label": "Project Cut PR #1182",
+          "url": "https://github.com/kungfu-systems/kungfu/pull/1182"
+        },
+        {
+          "label": "libkungfu.dev production PR #144",
+          "url": "https://github.com/kungfu-systems/site-libkungfu-dev/pull/144"
+        },
+        {
+          "label": "kungfu.tech production PR #47",
+          "url": "https://github.com/kungfu-systems/site-kungfu-tech/pull/47"
+        }
       ]
     }
   ],
@@ -205,11 +283,104 @@
       "a clone of kungfu-systems/kungfu for the retained Project Cut scan"
     ],
     "commands": [
-      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public' -f per_page=1 --jq '.total_count'",
-      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public author:dongkeren' -f per_page=1 --jq '.total_count'",
-      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public reviewed-by:kungfu-origin' -f per_page=1 --jq '.total_count'",
-      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-06-21T04:45:00Z..2026-07-21T04:45:00Z is:public project-cut in:title' -f per_page=1 --jq '.total_count'",
-      "node scripts/check-dogfood-evidence.mjs --verify-live"
+      "gh api -X GET search/issues -f q='org:kungfu-systems is:pr is:merged merged:2026-07-04T06:40:46.350Z..2026-08-03T06:40:46.350Z is:public' -f per_page=1 --jq '.total_count'",
+      "git -C <kungfu-dir> rev-parse 'f08ade5b49115e6ff00409b8dce86a377d4b3f3d^{commit}'",
+      "node scripts/check-dogfood-evidence.mjs --file <snapshot.json>"
     ]
+  },
+  "history": {
+    "semantics": "Entries are immutable prior observation points ordered oldest to newest. Deltas are changes between observation points over overlapping P30D windows, not new work in a week.",
+    "previousSnapshotId": "kungfu-systems-2026-07-27T06:46:33.890Z",
+    "entries": [
+      {
+        "snapshotId": "kungfu-systems-2026-07-06T03:17:00.000Z",
+        "observedAt": "2026-07-06T03:17:00.000Z",
+        "generatedAt": "2026-07-23T02:51:25.452Z",
+        "generationKind": "backfill",
+        "backfill": true,
+        "offCadence": false,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-06T03:17:00.000Z.json",
+        "sha256": "a70d7ecaa62d6c96565e285b34e77da97d758d99471616df8ae949189aeaa416",
+        "previousSnapshotId": null
+      },
+      {
+        "snapshotId": "kungfu-systems-2026-07-13T03:17:00.000Z",
+        "observedAt": "2026-07-13T03:17:00.000Z",
+        "generatedAt": "2026-07-23T02:51:25.452Z",
+        "generationKind": "backfill",
+        "backfill": true,
+        "offCadence": false,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-13T03:17:00.000Z.json",
+        "sha256": "8e35b9adbc9fdbd187afa6bb3e8979de8c8d17812f5115639dcd12bde9aceb25",
+        "previousSnapshotId": "kungfu-systems-2026-07-06T03:17:00.000Z"
+      },
+      {
+        "snapshotId": "kungfu-systems-2026-07-20T03:17:00.000Z",
+        "observedAt": "2026-07-20T03:17:00.000Z",
+        "generatedAt": "2026-07-23T02:51:25.452Z",
+        "generationKind": "backfill",
+        "backfill": true,
+        "offCadence": false,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-20T03:17:00.000Z.json",
+        "sha256": "dffaa766222e5b34978dbdacef8d924493f9fdec4d6bdaaf9f582571df6cb1ef",
+        "previousSnapshotId": "kungfu-systems-2026-07-13T03:17:00.000Z"
+      },
+      {
+        "snapshotId": "kungfu-systems-2026-07-21T08:34:30.931Z",
+        "observedAt": "2026-07-21T08:34:30.931Z",
+        "generatedAt": "2026-07-21T08:34:30.931Z",
+        "generationKind": "legacy",
+        "backfill": false,
+        "offCadence": true,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-21T08:34:30.931Z.json",
+        "sha256": "db60fce21c0b1e6e262ec21b54309bbb137fb9c18e7d3fdf8214595cc4405ca6",
+        "previousSnapshotId": "kungfu-systems-2026-07-20T03:17:00.000Z"
+      },
+      {
+        "snapshotId": "kungfu-systems-2026-07-23T02:51:26.540Z",
+        "observedAt": "2026-07-23T02:51:26.540Z",
+        "generatedAt": "2026-07-23T02:51:26.540Z",
+        "generationKind": "manual",
+        "backfill": false,
+        "offCadence": false,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-23T02:51:26.540Z.json",
+        "sha256": "6d33db9f6ad6d89e6809137bbe4ac8f79df3634e2eb8534e33a8cbc1eb41bf7b",
+        "previousSnapshotId": "kungfu-systems-2026-07-21T08:34:30.931Z"
+      },
+      {
+        "snapshotId": "kungfu-systems-2026-07-27T06:46:33.890Z",
+        "observedAt": "2026-07-27T06:46:33.890Z",
+        "generatedAt": "2026-07-27T06:46:33.891Z",
+        "generationKind": "scheduled",
+        "backfill": false,
+        "offCadence": false,
+        "url": "https://libkungfu.dev/dogfood-evidence/snapshots/kungfu-systems-2026-07-27T06:46:33.890Z.json",
+        "sha256": "bf06a2d6ee3d3db8b4147c300835c33a3deeafbefefbae716bf02f8c724cea0b",
+        "previousSnapshotId": "kungfu-systems-2026-07-23T02:51:26.540Z"
+      }
+    ]
+  },
+  "provenance": {
+    "generatedAt": "2026-08-03T06:40:46.350Z",
+    "backfill": false,
+    "generationKind": "scheduled",
+    "queryCapturedAt": "2026-08-03T06:40:46.350Z",
+    "generator": {
+      "repository": "https://github.com/kungfu-systems/site-libkungfu-dev",
+      "gitCommit": "5ca5cd0003691acdbe9ede526d9966d7ac9945aa",
+      "command": "node scripts/generate-dogfood-evidence.mjs"
+    },
+    "source": {
+      "repository": "https://github.com/kungfu-systems/kungfu",
+      "ref": "dev/v4/v4.0",
+      "gitCommit": "f08ade5b49115e6ff00409b8dce86a377d4b3f3d"
+    },
+    "workflow": {
+      "repository": "kungfu-systems/site-libkungfu-dev",
+      "runId": "30790944301",
+      "runAttempt": "1",
+      "runUrl": "https://github.com/kungfu-systems/site-libkungfu-dev/actions/runs/30790944301"
+    },
+    "limitations": []
   }
 }
