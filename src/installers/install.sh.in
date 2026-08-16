@@ -357,7 +357,24 @@ if (
 ):
     raise SystemExit("verified Kungfu channel roots no longer match the reviewed compatibility repair")
 if bundled_manifest != signed_manifest:
-    if not (
+    identity_fields = [
+        "schema",
+        "productVersion",
+        "releaseChannel",
+        "sourceCommit",
+        "runtimeBuildId",
+        "runtimeArtifactDigest",
+        "frontendBuildId",
+        "platform",
+        "architecture",
+    ]
+    if "releaseCutRoot" in signed_manifest:
+        identity_fields.append("manifestIdentityRoot")
+    identity_matches = all(
+        bundled_manifest.get(field) == signed_manifest.get(field)
+        for field in identity_fields
+    )
+    alpha1_manifest_repair = (
         platform == "darwin"
         and architecture == "arm64"
         and version == "4.0.0-alpha.1"
@@ -365,12 +382,14 @@ if bundled_manifest != signed_manifest:
         == "sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8"
         and signed_manifest.get("manifestIdentityRoot")
         == "sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e"
-    ):
-        raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
-    bundled_manifest_path.write_text(
-        json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
-        "utf-8",
     )
+    if not identity_matches and not alpha1_manifest_repair:
+        raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
+    if alpha1_manifest_repair:
+        bundled_manifest_path.write_text(
+            json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
+            "utf-8",
+        )
 KUNGFU_SCHEMA_COMPAT_PY
   fail delegate-compat-failed "could not adapt the verified Kungfu bootstrap identity"
 KUNGFU_SCHEMA_COMPAT_BEFORE
@@ -440,11 +459,13 @@ prepare_product() {
   if [ "$artifact_kind" = delegated-installer ]; then
     download_verified "$delegate_url" "$delegate_size" "$delegate_sha256" "$prepare_dir/delegate.sh" 'signed Kungfu installer' || return 1
     delegate_file="$prepare_dir/delegate.sh"
-    if [ "$delegate_sha256" = '2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8' ]; then
+    case "$delegate_sha256" in
+      2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8|d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0)
       repair_kungfu_delegate_schema_compat "$delegate_file" "$prepare_dir/delegate.compat.sh" "$prepare_dir" || return 1
       delegate_file="$prepare_dir/delegate.compat.sh"
       debug 'applied the reviewed schema compatibility repair to the verified Kungfu delegate'
-    fi
+      ;;
+    esac
     printf '%s\n' "$delegate_file" > "$prepare_dir/delegate-executable"
     sh "$delegate_file" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
     return 0

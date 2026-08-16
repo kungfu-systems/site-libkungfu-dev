@@ -125,7 +125,11 @@ must understand, while the depth page preserves the complete cited authority.
   content-addressed installer/catalog routes from the exact checked-in bytes.
 - `scripts/refresh-installer-catalog.mjs` plans or writes one batched refresh
   from exact GitHub Release coordinates. Moving selectors and upstream-initiated
-  Site mutation are rejected; existing catalogued coordinates are immutable.
+  Site mutation are rejected; existing catalogued coordinates are immutable by
+  default. `--rebind-existing` is an explicit recovery path for a Kungfu Release
+  whose final publication bundle and delegated installers were replaced in place;
+  it preserves the version, source, target set, and every CLI archive byte while
+  rebinding only bundle and delegate evidence.
 - `src/fixtures/buildchain-badge-endpoint-registry.json` and
   `src/fixtures/badges/v1/**/*.json` temporarily exercise the Buildchain hosted
   badge endpoint contract until the same files are published in the Buildchain

@@ -341,7 +341,10 @@ function Prepare-KungfuDelegate([string]$SelectedVersion) {
     $CompatibilityApplied = $true
     Write-InstallerDebug 'applied the reviewed PowerShell compatibility repair to the verified Kungfu delegate'
   }
-  if ($Selection.Target.delegate.sha256 -eq '62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68') {
+  if ($Selection.Target.delegate.sha256 -in @(
+    '62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68',
+    'd24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858'
+  )) {
     $HashHelperNeedle = @'
 $ErrorActionPreference = 'Stop'
 '@

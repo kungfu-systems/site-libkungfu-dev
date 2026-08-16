@@ -315,6 +315,15 @@ pnpm run installer:refresh -- kfd@1.0.0-alpha.67
 pnpm run installer:refresh -- kfd@1.0.0-alpha.67 kungfu@4.0.0-alpha.1 --write
 ```
 
+Existing coordinates remain immutable during normal refreshes. If a Kungfu
+Release recovery replaced only its final publication bundle and delegated
+installers while preserving every CLI archive byte, review the exact old and new
+asset digests, then use the bounded recovery path:
+
+```bash
+pnpm run installer:refresh -- kungfu@4.0.0-alpha.2 --rebind-existing --write
+```
+
 The default mode is a read-only plan. `--write` verifies the exact GitHub
 Release assets and product-owned provenance metadata before changing the
 catalog, preserves every previously admitted version, and fails if an existing

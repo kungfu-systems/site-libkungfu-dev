@@ -255,7 +255,27 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export async function refreshCatalog({ catalog, requests, loadRelease, loadAssetBytes }) {
+function assertKungfuPublicationRebind(existing, resolved) {
+  const existingIdentity = { ...existing, targets: undefined };
+  const resolvedIdentity = { ...resolved, targets: undefined };
+  if (!isDeepStrictEqual(existingIdentity, resolvedIdentity)) {
+    fail("publication-rebind-identity-drift", `kungfu@${resolved.version}`);
+  }
+  if (existing.targets.length !== resolved.targets.length) {
+    fail("publication-rebind-target-drift", `kungfu@${resolved.version}`);
+  }
+  for (const existingTarget of existing.targets) {
+    const resolvedTarget = resolved.targets.find((candidate) => candidate.platform === existingTarget.platform);
+    if (!resolvedTarget
+        || existingTarget.kind !== "delegated-installer"
+        || resolvedTarget.kind !== "delegated-installer"
+        || !isDeepStrictEqual(existingTarget.artifact, resolvedTarget.artifact)) {
+      fail("publication-rebind-artifact-drift", `kungfu@${resolved.version}/${existingTarget.platform}`);
+    }
+  }
+}
+
+export async function refreshCatalog({ catalog, requests, loadRelease, loadAssetBytes, rebindExisting = false }) {
   const updated = structuredClone(catalog);
   const changes = [];
   for (const request of requests) {
@@ -269,6 +289,7 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
     const resolved = await resolveVersionEntry({ ...request, release, loadAssetBytes });
     const existingIndex = product.versions.findIndex((entry) => entry.version === request.version);
     let expanded = false;
+    let rebound = false;
     if (existingIndex >= 0) {
       const existing = product.versions[existingIndex];
       const comparableResolved = {
@@ -276,7 +297,12 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
         targets: existing.targets.map((target) => resolved.targets.find((candidate) => candidate.platform === target.platform)),
       };
       if (!isDeepStrictEqual(existing, comparableResolved)) {
-        fail("immutable-catalog-drift", `${request.productId}@${request.version}`);
+        if (!rebindExisting || request.productId !== "kungfu") {
+          fail("immutable-catalog-drift", `${request.productId}@${request.version}`);
+        }
+        assertKungfuPublicationRebind(existing, comparableResolved);
+        product.versions[existingIndex] = resolved;
+        rebound = true;
       }
       if (resolved.targets.length > existing.targets.length) {
         product.versions[existingIndex] = resolved;
@@ -290,7 +316,15 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
     changes.push({
       product: request.productId,
       version: request.version,
-      action: existingIndex < 0 ? "added" : expanded ? "expanded" : previousDefault === request.version ? "verified" : "promoted",
+      action: existingIndex < 0
+        ? "added"
+        : expanded
+          ? "expanded"
+          : rebound
+            ? "rebound"
+            : previousDefault === request.version
+              ? "verified"
+              : "promoted",
       retainedVersions: product.versions.map((entry) => entry.version),
     });
   }
@@ -300,8 +334,9 @@ export async function refreshCatalog({ catalog, requests, loadRelease, loadAsset
 export function parseRequests(argv) {
   const write = argv.includes("--write");
   const json = argv.includes("--json");
+  const rebindExisting = argv.includes("--rebind-existing");
   const specs = argv.filter((argument) => argument !== "--" && !argument.startsWith("--"));
-  const unknownFlags = argv.filter((argument) => argument.startsWith("--") && !["--", "--write", "--json"].includes(argument));
+  const unknownFlags = argv.filter((argument) => argument.startsWith("--") && !["--", "--write", "--json", "--rebind-existing"].includes(argument));
   if (unknownFlags.length) fail("argument-unsupported", unknownFlags.join(", "));
   if (!specs.length) fail("refresh-request-missing", "provide one or more exact product@version coordinates");
   const seen = new Set();
@@ -315,7 +350,7 @@ export function parseRequests(argv) {
     seen.add(productId);
     return { productId, version };
   });
-  return { json, requests, write };
+  return { json, rebindExisting, requests, write };
 }
 
 async function fetchResponse(url, token) {
@@ -336,7 +371,13 @@ async function main() {
   const loadAssetBytes = async (asset) => Buffer.from(await (await fetchResponse(asset.url, token)).arrayBuffer());
   const originalBytes = fs.readFileSync(catalogPath);
   const original = JSON.parse(originalBytes.toString("utf8"));
-  const result = await refreshCatalog({ catalog: original, requests: options.requests, loadRelease, loadAssetBytes });
+  const result = await refreshCatalog({
+    catalog: original,
+    requests: options.requests,
+    loadRelease,
+    loadAssetBytes,
+    rebindExisting: options.rebindExisting,
+  });
   const nextBytes = Buffer.from(stableJson(result.catalog));
   const changed = !originalBytes.equals(nextBytes);
   if (options.write && changed) fs.writeFileSync(catalogPath, nextBytes);
@@ -346,6 +387,7 @@ async function main() {
     mode: options.write ? "write" : "plan",
     source: "exact-github-release",
     movingSelectorsUsed: false,
+    sameVersionRebind: options.rebindExisting,
     changed,
     catalogPath: path.relative(repoRoot, catalogPath),
     changes: result.changes,
