@@ -336,7 +336,10 @@ data of their own.
 
 Installations use user-owned, content-addressed roots and bounded symlink
 activation. The installer does not invoke `sudo`, edit shell startup files, or
-write into Homebrew-owned prefixes. It rejects unrelated existing commands,
+write into Homebrew-owned prefixes. When the same official product is already
+owned by the Kungfu Homebrew tap and `~/.local/bin` precedes Homebrew in
+`PATH`, the installer preserves the formula and activates its verified version
+through the user-owned launcher. It still rejects unrelated existing commands,
 wrong sizes or digests, unsafe archives, unsupported targets, and partial
 all-product activation. A previously activated managed version can be restored
 with `install.sh PRODUCT --rollback`.
