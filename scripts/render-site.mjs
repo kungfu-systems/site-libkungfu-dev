@@ -4848,10 +4848,11 @@ function dogfoodLiveProjectionScript(embeddedEvidence, featuredEvidence, feature
         window.addEventListener("popstate", () => {
           selectSnapshot(requestedSnapshotId() || defaultSnapshotId(), false);
         });
+        const initialSnapshotId = requestedSnapshotId() || defaultSnapshotId();
         await selectSnapshot(
-          requestedSnapshotId() || defaultSnapshotId(),
+          initialSnapshotId,
           false,
-          sourceStatus === "embedded"
+          sourceStatus === "embedded" && initialSnapshotId === featuredSnapshotId
             ? "Showing the featured observation embedded and verified when this site artifact was built."
             : undefined,
           false,
