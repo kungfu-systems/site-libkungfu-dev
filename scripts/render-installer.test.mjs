@@ -249,6 +249,12 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
   assert.match(template, /kungfu-release-manifest\.json\.original/);
   assert.match(template, /sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8/);
   assert.match(template, /sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e/);
+  assert.match(template, /sha256:96e0a3f78bfa65a8ae06f4fd4bc035cc09211afad499ad6f905a380e1c49d2ae/);
+  assert.match(template, /sha256:09c1ac317ee471b803c0af86f0ec78d5296b572531eb393432c8485aa3e6bf14/);
+  assert.match(template, /sha256:56ecf22f1d5eee57da3033aaac5ce2e059be6e6b98ec3f337456bf6f3453b8b4/);
+  assert.match(template, /sha256:a72517cf8fcf6d9d128f4b5a36e0a61717d66e15be47b1de5579a5a3fe10fa85/);
+  assert.match(template, /known_manifest_repair/);
+  assert.match(template, /bundled_manifest_path\.write_text/);
   assert.match(template, /could not restore the verified Kungfu release manifest/);
   assert.doesNotMatch(powershellTemplate, /IsPathFullyQualified/);
   assert.match(powershellTemplate, /IsPathRooted/);

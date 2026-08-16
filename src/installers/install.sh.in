@@ -374,8 +374,20 @@ if bundled_manifest != signed_manifest:
         bundled_manifest.get(field) == signed_manifest.get(field)
         for field in identity_fields
     )
+    base_identity_matches = all(
+        bundled_manifest.get(field) == signed_manifest.get(field)
+        for field in [
+            "schema",
+            "productVersion",
+            "releaseChannel",
+            "sourceCommit",
+            "platform",
+            "architecture",
+        ]
+    )
     alpha1_manifest_repair = (
-        platform == "darwin"
+        base_identity_matches
+        and platform == "darwin"
         and architecture == "arm64"
         and version == "4.0.0-alpha.1"
         and bundled_manifest.get("manifestIdentityRoot")
@@ -383,13 +395,31 @@ if bundled_manifest != signed_manifest:
         and signed_manifest.get("manifestIdentityRoot")
         == "sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e"
     )
-    if not identity_matches and not alpha1_manifest_repair:
+    alpha2_macos_manifest_repair = (
+        base_identity_matches
+        and platform == "darwin"
+        and architecture == "arm64"
+        and version == "4.0.0-alpha.2"
+        and manifest_root
+        == "sha256:96e0a3f78bfa65a8ae06f4fd4bc035cc09211afad499ad6f905a380e1c49d2ae"
+        and artifact_root
+        == "sha256:09c1ac317ee471b803c0af86f0ec78d5296b572531eb393432c8485aa3e6bf14"
+        and bundled_manifest.get("manifestIdentityRoot")
+        == "sha256:56ecf22f1d5eee57da3033aaac5ce2e059be6e6b98ec3f337456bf6f3453b8b4"
+        and signed_manifest.get("manifestIdentityRoot")
+        == "sha256:a72517cf8fcf6d9d128f4b5a36e0a61717d66e15be47b1de5579a5a3fe10fa85"
+        and bundled_manifest.get("releaseCutRoot")
+        == "sha256:a2e2880b35c6865a39d8a2095f6c67405e50c19511acda627eaa095401afa330"
+        and signed_manifest.get("releaseCutRoot")
+        == "sha256:a755016042e1d724f888d6cb6bd3c6a4650debfe6d80c338c62b56a5783526f1"
+    )
+    known_manifest_repair = alpha1_manifest_repair or alpha2_macos_manifest_repair
+    if not identity_matches and not known_manifest_repair:
         raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
-    if alpha1_manifest_repair:
-        bundled_manifest_path.write_text(
-            json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
-            "utf-8",
-        )
+    bundled_manifest_path.write_text(
+        json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
+        "utf-8",
+    )
 KUNGFU_SCHEMA_COMPAT_PY
   fail delegate-compat-failed "could not adapt the verified Kungfu bootstrap identity"
 KUNGFU_SCHEMA_COMPAT_BEFORE
