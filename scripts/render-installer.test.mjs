@@ -243,7 +243,9 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
   const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
   const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
   assert.match(template, /repair_kungfu_delegate_schema_compat/);
+  assert.match(template, /d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0/);
   assert.match(template, /artifact\["properties"\]\["name"\]/);
+  assert.match(template, /identity_fields/);
   assert.match(template, /kungfu-release-manifest\.json\.original/);
   assert.match(template, /sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8/);
   assert.match(template, /sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e/);
@@ -252,6 +254,7 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
   assert.match(powershellTemplate, /IsPathRooted/);
   assert.match(powershellTemplate, /Security\.Cryptography\.SHA256/);
   assert.match(powershellTemplate, /Get-KungfuCompatSha256/);
+  assert.match(powershellTemplate, /d24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858/);
   assert.match(powershellTemplate, /outside \$\{Launcher\}:/);
   assert.match(powershellTemplate, /kungfu-upgrade\.contract\.json/);
   assert.match(powershellTemplate, /WriteAllBytes\(\$ContractFile, \$ContractBytes\)/);
