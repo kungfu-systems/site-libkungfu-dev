@@ -147,7 +147,7 @@ is published, the same contract is exercised through
 `src/fixtures/buildchain-badge-endpoint-registry.json` and
 `src/fixtures/badges/v1/**/*.json`.
 The KFD page consumes the pinned npm package artifact
-`@kungfu-tech/kfd@1.0.0-alpha.65` through `site/kfd-site.json`,
+`@kungfu-tech/kfd@1.0.0-alpha.67` through `site/kfd-site.json`,
 `registry.json`, `standards.json`, and decision markdown exports. Bundle-declared
 foundation, formal-model, and terminology references are rendered as first-class
 pages; the terminology contract and schema remain available as machine-readable
@@ -165,6 +165,10 @@ The package-owned Self-Conformance lane is rendered under
 `/cases/live/recursive-normative-self-conformance/`. Exact Profile and terminal
 evidence assets are copied byte-for-byte; the Site preserves the package's
 no-new-KFD and non-authority boundaries.
+The package-owned Conceptual Compression reader is rendered under `/concepts/`
+and introduced from the KFD first screen. The Site owns its visual composition
+and route placement while preserving the package wording, reading order, and
+numbered-decision authority boundary.
 The package-owned KFD-11 through KFD-13 draft activation discovery manifest and
 its adopter-witness, qualification-report, and activation-record schemas are
 published as stable machine entries. Their draft, non-normative status and
@@ -291,20 +295,33 @@ brew install kungfu-systems/tap/buildchain
 brew install kungfu-systems/tap/kungfu
 ```
 
-The single Site-maintained source catalog is `src/install/installer-catalog.json`. The build
+The single Site-maintained source catalog is `src/install/installer-catalog.json`. Every
+product uses the same exact-tag GitHub Release model; product-specific adapters
+only interpret release-owned packaging and evidence formats. The build
 publishes matching friendly and content-addressed routes at
 `/install/v1/catalog.json`, `/install/v1/catalog/<sha256>.json`,
 `/install/v1/manifest.json`, and `/installers/v1/<sha256>/install.sh`. It records
 the exact upstream product, version, platform, byte size, SHA-256, provenance
-URL, and release source SHA. The upstream GitHub Releases and Kungfu's signed
-installer publication remain the release authorities; this site does not
-create another release channel.
+URL, and release source SHA. Artifacts, provenance, and any delegated installer
+bytes must all resolve from the named product's exact GitHub Release. Those
+upstream Releases remain the release authorities; this site does not create
+another release channel or depend on a product website as an installer data
+source.
 
 One Site refresh can admit one or several exact product releases:
 
 ```bash
-pnpm run installer:refresh -- kfd@1.0.0-alpha.65
-pnpm run installer:refresh -- kfd@1.0.0-alpha.65 kungfu@4.0.0-alpha.1 --write
+pnpm run installer:refresh -- kfd@1.0.0-alpha.67
+pnpm run installer:refresh -- kfd@1.0.0-alpha.67 kungfu@4.0.0-alpha.1 --write
+```
+
+Existing coordinates remain immutable during normal refreshes. If a Kungfu
+Release recovery replaced only its final publication bundle and delegated
+installers while preserving every CLI archive byte, review the exact old and new
+asset digests, then use the bounded recovery path:
+
+```bash
+pnpm run installer:refresh -- kungfu@4.0.0-alpha.2 --rebind-existing --write
 ```
 
 The default mode is a read-only plan. `--write` verifies the exact GitHub
@@ -319,7 +336,10 @@ data of their own.
 
 Installations use user-owned, content-addressed roots and bounded symlink
 activation. The installer does not invoke `sudo`, edit shell startup files, or
-write into Homebrew-owned prefixes. It rejects unrelated existing commands,
+write into Homebrew-owned prefixes. When the same official product is already
+owned by the Kungfu Homebrew tap and `~/.local/bin` precedes Homebrew in
+`PATH`, the installer preserves the formula and activates its verified version
+through the user-owned launcher. It still rejects unrelated existing commands,
 wrong sizes or digests, unsafe archives, unsupported targets, and partial
 all-product activation. A previously activated managed version can be restored
 with `install.sh PRODUCT --rollback`.

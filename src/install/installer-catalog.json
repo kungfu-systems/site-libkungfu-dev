@@ -1,9 +1,15 @@
 {
   "schemaVersion": 1,
   "contract": "libkungfu.multi-product-installer-catalog/v1",
-  "catalogVersion": "1",
+  "catalogVersion": "2",
   "scope": "multi-platform-native-installers",
   "authorityBoundary": "This catalog is a reviewed projection of immutable upstream release assets. Each named upstream release remains the authority for product identity, artifact bytes, provenance, signing, and qualification.",
+  "releaseModel": {
+    "source": "github-release",
+    "selection": "exact-tag",
+    "assetAuthority": "product-repository",
+    "productVariance": "evidence-and-packaging-adapter-only"
+  },
   "refresh": {
     "mode": "explicit-exact-release",
     "command": "pnpm run installer:refresh -- product@version --write",
@@ -34,6 +40,11 @@
       "id": "kfd",
       "command": "kfd",
       "repository": "https://github.com/kungfu-systems/kfd",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/kfd",
+        "evidence": "kfd-native-release/v1"
+      },
       "defaultVersion": "1.0.0-alpha.65",
       "versions": [
         {
@@ -248,6 +259,11 @@
       "id": "buildchain",
       "command": "buildchain",
       "repository": "https://github.com/kungfu-systems/buildchain",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/buildchain",
+        "evidence": "buildchain-standalone-binary/v1"
+      },
       "defaultVersion": "4.0.0",
       "versions": [
         {
@@ -386,8 +402,84 @@
       "id": "kungfu",
       "command": "kungfu",
       "repository": "https://github.com/kungfu-systems/kungfu",
-      "defaultVersion": "4.0.0-alpha.1",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/kungfu",
+        "evidence": "kungfu-installer-publication-bundle/v1"
+      },
+      "defaultVersion": "4.0.0-alpha.2",
       "versions": [
+        {
+          "version": "4.0.0-alpha.2",
+          "tag": "v4.0.0-alpha.2",
+          "publishedAt": "2026-08-15T12:54:46Z",
+          "sourceSha": "b0cff8236b8b3746f8028b9d519ed3b0e26096c9",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "size": 145730301,
+                "sha256": "d5e71be871d8f88e317eded6634bf8717c7006fbc7b10ad93a944384ce6705a8"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "91ee3046c036d46d15ce53637c6362db20e107ffe01eee8079b65692d6bacda5"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
+                "size": 9630,
+                "sha256": "d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-linux-x64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-linux-x64.tar.gz",
+                "size": 205955896,
+                "sha256": "78c8773ae5a33ae21d150b97af9ccbb3a11f8bfd4c740b83f99c04be519daeaa"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "91ee3046c036d46d15ce53637c6362db20e107ffe01eee8079b65692d6bacda5"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.sh",
+                "size": 9630,
+                "sha256": "d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0"
+              }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-windows-x64.zip",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-episodes-cli-windows-x64.zip",
+                "size": 1186367915,
+                "sha256": "976aa3b5a7b7ab5525a6d0209dcb6ae77feefa9c68820ffcf4ee18d157c0ed7c"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-installer-publication-bundle.json",
+                "size": 4675,
+                "sha256": "91ee3046c036d46d15ce53637c6362db20e107ffe01eee8079b65692d6bacda5"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.2/kungfu-install.ps1",
+                "size": 6280,
+                "sha256": "d24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858"
+              }
+            }
+          ]
+        },
         {
           "version": "4.0.0-alpha.1",
           "tag": "v4.0.0-alpha.1",
@@ -410,7 +502,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.sh",
                 "size": 9630,
                 "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
               }
@@ -431,7 +523,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.sh",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.sh",
                 "size": 9630,
                 "sha256": "2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8"
               }
@@ -452,7 +544,7 @@
                 "sha256": "d049a7b723f2b67edee0d725a606aeba85a1ed1d1ac2ff6e0787fbdad05bb956"
               },
               "delegate": {
-                "url": "https://kungfu.tech/installers/v1/alpha/4.0.0-alpha.1/6cc17282c81e82af34dbd07a9ea9f4263f6784dc99a77c4fb92758304815ad21/install.ps1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.1/kungfu-install.ps1",
                 "size": 6280,
                 "sha256": "62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68"
               }
@@ -465,6 +557,11 @@
       "id": "agent-hub-demo",
       "command": "agent-hub-demo",
       "repository": "https://github.com/kungfu-systems/agent-hub-demo",
+      "releaseAdapter": {
+        "source": "github-release",
+        "repository": "kungfu-systems/agent-hub-demo",
+        "evidence": "agent-hub-binary-evidence/v1"
+      },
       "defaultVersion": "0.2.0",
       "versions": [
         {

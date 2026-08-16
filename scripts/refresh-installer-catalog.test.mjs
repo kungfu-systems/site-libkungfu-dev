@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { parseRequests, refreshCatalog, resolveVersionEntry } from "./refresh-installer-catalog.mjs";
+import { releaseDownloadPrefix } from "./installer-release-model.mjs";
 
 const root = process.cwd();
 const canonicalCatalog = JSON.parse(fs.readFileSync(path.join(root, "src", "install", "installer-catalog.json"), "utf8"));
@@ -98,11 +99,13 @@ function agentHubFixture(version) {
   return fixture;
 }
 
-function kungfuFixture(version) {
+function kungfuFixture(version, publicationSalt = "") {
   const fixture = releaseFixture("kungfu", version);
   const sourceCommit = gitSha(`kungfu-source-${version}`);
-  const installerSha = hash(`kungfu-installer-${version}`);
-  const powershellInstallerSha = hash(`kungfu-powershell-installer-${version}`);
+  const manifestDigest = hash(`kungfu-inner-manifest-${version}`);
+  const installerSha = hash(`kungfu-installer-${version}-${publicationSalt}`);
+  const powershellInstallerSha = hash(`kungfu-powershell-installer-${version}-${publicationSalt}`);
+  fixture.manifestDigest = manifestDigest;
   fixture.addStatic("kungfu-install.sh", 4096, installerSha);
   fixture.addStatic("kungfu-install.ps1", 6144, powershellInstallerSha);
   fixture.addStatic("kungfu-episodes-cli-darwin-arm64.tar.gz", 8192);
@@ -111,6 +114,7 @@ function kungfuFixture(version) {
   const immutablePath = `installers/v1/alpha/${version}/${hash(version)}`;
   fixture.addJson("kungfu-installer-publication-bundle.json", {
     schema: "kungfu.installer-publication-bundle/v1",
+    manifestDigest: `sha256:${manifestDigest}`,
     identity: { version, releaseTag: `v${version}`, sourceCommit },
     distribution: { repository: "kungfu-systems/kungfu" },
     routes: { immutablePath },
@@ -134,6 +138,21 @@ function kungfuFixture(version) {
   return fixture;
 }
 
+test("Kungfu provenance binds the publication bundle bytes rather than its inner manifest digest", async () => {
+  const version = "4.0.0-alpha.9";
+  const fixture = kungfuFixture(version);
+  const entry = await resolveVersionEntry({
+    productId: "kungfu",
+    version,
+    release: fixture.release,
+    loadAssetBytes: fixture.loadAssetBytes,
+  });
+  const bundleAsset = fixture.release.assets.find((asset) => asset.name === "kungfu-installer-publication-bundle.json");
+  assert.ok(bundleAsset);
+  assert.equal(entry.targets[0].provenance.sha256, bundleAsset.digest.slice("sha256:".length));
+  assert.notEqual(entry.targets[0].provenance.sha256, fixture.manifestDigest);
+});
+
 test("exact release adapters derive all four product entries from verified metadata", async () => {
   const cases = [
     ["kfd", "1.0.0-alpha.99", kfdFixture],
@@ -152,6 +171,12 @@ test("exact release adapters derive all four product entries from verified metad
     assert.equal(entry.version, version);
     assert.match(entry.sourceSha, /^[0-9a-f]{40}$/u);
     assert.equal(entry.targets.length, productId === "kfd" ? 5 : 3);
+    const releasePrefix = releaseDownloadPrefix(productId, entry.tag);
+    for (const target of entry.targets) {
+      for (const asset of [target.artifact, target.provenance, target.delegate].filter(Boolean)) {
+        assert.ok(asset.url.startsWith(releasePrefix), `${productId} adapter escaped its exact GitHub Release`);
+      }
+    }
   }
 });
 
@@ -204,15 +229,81 @@ test("an already catalogued coordinate is immutable", async () => {
   );
 });
 
+test("an explicit Kungfu publication rebind changes only final publication evidence", async () => {
+  const version = "4.0.0-alpha.9";
+  const originalFixture = kungfuFixture(version, "original");
+  const initial = await refreshCatalog({
+    catalog: canonicalCatalog,
+    requests: [{ productId: "kungfu", version }],
+    loadRelease: async () => originalFixture.release,
+    loadAssetBytes: originalFixture.loadAssetBytes,
+  });
+  const recoveredFixture = kungfuFixture(version, "recovered");
+  const rebound = await refreshCatalog({
+    catalog: initial.catalog,
+    requests: [{ productId: "kungfu", version }],
+    loadRelease: async () => recoveredFixture.release,
+    loadAssetBytes: recoveredFixture.loadAssetBytes,
+    rebindExisting: true,
+  });
+  assert.equal(rebound.changes[0].action, "rebound");
+  const before = initial.catalog.products.find((entry) => entry.id === "kungfu").versions[0];
+  const after = rebound.catalog.products.find((entry) => entry.id === "kungfu").versions[0];
+  assert.deepEqual(after.targets.map((target) => target.artifact), before.targets.map((target) => target.artifact));
+  assert.notEqual(after.targets[0].provenance.sha256, before.targets[0].provenance.sha256);
+  assert.notEqual(after.targets[0].delegate.sha256, before.targets[0].delegate.sha256);
+});
+
+test("a Kungfu publication rebind rejects changed CLI archive bytes", async () => {
+  const version = "4.0.0-alpha.9";
+  const originalFixture = kungfuFixture(version, "original");
+  const initial = await refreshCatalog({
+    catalog: canonicalCatalog,
+    requests: [{ productId: "kungfu", version }],
+    loadRelease: async () => originalFixture.release,
+    loadAssetBytes: originalFixture.loadAssetBytes,
+  });
+  const recoveredFixture = kungfuFixture(version, "recovered");
+  const archive = recoveredFixture.release.assets.find((asset) => asset.name === "kungfu-episodes-cli-linux-x64.tar.gz");
+  archive.digest = `sha256:${hash("changed-cli-archive")}`;
+  await assert.rejects(
+    refreshCatalog({
+      catalog: initial.catalog,
+      requests: [{ productId: "kungfu", version }],
+      loadRelease: async () => recoveredFixture.release,
+      loadAssetBytes: recoveredFixture.loadAssetBytes,
+      rebindExisting: true,
+    }),
+    /publication-rebind-artifact-drift/,
+  );
+});
+
+test("the catalog rejects a product adapter that points at another release authority", async () => {
+  const catalog = structuredClone(canonicalCatalog);
+  catalog.products.find((entry) => entry.id === "kungfu").releaseAdapter.repository = "kungfu-systems/not-kungfu";
+  const fixture = kungfuFixture("4.0.0-alpha.1");
+  await assert.rejects(
+    refreshCatalog({
+      catalog,
+      requests: [{ productId: "kungfu", version: "4.0.0-alpha.1" }],
+      loadRelease: async () => fixture.release,
+      loadAssetBytes: fixture.loadAssetBytes,
+    }),
+    /release-adapter-mismatch/,
+  );
+});
+
 test("the CLI accepts exact batched coordinates and rejects moving selectors", () => {
   assert.deepEqual(parseRequests(["--", "kfd@1.0.0-alpha.65", "kungfu@4.0.0-alpha.1", "--write", "--json"]), {
     json: true,
+    rebindExisting: false,
     requests: [
       { productId: "kfd", version: "1.0.0-alpha.65" },
       { productId: "kungfu", version: "4.0.0-alpha.1" },
     ],
     write: true,
   });
+  assert.equal(parseRequests(["kungfu@4.0.0-alpha.2", "--rebind-existing"]).rebindExisting, true);
   assert.throws(() => parseRequests(["kfd@latest"]), /release-version-invalid/);
   assert.throws(() => parseRequests(["kfd@1.0.0", "kfd@1.0.1"]), /product-coordinate-duplicate/);
 });

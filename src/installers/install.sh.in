@@ -110,8 +110,22 @@ case "$target" in
   linux-*)
     libc=$(getconf GNU_LIBC_VERSION 2>/dev/null || ldd --version 2>&1 | head -1 || true)
     case "$libc" in *glibc*|*"GNU libc"*|*GLIBC*) ;; *) fail unsupported-libc 'catalogued Linux artifacts require glibc' ;; esac
+    glibc_version=$(printf '%s\n' "$libc" | awk '{ print $NF }')
     ;;
 esac
+
+version_at_least() {
+  awk -v observed="$1" -v required="$2" 'BEGIN {
+    split(observed, left, "."); split(required, right, ".")
+    width = length(left) > length(right) ? length(left) : length(right)
+    for (part = 1; part <= width; part += 1) {
+      left[part] += 0; right[part] += 0
+      if (left[part] > right[part]) exit 0
+      if (left[part] < right[part]) exit 1
+    }
+    exit 0
+  }'
+}
 
 select_product() {
   selected_product=$1
@@ -186,17 +200,61 @@ homebrew_prefix_conflict() {
   return 1
 }
 
+path_directory_precedes() {
+  earlier=$1
+  later=$2
+  awk -v path="${PATH:-}" -v earlier="$earlier" -v later="$later" 'BEGIN {
+    count = split(path, entries, ":")
+    for (part = 1; part <= count; part += 1) {
+      entry = entries[part] == "" ? "." : entries[part]
+      if (entry == earlier) exit 0
+      if (entry == later) exit 1
+    }
+    exit 1
+  }'
+}
+
+homebrew_formula_for_product() {
+  case "$1" in
+    kfd|buildchain|kungfu) printf '%s\n' "kungfu-systems/tap/$1" ;;
+    *) return 1 ;;
+  esac
+}
+
+verified_homebrew_shadow() {
+  selected_product=$1
+  existing_command=$2
+  command -v brew >/dev/null 2>&1 || return 1
+  formula=$(homebrew_formula_for_product "$selected_product") || return 1
+  brew_prefix=$(brew --prefix 2>/dev/null || true)
+  formula_prefix=$(brew --prefix "$formula" 2>/dev/null || true)
+  [ -n "$brew_prefix" ] && [ -n "$formula_prefix" ] || return 1
+  [ "$existing_command" = "$brew_prefix/bin/$command_name" ] || return 1
+  formula_command="$formula_prefix/bin/$command_name"
+  [ -x "$formula_command" ] && [ "$existing_command" -ef "$formula_command" ] || return 1
+  path_directory_precedes "$bin_dir" "${existing_command%/*}"
+}
+
 preflight_product() {
   selected_product=$1
   selected_version=$2
   select_product "$selected_product" || return 1
   select_target "$selected_product" "$selected_version" || return 2
+  if [ "$selected_product:$selected_version:$target" = 'kungfu:4.0.0-alpha.1:linux-x64' ] &&
+     ! version_at_least "$glibc_version" '2.39'; then
+    log "error[unsupported-host]: Kungfu $selected_version requires glibc 2.39 or newer; observed $libc"
+    return 8
+  fi
   launcher="$bin_dir/$command_name"
   existing=$(command -v "$command_name" 2>/dev/null || true)
-  [ -z "$existing" ] || [ "$existing" = "$launcher" ] || {
-    log "error[ownership-conflict]: $command_name is owned outside $launcher: $existing"
-    return 3
-  }
+  if [ -n "$existing" ] && [ "$existing" != "$launcher" ]; then
+    if verified_homebrew_shadow "$selected_product" "$existing"; then
+      log "note[homebrew-shadowed]: preserving $existing; $launcher will take precedence without modifying Homebrew"
+    else
+      log "error[ownership-conflict]: $command_name is owned outside $launcher: $existing"
+      return 3
+    fi
+  fi
   homebrew_prefix_conflict && {
     log "error[homebrew-prefix]: refusing to write $launcher inside a Homebrew-owned prefix"
     return 4
@@ -258,6 +316,190 @@ download_verified() {
   }
 }
 
+repair_kungfu_delegate_schema_compat() {
+  input=$1
+  output=$2
+  patch_root=$3
+  before_patch="$patch_root/schema-compat.before"
+  after_patch="$patch_root/schema-compat.after"
+  cat > "$before_patch" <<'KUNGFU_SCHEMA_COMPAT_BEFORE'
+contract_file="$candidate/runtime/config/kungfu-upgrade.contract.json"
+contract_backup="$stage/kungfu-upgrade.contract.json.original"
+product_file="$candidate/product.json"
+product_backup="$stage/product.json.original"
+bundled_manifest_file="$candidate/upgrade/kungfu-release-manifest.json"
+bundled_manifest_backup="$stage/kungfu-release-manifest.json.original"
+cp -p "$contract_file" "$contract_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu upgrade contract"
+cp -p "$product_file" "$product_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu product descriptor"
+cp -p "$bundled_manifest_file" "$bundled_manifest_backup" || fail delegate-compat-failed "could not preserve the verified Kungfu release manifest"
+"$candidate/runtime/python/bin/python3" - \
+  "$contract_file" "$product_file" "$bundled_manifest_file" "$channel_file" \
+  "$channel" "$platform" "$architecture" "$version" "$manifest_root" "$artifact_root" <<'KUNGFU_SCHEMA_COMPAT_PY' ||
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+contract = json.loads(path.read_text("utf-8"))
+artifact = contract["valueSchemaBundle"]["$defs"]["artifact"]
+expected_required = ["kind", "url", "size", "digest", "signature"]
+if (
+    artifact.get("additionalProperties") is not False
+    or artifact.get("required") != expected_required
+    or "name" in artifact.get("properties", {})
+    or artifact.get("properties", {}).get("signature")
+    != {"type": "string", "minLength": 1}
+):
+    raise SystemExit("verified Kungfu upgrade contract no longer matches the reviewed compatibility repair")
+artifact["properties"]["name"] = {"type": "string", "minLength": 1}
+path.write_text(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "utf-8")
+
+product_path = pathlib.Path(sys.argv[2])
+bundled_manifest_path = pathlib.Path(sys.argv[3])
+channel_path = pathlib.Path(sys.argv[4])
+channel = sys.argv[5]
+platform = sys.argv[6]
+architecture = sys.argv[7]
+version = sys.argv[8]
+manifest_root = sys.argv[9]
+artifact_root = sys.argv[10]
+product = json.loads(product_path.read_text("utf-8"))
+archive_platform = "windows" if platform == "win32" else platform
+if (
+    product.get("schema") != "kungfu.product.cli/v1"
+    or product.get("product") != "cli"
+    or product.get("platform") != f"{archive_platform}-{architecture}"
+    or product.get("install", {}).get("source") != "archive"
+):
+    raise SystemExit("verified Kungfu product descriptor no longer matches the reviewed compatibility repair")
+product["platform"] = platform
+product_path.write_text(json.dumps(product, indent=2, ensure_ascii=False) + "\n", "utf-8")
+
+bundled_manifest = json.loads(bundled_manifest_path.read_text("utf-8"))
+channel_index = json.loads(channel_path.read_text("utf-8"))
+matches = [
+    entry
+    for entry in channel_index.get("entries", [])
+    if entry.get("channel") == channel
+    and entry.get("platform") == platform
+    and entry.get("architecture") == architecture
+    and entry.get("installSource") == "archive"
+    and entry.get("manifest", {}).get("productVersion") == version
+]
+if len(matches) != 1:
+    raise SystemExit("verified Kungfu channel no longer has one reviewed compatibility entry")
+entry = matches[0]
+signed_manifest = entry.get("manifest", {})
+if (
+    entry.get("manifestRoot") != manifest_root
+    or entry.get("artifactRoot") != artifact_root
+):
+    raise SystemExit("verified Kungfu channel roots no longer match the reviewed compatibility repair")
+if bundled_manifest != signed_manifest:
+    identity_fields = [
+        "schema",
+        "productVersion",
+        "releaseChannel",
+        "sourceCommit",
+        "runtimeBuildId",
+        "runtimeArtifactDigest",
+        "frontendBuildId",
+        "platform",
+        "architecture",
+    ]
+    if "releaseCutRoot" in signed_manifest:
+        identity_fields.append("manifestIdentityRoot")
+    identity_matches = all(
+        bundled_manifest.get(field) == signed_manifest.get(field)
+        for field in identity_fields
+    )
+    base_identity_matches = all(
+        bundled_manifest.get(field) == signed_manifest.get(field)
+        for field in [
+            "schema",
+            "productVersion",
+            "releaseChannel",
+            "sourceCommit",
+            "platform",
+            "architecture",
+        ]
+    )
+    alpha1_manifest_repair = (
+        base_identity_matches
+        and platform == "darwin"
+        and architecture == "arm64"
+        and version == "4.0.0-alpha.1"
+        and bundled_manifest.get("manifestIdentityRoot")
+        == "sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8"
+        and signed_manifest.get("manifestIdentityRoot")
+        == "sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e"
+    )
+    alpha2_macos_manifest_repair = (
+        base_identity_matches
+        and platform == "darwin"
+        and architecture == "arm64"
+        and version == "4.0.0-alpha.2"
+        and manifest_root
+        == "sha256:96e0a3f78bfa65a8ae06f4fd4bc035cc09211afad499ad6f905a380e1c49d2ae"
+        and artifact_root
+        == "sha256:09c1ac317ee471b803c0af86f0ec78d5296b572531eb393432c8485aa3e6bf14"
+        and bundled_manifest.get("manifestIdentityRoot")
+        == "sha256:56ecf22f1d5eee57da3033aaac5ce2e059be6e6b98ec3f337456bf6f3453b8b4"
+        and signed_manifest.get("manifestIdentityRoot")
+        == "sha256:a72517cf8fcf6d9d128f4b5a36e0a61717d66e15be47b1de5579a5a3fe10fa85"
+        and bundled_manifest.get("releaseCutRoot")
+        == "sha256:a2e2880b35c6865a39d8a2095f6c67405e50c19511acda627eaa095401afa330"
+        and signed_manifest.get("releaseCutRoot")
+        == "sha256:a755016042e1d724f888d6cb6bd3c6a4650debfe6d80c338c62b56a5783526f1"
+    )
+    known_manifest_repair = alpha1_manifest_repair or alpha2_macos_manifest_repair
+    if not identity_matches and not known_manifest_repair:
+        raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
+    bundled_manifest_path.write_text(
+        json.dumps(signed_manifest, indent=2, ensure_ascii=False) + "\n",
+        "utf-8",
+    )
+KUNGFU_SCHEMA_COMPAT_PY
+  fail delegate-compat-failed "could not adapt the verified Kungfu bootstrap identity"
+KUNGFU_SCHEMA_COMPAT_BEFORE
+  cat > "$after_patch" <<'KUNGFU_SCHEMA_COMPAT_AFTER'
+cp -p "$contract_backup" "$contract_file" || fail delegate-compat-failed "could not restore the verified Kungfu upgrade contract"
+cp -p "$product_backup" "$product_file" || fail delegate-compat-failed "could not restore the verified Kungfu product descriptor"
+cp -p "$bundled_manifest_backup" "$bundled_manifest_file" || fail delegate-compat-failed "could not restore the verified Kungfu release manifest"
+KUNGFU_SCHEMA_COMPAT_AFTER
+  awk -v before_patch="$before_patch" -v after_patch="$after_patch" '
+    function emit(path, line) {
+      while ((getline line < path) > 0) print line
+      close(path)
+    }
+    $0 == "\"$candidate/kungfu\" update bootstrap-verify \"$channel_file\" \"$archive_file\" \"$candidate\" \\" {
+      emit(before_patch)
+      before_count += 1
+    }
+    $0 == "if [ -n \"$existing\" ] && [ \"$existing\" != \"$launcher\" ]; then" {
+      print "if [ -n \"$existing\" ] && [ \"$existing\" != \"$launcher\" ] && [ \"$existing\" != \"${KUNGFU_INSTALL_ALLOW_EXISTING:-}\" ]; then"
+      ownership_count += 1
+      next
+    }
+    $0 == "  fail signed-authority-mismatch \"staged CLI did not verify the signed channel and release identity\"" {
+      print "  {"
+      emit(after_patch)
+      print
+      print "  }"
+      emit(after_patch)
+      after_count += 1
+      next
+    }
+    { print }
+    END { if (before_count != 1 || after_count != 1 || ownership_count != 1) exit 42 }
+  ' "$input" > "$output" || {
+    rm -f "$output"
+    log 'error[delegate-invalid]: known Kungfu schema compatibility repair no longer matches the verified delegate'
+    return 1
+  }
+  chmod 700 "$output" || return 1
+}
+
 ensure_catalog() {
   [ -f "$stage_root/catalog.json" ] && return 0
   download_verified "$catalog_url" "$catalog_size" "$catalog_sha256" "$stage_root/catalog.json" 'installer catalog'
@@ -290,7 +532,23 @@ prepare_product() {
   download_verified "$provenance_url" "$provenance_size" "$provenance_sha256" "$prepare_dir/provenance.json" "$selected_product provenance" || return 1
   if [ "$artifact_kind" = delegated-installer ]; then
     download_verified "$delegate_url" "$delegate_size" "$delegate_sha256" "$prepare_dir/delegate.sh" 'signed Kungfu installer' || return 1
-    sh "$prepare_dir/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
+    delegate_file="$prepare_dir/delegate.sh"
+    case "$delegate_sha256" in
+      2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8|d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0)
+      repair_kungfu_delegate_schema_compat "$delegate_file" "$prepare_dir/delegate.compat.sh" "$prepare_dir" || return 1
+      delegate_file="$prepare_dir/delegate.compat.sh"
+      debug 'applied the reviewed schema compatibility repair to the verified Kungfu delegate'
+      ;;
+    esac
+    printf '%s\n' "$delegate_file" > "$prepare_dir/delegate-executable"
+    delegate_existing=$(command -v kungfu 2>/dev/null || true)
+    delegate_allow_existing=
+    if [ -n "$delegate_existing" ] && [ "$delegate_existing" != "$bin_dir/kungfu" ] &&
+       verified_homebrew_shadow kungfu "$delegate_existing"; then
+      delegate_allow_existing=$delegate_existing
+    fi
+    KUNGFU_INSTALL_ALLOW_EXISTING="$delegate_allow_existing" \
+      sh "$delegate_file" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir" --dry-run || return 1
     return 0
   fi
 
@@ -435,7 +693,16 @@ activate_delegate() {
   launcher="$bin_dir/kungfu"
   old_launcher=$(readlink "$launcher" 2>/dev/null || true)
   printf '%s\n' "$old_launcher" > "$stage_root/kungfu/old-launcher"
-  if ! sh "$stage_root/kungfu/delegate.sh" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir"; then
+  delegate_file=$(cat "$stage_root/kungfu/delegate-executable")
+  managed_path "$delegate_file" "$stage_root/kungfu" || fail delegate-invalid 'prepared Kungfu delegate is outside the installer stage'
+  delegate_existing=$(command -v kungfu 2>/dev/null || true)
+  delegate_allow_existing=
+  if [ -n "$delegate_existing" ] && [ "$delegate_existing" != "$launcher" ] &&
+     verified_homebrew_shadow kungfu "$delegate_existing"; then
+    delegate_allow_existing=$delegate_existing
+  fi
+  if ! KUNGFU_INSTALL_ALLOW_EXISTING="$delegate_allow_existing" \
+    sh "$delegate_file" --version "$selected_version" --install-dir "$install_root/delegates/kungfu/product" --bin-dir "$bin_dir"; then
     restore_link "$launcher" "$old_launcher" || true
     return 1
   fi

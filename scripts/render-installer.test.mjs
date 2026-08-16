@@ -8,6 +8,7 @@ import test from "node:test";
 import { gzipSync } from "node:zlib";
 
 import { renderInstaller, validateCatalog, writeInstallerPublication } from "./render-installer.mjs";
+import { installerReleaseModel, releaseAdapterRecord, releaseDownloadPrefix } from "./installer-release-model.mjs";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -120,6 +121,12 @@ while [ "$#" -gt 0 ]; do
     *) shift ;;
   esac
 done
+launcher="$bin_dir/kungfu"
+existing=$(command -v kungfu 2>/dev/null || true)
+if [ -n "$existing" ] && [ "$existing" != "$launcher" ] && [ "$existing" != "\${KUNGFU_INSTALL_ALLOW_EXISTING:-}" ]; then
+  printf '%s\n' "fixture ownership conflict: $existing" >&2
+  exit 43
+fi
 [ "$dry_run" -eq 0 ] || exit 0
 [ "\${FIXTURE_DELEGATE_FAIL:-0}" -eq 0 ] || exit 42
 root="$install_dir/versions/$version-fixture"
@@ -159,6 +166,7 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
     catalogVersion: "test",
     scope: "multi-platform-native-installers",
     authorityBoundary: "Fixture upstream assets remain authoritative.",
+    releaseModel: installerReleaseModel,
     refresh: {
       mode: "explicit-exact-release",
       command: "pnpm run installer:refresh -- product@version --write",
@@ -179,6 +187,7 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         id: "kfd",
         command: "kfd",
         repository: "https://github.com/kungfu-systems/kfd",
+        releaseAdapter: releaseAdapterRecord("kfd"),
         defaultVersion: "1.0.0",
         versions: [
           version("1.0.0", [makeTarget({ artifactName: "kfd-v1.tar.gz", binaryPath: "kfd-v1/kfd", binarySha256: kfd1.binarySha256, provenanceName: "kfd-v1.provenance.json" }), windowsTarget("kfd", "kfd-v1.provenance.json")]),
@@ -189,6 +198,7 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         id: "buildchain",
         command: "buildchain",
         repository: "https://github.com/kungfu-systems/buildchain",
+        releaseAdapter: releaseAdapterRecord("buildchain"),
         defaultVersion: "4.0.0",
         versions: [version("4.0.0", [makeTarget({ artifactName: "buildchain.tar.gz", binaryPath: "buildchain", binarySha256: buildchain.binarySha256, provenanceName: "buildchain.provenance.json" }), windowsTarget("buildchain", "buildchain.provenance.json")])],
       },
@@ -196,6 +206,7 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         id: "kungfu",
         command: "kungfu",
         repository: "https://github.com/kungfu-systems/kungfu",
+        releaseAdapter: releaseAdapterRecord("kungfu"),
         defaultVersion: "4.0.0-alpha.1",
         versions: [version("4.0.0-alpha.1", [
           {
@@ -218,14 +229,48 @@ mv -f "$bin_dir/.kungfu.fixture.$$" "$bin_dir/kungfu"
         id: "agent-hub-demo",
         command: "agent-hub-demo",
         repository: "https://github.com/kungfu-systems/agent-hub-demo",
+        releaseAdapter: releaseAdapterRecord("agent-hub-demo"),
         defaultVersion: "0.2.0",
         versions: [version("0.2.0", [makeTarget({ artifactName: "agent-hub-demo", binaryPath: "agent-hub-demo", binarySha256: sha256(fs.readFileSync(path.join(root, "agent-hub-demo"))), provenanceName: "agent-hub-demo.provenance.json", kind: "binary" }), windowsTarget("agent-hub-demo", "agent-hub-demo.provenance.json")])],
       },
     ],
   };
+  for (const product of catalog.products) {
+    for (const releaseVersion of product.versions) {
+      const releasePrefix = releaseDownloadPrefix(product.id, releaseVersion.tag);
+      for (const target of releaseVersion.targets) {
+        for (const releaseAsset of [target.artifact, target.provenance, target.delegate].filter(Boolean)) {
+          releaseAsset.url = `${releasePrefix}${path.basename(new URL(releaseAsset.url).pathname)}`;
+        }
+      }
+    }
+  }
   const catalogBytes = Buffer.from(`${JSON.stringify(catalog, null, 2)}\n`);
   const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
   const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+  assert.match(template, /repair_kungfu_delegate_schema_compat/);
+  assert.match(template, /d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0/);
+  assert.match(template, /artifact\["properties"\]\["name"\]/);
+  assert.match(template, /identity_fields/);
+  assert.match(template, /kungfu-release-manifest\.json\.original/);
+  assert.match(template, /sha256:c847879b041f3a7e717874863c6844a25124274387b39827831aaf88d9c4e6e8/);
+  assert.match(template, /sha256:124eca37170869cd478203e1d9c31855b17da0418514a610b16117a5af4be37e/);
+  assert.match(template, /sha256:96e0a3f78bfa65a8ae06f4fd4bc035cc09211afad499ad6f905a380e1c49d2ae/);
+  assert.match(template, /sha256:09c1ac317ee471b803c0af86f0ec78d5296b572531eb393432c8485aa3e6bf14/);
+  assert.match(template, /sha256:56ecf22f1d5eee57da3033aaac5ce2e059be6e6b98ec3f337456bf6f3453b8b4/);
+  assert.match(template, /sha256:a72517cf8fcf6d9d128f4b5a36e0a61717d66e15be47b1de5579a5a3fe10fa85/);
+  assert.match(template, /known_manifest_repair/);
+  assert.match(template, /bundled_manifest_path\.write_text/);
+  assert.match(template, /could not restore the verified Kungfu release manifest/);
+  assert.doesNotMatch(powershellTemplate, /IsPathFullyQualified/);
+  assert.match(powershellTemplate, /IsPathRooted/);
+  assert.match(powershellTemplate, /Security\.Cryptography\.SHA256/);
+  assert.match(powershellTemplate, /Get-KungfuCompatSha256/);
+  assert.match(powershellTemplate, /d24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858/);
+  assert.match(powershellTemplate, /outside \$\{Launcher\}:/);
+  assert.match(powershellTemplate, /kungfu-upgrade\.contract\.json/);
+  assert.match(powershellTemplate, /WriteAllBytes\(\$ContractFile, \$ContractBytes\)/);
+  assert.match(powershellTemplate, /WriteAllBytes\(\$ProductFile, \$ProductBytes\)/);
   const rendered = renderInstaller({ catalog, catalogBytes, template, powershellTemplate });
   const catalogFile = path.join(root, "catalog.json");
   const installerFile = path.join(root, "install.sh");
@@ -303,13 +348,98 @@ test("streamed no-argument execution defaults to Kungfu without breaking its pro
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("catalog rejects a second product set or an unpinned digest", () => {
+test("a verified Homebrew formula can be preserved and shadowed by the user installer", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "libkungfu-installer-homebrew-test-"));
+  try {
+    const fixture = createFixture(root);
+    const home = path.join(root, "home");
+    const binDir = path.join(home, ".local", "bin");
+    const brewRoot = path.join(root, "homebrew");
+    const brewBin = path.join(brewRoot, "bin");
+    const formulaPrefix = path.join(brewRoot, "opt", "kungfu");
+    const formulaCommand = path.join(formulaPrefix, "bin", "kungfu");
+    fs.mkdirSync(brewBin, { recursive: true });
+    fs.mkdirSync(path.dirname(formulaCommand), { recursive: true });
+    writeExecutable(formulaCommand, "#!/bin/sh\nprintf '%s\\n' 'kungfu 4.0.0-alpha.1 homebrew'\n");
+    fs.symlinkSync(formulaCommand, path.join(brewBin, "kungfu"));
+    writeExecutable(path.join(fixture.fakeBin, "brew"), `#!/bin/sh
+case "\${1:-}:\${2:-}" in
+  --prefix:) printf '%s\\n' '${brewRoot}' ;;
+  --prefix:kungfu-systems/tap/kungfu) printf '%s\\n' '${formulaPrefix}' ;;
+  *) exit 1 ;;
+esac
+`);
+    const lateUserBin = run("sh", [fixture.installerFile, "--dry-run"], {
+      env: fixtureEnv(root, fixture.fakeBin, {
+        PATH: `${fixture.fakeBin}:${brewBin}:${binDir}:/usr/bin:/bin`,
+      }),
+    });
+    assert.notEqual(lateUserBin.status, 0);
+    assert.match(lateUserBin.stderr, /error\[ownership-conflict\]/);
+    const env = fixtureEnv(root, fixture.fakeBin, {
+      PATH: `${binDir}:${fixture.fakeBin}:${brewBin}:/usr/bin:/bin`,
+    });
+    const result = run("sh", [fixture.installerFile], { env });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /note\[homebrew-shadowed\].*preserving/);
+    assert.ok(fs.lstatSync(path.join(binDir, "kungfu")).isSymbolicLink());
+    assert.equal(fs.existsSync(formulaCommand), true);
+    const installed = run(path.join(binDir, "kungfu"), [], { env });
+    assert.match(installed.stdout, /kungfu 4\.0\.0-alpha\.1/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("unsupported Linux libc fails before any Kungfu download", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "libkungfu-installer-libc-test-"));
+  try {
+    const fixture = createFixture(root);
+    const kungfuRelease = fixture.catalog.products.find((entry) => entry.id === "kungfu").versions[0];
+    if (!kungfuRelease.targets.some((entry) => entry.platform === "linux-x64")) {
+      kungfuRelease.targets.push({ ...kungfuRelease.targets[0], platform: "linux-x64" });
+      const catalogBytes = Buffer.from(`${JSON.stringify(fixture.catalog, null, 2)}\n`);
+      const template = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.sh.in"), "utf8");
+      const powershellTemplate = fs.readFileSync(path.join(repoRoot, "src", "installers", "install.ps1.in"), "utf8");
+      const rendered = renderInstaller({ catalog: fixture.catalog, catalogBytes, template, powershellTemplate });
+      fs.writeFileSync(fixture.catalogFile, catalogBytes);
+      fs.writeFileSync(fixture.installerFile, rendered.installerBytes);
+    }
+    writeExecutable(path.join(fixture.fakeBin, "uname"), `#!/bin/sh
+case "\${1:-}" in
+  -s) printf '%s\\n' Linux ;;
+  -m) printf '%s\\n' x86_64 ;;
+  *) exit 1 ;;
+esac
+`);
+    writeExecutable(path.join(fixture.fakeBin, "getconf"), `#!/bin/sh
+printf '%s\\n' 'glibc 2.17'
+`);
+    const result = run("sh", [fixture.installerFile, "--dry-run"], {
+      env: fixtureEnv(root, fixture.fakeBin),
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /unsupported-host.*requires glibc 2\.39.*glibc 2\.17/);
+    assert.doesNotMatch(result.stderr, /awk:/);
+    assert.doesNotMatch(result.stderr, /download:/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("catalog rejects a second product set, an unpinned digest, or an external release URL", () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "install", "installer-catalog.json"), "utf8"));
-  assert.equal(validateCatalog(catalog).length, 25);
+  assert.equal(validateCatalog(catalog).length, 28);
   assert.throws(() => validateCatalog({ ...catalog, products: catalog.products.slice(1) }), /exactly four products/);
   const broken = structuredClone(catalog);
   broken.products[0].versions[0].targets[0].artifact.sha256 = "latest";
   assert.throws(() => validateCatalog(broken), /lowercase SHA-256/);
+  const external = structuredClone(catalog);
+  external.products.find((entry) => entry.id === "kungfu").versions[0].targets[0].delegate.url = "https://kungfu.tech/install.sh";
+  assert.throws(() => validateCatalog(external), /must come from its exact GitHub Release/);
+  const movingTag = structuredClone(catalog);
+  movingTag.products[0].versions[0].tag = "latest";
+  assert.throws(() => validateCatalog(movingTag), /matching exact release tag/);
 });
 
 test("all-products install is verified, versioned, and rollback-safe", () => {

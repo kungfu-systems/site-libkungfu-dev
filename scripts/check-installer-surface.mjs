@@ -66,9 +66,21 @@ assert.deepEqual(siteManifest.installerPublication, publication);
 assert.equal(JSON.parse(sourceCatalog).refresh.mode, "explicit-exact-release");
 assert.equal(JSON.parse(sourceCatalog).refresh.source, "github-release");
 assert.equal(JSON.parse(sourceCatalog).refresh.movingSelectorsAllowed, false);
+assert.deepEqual(JSON.parse(sourceCatalog).releaseModel, {
+  source: "github-release",
+  selection: "exact-tag",
+  assetAuthority: "product-repository",
+  productVariance: "evidence-and-packaging-adapter-only",
+});
 for (const product of JSON.parse(sourceCatalog).products) {
   for (const version of product.versions) {
     assert.ok(version.targets.some((target) => target.platform === "windows-x64"), `${product.id}@${version.version} missing Windows x64`);
+    const releasePrefix = `${product.repository}/releases/download/${version.tag}/`;
+    for (const target of version.targets) {
+      for (const asset of [target.artifact, target.provenance, target.delegate].filter(Boolean)) {
+        assert.ok(asset.url.startsWith(releasePrefix), `${product.id}@${version.version}/${target.platform} escapes its GitHub Release`);
+      }
+    }
   }
 }
 
@@ -93,6 +105,7 @@ for (const productId of ["kfd", "buildchain", "kungfu"]) {
 assert.ok(installPage.includes("Homebrew owns package-manager installation, upgrades, and removal"));
 assert.ok(installPage.includes("are the canonical public entries"));
 assert.ok(installPage.includes("one reviewed Site catalog that projects exact product-owned GitHub Releases"));
+assert.ok(installPage.includes("differ only in how their release-owned packages and evidence are interpreted"));
 assert.ok(installPage.includes("curl -fsSL https://libkungfu.dev/install.sh | sh"));
 assert.ok(installPage.includes("irm https://libkungfu.dev/install.ps1 | iex"));
 assert.ok(installPage.includes("both installers default to Kungfu"));

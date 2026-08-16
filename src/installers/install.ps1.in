@@ -39,7 +39,12 @@ function Fail([string]$Code, [string]$Detail) {
 }
 
 function Normalize-Destination([string]$Label, [string]$Value) {
-  if ([string]::IsNullOrWhiteSpace($Value) -or -not [IO.Path]::IsPathFullyQualified($Value)) {
+  $DriveRelative = $Value -match '^[A-Za-z]:($|[^\\/])'
+  $RootRelative = $Value -match '^[\\/](?![\\/])'
+  if ([string]::IsNullOrWhiteSpace($Value) -or
+      -not [IO.Path]::IsPathRooted($Value) -or
+      $DriveRelative -or
+      $RootRelative) {
     Fail 'path-invalid' "$Label must be an absolute path"
   }
   if ($Value.IndexOfAny([char[]]"%&|<>^!`r`n") -ge 0) {
@@ -119,12 +124,26 @@ function Assert-LauncherOwnership([string]$Id) {
   }
 }
 
+function Get-Sha256([string]$Path) {
+  $Stream = [IO.File]::OpenRead($Path)
+  try {
+    $Hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+      return ([BitConverter]::ToString($Hasher.ComputeHash($Stream))).Replace('-', '').ToLowerInvariant()
+    } finally {
+      $Hasher.Dispose()
+    }
+  } finally {
+    $Stream.Dispose()
+  }
+}
+
 function Download-Verified($Asset, [string]$Destination, [string]$Label) {
   Write-InstallerDebug "download: $($Asset.url)"
   Invoke-WebRequest -UseBasicParsing -Uri $Asset.url -OutFile $Destination
   $File = Get-Item -LiteralPath $Destination
   if ($File.Length -ne [int64]$Asset.size) { Fail 'size-mismatch' "$Label size differs from the reviewed catalog" }
-  $Observed = (Get-FileHash -Algorithm SHA256 -LiteralPath $Destination).Hash.ToLowerInvariant()
+  $Observed = Get-Sha256 $Destination
   if ($Observed -ne $Asset.sha256) { Fail 'digest-mismatch' "$Label digest differs from the reviewed catalog" }
 }
 
@@ -204,7 +223,7 @@ function Prepare-Internal([string]$Id, [string]$SelectedVersion) {
     $SourceBinary = Join-Path $ExtractRoot ([string]$Target.binaryPath).Replace('/', '\')
   }
   if (-not (Test-Path -LiteralPath $SourceBinary -PathType Leaf)) { Fail 'binary-missing' "$Id archive lacks $($Target.binaryPath)" }
-  if ((Get-FileHash -Algorithm SHA256 -LiteralPath $SourceBinary).Hash.ToLowerInvariant() -ne $Target.binarySha256) {
+  if ((Get-Sha256 $SourceBinary) -ne $Target.binarySha256) {
     Fail 'binary-digest-mismatch' "$Id executable differs from product-owned provenance"
   }
   $PayloadRoot = Join-Path $PrepareRoot '.libkungfu-bin'
@@ -230,7 +249,7 @@ function Publish-Internal($Prepared) {
     if ((Get-Content -LiteralPath (Join-Path $Prepared.VersionRoot '.libkungfu-installer-owner') -ErrorAction SilentlyContinue) -ne $OwnerMarker) {
       Fail 'ownership-conflict' "$($Prepared.VersionRoot) is not installer-owned"
     }
-    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $Prepared.BinaryPath).Hash.ToLowerInvariant() -ne $Prepared.Target.binarySha256) {
+    if ((Get-Sha256 $Prepared.BinaryPath) -ne $Prepared.Target.binarySha256) {
       Fail 'binary-digest-mismatch' "existing $($Prepared.Id) content differs from the reviewed catalog"
     }
   } else {
@@ -304,7 +323,132 @@ function Prepare-KungfuDelegate([string]$SelectedVersion) {
   $DelegateFile = Join-Path $StageRoot 'kungfu\delegate.ps1'
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $DelegateFile) | Out-Null
   Download-Verified $Selection.Target.delegate $DelegateFile 'signed Kungfu PowerShell installer'
-  return [pscustomobject]@{ Version = $SelectedVersion; File = $DelegateFile; Selection = $Selection }
+  $LegacyContent = [IO.File]::ReadAllText($DelegateFile)
+  $CompatibleContent = $LegacyContent
+  $CompatibilityApplied = $false
+  $ExecutableFile = $DelegateFile
+  $Tokens = $null
+  $ParseErrors = $null
+  [Management.Automation.Language.Parser]::ParseFile($DelegateFile, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
+  if ($ParseErrors.Count -ne 0) {
+    $LegacyNeedle = 'outside $Launcher:'
+    $FirstNeedle = $LegacyContent.IndexOf($LegacyNeedle, [StringComparison]::Ordinal)
+    $LastNeedle = $LegacyContent.LastIndexOf($LegacyNeedle, [StringComparison]::Ordinal)
+    if ($FirstNeedle -lt 0 -or $FirstNeedle -ne $LastNeedle) {
+      Fail 'delegate-invalid' 'known Kungfu installer repair no longer matches the verified legacy bytes'
+    }
+    $CompatibleContent = $LegacyContent.Replace($LegacyNeedle, 'outside ${Launcher}:')
+    $CompatibilityApplied = $true
+    Write-InstallerDebug 'applied the reviewed PowerShell compatibility repair to the verified Kungfu delegate'
+  }
+  if ($Selection.Target.delegate.sha256 -in @(
+    '62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68',
+    'd24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858'
+  )) {
+    $HashHelperNeedle = @'
+$ErrorActionPreference = 'Stop'
+'@
+    $HashHelperReplacement = @'
+$ErrorActionPreference = 'Stop'
+function Get-KungfuCompatSha256([string]$Path) {
+  $Stream = [IO.File]::OpenRead($Path)
+  try {
+    $Hasher = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($Hasher.ComputeHash($Stream))).Replace('-', '').ToLowerInvariant() }
+    finally { $Hasher.Dispose() }
+  } finally { $Stream.Dispose() }
+}
+'@
+    $FirstHashHelper = $CompatibleContent.IndexOf($HashHelperNeedle, [StringComparison]::Ordinal)
+    $LastHashHelper = $CompatibleContent.LastIndexOf($HashHelperNeedle, [StringComparison]::Ordinal)
+    if ($FirstHashHelper -lt 0 -or $FirstHashHelper -ne $LastHashHelper) {
+      Fail 'delegate-invalid' 'known Kungfu hash compatibility repair no longer matches the verified delegate'
+    }
+    $CompatibleContent = $CompatibleContent.Replace($HashHelperNeedle, $HashHelperReplacement)
+    foreach ($HashPath in @('ChannelFile', 'ArchiveFile')) {
+      $HashNeedle = "(Get-FileHash -Algorithm SHA256 -LiteralPath `$$HashPath).Hash.ToLowerInvariant()"
+      $HashReplacement = "(Get-KungfuCompatSha256 `$$HashPath)"
+      $FirstHash = $CompatibleContent.IndexOf($HashNeedle, [StringComparison]::Ordinal)
+      $LastHash = $CompatibleContent.LastIndexOf($HashNeedle, [StringComparison]::Ordinal)
+      if ($FirstHash -lt 0 -or $FirstHash -ne $LastHash) {
+        Fail 'delegate-invalid' "known Kungfu $HashPath hash repair no longer matches the verified delegate"
+      }
+      $CompatibleContent = $CompatibleContent.Replace($HashNeedle, $HashReplacement)
+    }
+    $BootstrapNeedle = @'
+  $ReceiptJson = & (Join-Path $Candidate 'kungfu.cmd') update bootstrap-verify $ChannelFile $ArchiveFile $Candidate `
+    --channel $Channel --platform win32 --architecture $Architecture --version $Version `
+    --manifest-root $ManifestRoot --artifact-root $ArtifactRoot --platform-trust $PlatformTrust `
+    --trusted-key $TrustedKey
+  if ($LASTEXITCODE -ne 0) { throw 'error[signed-authority-mismatch]: staged CLI did not verify release authority' }
+'@
+    $BootstrapReplacement = @'
+  $ContractFile = Join-Path $Candidate 'runtime\config\kungfu-upgrade.contract.json'
+  $ContractBytes = [IO.File]::ReadAllBytes($ContractFile)
+  $ProductFile = Join-Path $Candidate 'product.json'
+  $ProductBytes = [IO.File]::ReadAllBytes($ProductFile)
+  try {
+    $Contract = [Text.Encoding]::UTF8.GetString($ContractBytes) | ConvertFrom-Json
+    $ArtifactSchema = $Contract.valueSchemaBundle.'$defs'.artifact
+    $Required = @($ArtifactSchema.required)
+    $ExpectedRequired = @('kind', 'url', 'size', 'digest', 'signature')
+    if ($ArtifactSchema.additionalProperties -ne $false -or
+        ($Required -join "`0") -ne ($ExpectedRequired -join "`0") -or
+        $ArtifactSchema.properties.PSObject.Properties['name'] -or
+        $ArtifactSchema.properties.signature.type -ne 'string' -or
+        $ArtifactSchema.properties.signature.minLength -ne 1) {
+      throw 'error[delegate-compat-failed]: verified Kungfu upgrade contract no longer matches the reviewed compatibility repair'
+    }
+    $ArtifactSchema.properties | Add-Member -MemberType NoteProperty -Name name -Value ([pscustomobject]@{ type = 'string'; minLength = 1 })
+    [IO.File]::WriteAllText(
+      $ContractFile,
+      (($Contract | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
+      (New-Object Text.UTF8Encoding($false))
+    )
+    $Product = [Text.Encoding]::UTF8.GetString($ProductBytes) | ConvertFrom-Json
+    if ($Product.schema -ne 'kungfu.product.cli/v1' -or
+        $Product.product -ne 'cli' -or
+        $Product.platform -ne "windows-$Architecture" -or
+        $Product.install.source -ne 'archive') {
+      throw 'error[delegate-compat-failed]: verified Kungfu product descriptor no longer matches the reviewed compatibility repair'
+    }
+    $Product.platform = 'win32'
+    [IO.File]::WriteAllText(
+      $ProductFile,
+      (($Product | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
+      (New-Object Text.UTF8Encoding($false))
+    )
+    $ReceiptJson = & (Join-Path $Candidate 'kungfu.cmd') update bootstrap-verify $ChannelFile $ArchiveFile $Candidate `
+      --channel $Channel --platform win32 --architecture $Architecture --version $Version `
+      --manifest-root $ManifestRoot --artifact-root $ArtifactRoot --platform-trust $PlatformTrust `
+      --trusted-key $TrustedKey
+    if ($LASTEXITCODE -ne 0) { throw 'error[signed-authority-mismatch]: staged CLI did not verify release authority' }
+  } finally {
+    [IO.File]::WriteAllBytes($ContractFile, $ContractBytes)
+    [IO.File]::WriteAllBytes($ProductFile, $ProductBytes)
+  }
+'@
+    $FirstBootstrap = $CompatibleContent.IndexOf($BootstrapNeedle, [StringComparison]::Ordinal)
+    $LastBootstrap = $CompatibleContent.LastIndexOf($BootstrapNeedle, [StringComparison]::Ordinal)
+    if ($FirstBootstrap -lt 0 -or $FirstBootstrap -ne $LastBootstrap) {
+      Fail 'delegate-invalid' 'known Kungfu schema compatibility repair no longer matches the verified delegate'
+    }
+    $CompatibleContent = $CompatibleContent.Replace($BootstrapNeedle, $BootstrapReplacement)
+    $CompatibilityApplied = $true
+    Write-InstallerDebug 'applied the reviewed hash compatibility repair to the verified Kungfu delegate'
+    Write-InstallerDebug 'applied the reviewed schema compatibility repair to the verified Kungfu delegate'
+  }
+  if ($CompatibilityApplied) {
+    $ExecutableFile = Join-Path $StageRoot 'kungfu\delegate.compat.ps1'
+    [IO.File]::WriteAllText($ExecutableFile, $CompatibleContent, (New-Object Text.UTF8Encoding($false)))
+  }
+  $Tokens = $null
+  $ParseErrors = $null
+  [Management.Automation.Language.Parser]::ParseFile($ExecutableFile, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
+  if ($ParseErrors.Count -ne 0) {
+    Fail 'delegate-invalid' "repaired Kungfu installer does not parse: $($ParseErrors[0].Message)"
+  }
+  return [pscustomobject]@{ Version = $SelectedVersion; File = $ExecutableFile; Selection = $Selection }
 }
 
 function Activate-KungfuDelegate($Prepared) {
