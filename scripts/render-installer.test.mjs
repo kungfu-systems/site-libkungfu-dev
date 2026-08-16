@@ -121,6 +121,12 @@ while [ "$#" -gt 0 ]; do
     *) shift ;;
   esac
 done
+launcher="$bin_dir/kungfu"
+existing=$(command -v kungfu 2>/dev/null || true)
+if [ -n "$existing" ] && [ "$existing" != "$launcher" ] && [ "$existing" != "\${KUNGFU_INSTALL_ALLOW_EXISTING:-}" ]; then
+  printf '%s\n' "fixture ownership conflict: $existing" >&2
+  exit 43
+fi
 [ "$dry_run" -eq 0 ] || exit 0
 [ "\${FIXTURE_DELEGATE_FAIL:-0}" -eq 0 ] || exit 42
 root="$install_dir/versions/$version-fixture"
@@ -340,6 +346,49 @@ test("streamed no-argument execution defaults to Kungfu without breaking its pro
   assert.match(result.stderr, /installed: kungfu/);
   assert.ok(fs.existsSync(path.join(root, "home", ".local", "bin", "kungfu")));
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("a verified Homebrew formula can be preserved and shadowed by the user installer", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "libkungfu-installer-homebrew-test-"));
+  try {
+    const fixture = createFixture(root);
+    const home = path.join(root, "home");
+    const binDir = path.join(home, ".local", "bin");
+    const brewRoot = path.join(root, "homebrew");
+    const brewBin = path.join(brewRoot, "bin");
+    const formulaPrefix = path.join(brewRoot, "opt", "kungfu");
+    const formulaCommand = path.join(formulaPrefix, "bin", "kungfu");
+    fs.mkdirSync(brewBin, { recursive: true });
+    fs.mkdirSync(path.dirname(formulaCommand), { recursive: true });
+    writeExecutable(formulaCommand, "#!/bin/sh\nprintf '%s\\n' 'kungfu 4.0.0-alpha.1 homebrew'\n");
+    fs.symlinkSync(formulaCommand, path.join(brewBin, "kungfu"));
+    writeExecutable(path.join(fixture.fakeBin, "brew"), `#!/bin/sh
+case "\${1:-}:\${2:-}" in
+  --prefix:) printf '%s\\n' '${brewRoot}' ;;
+  --prefix:kungfu-systems/tap/kungfu) printf '%s\\n' '${formulaPrefix}' ;;
+  *) exit 1 ;;
+esac
+`);
+    const lateUserBin = run("sh", [fixture.installerFile, "--dry-run"], {
+      env: fixtureEnv(root, fixture.fakeBin, {
+        PATH: `${fixture.fakeBin}:${brewBin}:${binDir}:/usr/bin:/bin`,
+      }),
+    });
+    assert.notEqual(lateUserBin.status, 0);
+    assert.match(lateUserBin.stderr, /error\[ownership-conflict\]/);
+    const env = fixtureEnv(root, fixture.fakeBin, {
+      PATH: `${binDir}:${fixture.fakeBin}:${brewBin}:/usr/bin:/bin`,
+    });
+    const result = run("sh", [fixture.installerFile], { env });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /note\[homebrew-shadowed\].*preserving/);
+    assert.ok(fs.lstatSync(path.join(binDir, "kungfu")).isSymbolicLink());
+    assert.equal(fs.existsSync(formulaCommand), true);
+    const installed = run(path.join(binDir, "kungfu"), [], { env });
+    assert.match(installed.stdout, /kungfu 4\.0\.0-alpha\.1/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("unsupported Linux libc fails before any Kungfu download", () => {
