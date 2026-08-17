@@ -34,7 +34,10 @@ ai_provenance:
   `/dogfood/parallel-runtime-paths.json`, the complete normalized record set at
   `/dogfood/agent-output-comparison-data.json`, the Buildchain operating-window
   record set at `/dogfood/agent-output-comparison-operating-data.json`, and
-  their adjacent SHA-256 files.
+  their adjacent SHA-256 files. The repository-native narrative report is
+  [`docs/research/parallel-runtime-paths.md`](research/parallel-runtime-paths.md),
+  which keeps the 75x calculation, scope, limitations, and reproduction path
+  readable on GitHub while linking back to the interactive page.
 - Use `https://libkungfu.dev/skills/` for the user-facing Skills value,
   comparison, release example, and no-code path. Continue to `/skills/spec/`
   for exact technical evidence and `/skills/roadmap/` for current, next, and
