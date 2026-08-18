@@ -1,36 +1,32 @@
----
-status: published-analysis
-period: 2026-06-16/2026-08-01
-theme: agent-mediated-engineering-output
-doc_type: analysis
-source_level: public-github-data
-confidence: high
-sensitivity: public
-evidence_grade: A
-review_state: self-reviewed
-last_reviewed: 2026-08-17
----
-
-# One human. Agents. Two thirty-day windows.
-
-> The interactive version, charts, downloadable records, and machine-readable
-> analysis are available at
-> [libkungfu.dev/dogfood/parallel-runtime-paths](https://libkungfu.dev/dogfood/parallel-runtime-paths/).
+# One human. Agents. 3,913 merged PRs in 30 days.
 
 ## Summary
 
-This is first-party analysis published by the Kungfu project. The underlying
-records, collection code, and limitations are public so that the calculation
-can be challenged independently.
+From July 2 through August 1, 2026, one primary account carried **3,913 merged
+public PRs** while one human directed Agents across the Kungfu system. The
+complete public system recorded 4,065 merged PRs across 16 repositories.
 
-This report compares public GitHub delivery from two Agent-runtime projects:
-[Google AX](https://github.com/google/ax) and the public repositories in
-[Kungfu Systems](https://github.com/kungfu-systems). Both projects treat durable
-state, recovery, continuation, and inspection as runtime concerns. They are not
-equivalent products, but their goals are close enough to make their visible
-organization forms worth comparing.
+In the same fixed 30-day window, all four visible author accounts in
+[Google AX](https://github.com/google/ax) merged 52 PRs. The primary Kungfu
+account therefore carried **75.25x** as many merged public PRs as the complete
+visible AX team.
 
-The headline observation comes from one fixed 30-day operating window:
+OpenAI provides a second reference point. Its
+[Harness engineering](https://openai.com/index/harness-engineering/) article
+reports roughly 1,500 opened and merged PRs over five months with a small team
+of three engineers driving Codex; the team had grown to seven by publication.
+Kungfu's primary-account count in 30 days is about **2.6x** that reported
+five-month total. The complete Kungfu count is about **2.7x**.
+
+This report publishes the records, collector, checks, and source boundaries
+behind those observations. The interpretation boundaries are collected at the
+end so the evidence can be read first.
+
+> Explore the interactive charts, downloadable records, and machine-readable
+> analysis at
+> [libkungfu.dev/dogfood/parallel-runtime-paths](https://libkungfu.dev/dogfood/parallel-runtime-paths/).
+
+The fixed-window calculation is:
 
 ```text
 2026-07-02 00:00 UTC through 2026-08-01 00:00 UTC
@@ -40,24 +36,35 @@ The headline observation comes from one fixed 30-day operating window:
 3,913 / 52 = 75.25
 ```
 
-Rounded to the nearest whole number, that is **75x more merged public PRs** from
-one primary Kungfu account than from the complete visible AX team in the same
-calendar window.
+Rounded to the nearest whole number, the same-window Google AX comparison is
+**75x**.
 
-This is a public responsibility-throughput anomaly. It is **not** a claim of
-75x engineering productivity, 75x more features, 75x higher quality, or 75x
-more valuable work.
+## Three systems and two evidence classes
+
+| System | Evidence | Observation window | Responsibility surface | Merged PRs |
+| --- | --- | --- | --- | ---: |
+| Google AX | Reproducible public GitHub records | `2026-07-02` through `2026-08-01` | One public repository; four visible author accounts | 52 |
+| OpenAI Harness engineering | Official OpenAI first-party report | About five months after the first commit in late August 2025 | One non-public repository; three engineers driving Codex, seven by publication | About 1,500 |
+| Kungfu Systems | Reproducible public GitHub records | `2026-07-02` through `2026-08-01` | Sixteen public repositories; one primary account carried 96.26% | 4,065 total; 3,913 primary |
+
+The Google coordinate answers a strict same-window public-data question. The
+OpenAI coordinate answers a different question: how the Kungfu record compares
+with one of the strongest publicly described examples of an Agent-first
+engineering organization.
 
 ## What is being compared
 
-The scopes preserve the two organization forms that actually produced the
-public records:
+The scopes preserve the organization forms that produced each observation:
 
 - **Google AX:** one professional Agent-runtime repository with every visible
   PR author account included.
 - **Kungfu:** one human directing Agents across the complete public product,
   protocol, build, release, site, and publication system. One GitHub account is
   responsible for more than 96% of its merged PRs in the operating window.
+- **OpenAI Harness engineering:** a non-public, single-repository product built
+  under a no-manually-written-code constraint. OpenAI reports that three
+  engineers drove Codex, that the team had grown to seven by publication, and
+  that roughly 1,500 PRs were opened and merged over five months.
 
 Reducing Kungfu to one repository would omit the release and maintenance work
 that the same human-Agent system had to carry. Reducing AX to its leading
@@ -82,9 +89,9 @@ The first strict 30-day window runs from `2026-06-16T00:00:00Z` through
 
 Kungfu v4 engineering began on June 16, but systematic PR-mediated settlement
 did not begin until June 29. The record contains 99 default-branch commits over
-12 active days before that boundary. Those commits are not converted into
-synthetic PRs. This window preserves the bootstrap history, but it is not used
-as a steady-state efficiency measure.
+12 active days before that boundary. Those commits remain commits rather than
+synthetic PRs. This window preserves the bootstrap history; the operating
+window below supplies the headline comparison.
 
 ### Window 2: Buildchain operating
 
@@ -101,9 +108,8 @@ The second strict 30-day window runs from `2026-07-02T00:00:00Z` through
 
 Within the Kungfu total, the primary account carried 3,913 merged PRs, or
 96.26% of the observed total. Its median gross change size was 119 lines per
-PR, compared with 92 lines across all AX PRs. This stress check does not make
-the PRs equivalent, but it does show that the count gap is not explained by a
-lower Kungfu median change size.
+PR, compared with 92 lines across all AX PRs. The count gap therefore coexists
+with a higher Kungfu median gross change size in this window.
 
 Two ratios answer different questions:
 
@@ -114,43 +120,31 @@ Two ratios answer different questions:
 
 ## Evidence of Agent participation
 
-This is not a comparison between one project that uses Agents and another that
-does not.
+Agent participation is directly visible or explicitly reported in all three
+systems.
 
 The AX default-branch history before the cutoff contains seven commits with an
 explicit Gemini Code Assist co-author marker. The Kungfu v4 history from June
 16 through August 1 contains 135 uniquely attributed commits: 78 Codex, 34
 Claude, 21 Cursor, and 2 Amp.
 
-These markers prove that some Agent participation is publicly observable in
-both histories. They do not prove Agent authorship of every change, autonomous
-operation, equal Agent usage, or that Agent mediation alone caused the output
-gap.
+These markers make Agent participation publicly observable in both histories.
 
-## What the result does not prove
+OpenAI's evidence is explicit but different: the company states that Codex
+wrote every line in the repository and that humans never directly contributed
+code. Its article also reports roughly one million lines and hundreds of
+internal users.
 
-The following boundaries are part of the result, not footnotes to it:
+## What this establishes
 
-1. A merged PR is a public work item, not a feature, quality, maturity, labor,
-   or value unit.
-2. Google internal work and every other form of private work are outside the
-   dataset.
-3. AX is measured as one product repository. Kungfu is measured as the public
-   multi-repository system carried by the same operating organization.
-4. GitHub author accounts are public responsibility identities. They do not
-   establish employment roles, labor hours, or individual authorship of every
-   line.
-5. Kungfu PRs act as settlement objects, while AX PRs follow a conventional
-   contribution workflow. The units are not interchangeable features.
-6. Gross line and file counts can include generated files, vendored material,
-   formatting, and repeated edits.
-7. Different review, merge, and PR-splitting disciplines remain a confounder.
+The exact public-data comparison shows one accountable Kungfu identity carrying
+a radically larger visible engineering and settlement surface than the complete
+visible Google AX team in the same 30-day window.
 
-The defensible conclusion is therefore narrow: during the fixed operating
-window, one accountable human identity in the Kungfu system carried a radically
-larger visible engineering and settlement surface than the complete visible
-team of another professional Agent-runtime project. The public record does not,
-by itself, identify a single cause.
+The OpenAI report supplies a second scale coordinate: Kungfu's primary-account
+count in one month exceeds OpenAI's reported total for five months. Together,
+the two references establish that the Kungfu record is unusual enough to demand
+an explanation of the operating system behind it.
 
 ## Reproduce the observation
 
@@ -191,6 +185,7 @@ Repository evidence:
 
 Public evidence:
 
+- [OpenAI: Harness engineering](https://openai.com/index/harness-engineering/)
 - [Interactive comparison and charts](https://libkungfu.dev/dogfood/parallel-runtime-paths/)
 - [Machine-readable analysis](https://libkungfu.dev/dogfood/parallel-runtime-paths.json)
 - [Complete bootstrap records](https://libkungfu.dev/dogfood/agent-output-comparison-data.json)
@@ -201,3 +196,36 @@ Public evidence:
 The records are published so that readers can reject the headline metric,
 define a different unit, remove categories they consider inappropriate, or
 test whether another explanation fits the same public history better.
+
+## Interpretation boundaries
+
+This is first-party analysis published by the Kungfu project. These boundaries
+apply to every number and comparison above:
+
+1. A merged PR is a public work item, not a feature, quality, maturity, labor,
+   productivity, or value unit.
+2. Google AX and Kungfu use reproducible public GitHub records. OpenAI's figures
+   are approximate first-party disclosures from a non-public repository; the
+   linked OpenAI article is their authority.
+3. The OpenAI repository's exact PR records, dates, author distribution, and
+   matching 30-day slice are unavailable. The `2.6x` and `2.7x` figures are raw
+   contextual ratios rather than normalized productivity measures.
+4. Google internal work and every other form of non-public work are outside the
+   reproducible dataset.
+5. AX is measured as one public product repository. Kungfu is measured as the
+   16-repository public system carried by the same operating organization.
+6. GitHub author accounts are public responsibility identities. They do not
+   establish employment roles, labor hours, or individual authorship of every
+   line.
+7. Kungfu PRs act as settlement objects, while AX PRs follow a conventional
+   contribution workflow. Review, merge, and PR-splitting disciplines differ.
+8. Agent markers establish observable participation in part of the AX and
+   Kungfu histories. They do not establish Agent authorship of every change,
+   equal Agent usage, autonomous operation, or a single cause for the gap.
+9. Gross line and file counts can include generated files, vendored material,
+   formatting, and repeated edits.
+10. OpenAI reports hundreds of internal users for its product. This report does
+    not claim equivalent adoption, product maturity, or user value for Kungfu.
+11. The observations establish an unusual public throughput pattern. They do
+    not establish that Kungfu is superior, that the work units are equivalent,
+    or that any one mechanism caused the difference.
