@@ -28,6 +28,33 @@ with future dynamic adapters. Buildchain remains the deployment state machine:
 the release object is source commit plus build artifact plus deploy target plus
 channel plus deployment manifest.
 
+## GitHub Pages Disaster Mirror
+
+`https://mirror.libkungfu.dev` is a non-canonical disaster mirror, not another
+Buildchain channel. `.github/workflows/pages-disaster-mirror.yml` reacts only
+to a successful GitHub `production` deployment status (or an exact manual
+replay). Before Pages receives any bytes, it proves that the source run is a
+successful `Buildchain Web Surface` push on `main`, the deployment status came
+from that run, and the run contains exactly one production Release Passport
+and one artifact. The projector then recomputes Buildchain's artifact hash and
+requires it to match the passport.
+
+The projected output preserves primary canonical URLs, adds `noindex` and a
+visible disaster banner to every HTML page, writes a status document plus
+SHA-256 sidecar, and adapts cross-surface navigation to the single Pages host.
+A scheduled readback uses only public HTTP and fails if routes, canonical
+links, the banner, `noindex`, status, or the status digest drift.
+
+Incident entry:
+
+1. Verify the primary from more than one network.
+2. Open `https://mirror.libkungfu.dev/incident/` and inspect
+   `/.well-known/kungfu-mirror-status.json`.
+3. Use the mirror only for read-only documentation and downloads.
+4. Do not infer primary health or release qualification from mirror health.
+5. Return readers to the primary after recovery. DNS enable/disable steps are
+   owned by the infrastructure repository runbook.
+
 Every site build resolves the public dogfood latest alias to its matching
 immutable snapshot, verifies the repository evidence contract and identical
 bytes, and keeps that admitted snapshot at `/dogfood-evidence.json`. The

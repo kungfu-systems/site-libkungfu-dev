@@ -1,0 +1,196 @@
+name: Pages Disaster Mirror
+
+on:
+  deployment_status:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Exact successful Buildchain production workflow run"
+        required: false
+        type: string
+      production_deployment_id:
+        description: "Exact successful production deployment"
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+  id-token: write
+  pages: write
+
+concurrency:
+  group: pages-disaster-mirror
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment.environment == 'production' &&
+       github.event.deployment_status.state == 'success') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout mirror projector from the protected default branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Resolve exact production-approved source
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_DEPLOYMENT_ID: ${{ github.event.deployment.id }}
+          EVENT_DEPLOYMENT_ENVIRONMENT: ${{ github.event.deployment.environment }}
+          EVENT_DEPLOYMENT_STATE: ${{ github.event.deployment_status.state }}
+          EVENT_DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
+          EVENT_DEPLOYMENT_LOG_URL: ${{ github.event.deployment_status.log_url }}
+          INPUT_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          INPUT_PRODUCTION_DEPLOYMENT_ID: ${{ inputs.production_deployment_id }}
+        run: |
+          set -euo pipefail
+          deployment_id="$EVENT_DEPLOYMENT_ID"
+          source_run_id=""
+          if [ "$EVENT_NAME" = "deployment_status" ]; then
+            test "$EVENT_DEPLOYMENT_ENVIRONMENT" = "production"
+            test "$EVENT_DEPLOYMENT_STATE" = "success"
+            source_run_id="$(printf '%s' "$EVENT_DEPLOYMENT_LOG_URL" | sed -nE 's#^.*/actions/runs/([0-9]+)(/.*)?$#\1#p')"
+          else
+            deployment_id="$INPUT_PRODUCTION_DEPLOYMENT_ID"
+            source_run_id="$INPUT_SOURCE_RUN_ID"
+          fi
+          test -n "$deployment_id"
+          test -n "$source_run_id"
+
+          gh api "repos/$REPOSITORY/deployments/$deployment_id" > /tmp/mirror-deployment.json
+          test "$(jq -r '.environment' /tmp/mirror-deployment.json)" = "production"
+          source_sha="$(jq -r '.sha' /tmp/mirror-deployment.json)"
+          gh api "repos/$REPOSITORY/deployments/$deployment_id/statuses?per_page=100" > /tmp/mirror-deployment-statuses.json
+          jq -e --arg run "/actions/runs/$source_run_id" 'map(select(.state == "success" and (.log_url | contains($run)))) | length > 0' /tmp/mirror-deployment-statuses.json >/dev/null
+
+          gh api "repos/$REPOSITORY/actions/runs/$source_run_id" > /tmp/mirror-source-run.json
+          test "$(jq -r '.name' /tmp/mirror-source-run.json)" = "Buildchain Web Surface"
+          test "$(jq -r '.event' /tmp/mirror-source-run.json)" = "push"
+          test "$(jq -r '.head_branch' /tmp/mirror-source-run.json)" = "main"
+          test "$(jq -r '.head_sha' /tmp/mirror-source-run.json)" = "$source_sha"
+          test "$(jq -r '.status' /tmp/mirror-source-run.json)" = "completed"
+          test "$(jq -r '.conclusion' /tmp/mirror-source-run.json)" = "success"
+          if [ "$EVENT_NAME" = "deployment_status" ]; then
+            test "$EVENT_DEPLOYMENT_SHA" = "$source_sha"
+          fi
+
+          gh api "repos/$REPOSITORY/actions/runs/$source_run_id/artifacts?per_page=100" > /tmp/mirror-artifacts.json
+          artifact_count="$(jq '[.artifacts[] | select(.name == "buildchain-web-surface-artifact" and .expired == false)] | length' /tmp/mirror-artifacts.json)"
+          passport_count="$(jq '[.artifacts[] | select(.name == "buildchain-web-surface-production-release-passport" and .expired == false)] | length' /tmp/mirror-artifacts.json)"
+          test "$artifact_count" = "1"
+          test "$passport_count" = "1"
+          artifact_id="$(jq -r '.artifacts[] | select(.name == "buildchain-web-surface-artifact" and .expired == false) | .id' /tmp/mirror-artifacts.json)"
+          artifact_digest="$(jq -r '.artifacts[] | select(.name == "buildchain-web-surface-artifact" and .expired == false) | .digest' /tmp/mirror-artifacts.json)"
+          passport_id="$(jq -r '.artifacts[] | select(.name == "buildchain-web-surface-production-release-passport" and .expired == false) | .id' /tmp/mirror-artifacts.json)"
+          passport_digest="$(jq -r '.artifacts[] | select(.name == "buildchain-web-surface-production-release-passport" and .expired == false) | .digest' /tmp/mirror-artifacts.json)"
+          {
+            echo "source-run-id=$source_run_id"
+            echo "source-sha=$source_sha"
+            echo "source-run-event=$(jq -r '.event' /tmp/mirror-source-run.json)"
+            echo "source-run-head-branch=$(jq -r '.head_branch' /tmp/mirror-source-run.json)"
+            echo "source-run-conclusion=$(jq -r '.conclusion' /tmp/mirror-source-run.json)"
+            echo "production-deployment-id=$deployment_id"
+            echo "artifact-id=$artifact_id"
+            echo "artifact-digest=$artifact_digest"
+            echo "passport-id=$passport_id"
+            echo "passport-digest=$passport_digest"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download exact production artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ steps.source.outputs.artifact-id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.source-run-id }}
+          path: .mirror/input
+
+      - name: Download exact production passport
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ steps.source.outputs.passport-id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.source-run-id }}
+          path: .mirror/passport
+
+      - name: Project the non-canonical mirror
+        run: |
+          set -euo pipefail
+          passport="$(find .mirror/passport -type f -name '*.json' -print -quit)"
+          test -n "$passport"
+          node scripts/pages-disaster-mirror.mjs prepare \
+            --artifact-root .mirror/input \
+            --artifact-prefix dist \
+            --passport "$passport" \
+            --output .mirror/output \
+            --repository "${{ github.repository }}" \
+            --source-run-id "${{ steps.source.outputs.source-run-id }}" \
+            --source-run-event "${{ steps.source.outputs.source-run-event }}" \
+            --source-run-head-branch "${{ steps.source.outputs.source-run-head-branch }}" \
+            --source-run-conclusion "${{ steps.source.outputs.source-run-conclusion }}" \
+            --source-sha "${{ steps.source.outputs.source-sha }}" \
+            --artifact-digest "${{ steps.source.outputs.artifact-digest }}" \
+            --passport-digest "${{ steps.source.outputs.passport-digest }}" \
+            --production-deployment-id "${{ steps.source.outputs.production-deployment-id }}" \
+            --production-deployment-status success \
+            --mirror-host mirror.libkungfu.dev \
+            --primary-host libkungfu.dev
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: .mirror/output
+
+      - name: Deploy Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
+
+      - name: Verify public mirror readback
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source-sha }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            echo "mirror readback attempt $attempt of 6"
+            if node scripts/pages-disaster-mirror.mjs verify \
+              --base-url https://mirror.libkungfu.dev \
+              --expected-mirror-host mirror.libkungfu.dev \
+              --expected-source-sha "$SOURCE_SHA"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+  scheduled-readback:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout verifier only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify public mirror without AWS credentials
+        run: >-
+          node scripts/pages-disaster-mirror.mjs verify
+          --base-url https://mirror.libkungfu.dev
+          --expected-mirror-host mirror.libkungfu.dev
