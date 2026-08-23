@@ -12,6 +12,7 @@
     "collect:agent-output-comparisons": "node scripts/collect-agent-output-comparison.mjs --window bootstrap && node scripts/collect-agent-output-comparison.mjs --window operating",
     "check:agent-output-comparison": "node scripts/check-agent-output-comparison.mjs && node scripts/check-agent-output-comparison.mjs src/fixtures/agent-output-comparison-operating.snapshot.json",
     "check:paper-propagation": "node scripts/check-paper-propagation.cjs",
+    "check:pages-mirror": "node --test scripts/pages-disaster-mirror.test.mjs",
     "site:update": "node scripts/site-upstream-agent.cjs",
     "upstream:pickup": "node scripts/code-upstream-pickup.cjs",
     "installer:refresh": "node scripts/refresh-installer-catalog.mjs",
