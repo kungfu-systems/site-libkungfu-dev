@@ -78,7 +78,16 @@ jobs:
           gh api "repos/$REPOSITORY/deployments/$deployment_id/statuses?per_page=100" > /tmp/mirror-deployment-statuses.json
           jq -e --arg run "/actions/runs/$source_run_id" 'map(select(.state == "success" and (.log_url | contains($run)))) | length > 0' /tmp/mirror-deployment-statuses.json >/dev/null
 
-          gh api "repos/$REPOSITORY/actions/runs/$source_run_id" > /tmp/mirror-source-run.json
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            gh api "repos/$REPOSITORY/actions/runs/$source_run_id" > /tmp/mirror-source-run.json
+            source_run_status="$(jq -r '.status' /tmp/mirror-source-run.json)"
+            if [ "$source_run_status" = "completed" ]; then
+              break
+            fi
+            echo "waiting for exact source run completion: attempt $attempt of 12"
+            test "$attempt" != "12"
+            sleep 5
+          done
           test "$(jq -r '.name' /tmp/mirror-source-run.json)" = "Buildchain Web Surface"
           test "$(jq -r '.event' /tmp/mirror-source-run.json)" = "push"
           test "$(jq -r '.head_branch' /tmp/mirror-source-run.json)" = "main"
