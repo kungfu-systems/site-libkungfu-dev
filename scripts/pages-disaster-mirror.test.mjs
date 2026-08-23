@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -50,6 +51,48 @@ function fixture() {
   };
   return { root, artifactRoot, outputRoot, passportPath, options };
 }
+
+function referenceBuildchainArtifactHash(root, relativePaths, prefix = "dist") {
+  const inventory = relativePaths.map((relative) => path.join(root, relative)).sort().map((file) => {
+    const bytes = fs.readFileSync(file);
+    return {
+      path: `${prefix}/${path.relative(root, file).split(path.sep).join("/")}`,
+      size: bytes.length,
+      sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
+    };
+  });
+  const value = crypto.createHash("sha256");
+  for (const file of inventory) value.update(`${file.path}\0${file.size}\0${file.sha256}\n`);
+  return { hash: value.digest("hex"), inventory };
+}
+
+test("matches Buildchain full-path ordering for mixed-case and dotted routes", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pages-disaster-mirror-order-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const relativePaths = [
+    ".well-known/kungfu/release.json",
+    ".well-known/kungfu-release-status.json",
+    "README.md",
+    "buildchain/index.html",
+    "index.html",
+  ];
+  for (const [index, relative] of relativePaths.entries()) {
+    const file = path.join(root, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `fixture-${index}\n`);
+  }
+  const expected = referenceBuildchainArtifactHash(root, relativePaths);
+  const actual = buildchainArtifactHash(root);
+  assert.equal(actual.hash, expected.hash);
+  assert.deepEqual(actual.files, expected.inventory);
+  assert.deepEqual(actual.files.map((file) => file.path), [
+    "dist/.well-known/kungfu-release-status.json",
+    "dist/.well-known/kungfu/release.json",
+    "dist/README.md",
+    "dist/buildchain/index.html",
+    "dist/index.html",
+  ]);
+});
 
 function serverFor(root) {
   const server = http.createServer((request, response) => {
