@@ -45,7 +45,7 @@ function sha256(content) {
 function regularFiles(root) {
   const files = [];
   const visit = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
       const stat = fs.lstatSync(file);
       if (stat.isSymbolicLink()) fail(`symbolic links are not admitted: ${path.relative(root, file)}`);
@@ -55,7 +55,7 @@ function regularFiles(root) {
     }
   };
   visit(root);
-  return files;
+  return files.sort();
 }
 
 export function buildchainArtifactHash(root, prefix = "dist") {
