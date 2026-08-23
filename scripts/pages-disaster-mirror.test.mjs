@@ -94,6 +94,11 @@ test("matches Buildchain full-path ordering for mixed-case and dotted routes", (
   ]);
 });
 
+test("uploads hidden mirror status and machine entrypoints to Pages", () => {
+  const workflow = fs.readFileSync(path.join(process.cwd(), ".github/workflows/pages-disaster-mirror.yml"), "utf8");
+  assert.match(workflow, /uses: actions\/upload-pages-artifact@[^\n]+\n\s+with:\n\s+path: \.mirror\/output\n\s+include-hidden-files: true/);
+});
+
 function serverFor(root) {
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, "http://localhost").pathname;
