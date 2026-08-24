@@ -30,7 +30,7 @@ channel plus deployment manifest.
 
 ## GitHub Pages Disaster Mirror
 
-`https://mirror.libkungfu.dev` is a non-canonical disaster mirror, not another
+`https://libkungfu.org` is a non-canonical disaster mirror, not another
 Buildchain channel. `.github/workflows/pages-disaster-mirror.yml` reacts only
 to a successful GitHub `production` deployment status (or an exact manual
 replay). Before Pages receives any bytes, it proves that the source run is a
@@ -39,16 +39,19 @@ from that run, and the run contains exactly one production Release Passport
 and one artifact. The projector then recomputes Buildchain's artifact hash and
 requires it to match the passport.
 
-The projected output preserves primary canonical URLs, adds `noindex` and a
-visible disaster banner to every HTML page, writes a status document plus
-SHA-256 sidecar, and adapts cross-surface navigation to the single Pages host.
-A scheduled readback uses only public HTTP and fails if routes, canonical
-links, the banner, `noindex`, status, or the status digest drift.
+The projected output preserves primary canonical URLs, adds `noindex,follow`
+and a visible disaster banner to duplicate HTML pages, writes a status document
+plus SHA-256 sidecar, and adapts cross-surface navigation to the single Pages
+host. The unique `/incident/` entry is `index,follow`, self-canonical, and the
+only URL in `sitemap.xml`; `robots.txt` keeps duplicate pages crawlable so their
+`noindex` directives can be observed. A scheduled readback verifies this
+discovery boundary over public HTTP as well as routes, canonical links,
+banners, status, and status digest.
 
 Incident entry:
 
 1. Verify the primary from more than one network.
-2. Open `https://mirror.libkungfu.dev/incident/` and inspect
+2. Open `https://libkungfu.org/incident/` and inspect
    `/.well-known/kungfu-mirror-status.json`.
 3. Use the mirror only for read-only documentation and downloads.
 4. Do not infer primary health or release qualification from mirror health.

@@ -4367,7 +4367,7 @@ ${immutableArchive
       <p>&copy; 2026 Kungfu Origin Technology Limited.</p>${immutableArchive ? "" : `
       <p>${escapeHtml(BRAND_SIGNATURE)} is a trademark of Kungfu Origin Technology Limited.</p>`}
       <p>Open developer and agent substrate hub. Facts come from upstream packages and pinned release artifacts.</p>
-      <p>Open-source components are governed by their repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">kungfu-systems on GitHub</a>.</p>
+      <p>Open-source components follow repository and package licenses. Public collaboration starts on <a href="https://github.com/kungfu-systems">GitHub</a>; disaster mirror: <a href="https://libkungfu.org/incident/">libkungfu.org</a>.</p>
     </div>
   </footer>
   <script>

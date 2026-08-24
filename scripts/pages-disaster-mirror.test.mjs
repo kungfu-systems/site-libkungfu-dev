@@ -46,7 +46,7 @@ function fixture() {
     passportDigest: `sha256:${"c".repeat(64)}`,
     productionDeploymentId: "456",
     productionDeploymentStatus: "success",
-    mirrorHost: "mirror.libkungfu.dev",
+    mirrorHost: "libkungfu.org",
     primaryHost: "libkungfu.dev",
   };
   return { root, artifactRoot, outputRoot, passportPath, options };
@@ -127,7 +127,12 @@ test("prepares and verifies a non-canonical mirror from exact production evidenc
   const server = await serverFor(value.outputRoot);
   t.after(() => server.close());
   const address = server.address();
-  const verified = await verifyMirrorBase(`http://127.0.0.1:${address.port}`, { expectedMirrorHost: "mirror.libkungfu.dev", routes: ["/", "/core/", "/incident/"] });
+  assert.equal(fs.readFileSync(path.join(value.outputRoot, "robots.txt"), "utf8"), "User-agent: *\nAllow: /\nSitemap: https://libkungfu.org/sitemap.xml\n");
+  assert.match(fs.readFileSync(path.join(value.outputRoot, "sitemap.xml"), "utf8"), /<loc>https:\/\/libkungfu\.org\/incident\/<\/loc>/);
+  const incident = fs.readFileSync(path.join(value.outputRoot, "incident/index.html"), "utf8");
+  assert.match(incident, /content="index, follow"/);
+  assert.match(incident, /rel="canonical" href="https:\/\/libkungfu\.org\/incident\/"/);
+  const verified = await verifyMirrorBase(`http://127.0.0.1:${address.port}`, { expectedMirrorHost: "libkungfu.org", routes: ["/", "/core/", "/incident/"] });
   assert.equal(verified.status, "verified");
 });
 
@@ -141,7 +146,7 @@ test("rejects ordinary main, staging-like, and mismatched production inputs", (t
   assert.throws(() => prepareMirror(value.options), /artifactHash mismatch/);
 });
 
-test("rejects live status, canonical, and banner mutations", async (t) => {
+test("rejects live status, discovery, canonical, and banner mutations", async (t) => {
   const value = fixture();
   t.after(() => fs.rmSync(value.root, { recursive: true, force: true }));
   prepareMirror(value.options);
@@ -149,15 +154,28 @@ test("rejects live status, canonical, and banner mutations", async (t) => {
   t.after(() => server.close());
   const base = `http://127.0.0.1:${server.address().port}`;
   fs.appendFileSync(path.join(value.outputRoot, ".well-known/kungfu-mirror-status.json"), " ");
-  const verify = () => verifyMirrorBase(base, { expectedMirrorHost: "mirror.libkungfu.dev", routes: ["/"] });
+  const verify = () => verifyMirrorBase(base, { expectedMirrorHost: "libkungfu.org", routes: ["/", "/incident/"] });
   await assert.rejects(verify, /status digest mismatch/);
   fs.rmSync(value.outputRoot, { recursive: true, force: true });
   prepareMirror(value.options);
   const index = path.join(value.outputRoot, "index.html");
-  fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("https://libkungfu.dev/", "https://mirror.libkungfu.dev/"));
+  fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("https://libkungfu.dev/", "https://libkungfu.org/"));
   await assert.rejects(verify, /canonical boundary mismatch/);
   fs.rmSync(value.outputRoot, { recursive: true, force: true });
   prepareMirror(value.options);
   fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("data-kungfu-disaster-mirror=\"true\"", ""));
   await assert.rejects(verify, /missing the disaster-mirror banner/);
+  fs.rmSync(value.outputRoot, { recursive: true, force: true });
+  prepareMirror(value.options);
+  fs.writeFileSync(path.join(value.outputRoot, "robots.txt"), "User-agent: *\nDisallow: /\n");
+  await assert.rejects(verify, /robots discovery boundary mismatch/);
+  fs.rmSync(value.outputRoot, { recursive: true, force: true });
+  prepareMirror(value.options);
+  fs.appendFileSync(path.join(value.outputRoot, "sitemap.xml"), "<loc>https://libkungfu.org/</loc>");
+  await assert.rejects(verify, /sitemap discovery boundary mismatch/);
+  fs.rmSync(value.outputRoot, { recursive: true, force: true });
+  prepareMirror(value.options);
+  const incident = path.join(value.outputRoot, "incident/index.html");
+  fs.writeFileSync(incident, fs.readFileSync(incident, "utf8").replace("https://libkungfu.org/incident/", "https://libkungfu.dev/"));
+  await assert.rejects(verify, /self-canonical boundary mismatch/);
 });
