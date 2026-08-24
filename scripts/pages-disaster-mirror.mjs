@@ -172,14 +172,14 @@ function transformHtml(html, relative) {
   let result = html.replace(/<meta\b[^>]*\bname=["']robots["'][^>]*>\s*/giu, "");
   result = result.replace(/\bhref=(["'])(https:\/\/[^"']+)\1/giu, (_match, quote, href) => `href=${quote}${mirrorHref(href)}${quote}`);
   result = result.replace(/<link\b[^>]*\brel=["'][^"']*\bcanonical\b[^"']*["'][^>]*>\s*/giu, "");
-  result = result.replace(/<head\b([^>]*)>/iu, `<head$1>\n  <meta name="robots" content="noindex, nofollow, noarchive">\n  <link rel="canonical" href="${canonical}">`);
+  result = result.replace(/<head\b([^>]*)>/iu, `<head$1>\n  <meta name="robots" content="noindex, follow, noarchive">\n  <link rel="canonical" href="${canonical}">`);
   const banner = `<aside ${BANNER_MARKER} role="status" style="box-sizing:border-box;width:100%;padding:.7rem 1rem;background:#fff3cd;color:#4b3a00;border-bottom:1px solid #d6b84a;font:600 14px/1.4 system-ui,sans-serif;text-align:center;">Disaster mirror — non-canonical, read-only, and updated only from production-approved release evidence. <a href="/incident/" style="color:inherit;text-decoration:underline;">Incident entry</a> · <a href="${canonical}" style="color:inherit;text-decoration:underline;">Primary site</a></aside>`;
   result = result.replace(/<body\b([^>]*)>/iu, `<body$1>\n${banner}`);
   return result;
 }
 
-function incidentPage(primaryHost) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow, noarchive"><link rel="canonical" href="https://${primaryHost}/"><title>Kungfu disaster mirror incident entry</title></head><body><aside ${BANNER_MARKER} role="status" style="padding:.7rem 1rem;background:#fff3cd;border-bottom:1px solid #d6b84a;text-align:center;font:600 14px/1.4 system-ui,sans-serif;">Disaster mirror — non-canonical and read-only.</aside><main style="max-width:52rem;margin:3rem auto;padding:0 1.25rem;font:16px/1.6 system-ui,sans-serif;"><h1>Incident entry</h1><ol><li>Confirm the primary site is unavailable from more than one network.</li><li>Check <a href="/.well-known/kungfu-mirror-status.json">mirror status</a> and its SHA-256 sidecar.</li><li>Use this mirror for read-only documentation and downloads only; the primary URL remains canonical.</li><li>Do not publish, qualify, or infer production health from mirror availability.</li><li>When the primary recovers, return readers to <a href="https://${primaryHost}/">https://${primaryHost}/</a>.</li></ol><p>This mirror is promoted only from a Buildchain production passport and the exact artifact from the same successful workflow run.</p></main></body></html>`;
+function incidentPage(primaryHost, mirrorHost) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index, follow"><link rel="canonical" href="https://${mirrorHost}/incident/"><title>libkungfu developer site disaster recovery entry</title></head><body><aside ${BANNER_MARKER} role="status" style="padding:.7rem 1rem;background:#fff3cd;border-bottom:1px solid #d6b84a;text-align:center;font:600 14px/1.4 system-ui,sans-serif;">Disaster mirror — non-canonical and read-only.</aside><main style="max-width:52rem;margin:3rem auto;padding:0 1.25rem;font:16px/1.6 system-ui,sans-serif;"><h1>libkungfu developer site disaster recovery</h1><p>This is the stable incident entry for <strong>${mirrorHost}</strong>. It is intentionally discoverable, but the mirrored developer pages remain non-canonical copies of the corresponding <strong>libkungfu.dev</strong> surfaces.</p><ol><li>Confirm the primary site is unavailable from more than one network.</li><li>Check <a href="/.well-known/kungfu-mirror-status.json">mirror status</a> and its SHA-256 sidecar.</li><li>Use this mirror for read-only documentation and downloads only; each primary URL remains canonical.</li><li>Do not publish, qualify, or infer production health from mirror availability.</li><li>When the primary recovers, return readers to <a href="https://${primaryHost}/">https://${primaryHost}/</a>.</li></ol><p>This mirror is promoted only from a Buildchain production passport and the exact artifact from the same successful workflow run.</p></main></body></html>`;
 }
 
 export function prepareMirror(options) {
@@ -201,7 +201,9 @@ export function prepareMirror(options) {
     fs.writeFileSync(file, transformHtml(fs.readFileSync(file, "utf8"), relative));
   }
   fs.mkdirSync(path.join(outputRoot, "incident"), { recursive: true });
-  fs.writeFileSync(path.join(outputRoot, "incident", "index.html"), incidentPage(options.primaryHost));
+  fs.writeFileSync(path.join(outputRoot, "incident", "index.html"), incidentPage(options.primaryHost, options.mirrorHost));
+  fs.writeFileSync(path.join(outputRoot, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: https://${options.mirrorHost}/sitemap.xml\n`);
+  fs.writeFileSync(path.join(outputRoot, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://${options.mirrorHost}/incident/</loc></url></urlset>\n`);
   fs.writeFileSync(path.join(outputRoot, "CNAME"), `${options.mirrorHost}\n`);
 
   const statusRelative = ".well-known/kungfu-mirror-status.json";
@@ -214,6 +216,7 @@ export function prepareMirror(options) {
       url: `https://${options.mirrorHost}/`,
       role: "non-canonical-disaster-mirror",
       indexable: false,
+      incidentIndexable: true,
       writable: false,
     },
     primary: { host: options.primaryHost, url: `https://${options.primaryHost}/`, canonical: true },
@@ -259,11 +262,22 @@ export async function verifyMirrorBase(baseUrl, options = {}) {
   for (const route of routes) {
     const result = await fetchRequired(new URL(route, base));
     const html = result.bytes.toString("utf8");
-    if (!/<meta\b[^>]*\bname=["']robots["'][^>]*\bcontent=["'][^"']*noindex/iu.test(html)) fail(`${route} is missing noindex`);
+    const incident = route === "/incident/";
+    const robots = html.match(/<meta\b[^>]*\bname=["']robots["'][^>]*>/iu)?.[0] || "";
+    if (incident && !/\bcontent=["'][^"']*\bindex\b[^"']*\bfollow\b/iu.test(robots)) fail(`${route} is not indexable`);
+    if (!incident && !/\bcontent=["'][^"']*\bnoindex\b[^"']*\bfollow\b/iu.test(robots)) fail(`${route} is missing noindex,follow`);
     if (!html.includes(BANNER_MARKER)) fail(`${route} is missing the disaster-mirror banner`);
     const canonical = html.match(/<link\b[^>]*\brel=["'][^"']*\bcanonical\b[^"']*["'][^>]*>/iu)?.[0]?.match(/\bhref=["']([^"']+)["']/iu)?.[1];
-    if (!canonical || new URL(canonical).hostname === base.hostname || !PRIMARY_SURFACES.has(new URL(canonical).hostname)) fail(`${route} canonical boundary mismatch`);
+    if (incident) {
+      if (canonical !== `https://${expectedMirrorHost}/incident/`) fail(`${route} self-canonical boundary mismatch`);
+    } else if (!canonical || new URL(canonical).hostname === base.hostname || !PRIMARY_SURFACES.has(new URL(canonical).hostname)) fail(`${route} canonical boundary mismatch`);
   }
+  const robotsResult = await fetchRequired(new URL("/robots.txt", base));
+  const robotsText = robotsResult.bytes.toString("utf8");
+  if (!robotsText.includes("Allow: /") || !robotsText.includes(`Sitemap: https://${expectedMirrorHost}/sitemap.xml`)) fail("robots discovery boundary mismatch");
+  const sitemapResult = await fetchRequired(new URL("/sitemap.xml", base));
+  const sitemapText = sitemapResult.bytes.toString("utf8");
+  if (!sitemapText.includes(`<loc>https://${expectedMirrorHost}/incident/</loc>`) || (sitemapText.match(/<loc>/gu) || []).length !== 1) fail("sitemap discovery boundary mismatch");
   return { status: "verified", sourceSha: status.source.sha, outputTreeHash: status.output.treeHash, routes };
 }
 

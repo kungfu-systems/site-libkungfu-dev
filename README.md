@@ -23,7 +23,7 @@ Source for the planned Kungfu developer and agent substrate hub at
 
 ## Disaster Mirror
 
-`https://mirror.libkungfu.dev` is the always-on, read-only disaster mirror.
+`https://libkungfu.org` is the always-on, read-only disaster mirror.
 It compresses the public developer surfaces into stable paths such as `/kfx/`,
 `/core/`, `/buildchain/`, `/kfd/`, `/papers/`, and `/skills/`. Start an incident
 at `/incident/` and inspect the machine-readable source binding at
@@ -32,7 +32,9 @@ at `/incident/` and inspect the machine-readable source binding at
 The mirror never deploys from an ordinary branch build. It accepts only the
 exact artifact and production Release Passport from the same successful
 Buildchain production workflow run, then adds a visible disaster banner,
-`noindex`, and canonical links back to the primary surfaces. Mirror
+`noindex,follow`, and canonical links back to the primary surfaces. Only the
+unique, self-canonical `/incident/` entry is indexable and listed in the mirror
+sitemap. Mirror
 availability is not production, certification, qualification, security, or
 fitness evidence, and AWS remains the canonical production delivery path.
 
