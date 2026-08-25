@@ -341,9 +341,22 @@ function Prepare-KungfuDelegate([string]$SelectedVersion) {
     $CompatibilityApplied = $true
     Write-InstallerDebug 'applied the reviewed PowerShell compatibility repair to the verified Kungfu delegate'
   }
+  if ($Selection.Target.delegate.sha256 -eq 'ee8d9f797252436a43b1c3b23282fd192744a821b855111b42c7cde4975db6a6') {
+    $ChannelLocatorNeedle = '$ChannelUrl = ''https://kungfu.tech/channels/alpha/af360a051e2201d006e2c8f75627fc575f981e00c4f4cc998c90e130d9a40b5b/index.json'''
+    $ChannelLocatorReplacement = '$ChannelUrl = ''https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-channel-index.json'''
+    $FirstChannelLocator = $CompatibleContent.IndexOf($ChannelLocatorNeedle, [StringComparison]::Ordinal)
+    $LastChannelLocator = $CompatibleContent.LastIndexOf($ChannelLocatorNeedle, [StringComparison]::Ordinal)
+    if ($FirstChannelLocator -lt 0 -or $FirstChannelLocator -ne $LastChannelLocator) {
+      Fail 'delegate-invalid' 'known Kungfu channel locator repair no longer matches the verified delegate'
+    }
+    $CompatibleContent = $CompatibleContent.Replace($ChannelLocatorNeedle, $ChannelLocatorReplacement)
+    $CompatibilityApplied = $true
+    Write-InstallerDebug 'applied the reviewed channel locator repair to the verified Kungfu delegate'
+  }
   if ($Selection.Target.delegate.sha256 -in @(
     '62cf594eb7ed69d488f2f9ce2beed8015e2b1f589b1b5af71c0d1929635fbe68',
-    'd24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858'
+    'd24ab8f30dadde46e19f780ab44c8e9cfb573bf5603d5039e2db2421585d5858',
+    'ee8d9f797252436a43b1c3b23282fd192744a821b855111b42c7cde4975db6a6'
   )) {
     $HashHelperNeedle = @'
 $ErrorActionPreference = 'Stop'
@@ -387,19 +400,28 @@ function Get-KungfuCompatSha256([string]$Path) {
   $ContractBytes = [IO.File]::ReadAllBytes($ContractFile)
   $ProductFile = Join-Path $Candidate 'product.json'
   $ProductBytes = [IO.File]::ReadAllBytes($ProductFile)
+  $BundledManifestFile = Join-Path $Candidate 'upgrade\kungfu-release-manifest.json'
+  $BundledManifestBytes = [IO.File]::ReadAllBytes($BundledManifestFile)
   try {
     $Contract = [Text.Encoding]::UTF8.GetString($ContractBytes) | ConvertFrom-Json
     $ArtifactSchema = $Contract.valueSchemaBundle.'$defs'.artifact
     $Required = @($ArtifactSchema.required)
     $ExpectedRequired = @('kind', 'url', 'size', 'digest', 'signature')
+    $NameProperty = $ArtifactSchema.properties.PSObject.Properties['name']
+    $NameIsCurrent = $false
+    if ($NameProperty) {
+      $NameIsCurrent = $NameProperty.Value.type -eq 'string' -and $NameProperty.Value.minLength -eq 1
+    }
     if ($ArtifactSchema.additionalProperties -ne $false -or
         ($Required -join "`0") -ne ($ExpectedRequired -join "`0") -or
-        $ArtifactSchema.properties.PSObject.Properties['name'] -or
+        ($NameProperty -and -not $NameIsCurrent) -or
         $ArtifactSchema.properties.signature.type -ne 'string' -or
         $ArtifactSchema.properties.signature.minLength -ne 1) {
       throw 'error[delegate-compat-failed]: verified Kungfu upgrade contract no longer matches the reviewed compatibility repair'
     }
-    $ArtifactSchema.properties | Add-Member -MemberType NoteProperty -Name name -Value ([pscustomobject]@{ type = 'string'; minLength = 1 })
+    if (-not $NameProperty) {
+      $ArtifactSchema.properties | Add-Member -MemberType NoteProperty -Name name -Value ([pscustomobject]@{ type = 'string'; minLength = 1 })
+    }
     [IO.File]::WriteAllText(
       $ContractFile,
       (($Contract | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
@@ -418,6 +440,52 @@ function Get-KungfuCompatSha256([string]$Path) {
       (($Product | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
       (New-Object Text.UTF8Encoding($false))
     )
+    if ($Version -eq '4.0.0-alpha.3') {
+      $BundledManifest = [Text.Encoding]::UTF8.GetString($BundledManifestBytes) | ConvertFrom-Json
+      $ChannelIndex = [IO.File]::ReadAllText($ChannelFile) | ConvertFrom-Json
+      $Matches = @($ChannelIndex.entries | Where-Object {
+        $_.channel -eq $Channel -and
+        $_.platform -eq 'win32' -and
+        $_.architecture -eq $Architecture -and
+        $_.installSource -eq 'archive' -and
+        $_.manifest.productVersion -eq $Version
+      })
+      if ($Matches.Count -ne 1) {
+        throw 'error[delegate-compat-failed]: verified Kungfu channel no longer has one reviewed compatibility entry'
+      }
+      $SignedEntry = $Matches[0]
+      $SignedManifest = $SignedEntry.manifest
+      foreach ($Field in @('schema', 'productVersion', 'releaseChannel', 'sourceCommit', 'platform', 'architecture')) {
+        if ([string]($BundledManifest.$Field) -ne [string]($SignedManifest.$Field)) {
+          throw 'error[delegate-compat-failed]: verified Kungfu release manifest no longer matches the reviewed compatibility repair'
+        }
+      }
+      $ExpectedSigned = [ordered]@{
+        sourceCommit = '6d99af738b78eccb48885a5fd59b88a0e5e4900a'
+        runtimeBuildId = 'runtime-4.0.0-alpha.3-2764b84a5785df9b'
+        runtimeArtifactDigest = 'sha256:2764b84a5785df9b03baec83e0d26b64fdfd09cfb69cfe82ecd70fc72d5e06be'
+        frontendBuildId = 'product-4.0.0-alpha.3-6d99af738b78-2764b84a5785df9b'
+        manifestIdentityRoot = 'sha256:2c9c3ac1d57ba325f61c4137d760a14b878aeed88f03d97b4ad89b9c8d294418'
+        releaseCutRoot = 'sha256:80640129776ab0a5b11c4e0d66d6158fd6e05613c67ad790a00b29fe65ffca38'
+        platformSliceRoot = 'sha256:fa0d4a39c5db798263ca24a63d78c522cb9d2d35c46535d65fa18ed06dfdfb61'
+      }
+      if ($SignedEntry.manifestRoot -ne 'sha256:0f83d080f2480d9dc4b0888c9c9818bb61c0736f7b3c15b00f7a8f7603ab5dc7' -or
+          $SignedEntry.artifactRoot -ne 'sha256:13977f02cb95a5a6e6aeafcaf107e016943214defc0c3940dcdee07a5f53384d' -or
+          $SignedEntry.manifestRoot -ne $ManifestRoot -or
+          $SignedEntry.artifactRoot -ne $ArtifactRoot) {
+        throw 'error[delegate-compat-failed]: verified Kungfu channel roots no longer match the reviewed compatibility repair'
+      }
+      foreach ($Field in $ExpectedSigned.Keys) {
+        if ([string]($SignedManifest.$Field) -ne [string]($ExpectedSigned[$Field])) {
+          throw 'error[delegate-compat-failed]: verified Kungfu signed manifest no longer matches the reviewed compatibility repair'
+        }
+      }
+      [IO.File]::WriteAllText(
+        $BundledManifestFile,
+        (($SignedManifest | ConvertTo-Json -Depth 100) + [Environment]::NewLine),
+        (New-Object Text.UTF8Encoding($false))
+      )
+    }
     $ReceiptJson = & (Join-Path $Candidate 'kungfu.cmd') update bootstrap-verify $ChannelFile $ArchiveFile $Candidate `
       --channel $Channel --platform win32 --architecture $Architecture --version $Version `
       --manifest-root $ManifestRoot --artifact-root $ArtifactRoot --platform-trust $PlatformTrust `
@@ -426,6 +494,7 @@ function Get-KungfuCompatSha256([string]$Path) {
   } finally {
     [IO.File]::WriteAllBytes($ContractFile, $ContractBytes)
     [IO.File]::WriteAllBytes($ProductFile, $ProductBytes)
+    [IO.File]::WriteAllBytes($BundledManifestFile, $BundledManifestBytes)
   }
 '@
     $FirstBootstrap = $CompatibleContent.IndexOf($BootstrapNeedle, [StringComparison]::Ordinal)
