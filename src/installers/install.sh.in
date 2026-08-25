@@ -316,6 +316,25 @@ download_verified() {
   }
 }
 
+repair_kungfu_delegate_channel_locator() {
+  input=$1
+  output=$2
+  awk '
+    $0 == "channel_url=\047https://kungfu.tech/channels/alpha/af360a051e2201d006e2c8f75627fc575f981e00c4f4cc998c90e130d9a40b5b/index.json\047" {
+      print "channel_url=\047https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-channel-index.json\047"
+      locator_count += 1
+      next
+    }
+    { print }
+    END { if (locator_count != 1) exit 42 }
+  ' "$input" > "$output" || {
+    rm -f "$output"
+    log 'error[delegate-invalid]: known Kungfu channel locator repair no longer matches the verified delegate'
+    return 1
+  }
+  chmod 700 "$output" || return 1
+}
+
 repair_kungfu_delegate_schema_compat() {
   input=$1
   output=$2
@@ -343,15 +362,17 @@ path = pathlib.Path(sys.argv[1])
 contract = json.loads(path.read_text("utf-8"))
 artifact = contract["valueSchemaBundle"]["$defs"]["artifact"]
 expected_required = ["kind", "url", "size", "digest", "signature"]
+expected_name = {"type": "string", "minLength": 1}
+observed_name = artifact.get("properties", {}).get("name")
 if (
     artifact.get("additionalProperties") is not False
     or artifact.get("required") != expected_required
-    or "name" in artifact.get("properties", {})
     or artifact.get("properties", {}).get("signature")
     != {"type": "string", "minLength": 1}
+    or observed_name not in (None, expected_name)
 ):
     raise SystemExit("verified Kungfu upgrade contract no longer matches the reviewed compatibility repair")
-artifact["properties"]["name"] = {"type": "string", "minLength": 1}
+artifact["properties"]["name"] = expected_name
 path.write_text(json.dumps(contract, indent=2, ensure_ascii=False) + "\n", "utf-8")
 
 product_path = pathlib.Path(sys.argv[2])
@@ -452,7 +473,59 @@ if bundled_manifest != signed_manifest:
         and signed_manifest.get("releaseCutRoot")
         == "sha256:a755016042e1d724f888d6cb6bd3c6a4650debfe6d80c338c62b56a5783526f1"
     )
-    known_manifest_repair = alpha1_manifest_repair or alpha2_macos_manifest_repair
+    alpha3_expected_signed = {
+        ("darwin", "arm64"): (
+            "sha256:485e5421107a8611b743c2aa325d021a63d410baef408997a61e4488e5f6e8bf",
+            "sha256:a3ab9ebd0cf905585ad279634cc89e462d73bb11879ebbab40471eb2ca7e6e55",
+            "runtime-4.0.0-alpha.3-45f1538e108b293b",
+            "sha256:45f1538e108b293b613ca17195f51d5db11901ca1a3159de640c68e7f429ed6d",
+            "product-4.0.0-alpha.3-6d99af738b78-45f1538e108b293b",
+            "sha256:64f1f6389947c927f845d9aff3b0c7a3e5faa48358d522dbd70978d342ae0d99",
+            "sha256:10e9c078de400f05f69bcf408a7ff65ab197f5fad84fa17d67ad04437920f017",
+        ),
+        ("linux", "arm64"): (
+            "sha256:3fedc3677729e056dafdffe4292c85f7b04069be5fd98d56220eb9a090fcc3c7",
+            "sha256:e975390603ff73dc6f61095a68ed8efe4699254a1e2511cdb653d558a1fdac54",
+            "runtime-4.0.0-alpha.3-de6222bd65f4cf2f",
+            "sha256:de6222bd65f4cf2f21e740f61adf94211e28835a1708619b047e3ac0e6bf0b1e",
+            "product-4.0.0-alpha.3-6d99af738b78-de6222bd65f4cf2f",
+            "sha256:415af6455c1d012dce2c14bf53059f3ad6579e65c1516c67a51c8e84069cbac8",
+            "sha256:f61ba1baca62a154597007aa1d1b199a9307fc396795d737411568a637b7ccea",
+        ),
+        ("linux", "x64"): (
+            "sha256:6d8d25473e4be07fea4373703dfb6db8d1c4d0406e6955282d0a101d8ec430e8",
+            "sha256:906ef9c7c65c739e78f3f3dedc0accaf0da98331a7c92213d5ee3741e9779490",
+            "runtime-4.0.0-alpha.3-3861886e58df5f24",
+            "sha256:3861886e58df5f24d3fbb9b8e2c03011c853dcd287818491afa3d53d59b2d24d",
+            "product-4.0.0-alpha.3-6d99af738b78-3861886e58df5f24",
+            "sha256:0816b200c946607eb70dd1a65daa8dea27ca54710a1b7a21cbe1f86557992356",
+            "sha256:5d879af852068de8b6d45cf1c6158b93256593a3c5931dc8c809ad752a0eff93",
+        ),
+    }.get((platform, architecture))
+    alpha3_observed_signed = (
+        manifest_root,
+        artifact_root,
+        signed_manifest.get("runtimeBuildId"),
+        signed_manifest.get("runtimeArtifactDigest"),
+        signed_manifest.get("frontendBuildId"),
+        signed_manifest.get("manifestIdentityRoot"),
+        signed_manifest.get("platformSliceRoot"),
+    )
+    alpha3_manifest_repair = (
+        base_identity_matches
+        and version == "4.0.0-alpha.3"
+        and signed_manifest.get("sourceCommit")
+        == "6d99af738b78eccb48885a5fd59b88a0e5e4900a"
+        and signed_manifest.get("releaseCutRoot")
+        == "sha256:80640129776ab0a5b11c4e0d66d6158fd6e05613c67ad790a00b29fe65ffca38"
+        and alpha3_expected_signed is not None
+        and alpha3_observed_signed == alpha3_expected_signed
+    )
+    known_manifest_repair = (
+        alpha1_manifest_repair
+        or alpha2_macos_manifest_repair
+        or alpha3_manifest_repair
+    )
     if not identity_matches and not known_manifest_repair:
         raise SystemExit("verified Kungfu release manifest no longer matches the reviewed compatibility repair")
     bundled_manifest_path.write_text(
@@ -534,6 +607,13 @@ prepare_product() {
     download_verified "$delegate_url" "$delegate_size" "$delegate_sha256" "$prepare_dir/delegate.sh" 'signed Kungfu installer' || return 1
     delegate_file="$prepare_dir/delegate.sh"
     case "$delegate_sha256" in
+      2624b1b4c1456e34b81722df4e39c71b81b9645cf335f0d14ccda82c40906eac)
+      repair_kungfu_delegate_channel_locator "$delegate_file" "$prepare_dir/delegate.locator.sh" || return 1
+      repair_kungfu_delegate_schema_compat "$prepare_dir/delegate.locator.sh" "$prepare_dir/delegate.compat.sh" "$prepare_dir" || return 1
+      delegate_file="$prepare_dir/delegate.compat.sh"
+      debug 'applied the reviewed channel locator repair to the verified Kungfu delegate'
+      debug 'applied the reviewed schema compatibility repair to the verified Kungfu delegate'
+      ;;
       2ec93b8ae69f49e4104fcbe3c1ea37d432423ceadcc95a736058a85d11241cc8|d2556ee8b09a579310d7b26d80c7aca356229dd90477d9c5912cf099909b96b0)
       repair_kungfu_delegate_schema_compat "$delegate_file" "$prepare_dir/delegate.compat.sh" "$prepare_dir" || return 1
       delegate_file="$prepare_dir/delegate.compat.sh"
