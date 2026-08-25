@@ -29,7 +29,7 @@ try {
   New-Item -ItemType Directory -Path $TestRoot | Out-Null
 
   $DefaultPlan = (& $Installer -DryRun -InstallDir (Join-Path $TestRoot 'default-install') -BinDir (Join-Path $TestRoot 'default-bin') 6>&1 | Out-String)
-  if ($DefaultPlan -notmatch 'plan: kungfu 4\.0\.0-alpha\.1 .* windows-x64') {
+  if ($DefaultPlan -notmatch 'plan: kungfu 4\.0\.0-alpha\.3 .* windows-x64') {
     throw "no-argument PowerShell execution did not default to Kungfu: $DefaultPlan"
   }
 

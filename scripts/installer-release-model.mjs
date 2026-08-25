@@ -31,6 +31,7 @@ export const installerProductAdapters = Object.freeze({
     evidence: "kungfu-installer-publication-bundle/v1",
     targets: Object.freeze([
       Object.freeze(["darwin-arm64", "darwin-arm64"]),
+      Object.freeze(["linux-arm64", "linux-arm64"]),
       Object.freeze(["linux-x64", "linux-x64"]),
       Object.freeze(["windows-x64", "windows-x64"]),
     ]),

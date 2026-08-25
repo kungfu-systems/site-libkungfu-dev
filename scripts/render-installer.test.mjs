@@ -429,7 +429,7 @@ printf '%s\\n' 'glibc 2.17'
 
 test("catalog rejects a second product set, an unpinned digest, or an external release URL", () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(repoRoot, "src", "install", "installer-catalog.json"), "utf8"));
-  assert.equal(validateCatalog(catalog).length, 28);
+  assert.equal(validateCatalog(catalog).length, 32);
   assert.throws(() => validateCatalog({ ...catalog, products: catalog.products.slice(1) }), /exactly four products/);
   const broken = structuredClone(catalog);
   broken.products[0].versions[0].targets[0].artifact.sha256 = "latest";

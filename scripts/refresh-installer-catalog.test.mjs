@@ -109,6 +109,7 @@ function kungfuFixture(version, publicationSalt = "") {
   fixture.addStatic("kungfu-install.sh", 4096, installerSha);
   fixture.addStatic("kungfu-install.ps1", 6144, powershellInstallerSha);
   fixture.addStatic("kungfu-episodes-cli-darwin-arm64.tar.gz", 8192);
+  fixture.addStatic("kungfu-episodes-cli-linux-arm64.tar.gz", 12288);
   fixture.addStatic("kungfu-episodes-cli-linux-x64.tar.gz", 16384);
   fixture.addStatic("kungfu-episodes-cli-windows-x64.zip", 32768);
   const immutablePath = `installers/v1/alpha/${version}/${hash(version)}`;
@@ -153,6 +154,24 @@ test("Kungfu provenance binds the publication bundle bytes rather than its inner
   assert.notEqual(entry.targets[0].provenance.sha256, fixture.manifestDigest);
 });
 
+test("Kungfu releases without Linux arm64 retain their historical target set", async () => {
+  const version = "4.0.0-alpha.2";
+  const fixture = kungfuFixture(version);
+  fixture.release.assets = fixture.release.assets.filter(
+    (asset) => asset.name !== "kungfu-episodes-cli-linux-arm64.tar.gz",
+  );
+  const entry = await resolveVersionEntry({
+    productId: "kungfu",
+    version,
+    release: fixture.release,
+    loadAssetBytes: fixture.loadAssetBytes,
+  });
+  assert.deepEqual(
+    entry.targets.map((target) => target.platform),
+    ["darwin-arm64", "linux-x64", "windows-x64"],
+  );
+});
+
 test("exact release adapters derive all four product entries from verified metadata", async () => {
   const cases = [
     ["kfd", "1.0.0-alpha.99", kfdFixture],
@@ -170,7 +189,8 @@ test("exact release adapters derive all four product entries from verified metad
     });
     assert.equal(entry.version, version);
     assert.match(entry.sourceSha, /^[0-9a-f]{40}$/u);
-    assert.equal(entry.targets.length, productId === "kfd" ? 5 : 3);
+    const expectedTargetCount = productId === "kfd" ? 5 : productId === "kungfu" ? 4 : 3;
+    assert.equal(entry.targets.length, expectedTargetCount);
     const releasePrefix = releaseDownloadPrefix(productId, entry.tag);
     for (const target of entry.targets) {
       for (const asset of [target.artifact, target.provenance, target.delegate].filter(Boolean)) {

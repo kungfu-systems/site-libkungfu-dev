@@ -407,8 +407,100 @@
         "repository": "kungfu-systems/kungfu",
         "evidence": "kungfu-installer-publication-bundle/v1"
       },
-      "defaultVersion": "4.0.0-alpha.2",
+      "defaultVersion": "4.0.0-alpha.3",
       "versions": [
+        {
+          "version": "4.0.0-alpha.3",
+          "tag": "v4.0.0-alpha.3",
+          "publishedAt": "2026-08-24T20:04:06Z",
+          "sourceSha": "6d99af738b78eccb48885a5fd59b88a0e5e4900a",
+          "targets": [
+            {
+              "platform": "darwin-arm64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-episodes-cli-darwin-arm64.tar.gz",
+                "size": 147567775,
+                "sha256": "be64a25a8756e03dfd1c3b59374dac781cd50eea645ed09a691c398de42403af"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-publication-bundle.json",
+                "size": 4677,
+                "sha256": "1bafe5fbcd50118490712d591ac5baa19bdd0e1ceaff71573450a2104eb6c136"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-install.sh",
+                "size": 10476,
+                "sha256": "2624b1b4c1456e34b81722df4e39c71b81b9645cf335f0d14ccda82c40906eac"
+              }
+            },
+            {
+              "platform": "linux-arm64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-linux-arm64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-episodes-cli-linux-arm64.tar.gz",
+                "size": 192340658,
+                "sha256": "15addf6285a236ec5b0088fd7373dbc4a4e0fdeb748271f7b95c54834c48ca4d"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-publication-bundle.json",
+                "size": 4677,
+                "sha256": "1bafe5fbcd50118490712d591ac5baa19bdd0e1ceaff71573450a2104eb6c136"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-install.sh",
+                "size": 10476,
+                "sha256": "2624b1b4c1456e34b81722df4e39c71b81b9645cf335f0d14ccda82c40906eac"
+              }
+            },
+            {
+              "platform": "linux-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-linux-x64.tar.gz",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-episodes-cli-linux-x64.tar.gz",
+                "size": 208214214,
+                "sha256": "c7ede1fc9692a25a6ebefd32cac75e9fcaa5c7717d3568a599695ebc63239d49"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-publication-bundle.json",
+                "size": 4677,
+                "sha256": "1bafe5fbcd50118490712d591ac5baa19bdd0e1ceaff71573450a2104eb6c136"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-install.sh",
+                "size": 10476,
+                "sha256": "2624b1b4c1456e34b81722df4e39c71b81b9645cf335f0d14ccda82c40906eac"
+              }
+            },
+            {
+              "platform": "windows-x64",
+              "kind": "delegated-installer",
+              "artifact": {
+                "name": "kungfu-episodes-cli-windows-x64.zip",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-episodes-cli-windows-x64.zip",
+                "size": 313815840,
+                "sha256": "ca467459a9b1e6b89b3cd1fd6c460807cba983e2368c85001537c51529de703b"
+              },
+              "provenance": {
+                "kind": "kungfu.installer-publication-bundle/v1",
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-installer-publication-bundle.json",
+                "size": 4677,
+                "sha256": "1bafe5fbcd50118490712d591ac5baa19bdd0e1ceaff71573450a2104eb6c136"
+              },
+              "delegate": {
+                "url": "https://github.com/kungfu-systems/kungfu/releases/download/v4.0.0-alpha.3/kungfu-install.ps1",
+                "size": 6279,
+                "sha256": "ee8d9f797252436a43b1c3b23282fd192744a821b855111b42c7cde4975db6a6"
+              }
+            }
+          ]
+        },
         {
           "version": "4.0.0-alpha.2",
           "tag": "v4.0.0-alpha.2",
