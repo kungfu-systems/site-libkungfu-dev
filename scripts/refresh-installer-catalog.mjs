@@ -216,16 +216,20 @@ async function resolveKungfu({ version, release, loadAssetBytes }) {
   const powershellDelegate = delegateFor("install.ps1");
   const artifactNames = {
     "darwin-arm64": "kungfu-episodes-cli-darwin-arm64.tar.gz",
+    "linux-arm64": "kungfu-episodes-cli-linux-arm64.tar.gz",
     "linux-x64": "kungfu-episodes-cli-linux-x64.tar.gz",
     "windows-x64": "kungfu-episodes-cli-windows-x64.zip",
   };
-  const targets = installerProductAdapters.kungfu.targets.map(([platform]) => ({
-    platform,
-    kind: "delegated-installer",
-    artifact: releaseAsset(release, artifactNames[platform]),
-    provenance: provenanceReference(bundle.schema, provenanceAsset),
-    delegate: platform === "windows-x64" ? powershellDelegate : shellDelegate,
-  }));
+  const targets = installerProductAdapters.kungfu.targets
+    .filter(([platform]) => platform !== "linux-arm64"
+      || release.assets.some((asset) => asset.name === artifactNames[platform]))
+    .map(([platform]) => ({
+      platform,
+      kind: "delegated-installer",
+      artifact: releaseAsset(release, artifactNames[platform]),
+      provenance: provenanceReference(bundle.schema, provenanceAsset),
+      delegate: platform === "windows-x64" ? powershellDelegate : shellDelegate,
+    }));
   return { sourceSha, targets };
 }
 
