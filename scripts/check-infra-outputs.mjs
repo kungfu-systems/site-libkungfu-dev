@@ -102,6 +102,9 @@ for (const snippet of [
   "uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v4",
   ".buildchain/alpha-contract-lock.json",
   ".buildchain/contract-lock.json",
+  "buildchain-contract-expected-channel: alpha",
+  "buildchain-contract-expected-channel: stable",
+  'buildchain-contract-expected-major: "4"',
   "buildchain-contract-compatibility-policy: major-compatible",
   "buildchain-contract-drift-issue-mode: compatible-and-breaking",
 ]) {

@@ -94,6 +94,8 @@ jobs:
     with:
       buildchain-ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || 'v4-alpha' }}
       buildchain-contract-lock-path: .buildchain/alpha-contract-lock.json
+      buildchain-contract-expected-channel: alpha
+      buildchain-contract-expected-major: "4"
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
       node-version: "24"
@@ -160,6 +162,8 @@ jobs:
     with:
       buildchain-ref: v4
       buildchain-contract-lock-path: .buildchain/contract-lock.json
+      buildchain-contract-expected-channel: stable
+      buildchain-contract-expected-major: "4"
       buildchain-contract-compatibility-policy: major-compatible
       buildchain-contract-drift-issue-mode: compatible-and-breaking
       node-version: "24"
