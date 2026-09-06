@@ -44,14 +44,20 @@ jobs:
         id: decision
         env:
           PRODUCTION_REQUESTED: ${{ ((github.event_name == 'workflow_dispatch' && inputs.production_approved) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'buildchain-release'))) && 'true' || 'false' }}
-        run: echo "requested=$PRODUCTION_REQUESTED" >> "$GITHUB_OUTPUT"
+          REQUESTED_RUNTIME: ${{ inputs.buildchain_ref }}
+        run: |
+          if [ "$PRODUCTION_REQUESTED" = "true" ] && [ -n "$REQUESTED_RUNTIME" ] && [ "$REQUESTED_RUNTIME" != "v4" ]; then
+            echo "::error::Production requires the official v4 runtime; validation overrides are development-only"
+            exit 1
+          fi
+          echo "requested=$PRODUCTION_REQUESTED" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact Buildchain governance runtime
         if: steps.decision.outputs.requested == 'true'
         uses: actions/checkout@v4
         with:
           repository: kungfu-systems/buildchain
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.buildchain_ref || 'v4' }}
+          ref: v4
           path: .buildchain/governance-runtime
           persist-credentials: false
 

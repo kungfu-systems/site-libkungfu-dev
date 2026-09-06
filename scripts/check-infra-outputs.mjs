@@ -104,6 +104,8 @@ for (const snippet of [
   ".buildchain/contract-lock.json",
   "buildchain-contract-expected-channel: alpha",
   "buildchain-contract-expected-channel: stable",
+  "ref: v4",
+  "Production requires the official v4 runtime",
   'buildchain-contract-expected-major: "4"',
   "buildchain-contract-compatibility-policy: major-compatible",
   "buildchain-contract-drift-issue-mode: compatible-and-breaking",
