@@ -3,7 +3,7 @@
   "contract": "kungfu-buildchain-manual-upstream-pickup",
   "runtime": {
     "package": "@kungfu-tech/buildchain",
-    "version": "3.0.6-alpha.0"
+    "version": "4.0.2-alpha.39"
   },
   "downstream": {
     "id": "site-libkungfu-dev",
@@ -35,10 +35,10 @@
         "release": "latest"
       },
       "workflowPaths": [
-        ".github/workflows/buildchain-ref-promotion.yml"
+        ".github/workflows/self-release-promote.yml"
       ],
       "workflowRefs": [
-        "refs/heads/dev/v3/v3.0"
+        "refs/heads/dev/v4/v4.0"
       ]
     },
     {

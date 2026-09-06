@@ -1439,13 +1439,13 @@ for (const legacyBuildchainPath of ["buildchain.toml", "buildchain.contract-lock
 }
 
 for (const [channel, lock, expectedRef] of [
-  ["stable", buildchainContractLock, "v3"],
-  ["alpha", buildchainAlphaContractLock, "v3-alpha"],
+  ["stable", buildchainContractLock, "v4"],
+  ["alpha", buildchainAlphaContractLock, "v4-alpha"],
 ]) {
   if (
     lock.contract !== "kungfu-buildchain-contract-lock" ||
     lock.buildchain?.ref !== expectedRef ||
-    lock.buildchain?.majorLine !== "v3" ||
+    lock.buildchain?.majorLine !== "v4" ||
     lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
     !lock.buildchain?.resolvedSha ||
     !lock.buildchain?.contractDigest ||
