@@ -11,9 +11,9 @@ permissions:
 
 jobs:
   refresh:
-    uses: kungfu-systems/buildchain/.github/workflows/patrol-observed-evidence.yml@v3
+    uses: kungfu-systems/buildchain/.github/workflows/public-ops-observed-evidence.yml@v4-alpha
     with:
-      buildchain-ref: v3
+      buildchain-ref: v4-alpha
       build-command: >-
         node scripts/generate-dogfood-evidence.mjs
         --kungfu-dir .observed-evidence/source

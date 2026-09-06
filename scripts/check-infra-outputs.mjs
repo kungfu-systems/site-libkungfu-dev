@@ -12,11 +12,10 @@ const stableCanaryWorkflow = fs.readFileSync(
   ".github/workflows/buildchain-stable-canary.yml",
   "utf8",
 );
-const expectedBuildchainShellRef = "v3";
-const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/.web-surface.yml@${expectedBuildchainShellRef}`;
+const expectedBuildchainShellRef = "v4-alpha";
+const expectedBuildchainShell = `kungfu-systems/buildchain/.github/workflows/public-release-web.yml@${expectedBuildchainShellRef}`;
 const acceptedWebSurfaceShells = [
   expectedBuildchainShell,
-  "kungfu-systems/buildchain/.github/workflows/.web-surface.yml@ca36670853acf419f8d19ce3d77eefbb520135f4",
 ];
 const requiredSurfaces = {
   hub: "https://libkungfu.dev",
@@ -63,7 +62,7 @@ if (!acceptedWebSurfaceShells.some((shell) => workflow.includes(`uses: ${shell}`
   );
 }
 if (!stableCanaryWorkflow.includes(`uses: ${expectedBuildchainShell}`)) {
-  throw new Error(`Buildchain stable canary must use stable ${expectedBuildchainShellRef} shell`);
+  throw new Error(`Buildchain stable canary must use public ${expectedBuildchainShellRef} shell`);
 }
 for (const snippet of [
   "actions: read",
@@ -77,15 +76,15 @@ for (const snippet of [
   }
 }
 for (const [channel, lockPath, expectedRef] of [
-  ["stable", ".buildchain/contract-lock.json", "v3"],
-  ["alpha", ".buildchain/alpha-contract-lock.json", "v3-alpha"],
+  ["stable", ".buildchain/contract-lock.json", "v4"],
+  ["alpha", ".buildchain/alpha-contract-lock.json", "v4-alpha"],
 ]) {
   if (!fs.existsSync(lockPath)) throw new Error(`missing Buildchain ${channel} contract lock: ${lockPath}`);
   const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
   if (
     lock.contract !== "kungfu-buildchain-contract-lock" ||
     lock.buildchain?.ref !== expectedRef ||
-    lock.buildchain?.majorLine !== "v3" ||
+    lock.buildchain?.majorLine !== "v4" ||
     lock.buildchain?.compatibilityPolicy !== "major-compatible" ||
     !lock.buildchain?.resolvedSha ||
     !lock.buildchain?.contractDigest ||
@@ -98,7 +97,9 @@ for (const snippet of [
   "actions: read",
   "contents: write",
   "issues: write",
-  "buildchain-contract-lock-path: ${{",
+  "buildchain-contract-lock-path: .buildchain/alpha-contract-lock.json",
+  "buildchain-contract-lock-path: .buildchain/contract-lock.json",
+  "uses: kungfu-systems/buildchain/.github/workflows/.web-surface.yml@v4",
   ".buildchain/alpha-contract-lock.json",
   ".buildchain/contract-lock.json",
   "buildchain-contract-compatibility-policy: major-compatible",
@@ -147,7 +148,6 @@ for (const [key, expected] of Object.entries(releaseGateSnippets)) {
 const mainPushProduction = "(github.event_name == 'push' && github.ref == 'refs/heads/main')";
 for (const linePrefix of [
   "PRODUCTION_REQUESTED:",
-  "buildchain-contract-lock-path:",
 ]) {
   const line = workflow
     .split(/\r?\n/)
@@ -163,7 +163,7 @@ const surfaceChannelLines = workflow
   .split(/\r?\n/)
   .map((candidate) => candidate.trim())
   .filter((candidate) => candidate.startsWith("export SITE_SURFACE_CHANNEL="));
-if (surfaceChannelLines.length !== 2) {
+if (surfaceChannelLines.length !== 4) {
   throw new Error("Buildchain build and verify commands must both declare SITE_SURFACE_CHANNEL");
 }
 for (const line of surfaceChannelLines) {

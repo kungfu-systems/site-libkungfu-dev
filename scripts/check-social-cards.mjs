@@ -45,9 +45,9 @@ for (const card of cards) {
   }
 }
 
-const dogfoodEvidence = JSON.parse(fs.readFileSync(".buildchain/render-inputs/dogfood-evidence.json", "utf8"));
+const dogfoodEvidence = JSON.parse(fs.readFileSync(".buildchain/render-inputs/dogfood-featured-evidence.json", "utf8"));
 if (dogfoodEvidence.metrics.mergedPublicPullRequests.value < 2000) {
-  throw new Error("dogfood social title requires at least 2,000 merged public pull requests in the rolling window");
+  throw new Error("dogfood social title requires at least 2,000 merged public pull requests in the featured rolling window");
 }
 
 const comparisonHtml = fs.readFileSync("dist/dogfood/parallel-runtime-paths/index.html", "utf8");

@@ -1,3 +1,22 @@
+---
+status: active
+period: ongoing
+theme: site-buildchain-v4
+doc_type: guide
+source_level: local-files
+confidence: high
+sensitivity: public
+evidence_grade: B
+review_state: self-reviewed
+last_reviewed: 2026-09-06
+ai_provenance:
+  model_family: GPT
+  product: Codex
+  generated_at: 2026-09-06
+  visible_context: Repository workflows and Buildchain v4 published contracts.
+  invisible_context_boundary: Does not claim unobserved production deployment.
+---
+
 # site-libkungfu-dev
 
 <!-- buildchain:badges:start -->
@@ -402,7 +421,7 @@ without disabling the age policy for unrelated dependencies.
 ## Buildchain
 
 This site is a Buildchain `web-surface` project. Pull requests and manual
-dispatches use the shared Buildchain v3 web-surface workflow for
+dispatches use the shared Buildchain v4 web-surface workflow for
 preview, cleanup, staging, and production plans. Same-repository pull requests
 apply short-lived preview deployments, pull request closure applies preview
 cleanup, ordinary `main` pushes apply the protected staging deployment, and
@@ -414,8 +433,9 @@ production path enters Buildchain's publication authority, a production-only
 preflight uses the organization governance auditor App and the exact selected
 Buildchain runtime to collect a short-lived qualifying receipt for this repository
 and target ref. The workflow
-runs through an exact reviewed Buildchain v3 workflow revision and checks
-`.buildchain/contract-lock.json` before rendering. The lock records the accepted
+uses `public-release-web.yml@v4-alpha` for development and the supported
+`.web-surface.yml@v4` entry for main/production, each with a matching runtime
+and alpha/stable contract lock before rendering. The lock records the accepted
 Buildchain runtime SHA and contract digests; changing the runtime is a reviewed
 activation and must remain compatible with that accepted contract world. The
 workflow runs `pnpm install` from the official npm registry before building so the
@@ -481,7 +501,7 @@ The AWS delivery contract is mirrored in `infra/outputs.json` from the private
 `kungfu-systems/infra-kungfu-sites` repository. `pnpm run check` verifies that
 `.buildchain/buildchain.toml` and the GitHub Actions role assumptions still match that
 contract, wires all declared role references, keeps the workflow shell on
-Buildchain `@v3-alpha`, and fails closed if the production release gate drifts.
+Buildchain `@v4-alpha`, and fails closed if the production release gate drifts.
 
 ```bash
 BUILDCHAIN_DIR=/path/to/buildchain

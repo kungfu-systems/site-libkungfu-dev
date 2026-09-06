@@ -1,3 +1,22 @@
+---
+status: active
+period: ongoing
+theme: site-buildchain-v4
+doc_type: guide
+source_level: local-files
+confidence: high
+sensitivity: public
+evidence_grade: B
+review_state: self-reviewed
+last_reviewed: 2026-09-06
+ai_provenance:
+  model_family: GPT
+  product: Codex
+  generated_at: 2026-09-06
+  visible_context: Repository workflows and Buildchain v4 published contracts.
+  invisible_context_boundary: Does not claim unobserved production deployment.
+---
+
 # Deploy
 
 The intended public URL is `https://libkungfu.dev`.
@@ -86,15 +105,15 @@ resource lifecycle decisions belong in the infra repository.
   friendly URL status.
 - Buildchain validation and preview, cleanup, staging, and production planning
   are enabled through the shared web-surface workflow.
-- The workflow consumes Buildchain through the floating `@v3-alpha` workflow ref and
-  records the accepted runtime contract in `.buildchain/contract-lock.json`.
-  The build checks that lock before rendering so `@v3-alpha` movement is audited as
-  compatible drift or blocked as breaking drift.
+- Development uses `public-release-web.yml@v4-alpha` with the alpha contract lock;
+  main/production uses the supported `.web-surface.yml@v4` with the stable lock.
+  Each shell and runtime stays on its matching channel. Contract movement is
+  audited as compatible drift or blocked as breaking drift.
 - Preview, preview cleanup, and staging apply are enabled in the repository
   workflow so same-repository pull requests publish short-lived preview
   surfaces, closed pull requests clean them up, and `main` pushes publish the
   protected staging channel.
-- The workflow uses the Buildchain v3 first-class surface host mappings, so each
+- The workflow uses the Buildchain v4 first-class surface host mappings, so each
   surface has a host-level preview and staging URL instead of only a path
   fallback under the hub URL.
 - Skills is intentionally a stable depth route on the hub surface rather than a
